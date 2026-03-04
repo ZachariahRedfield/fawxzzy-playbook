@@ -1,0 +1,5 @@
+# Playbook Governance Notes
+
+- Keep checks deterministic.
+- Avoid auto-editing user code.
+- Prefer clear, actionable output.
