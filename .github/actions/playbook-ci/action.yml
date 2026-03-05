@@ -30,11 +30,12 @@ runs:
         cache: pnpm
         cache-dependency-path: pnpm-lock.yaml
 
-    - name: Setup deterministic pnpm
+    - name: Setup deterministic pnpm with Corepack
       shell: bash
       run: |
         corepack enable
         corepack prepare pnpm@10.0.0 --activate
+        node -v
         pnpm -v
 
     - name: Install, lint, build, test, and optional smoke
