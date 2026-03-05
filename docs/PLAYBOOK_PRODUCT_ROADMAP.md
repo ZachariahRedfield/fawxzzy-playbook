@@ -70,6 +70,11 @@ Playbook Notes
 Proposed Doctrine
       ↓
 Promoted Engineering Knowledge
+
+Why this matters
+
+Knowledge capture is governance, not documentation theater. It prevents drift between intent and implementation, enables parallel exploration without losing decision integrity, and turns chat history into structured, reusable engineering knowledge.
+
 4️⃣ Developer Experience Over Features
 
 Adoption depends on:
@@ -407,6 +412,33 @@ patterns
 decisions
 architecture boundaries
 recurring solutions
+
+Conversation Graph & Session Memory (Branch / Merge)
+
+Playbook will define a deterministic session format and CLI workflow for conversation graphs so teams can branch and merge engineering reasoning with the same governance discipline applied to code. This is a Playbook format + tools capability, not a chat UI change.
+
+The session model will support:
+
+- checkpoints (context snapshots)
+- branches (topic explorations)
+- merges (reconciliation of parallel work)
+- conflict reporting/resolution for decisions and constraints
+
+Deliverables
+
+- [ ] Define a Session Snapshot schema (Decisions, Constraints, Open Questions, Artifacts, Next Steps)
+- [ ] Add CLI commands (or equivalent namespace aligned to Playbook conventions):
+  - [ ] `playbook session checkpoint`
+  - [ ] `playbook session branch`
+  - [ ] `playbook session merge`
+- [ ] Implement deterministic merge logic for snapshots, including conflict detection
+- [ ] Emit merge reports in both human-readable and JSON format
+- [ ] Add `docs/concepts` documentation describing Conversation Graph workflows
+
+Why this matters
+
+Conversation-graph workflows prevent drift, enable parallel exploration, and convert chat history into structured engineering knowledge that can be governed, reviewed, and reused.
+
 Success Criteria
 Doctrine system implemented
 Notes pipeline stable
