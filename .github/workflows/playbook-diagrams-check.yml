@@ -38,9 +38,6 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm build
-
       - name: Regenerate diagrams
         run: pnpm playbook:diagram
 
