@@ -16,7 +16,16 @@
     "verify": "pnpm lint && pnpm test && pnpm smoke:ci",
     "playbook:diagram": "pnpm --filter playbook... run build && pnpm --filter playbook exec node dist/main.js diagram --repo . --out docs/ARCHITECTURE_DIAGRAMS.md",
     "prepare": "node scripts/prepare.mjs",
-    "pack:check": "node scripts/check-pack.mjs"
+    "pack:check": "node scripts/check-pack.mjs",
+    "pack:cli": "pnpm -C packages/cli pack --out ../../packages/cli/fawxzzy-playbook-%v.tgz"
+  },
+  "pnpm": {
+    "overrides": {
+      "rollup": "npm:@rollup/wasm-node@4.59.0"
+    },
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.30.1",

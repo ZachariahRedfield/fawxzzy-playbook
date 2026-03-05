@@ -45,3 +45,14 @@ This prevents pnpm version drift between local development and CI.
 - `pnpm-lock.yaml` is required.
 - The lockfile must be committed.
 - The lockfile must not be gitignored.
+
+## Local CLI tarball testing (`npx` from `.tgz`)
+
+Use pnpm packaging (not manual tar) so workspace dependencies are rewritten to publishable semver ranges:
+
+```bash
+pnpm run pack:cli
+npx --yes ./packages/cli/fawxzzy-playbook-<version>.tgz analyze
+```
+
+This matches real publish/install behavior and avoids `workspace:*` dependency leakage in local install tests.

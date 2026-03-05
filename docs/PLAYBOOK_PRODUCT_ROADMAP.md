@@ -195,7 +195,7 @@ Progress (current)
 - [x] CI workflow included for verification
 - [x] Initial rule `requireNotesOnChanges` implemented in engine
 - [x] Smoke test script and automated tests are present
-- [ ] pnpm policy explicitly documented and enforced as the toolchain standard
+- [x] pnpm policy explicitly documented and enforced as the toolchain standard
 - [ ] pnpm version governance consolidated to `packageManager` as the authoritative source
 - [ ] Public `playbook-demo` repo linked for instant `npx playbook analyze` onboarding
 - [ ] GitHub Action packaging path finalized for `uses:`-style integrations

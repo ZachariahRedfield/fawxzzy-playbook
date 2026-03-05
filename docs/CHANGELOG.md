@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- WHAT: Forced Rollup to the WASM runtime via a pnpm override (`rollup` -> `npm:@rollup/wasm-node@4.59.0`) and allowlisted `esbuild` in `onlyBuiltDependencies`. WHY: Prevents CI failures caused by missing native Rollup binaries and removes pnpm v10 ignored-build-scripts nondeterminism in workspace installs.
+- WHAT: Added a root `pack:cli` workflow and documented tgz-based `npx` testing through `pnpm pack` from `packages/cli`. WHY: Ensures local tarball testing mirrors publish behavior and verifies packaged artifacts do not leak `workspace:*` dependency specifiers.
 - WHAT: Made `pnpm playbook:diagram` self-contained by building `playbook` plus its workspace dependencies first (`--filter playbook... run build`) and invoking the packaged CLI entrypoint (`dist/cli.js`) instead of the stale `dist/main.js` path. WHY: Fixes fresh-checkout CI failures (`MODULE_NOT_FOUND`) by removing reliance on prebuilt artifacts and matching the published `bin.playbook` target.
 - WHAT: Refactored the workspace into a platform-style split with `packages/core` (pure analyze/verify engine), `packages/node` (Node context adapter), and a thinner `packages/cli` command layer wired through the adapter while preserving command behavior/output contracts. WHY: Clarifies architecture boundaries, makes the engine portable across runtimes, and prepares Playbook for future adapters without coupling policy logic to filesystem/process APIs.
 - WHAT: Updated CLI packaging to ship `bin.playbook -> dist/cli.js`, added a `prepare` build fallback (`pnpm` then `npm`), and aligned smoke/CI scripts to the new entrypoint including tarball verification. WHY: Ensures install/publish reliability and keeps CI/published artifacts consistent with the intended CLI surface.
