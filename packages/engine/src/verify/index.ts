@@ -1,7 +1,9 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { loadConfig } from '../config/load.js';
 import { getChangedFiles } from '../git/diff.js';
 import { resolveDiffBase } from '../git/base.js';
-import type { VerifyReport } from '../report/types.js';
+import type { ReportFailure, VerifyReport } from '../report/types.js';
 import { loadPlugins } from '../plugins/loadPlugins.js';
 import {
   getRegisteredRules,
@@ -18,6 +20,39 @@ const coreRules = (config: ReturnType<typeof loadConfig>['config']): PlaybookRul
   }
 ];
 
+const verifyNotesWhenGovernancePresent = (repoRoot: string): ReportFailure[] => {
+  const governancePath = path.join(repoRoot, 'docs/PROJECT_GOVERNANCE.md');
+  if (!fs.existsSync(governancePath)) return [];
+
+  const notesPath = path.join(repoRoot, 'docs/PLAYBOOK_NOTES.md');
+  if (!fs.existsSync(notesPath)) {
+    return [
+      {
+        id: 'notes.missing',
+        message:
+          'docs/PLAYBOOK_NOTES.md is required when PROJECT_GOVERNANCE is present. Add an entry describing your change.',
+        path: 'docs/PLAYBOOK_NOTES.md',
+        hint: 'Create the file and add at least one entry.'
+      }
+    ];
+  }
+
+  const notes = fs.readFileSync(notesPath, 'utf8');
+  if (notes.trim().length === 0) {
+    return [
+      {
+        id: 'notes.missing',
+        message:
+          'docs/PLAYBOOK_NOTES.md is required when PROJECT_GOVERNANCE is present. Add an entry describing your change.',
+        path: 'docs/PLAYBOOK_NOTES.md',
+        hint: 'Create the file and add at least one entry.'
+      }
+    ];
+  }
+
+  return [];
+};
+
 export const verifyRepo = (repoRoot: string): VerifyReport => {
   const warnings: VerifyReport['warnings'] = [];
   const { config, warning: cfgWarning } = loadConfig(repoRoot);
@@ -32,9 +67,10 @@ export const verifyRepo = (repoRoot: string): VerifyReport => {
   coreRules(config).forEach(registerRule);
   loadPlugins(repoRoot);
 
-  const failures = getRegisteredRules().flatMap((rule) =>
-    rule.run({ repoRoot, changedFiles, config })
-  );
+  const failures = [
+    ...verifyNotesWhenGovernancePresent(repoRoot),
+    ...getRegisteredRules().flatMap((rule) => rule.run({ repoRoot, changedFiles, config }))
+  ];
 
   return {
     ok: failures.length === 0,

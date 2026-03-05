@@ -1,6 +1,8 @@
 export type ReportFailure = {
   id: string;
   message: string;
+  path?: string;
+  hint?: string;
   evidence?: string;
   fix?: string;
 };

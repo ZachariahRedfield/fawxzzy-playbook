@@ -13,6 +13,8 @@ export const formatHuman = (report: VerifyReport): string => {
     lines.push('');
     for (const failure of report.failures) {
       lines.push(`[${failure.id}] ${failure.message}`);
+      if (failure.path) lines.push(`Path: ${failure.path}`);
+      if (failure.hint) lines.push(`Hint: ${failure.hint}`);
       if (failure.evidence) lines.push(`Evidence: ${failure.evidence}`);
       if (failure.fix) lines.push(`Fix: ${failure.fix}`);
       lines.push('');
