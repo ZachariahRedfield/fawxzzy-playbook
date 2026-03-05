@@ -1,6 +1,7 @@
 @"
 # Decisions
 - CLI should build with tsc
+- Use pnpm workspace
 
 # Constraints
 - CLI must run offline
