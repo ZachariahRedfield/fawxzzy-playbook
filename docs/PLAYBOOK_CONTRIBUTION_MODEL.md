@@ -106,6 +106,9 @@ export interface PlaybookRule {
   run(context: VerifyContext): VerifyResult[]
 }
 
+<!-- docs-merge:duplicate-block -->
+> See also canonical block: [docs/PLAYBOOK_AGENT_GUIDE.md:172](PLAYBOOK_AGENT_GUIDE.md#block-172).
+
 Rules should be:
 
 deterministic
@@ -147,6 +150,9 @@ Detected Stack
 Framework: Next.js
 Database: Supabase
 Styling: Tailwind
+
+<!-- docs-merge:duplicate-block -->
+> See also canonical block: [docs/EXAMPLES.md:27](EXAMPLES.md#block-27).
 
 Analyzers should never modify code directly.
 

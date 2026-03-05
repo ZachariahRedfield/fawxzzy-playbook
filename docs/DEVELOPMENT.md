@@ -1,6 +1,9 @@
 # Development
 
 ## Prerequisites
+<!-- docs-merge:canonical-heading -->
+> **Docs merge note:** Canonical section lives at [Prerequisites](contributing.md#prerequisites).
+
 
 - Node.js `>=22` (matches `package.json` engines policy).
 - pnpm provisioned through Corepack.

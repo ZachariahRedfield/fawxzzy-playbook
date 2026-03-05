@@ -3,6 +3,9 @@
 `playbook.config.json` defines the active governance behavior for a repository.
 
 ## Structure
+<!-- docs-merge:canonical-heading -->
+> **Docs merge note:** Canonical section lives at [Structure](../ARCHITECTURE_DIAGRAMS.md#structure).
+
 
 - `version` — config schema version.
 - `docs` — documentation paths used by Playbook.

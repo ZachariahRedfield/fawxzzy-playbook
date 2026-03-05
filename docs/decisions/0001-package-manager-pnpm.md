@@ -4,6 +4,9 @@
 - Date: 2026-03-05
 
 ## Decision
+<!-- docs-merge:canonical-heading -->
+> **Docs merge note:** Canonical section lives at [Decision](../CONCEPTS/policy-model.md#decision).
+
 
 Playbook requires **pnpm** as the package manager for local development and CI.
 

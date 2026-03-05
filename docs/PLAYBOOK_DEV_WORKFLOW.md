@@ -76,11 +76,17 @@ When features are implemented, the roadmap must be updated.
 Example:
 
 ### PHASE 1 — FOUNDATION
+<!-- docs-merge:canonical-heading -->
+> **Docs merge note:** Canonical section lives at [PHASE 1 — FOUNDATION](PLAYBOOK_AGENT_GUIDE.md#phase-1-foundation).
+
 
 - [x] CLI scaffold
 - [x] repository templates
 - [x] requireNotesOnChanges rule
 - [ ] demo repository
+
+<!-- docs-merge:duplicate-block -->
+> See also canonical block: [docs/PLAYBOOK_AGENT_GUIDE.md:108](PLAYBOOK_AGENT_GUIDE.md#block-108).
 
 This keeps progress visible.
 
@@ -190,6 +196,9 @@ export interface PlaybookRule {
   run(context: VerifyContext): VerifyResult[]
 }
 
+<!-- docs-merge:duplicate-block -->
+> See also canonical block: [docs/PLAYBOOK_AGENT_GUIDE.md:172](PLAYBOOK_AGENT_GUIDE.md#block-172).
+
 Rules must:
 
 be deterministic
@@ -228,6 +237,9 @@ docs/ARCHITECTURE.md
 docs/PROJECT_GOVERNANCE.md
 docs/PLAYBOOK_NOTES.md
 docs/PLAYBOOK_CHECKLIST.md
+
+<!-- docs-merge:duplicate-block -->
+> See also canonical block: [docs/PLAYBOOK_CONTRIBUTION_MODEL.md:188](PLAYBOOK_CONTRIBUTION_MODEL.md#block-188).
 
 Template changes must prioritize:
 

@@ -23,6 +23,9 @@ No network calls are used.
 - If caps are exceeded, overflow is collapsed and warnings are emitted in the generation footer.
 
 ## Usage
+<!-- docs-merge:canonical-heading -->
+> **Docs merge note:** Canonical section lives at [Usage](concepts/docs-merge.md#usage).
+
 
 ```bash
 playbook diagram --repo . --out docs/ARCHITECTURE_DIAGRAMS.md

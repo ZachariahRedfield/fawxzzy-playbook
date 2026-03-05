@@ -131,6 +131,9 @@ Framework: Next.js
 Database: Supabase
 Styling: Tailwind
 
+<!-- docs-merge:duplicate-block -->
+> See also canonical block: [docs/EXAMPLES.md:27](EXAMPLES.md#block-27).
+
 Analyzer may generate suggestions for:
 
 docs/ARCHITECTURE.md
@@ -190,6 +193,9 @@ Output:
   ]
 }
 
+<!-- docs-merge:duplicate-block -->
+> See also canonical block: [docs/PLAYBOOK_AGENT_GUIDE.md:219](PLAYBOOK_AGENT_GUIDE.md#block-219).
+
 This enables:
 
 CI integration
@@ -242,6 +248,9 @@ docs/ARCHITECTURE.md
 docs/PROJECT_GOVERNANCE.md
 docs/PLAYBOOK_NOTES.md
 docs/PLAYBOOK_CHECKLIST.md
+
+<!-- docs-merge:duplicate-block -->
+> See also canonical block: [docs/PLAYBOOK_CONTRIBUTION_MODEL.md:188](PLAYBOOK_CONTRIBUTION_MODEL.md#block-188).
 
 Templates are synced into the CLI package.
 

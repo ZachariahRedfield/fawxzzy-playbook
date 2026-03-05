@@ -15,6 +15,9 @@ Current Playbook CLI exit behavior:
 - Same pass/fail code behavior in default, `--json`, and `--ci` modes.
 
 ## `playbook doctor`
+<!-- docs-merge:canonical-heading -->
+> **Docs merge note:** Canonical section lives at [`playbook doctor`](cli.md#playbook-doctor).
+
 
 - Returns `1` only when `git` is not installed.
 - Returns `0` otherwise, including cases with warnings.

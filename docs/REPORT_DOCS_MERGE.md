@@ -1,6 +1,6 @@
 # Docs Merge Report
 
-- Mode: DRY-RUN
+- Mode: APPLY
 - Prune: disabled
 - Files scanned: 40
 - Duplicate headings: 7

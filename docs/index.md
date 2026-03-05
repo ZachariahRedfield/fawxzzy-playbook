@@ -16,4 +16,7 @@
 - [Verify rules](./rules/verify-rules.md)
 
 ### Contributing
+<!-- docs-merge:canonical-heading -->
+> **Docs merge note:** Canonical section lives at [Contributing](contributing.md#contributing).
+
 - [Contributing to Playbook](./contributing.md)
