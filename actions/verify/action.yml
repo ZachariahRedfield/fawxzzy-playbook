@@ -25,4 +25,4 @@ runs:
 
     - name: Run Playbook verify
       shell: bash
-      run: npx --yes @zachariahredfield/playbook@${{ inputs.playbook_version }} verify ${{ inputs.args }}
+      run: npx --yes @fawxzzy/playbook@${{ inputs.playbook_version }} verify ${{ inputs.args }}

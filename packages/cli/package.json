@@ -6,15 +6,13 @@
     "playbook": "dist/main.js"
   },
   "files": [
-    "dist",
-    "templates",
-    "README.md",
-    "LICENSE"
+    "dist"
   ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run --passWithNoTests",
-    "playbook": "node dist/main.js"
+    "playbook": "node dist/main.js",
+    "prepublishOnly": "pnpm build"
   },
   "dependencies": {
     "@zachariahredfield/playbook-core": "workspace:*",
@@ -27,5 +25,9 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "exports": {
+    ".": "./dist/main.js"
+  },
+  "sideEffects": false
 }
