@@ -36,6 +36,15 @@ pnpm --filter @fawxzzy/playbook build
 node packages/cli/dist/main.js analyze
 ```
 
+Local tarball testing (offline/limited-registry friendly):
+
+```bash
+pnpm run pack:cli
+npx --yes ./packages/cli/fawxzzy-playbook-<version>.tgz analyze
+```
+
+The packed CLI tarball is self-contained and bundles internal Playbook workspace packages, so running it does not require fetching `@zachariahredfield/*` packages from npm.
+
 ## How it works
 
 ```text

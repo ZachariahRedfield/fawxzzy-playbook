@@ -1,57 +1,81 @@
-import { Command } from "commander";
 import { runInit } from "./commands/init.js";
 import { runAnalyze } from "./commands/analyze.js";
 import { runVerify } from "./commands/verify.js";
 import { runDoctor } from "./commands/doctor.js";
 import { runDiagram } from "./commands/diagram.js";
 
-const program = new Command();
-program.showHelpAfterError();
+const VERSION = "0.1.0";
 
-program.name("playbook").description("Lightweight project governance CLI").version("0.1.0");
+function printHelp(): void {
+  console.log(`Usage: playbook <command> [options]
 
-program
-  .command("init")
-  .description("Initialize playbook docs/config")
-  .action(() => runInit(process.cwd()));
+Commands:
+  init                          Initialize playbook docs/config
+  analyze [--ci] [--json]       Analyze project stack
+  verify [--ci] [--json]        Verify governance rules
+  doctor                        Check local setup
+  diagram [--repo <path>] [--out <path>] [--deps] [--structure]
+                                Generate deterministic architecture Mermaid diagrams
 
-program
-  .command("analyze")
-  .option("--ci", "CI mode output")
-  .option("--json", "Output JSON")
-  .description("Analyze project stack")
-  .action((opts) => process.exit(runAnalyze(process.cwd(), { ci: Boolean(opts.ci), json: Boolean(opts.json) })));
+Options:
+  -h, --help     Show help
+  -v, --version  Show version`);
+}
 
-program
-  .command("verify")
-  .option("--ci", "CI mode output")
-  .option("--json", "Output JSON")
-  .description("Verify governance rules")
-  .action((opts) => process.exit(runVerify(process.cwd(), { ci: Boolean(opts.ci), json: Boolean(opts.json) })));
+const args = process.argv.slice(2);
+const [command, ...rest] = args;
 
-program.command("doctor").description("Check local setup").action(() => process.exit(runDoctor(process.cwd())));
+if (!command || command === "-h" || command === "--help") {
+  printHelp();
+  process.exit(0);
+}
 
-program
-  .command("diagram")
-  .description("Generate deterministic architecture Mermaid diagrams")
-  .option("--repo <path>", "Repository to scan", ".")
-  .option("--out <path>", "Output markdown file", "docs/ARCHITECTURE_DIAGRAMS.md")
-  .option("--deps", "Generate dependency diagram")
-  .option("--structure", "Generate structure diagram")
-  .action((opts) =>
-    process.exit(
-      runDiagram(process.cwd(), {
-        repo: String(opts.repo ?? '.'),
-        out: String(opts.out ?? 'docs/ARCHITECTURE_DIAGRAMS.md'),
-        deps: Boolean(opts.deps),
-        structure: Boolean(opts.structure)
-      })
-    )
-  );
+if (command === "-v" || command === "--version") {
+  console.log(VERSION);
+  process.exit(0);
+}
 
-program.on('command:*', () => {
-  program.outputHelp();
-  process.exit(1);
-});
+if (command === "init") {
+  runInit(process.cwd());
+  process.exit(0);
+}
 
-program.parse();
+if (command === "doctor") {
+  process.exit(runDoctor(process.cwd()));
+}
+
+if (command === "analyze" || command === "verify") {
+  const ci = rest.includes("--ci");
+  const json = rest.includes("--json");
+  const code = command === "analyze"
+    ? runAnalyze(process.cwd(), { ci, json })
+    : runVerify(process.cwd(), { ci, json });
+  process.exit(code);
+}
+
+if (command === "diagram") {
+  let repo = ".";
+  let out = "docs/ARCHITECTURE_DIAGRAMS.md";
+  let deps = false;
+  let structure = false;
+
+  for (let i = 0; i < rest.length; i += 1) {
+    const arg = rest[i];
+    if (arg === "--repo") {
+      repo = rest[i + 1] ?? repo;
+      i += 1;
+    } else if (arg === "--out") {
+      out = rest[i + 1] ?? out;
+      i += 1;
+    } else if (arg === "--deps") {
+      deps = true;
+    } else if (arg === "--structure") {
+      structure = true;
+    }
+  }
+
+  process.exit(runDiagram(process.cwd(), { repo, out, deps, structure }));
+}
+
+printHelp();
+process.exit(1);
