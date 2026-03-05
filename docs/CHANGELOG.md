@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- WHAT: Updated `.github/workflows/ci.yml` to call the reusable `./.github/actions/playbook-ci` composite action with Node 22, frozen-lockfile installs, and smoke enabled as the single CI entrypoint. WHY: Eliminates drift between documented CI behavior and actual workflow execution while keeping Playbook CI deterministic and reusable.
+- WHAT: Updated `playbook-demo` integration guidance to use the real verify action reference `ZachariahRedfield/playbook/actions/verify@main` with explicit Node 22 + `--ci` inputs. WHY: Removes placeholder adoption steps and makes external verification wiring copy/paste-ready.
+
 ## v0.3.0
 
 - WHAT: Added deterministic architecture diagram generation (Mermaid) via a new `playbook diagram` command and engine scanning/generation modules for structure and internal dependency views. WHY: Helps developers and AI agents understand repository boundaries quickly without changing existing `init/analyze/verify` behavior.
