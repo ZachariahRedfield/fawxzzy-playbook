@@ -2,6 +2,8 @@ import { analyze, formatAnalyzeCi, formatAnalyzeHuman } from '@zachariahredfield
 import { createNodeContext } from '@zachariahredfield/playbook-node';
 import { emitResult, ExitCode } from '../lib/cliContract.js';
 
+type AnalyzeRecommendation = Awaited<ReturnType<typeof analyze>>['recommendations'][number];
+
 type AnalyzeOptions = {
   ci: boolean;
   format: 'text' | 'json';
@@ -30,12 +32,12 @@ export const runAnalyze = async (cwd: string, opts: AnalyzeOptions): Promise<num
     ok: result.ok,
     exitCode: result.ok ? ExitCode.Success : ExitCode.Failure,
     summary: result.ok ? 'Analyze completed successfully.' : 'Analyze completed with findings.',
-    findings: result.recommendations.map((rec: any) => ({
+    findings: result.recommendations.map((rec: AnalyzeRecommendation) => ({
       id: `analyze.recommendation.${rec.id}`,
       level: rec.severity === 'WARN' ? 'warning' as const : 'info' as const,
       message: rec.message
     })),
-    nextActions: result.recommendations.map((rec: any) => rec.fix)
+    nextActions: result.recommendations.map((rec: AnalyzeRecommendation) => rec.fix)
   });
 
   return result.ok ? ExitCode.Success : ExitCode.Failure;

@@ -10,6 +10,8 @@ import {
 import { resolveSessionMergeInputs } from './sessionMergeInputs.js';
 import { emitResult, ExitCode } from '../lib/cliContract.js';
 
+type SessionConflict = ReturnType<typeof mergeSessionSnapshots>['conflicts'][number];
+
 const requireOption = (value: string | undefined, flag: string): string => {
   if (!value) {
     throw new Error(`Missing required option: ${flag}`);
@@ -141,7 +143,7 @@ export const runSession = async (cwd: string, args: string[], options: SessionOp
       summary: `Wrote merged snapshot: ${path.relative(cwd, outPath)}`,
       findings: [
         { id: 'session.merge.inputs.count', level: 'info', message: `Merged ${inPaths.length} snapshots.` },
-        ...result.conflicts.map((conflict: any, index: number) => ({
+        ...result.conflicts.map((conflict: SessionConflict, index: number) => ({
           id: `session.merge.conflict.${index + 1}`,
           level: 'warning' as const,
           message: `${conflict.type} conflict on ${conflict.key}`

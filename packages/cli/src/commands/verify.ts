@@ -2,6 +2,10 @@ import { formatHuman, verify } from '@zachariahredfield/playbook-core';
 import { createNodeContext } from '@zachariahredfield/playbook-node';
 import { emitResult, ExitCode } from '../lib/cliContract.js';
 
+type VerifyReport = Awaited<ReturnType<typeof verify>>;
+type VerifyFailure = VerifyReport['failures'][number];
+type VerifyWarning = VerifyReport['warnings'][number];
+
 export const runVerify = async (
   cwd: string,
   options: { format: 'text' | 'json'; ci: boolean; quiet: boolean }
@@ -28,19 +32,19 @@ export const runVerify = async (
     exitCode: report.ok ? ExitCode.Success : ExitCode.PolicyFailure,
     summary: report.ok ? 'Verification passed.' : 'Verification failed.',
     findings: [
-      ...report.failures.map((failure: any) => ({
+      ...report.failures.map((failure: VerifyFailure) => ({
         id: `verify.failure.${failure.id}`,
         level: 'error' as const,
         message: failure.message
       })),
-      ...report.warnings.map((warning: any) => ({
+      ...report.warnings.map((warning: VerifyWarning) => ({
         id: `verify.warning.${warning.id}`,
         level: 'warning' as const,
         message: warning.message
       }))
     ],
     nextActions: report.failures
-      .map((failure: any) => failure.fix)
+      .map((failure: VerifyFailure) => failure.fix)
       .filter((fix: string | undefined): fix is string => Boolean(fix))
   });
 
