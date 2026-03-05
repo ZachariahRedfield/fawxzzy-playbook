@@ -2,12 +2,10 @@ name: ci
 
 on:
   push:
-    branches:
-      - main
   pull_request:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
