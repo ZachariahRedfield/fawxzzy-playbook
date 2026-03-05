@@ -395,6 +395,31 @@ Success Criteria
 Multi-repo governance supported
 Enterprise interest begins
 Early design partners
+FUTURE DIRECTION — PLAYBOOK PLATFORM VISION
+
+Playbook starts as a CLI-first developer tool, but the platform is intentionally architected so the same analysis engine can power multiple product surfaces.
+
+Architecture Philosophy
+
+packages/engine is the core analysis engine.
+
+Interfaces built on top of it can include:
+
+CLI
+GitHub Actions
+API services
+Web dashboards
+
+This separation allows Playbook to grow from a local CLI workflow into a broader engineering governance platform without fragmenting core logic.
+
+Potential Long-Term Capabilities
+
+- Repository architecture graphs
+- Engineering governance scoring
+- Cross-repository insights
+- Playbook Cloud dashboards
+- AI-assisted repository explanation
+
 LONG TERM VISION
 
 Playbook becomes the governance infrastructure for AI-assisted development.
