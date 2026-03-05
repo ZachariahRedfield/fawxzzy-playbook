@@ -1,1 +1,383 @@
+PLAYBOOK – 12 MONTH PRODUCT ROADMAP
 
+AI Governance for Software Engineering
+
+MISSION
+
+Build the governance layer for AI-assisted software development.
+
+Playbook ensures that AI-generated code:
+
+follows architecture
+
+captures engineering knowledge
+
+maintains documentation discipline
+
+prevents architectural drift
+
+Playbook sits between AI coding agents and repositories.
+
+AI Agents
+     ↓
+Playbook
+     ↓
+Repository
+CORE PRINCIPLES
+
+These rules guide all development decisions.
+
+1️⃣ CLI First
+
+Playbook must always function:
+
+locally
+
+offline
+
+inside CI
+
+Cloud must never be required.
+
+playbook init
+playbook analyze
+playbook verify
+
+must always work independently.
+
+2️⃣ Deterministic Governance
+
+Rules must be:
+
+explicit
+
+predictable
+
+CI-friendly
+
+Avoid "AI guessing" for core enforcement.
+
+3️⃣ Knowledge Capture
+
+Every meaningful engineering change must produce knowledge.
+
+Example pipeline:
+
+Code change
+      ↓
+Playbook Notes
+      ↓
+Proposed Doctrine
+      ↓
+Promoted Engineering Knowledge
+4️⃣ Developer Experience Over Features
+
+Adoption depends on:
+
+Install
+Run
+Understand
+Trust
+
+within 5 minutes.
+
+PRODUCT ARCHITECTURE
+
+Playbook evolves through three layers.
+
+Playbook CLI (Open Source)
+        ↓
+Governance Engine
+        ↓
+Playbook Cloud (Optional)
+YEAR 1 OBJECTIVE
+
+Establish Playbook as a trusted governance tool in the developer ecosystem.
+
+Target outcomes:
+
+1,000+ GitHub stars
+100+ repositories using Playbook in CI
+First external contributors
+Initial enterprise interest
+
+Revenue is not the priority during Year 1.
+
+Adoption is.
+
+PHASE 1 — FOUNDATION
+
+Months 1–2
+
+Goal:
+Transform Playbook from a personal workflow into a clean open-source developer tool.
+
+Deliverables
+Repository Architecture
+playbook
+├ packages
+│ ├ cli
+│ └ engine
+├ templates
+│ └ repo
+├ docs
+│ ├ concepts
+│ ├ config
+│ └ rules
+├ scripts
+└ README.md
+CLI Commands
+
+Initial commands:
+
+playbook init
+playbook analyze
+playbook verify
+playbook doctor
+Repository Templates
+
+playbook init generates:
+
+docs/ARCHITECTURE.md
+docs/PROJECT_GOVERNANCE.md
+docs/PLAYBOOK_NOTES.md
+docs/PLAYBOOK_CHECKLIST.md
+playbook.config.json
+.github/workflows/playbook-verify.yml
+CI Integration
+
+Example:
+
+run: playbook verify
+
+CI fails if governance rules are violated.
+
+Initial Rule
+
+v0.1 rule:
+
+requireNotesOnChanges
+
+Meaning:
+
+If code changes in:
+
+src/**
+app/**
+server/**
+supabase/**
+
+then:
+
+docs/PLAYBOOK_NOTES.md
+
+must also change.
+
+Success Criteria
+CLI works locally
+CI integration works
+Smoke tests pass
+Repo polished and documented
+PHASE 2 — REPOSITORY INTELLIGENCE
+
+Months 3–4
+
+Goal:
+Enable Playbook to understand repository architecture automatically.
+
+New Command
+playbook analyze
+
+Detect:
+
+framework
+database
+UI architecture
+styling system
+Example Output
+Detected Stack
+
+Framework: Next.js
+Database: Supabase
+Styling: Tailwind
+Architecture: React Server Components
+Architecture Draft Generation
+
+Playbook can insert suggestions into:
+
+docs/ARCHITECTURE.md
+
+using marker:
+
+<!-- PLAYBOOK:ANALYZE_SUGGESTIONS -->
+Stack Detectors
+
+Initial detectors:
+
+Next.js
+Supabase
+Tailwind
+Express
+Prisma
+Success Criteria
+Analyze detects stack reliably
+Architecture draft generation works
+Developers see value immediately
+PHASE 3 — GOVERNANCE ENGINE
+
+Months 5–6
+
+Goal:
+Transform Playbook into a policy engine for architecture governance.
+
+Rule Engine
+
+Rules become plugin-based.
+
+verify/
+  rules/
+    requireNotesOnChanges
+    forbidLayerCrossing
+    requireArchitectureDocs
+Example Rule
+forbidLayerCrossing
+UI cannot import DB directly
+UI → Server → DB
+Rule Interface
+export interface PlaybookRule {
+  id: string
+  run(context: VerifyContext): VerifyResult[]
+}
+JSON Output
+playbook verify --json
+
+Example:
+
+{
+  "ok": false,
+  "failures": [
+    {
+      "rule": "forbidLayerCrossing",
+      "file": "src/components/user.ts",
+      "message": "UI imported DB layer"
+    }
+  ]
+}
+CI Integration
+
+Playbook must work with:
+
+GitHub Actions
+GitLab CI
+CircleCI
+Buildkite
+Success Criteria
+Rule engine stable
+Multiple governance rules implemented
+JSON output supported
+PHASE 4 — KNOWLEDGE ENGINE
+
+Months 7–9
+
+Goal:
+Turn Playbook into an engineering knowledge system.
+
+New Command
+playbook learn
+
+This command analyzes:
+
+commits
+notes
+code patterns
+architecture decisions
+Knowledge Pipeline
+Playbook Notes
+      ↓
+Proposed Doctrine
+      ↓
+Promoted Doctrine
+
+Example doctrine:
+
+Server loaders should shape view models
+Engineering Knowledge Graph
+
+Playbook tracks:
+
+patterns
+decisions
+architecture boundaries
+recurring solutions
+Success Criteria
+Doctrine system implemented
+Notes pipeline stable
+Knowledge extraction working
+PHASE 5 — ORGANIZATION PLAYBOOK
+
+Months 10–12
+
+Goal:
+Enable governance across multiple repositories.
+
+Organization Structure
+Company Playbook
+      ↓
+Repo Playbook A
+Repo Playbook B
+Repo Playbook C
+
+Company defines:
+
+architecture principles
+security rules
+engineering doctrine
+
+Repositories inherit these rules.
+
+Example Organization Rule
+All DB access must go through service layer
+Enterprise Features
+
+Optional Playbook Cloud:
+
+playbook.dev
+
+Provides:
+
+multi-repo dashboards
+governance metrics
+architecture health
+doctrine graph
+Success Criteria
+Multi-repo governance supported
+Enterprise interest begins
+Early design partners
+LONG TERM VISION
+
+Playbook becomes the governance infrastructure for AI-assisted development.
+
+Equivalent ecosystem role:
+
+Git → version control
+CI → builds
+Sentry → runtime errors
+Playbook → architecture governance
+NORTH STAR METRICS
+
+Year 1:
+
+1,000 GitHub stars
+100 repositories using Playbook
+10 external contributors
+
+Year 2:
+
+10,000 developers
+1,000 repos using Playbook
+first enterprise deployments
+FOCUS MANTRA
+
+Every feature must answer one question:
+
+How do we keep AI-generated code aligned with architecture?
