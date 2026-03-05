@@ -1,5 +1,13 @@
 # Playbook Notes
 
+• Pattern: AI-operable repository interface
+Playbook commands expose repository structure, health, and architecture so AI agents can reason about a codebase without reading the entire source tree.
+
+• Principle: Machine-readable developer workflows
+Developer workflows should be executable commands rather than only written documentation.
+
+• Insight: Documentation must remain synchronized with implementation for AI-assisted development systems to remain reliable.
+
 - WHAT changed: Removed `cache: pnpm` and `cache-dependency-path: pnpm-lock.yaml` from the `Setup Node.js` step in `.github/actions/playbook-ci/action.yml`.
 - WHY it changed: `actions/setup-node` expects a `pnpm` executable to already exist when pnpm caching is enabled, but this workflow intentionally activates deterministic pnpm (`pnpm@10.0.0`) later via Corepack.
 
