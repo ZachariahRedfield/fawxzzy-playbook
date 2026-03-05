@@ -1,0 +1,53 @@
+name: Playbook CI
+
+description: Reusable CI action for Playbook install, build, test, and smoke checks.
+
+inputs:
+  node-version:
+    description: Node.js version to use.
+    required: false
+    default: "22"
+  working-directory:
+    description: Working directory to run Playbook CI commands in.
+    required: false
+    default: "."
+  run-smoke:
+    description: Whether to run smoke tests.
+    required: false
+    default: "true"
+  install-args:
+    description: Additional arguments for pnpm install.
+    required: false
+    default: "--frozen-lockfile"
+
+runs:
+  using: composite
+  steps:
+    - name: Disable Corepack
+      shell: bash
+      run: corepack disable
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+        cache-dependency-path: pnpm-lock.yaml
+
+    - name: Install, build, test, and optional smoke
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "==> Running Playbook CI"
+        pnpm install ${{ inputs.install-args }}
+        pnpm build
+        pnpm test
+        node packages/cli/dist/main.js --help
+        if [[ "${{ inputs.run-smoke }}" == "true" ]]; then
+          node scripts/smoke-test.mjs
+        else
+          echo "Skipping smoke test (run-smoke=${{ inputs.run-smoke }})"
+        fi
