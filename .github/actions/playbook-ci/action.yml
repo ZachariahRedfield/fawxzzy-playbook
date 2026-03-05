@@ -1,6 +1,6 @@
 name: Playbook CI
 
-description: Reusable CI action for Playbook install, lint, build, test, and smoke checks.
+description: Reusable CI action for deterministic Playbook install and verification.
 
 inputs:
   node-version:
@@ -38,7 +38,7 @@ runs:
         node -v
         pnpm -v
 
-    - name: Install, lint, build, test, and optional smoke
+    - name: Install and verify
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:
@@ -65,12 +65,4 @@ runs:
           echo "ERROR: optionalDependencies appear to be disabled in CI. This can break native optional packages (e.g. rollup/esbuild)."
           exit 1
         fi
-        pnpm lint
-        pnpm build
-        pnpm test
-        pnpm --dir "$GITHUB_WORKSPACE" --filter @fawxzzy/playbook run playbook -- --help
-        if [[ "${{ inputs.run-smoke }}" == "true" ]]; then
-          node scripts/smoke-test.mjs
-        else
-          echo "Skipping smoke test (run-smoke=${{ inputs.run-smoke }})"
-        fi
+        pnpm verify
