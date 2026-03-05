@@ -1,5 +1,11 @@
 # Playbook Notes
 
+- WHAT changed: Updated `.github/actions/playbook-ci/action.yml` to run the CLI smoke invocation via `pnpm --dir "$GITHUB_WORKSPACE" --filter @fawxzzy/playbook run playbook -- --help` instead of `node packages/cli/dist/cli.js --help`.
+- WHY it changed: CI was targeting a non-existent `dist/cli.js` file; invoking the package script ensures the published entrypoint (`dist/main.js`/`bin`) is exercised correctly from any configured working directory.
+
+- WHAT changed: Pinned pnpm in CI with Corepack (`corepack enable`, `corepack prepare pnpm@10.0.0 --activate`), forced npm/pnpm registry to `https://registry.npmjs.org/`, and added install-environment diagnostics prior to install.
+- WHY it changed: Eliminates pnpm version/registry drift that can suppress optional native dependency installation and now prints deterministic version/registry/config-path diagnostics before `pnpm install`.
+
 - WHAT changed: Removed root-level pnpm Rollup alias overrides that remapped `rollup` and `@rollup/rollup-linux-x64-gnu` to `@rollup/wasm-node`.
 - WHY it changed: The alias forced CI to fetch `@rollup/wasm-node` and produced unstable install behavior (`ERR_PNPM_FETCH_403`, missing native Rollup module resolution), so dependencies now resolve through normal platform packages.
 

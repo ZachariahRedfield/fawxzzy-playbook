@@ -23,19 +23,19 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Disable Corepack
-      shell: bash
-      run: corepack disable
-
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v4
-
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
         cache: pnpm
         cache-dependency-path: pnpm-lock.yaml
+
+    - name: Setup deterministic pnpm
+      shell: bash
+      run: |
+        corepack enable
+        corepack prepare pnpm@10.0.0 --activate
+        pnpm -v
 
     - name: Install, lint, build, test, and optional smoke
       shell: bash
@@ -45,6 +45,13 @@ runs:
         PNPM_CONFIG_OPTIONAL: "true"
       run: |
         echo "==> Running Playbook CI"
+        npm config set registry https://registry.npmjs.org/
+        pnpm config set registry https://registry.npmjs.org/
+        echo "npm registry: $(npm config get registry)"
+        echo "pnpm registry: $(pnpm config get registry)"
+        echo "npm userconfig: $(npm config get userconfig)"
+        echo "npm globalconfig: $(npm config get globalconfig)"
+        node "$GITHUB_WORKSPACE/scripts/assert-install-env.mjs"
         if ! pnpm install --config.optional=true ${{ inputs.install-args }}; then
           echo "Run pnpm -w install --no-frozen-lockfile and commit pnpm-lock.yaml"
           exit 1
@@ -60,7 +67,7 @@ runs:
         pnpm lint
         pnpm build
         pnpm test
-        node packages/cli/dist/cli.js --help
+        pnpm --dir "$GITHUB_WORKSPACE" --filter @fawxzzy/playbook run playbook -- --help
         if [[ "${{ inputs.run-smoke }}" == "true" ]]; then
           node scripts/smoke-test.mjs
         else
