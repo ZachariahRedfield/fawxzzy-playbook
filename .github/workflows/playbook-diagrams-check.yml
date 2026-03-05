@@ -2,8 +2,10 @@ name: Playbook Diagrams Check
 
 on:
   pull_request:
-  push:
-    branches: [main]
+
+concurrency:
+  group: diagrams-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   diagrams:
