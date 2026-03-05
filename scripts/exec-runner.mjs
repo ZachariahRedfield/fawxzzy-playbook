@@ -14,7 +14,7 @@ const quoteIfNeeded = (arg) => {
   return `"${arg.replaceAll('"', '\\"')}"`;
 };
 
-const buildCommandString = (command, args = []) => [command, ...args.map(quoteIfNeeded)].join(' ');
+const buildCommandString = (command, args = []) => `${quoteIfNeeded(command)} ${args.map(quoteIfNeeded).join(' ')}`;
 
 const logFailureContext = (command, options = {}) => {
   if (command !== PNPM_BIN) return;
@@ -25,7 +25,9 @@ const logFailureContext = (command, options = {}) => {
 
 const runExecFileSync = (command, args, options = {}) => {
   if (IS_WINDOWS) {
-    return execFileSync(COMSPEC, ['/d', '/s', '/c', buildCommandString(command, args)], options);
+    const payload = buildCommandString(command, args);
+    const cmdPayload = `""${payload}""`;
+    return execFileSync(COMSPEC, ['/d', '/s', '/c', cmdPayload], options);
   }
 
   return execFileSync(command, args, options);
