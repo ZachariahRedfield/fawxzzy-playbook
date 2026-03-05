@@ -40,10 +40,23 @@ runs:
     - name: Install, lint, build, test, and optional smoke
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      env:
+        NPM_CONFIG_OPTIONAL: "true"
+        npm_config_optional: "true"
+        PNPM_CONFIG_OPTIONAL: "true"
+        pnpm_config_optional: "true"
       run: |
         echo "==> Running Playbook CI"
-        if ! pnpm install ${{ inputs.install-args }}; then
+        if ! pnpm install --config.optional=true ${{ inputs.install-args }}; then
           echo "Run pnpm -w install --no-frozen-lockfile and commit pnpm-lock.yaml"
+          exit 1
+        fi
+        echo "==> Optional dependency diagnostics"
+        echo "pnpm config optional: $(pnpm config get optional)"
+        echo "npm config optional: $(npm config get optional)"
+        echo "env optional: $(node -p 'process.env.npm_config_optional || process.env.NPM_CONFIG_OPTIONAL || ""')"
+        if [[ "$(pnpm config get optional)" != "true" && "$(npm config get optional)" != "true" && "$(node -p 'process.env.npm_config_optional || process.env.NPM_CONFIG_OPTIONAL || ""')" != "true" ]]; then
+          echo "ERROR: optionalDependencies appear to be disabled in CI. This can break native optional packages (e.g. rollup/esbuild)."
           exit 1
         fi
         pnpm lint
