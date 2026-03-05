@@ -13,22 +13,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ✅ Install pnpm FIRST so setup-node's pnpm cache can run
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Run Playbook CI composite action
+        uses: ./.github/actions/playbook-ci
         with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install dependencies (frozen lockfile)
-        run: pnpm install --frozen-lockfile
-          
-      - name: Build workspace
-        run: pnpm -w build
-
-      - name: Verify workspace
-        run: pnpm -w verify
+          node-version: "22"
+          working-directory: "."
+          run-smoke: "true"
+          install-args: "--frozen-lockfile"

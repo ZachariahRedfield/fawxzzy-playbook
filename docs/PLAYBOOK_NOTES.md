@@ -14,3 +14,6 @@
 
 - WHAT changed: Implemented deterministic analyze formatters (human/ci/json), wired `playbook analyze --ci|--json`, and added snapshot tests for formatter stability.
 - WHY it changed: Provides high-signal output for developers and CI while preventing accidental formatting contract regressions.
+
+- WHAT changed: Wired `.github/workflows/ci.yml` to run the reusable `./.github/actions/playbook-ci` composite action and aligned demo integration docs to `ZachariahRedfield/playbook/actions/verify@main` with Node 22 + `--ci` inputs.
+- WHY it changed: Removes CI/documentation drift and placeholder adoption wiring so governance checks and external usage stay consistent.
