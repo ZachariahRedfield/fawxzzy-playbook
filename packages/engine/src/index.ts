@@ -5,3 +5,6 @@ export { formatAnalyzeHuman, formatAnalyzeCi, formatAnalyzeJson } from './format
 export { loadConfig } from './config/load.js';
 export type { VerifyReport } from './report/types.js';
 export type { AnalyzeResult, AnalyzeRecommendation, AnalyzeSeverity } from './analyze/index.js';
+
+export { generateArchitectureDiagrams, scanRepoStructure, scanWorkspaceDeps, generateMermaidStructure, generateMermaidDeps } from './diagrams/index.js';
+export type { DiagramOptions, StructureModel, DependencyModel, MermaidDiagramResult, DiagramRunOptions, DiagramOutput } from './diagrams/index.js';

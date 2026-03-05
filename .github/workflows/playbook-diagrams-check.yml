@@ -1,0 +1,33 @@
+name: Playbook Diagrams Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  diagrams:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Regenerate diagrams
+        run: pnpm playbook:diagram
+
+      - name: Verify diagrams are committed
+        run: git diff --exit-code docs/ARCHITECTURE_DIAGRAMS.md

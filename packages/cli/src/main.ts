@@ -3,6 +3,7 @@ import { runInit } from "./commands/init.js";
 import { runAnalyze } from "./commands/analyze.js";
 import { runVerify } from "./commands/verify.js";
 import { runDoctor } from "./commands/doctor.js";
+import { runDiagram } from "./commands/diagram.js";
 
 const program = new Command();
 
@@ -28,5 +29,23 @@ program
   .action((opts) => process.exit(runVerify(process.cwd(), { ci: Boolean(opts.ci), json: Boolean(opts.json) })));
 
 program.command("doctor").description("Check local setup").action(() => process.exit(runDoctor(process.cwd())));
+
+program
+  .command("diagram")
+  .description("Generate deterministic architecture Mermaid diagrams")
+  .option("--repo <path>", "Repository to scan", ".")
+  .option("--out <path>", "Output markdown file", "docs/ARCHITECTURE_DIAGRAMS.md")
+  .option("--deps", "Generate dependency diagram")
+  .option("--structure", "Generate structure diagram")
+  .action((opts) =>
+    process.exit(
+      runDiagram(process.cwd(), {
+        repo: String(opts.repo ?? '.'),
+        out: String(opts.out ?? 'docs/ARCHITECTURE_DIAGRAMS.md'),
+        deps: Boolean(opts.deps),
+        structure: Boolean(opts.structure)
+      })
+    )
+  );
 
 program.parse();

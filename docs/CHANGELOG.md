@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v0.3.0
+
+- WHAT: Added deterministic architecture diagram generation (Mermaid) via a new `playbook diagram` command and engine scanning/generation modules for structure and internal dependency views. WHY: Helps developers and AI agents understand repository boundaries quickly without changing existing `init/analyze/verify` behavior.
+- WHAT: Added diagram documentation and agent guidance (`docs/DIAGRAMS.md`, `docs/AI_AGENT_CONTEXT.md`) and a CI drift check workflow for generated diagrams. WHY: Keeps architecture documentation reproducible and continuously up to date in pull requests.
+
 - WHAT: Documented a pnpm-first toolchain and distribution doctrine across roadmap/governance/development/readme docs, including the single-source pnpm version rule (`package.json#packageManager`), GitHub Action distribution plan, and `playbook-demo` onboarding path. WHY: Prevents CI/local pnpm version drift, makes contributor setup deterministic, and reduces adoption friction through clear CLI + Action entry points.
 - WHAT: Added a reusable composite action at `actions/verify/action.yml` that runs `npx --yes playbook@<version> verify` with configurable `playbook_version`, `node_version`, and `args` inputs, plus README usage documentation. WHY: Lets any repository invoke published Playbook verification directly via `uses: <OWNER>/playbook/actions/verify@<ref>` without relying on this repo's local scripts.
 - WHAT: CI Pipeline Added with a deterministic GitHub Actions workflow (`checkout -> setup-node@22 -> pnpm/action-setup@v4 -> pnpm install --frozen-lockfile -> pnpm -w build -> pnpm -w verify`) plus root `.npmrc` registry pinning. WHY: Ensures every push/PR uses reproducible installs and consistent build/verify behavior while reducing pnpm/corepack/registry drift failures.
