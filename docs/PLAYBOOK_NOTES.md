@@ -50,3 +50,6 @@
 
 - WHAT changed: Removed the standalone `pnpm build` step from `.github/workflows/playbook-diagrams-check.yml` so the workflow only runs `pnpm playbook:diagram` before diff validation.
 - WHY it changed: Diagrams CI now builds only the Playbook CLI scope needed for diagram generation, avoiding unrelated package build toolchains (including engine/node tsup/rollup paths) that were blocking this workflow.
+
+- WHAT changed: Standardized Playbook npm distribution scope to `@fawxzzy`, replaced Unix-only `sh -c` lifecycle script direction with cross-platform Node-script guidance, and defined GitHub Action distribution as a composite action that runs `npx @fawxzzy/playbook verify --ci`.
+- WHY it changed: This keeps onboarding and CI compatible across Windows (PowerShell/CMD) and Unix shells, reflects that unscoped `playbook` is unavailable for `npx`, and lowers adoption friction with a copy/paste CI path that stays product-language/agent/platform-agnostic.

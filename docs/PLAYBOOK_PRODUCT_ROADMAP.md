@@ -194,12 +194,17 @@ Tooling & Distribution (Package Manager + Action + Demo Repo)
 - [x] Enforce a single pnpm version source via `package.json#packageManager`; CI setup must not pin a conflicting pnpm version (use aligned `pnpm/action-setup` or Corepack behavior).
 - [x] Remove CLI bundler dependency from the critical path (`packages/cli` now builds with `tsc` to `dist/main.js`) to eliminate Rollup optional native module flakiness in CI.
 - [x] Remove core/engine/node bundler dependency from the critical path (`packages/core`, `packages/engine`, and `packages/node` now build with `tsc` to `dist/index.js`) to eliminate Rollup optional native module flakiness in CI.
+- [ ] Publish CLI to npm as `@fawxzzy/playbook` (scoped org package).
+- [ ] Ensure scoped npm publish uses public access (`npm publish --access public`).
+- [ ] Ensure Windows compatibility by avoiding `sh`/`bash` lifecycle scripts in published install paths.
+- [ ] Define and document 30-second onboarding demo commands using the `npx` path.
+- [ ] Provide a first-class GitHub Action distribution path via a composite action that runs `npx @fawxzzy/playbook verify`.
 
 Near-Term Productization Milestones
 
-- [ ] Demo Repository (developer onboarding): add `examples/demo-repo/` so developers can immediately run `npx playbook analyze` and receive a meaningful report. The demo should intentionally include small architecture violations, documentation drift, and governance examples to show Playbook in action.
+- [ ] Demo Repository (developer onboarding): add `examples/demo-repo/` so developers can immediately run `npx --yes @fawxzzy/playbook analyze` and receive a meaningful report. The demo should intentionally include small architecture violations, documentation drift, and governance examples to show Playbook in action.
 - [ ] GitHub Action Integration (CI-native adoption): deliver a first-class `uses: playbook/verify` path, with initial implementation via `.github/workflows/playbook-verify.yml`. Initial capabilities should include `playbook verify`, architecture contract checks, and governance rule checks.
-- [ ] NPM Package Publishing (public adoption): publish Playbook as an installable CLI with support for `npx playbook analyze` and `npm install playbook-cli`, backed by an npm publishing pipeline, clear versioning strategy, and reliable CLI distribution.
+- [ ] NPM Package Publishing (public adoption): publish Playbook as an installable CLI with support for `npx --yes @fawxzzy/playbook analyze`, backed by an npm publishing pipeline, clear versioning strategy, and reliable scoped CLI distribution.
 
 - [ ] Dogfood Playbook in FawxzzyFitness (internal adoption gate): run Playbook end-to-end in Zac's own repo to validate reliability before broader rollout.
   - Phase gates (acceptance criteria):
