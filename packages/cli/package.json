@@ -1,9 +1,9 @@
 {
-  "name": "@zachariahredfield/playbook",
+  "name": "@fawxzzy/playbook",
   "version": "0.1.1",
   "type": "module",
   "bin": {
-    "playbook": "./dist/cli.js"
+    "playbook": "dist/main.js"
   },
   "files": [
     "dist",
@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsup",
     "test": "vitest run --passWithNoTests",
-    "playbook": "node dist/cli.js"
+    "playbook": "node dist/main.js"
   },
   "dependencies": {
     "@zachariahredfield/playbook-core": "workspace:*",

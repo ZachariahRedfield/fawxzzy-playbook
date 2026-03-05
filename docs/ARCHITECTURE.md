@@ -25,7 +25,7 @@ Thin user-facing command surface.
 - Parses `process.argv` and command flags.
 - Creates node context via `createNodeContext`.
 - Calls core engine functions and handles output formatting/exit codes.
-- Maintains published bin surface: `playbook -> dist/cli.js`.
+- Maintains published bin surface: `playbook -> dist/main.js`.
 
 ## Package layering
 

@@ -1,44 +1,29 @@
-# Releasing Playbook to npm
+# Releasing Playbook CLI
 
-## 1) Prepare the release
-
-1. Update package versions in:
-   - `package.json`
-   - `packages/core/package.json`
-   - `packages/node/package.json`
-   - `packages/engine/package.json`
-   - `packages/cli/package.json`
-2. Update `CHANGELOG.md` with WHAT/WHY for the release.
-3. Run verification locally:
+## 1) Build and test from the monorepo root
 
 ```bash
+pnpm install
 pnpm -r build
-pnpm -r test
-pnpm smoke
+pnpm test
 ```
 
-## 2) Commit and tag
+## 2) Publish from `packages/cli`
 
 ```bash
-git checkout main
-git pull --ff-only
-git add -A
-git commit -m "release: vX.Y.Z"
-git tag vX.Y.Z
-git push origin main --tags
+cd packages/cli
+npm publish --access public
 ```
 
-## 3) Publish
+Notes:
+- The monorepo root is marked `private: true` and is not publishable.
+- The CLI package is published as `@fawxzzy/playbook`.
 
-Publishing is automated by `.github/workflows/publish-npm.yml` on `v*` tags.
+## 3) Push the release tag
 
-Manual fallback (if needed):
+Create and push a git tag that matches the released version:
 
 ```bash
-pnpm -C packages/core publish --access public
-pnpm -C packages/node publish --access public
-pnpm -C packages/engine publish --access public
-pnpm -C packages/cli publish --access public
+git tag v0.1.1
+git push origin v0.1.1
 ```
-
-> Scoped npm packages default to private; always publish with `--access public`.

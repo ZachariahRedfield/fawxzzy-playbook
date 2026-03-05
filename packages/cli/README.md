@@ -25,15 +25,15 @@ Current CLI commands:
 ## 30-second demo
 
 ```bash
-npx --yes @zachariahredfield/playbook analyze
-npx --yes @zachariahredfield/playbook verify --ci
+npx --yes @fawxzzy/playbook analyze
+npx --yes @fawxzzy/playbook verify --ci
 ```
 
 Local dev fallback:
 
 ```bash
-pnpm --filter @zachariahredfield/playbook build
-node packages/cli/dist/cli.js analyze
+pnpm --filter @fawxzzy/playbook build
+node packages/cli/dist/main.js analyze
 ```
 
 ## How it works

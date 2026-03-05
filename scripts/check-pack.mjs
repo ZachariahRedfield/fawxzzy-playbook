@@ -1,12 +1,18 @@
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 
-const output = execFileSync('sh', ['-c', 'npm pack --dry-run 2>&1'], {
+const result = spawnSync('npm', ['pack', '--dry-run'], {
   cwd: 'packages/cli',
   encoding: 'utf8'
 });
 
-if (!output.includes('dist/cli.js')) {
-  throw new Error('npm pack --dry-run missing dist/cli.js in packages/cli tarball output');
+const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
+
+if (result.status !== 0) {
+  throw new Error(output || `npm pack --dry-run failed with status ${result.status}`);
 }
 
-console.log('pack check passed: dist/cli.js included');
+if (!output.includes('dist/main.js')) {
+  throw new Error('npm pack --dry-run missing dist/main.js in packages/cli tarball output');
+}
+
+console.log('pack check passed: dist/main.js included');
