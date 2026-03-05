@@ -32,9 +32,18 @@ npx --yes @fawxzzy/playbook verify --ci
 Local dev fallback:
 
 ```bash
-pnpm --filter @fawxzzy/playbook build
-node packages/cli/dist/main.js analyze
+pnpm build
+pnpm playbook analyze
 ```
+
+On Windows, both argument styles are supported:
+
+```bash
+pnpm playbook doctor
+pnpm playbook -- doctor
+```
+
+If `packages/cli/dist/` is missing, run `pnpm build` first.
 
 ## How it works
 
