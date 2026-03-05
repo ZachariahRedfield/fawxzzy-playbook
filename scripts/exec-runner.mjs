@@ -4,6 +4,17 @@ const IS_WINDOWS = process.platform === 'win32';
 const COMSPEC = process.env.ComSpec || 'cmd.exe';
 export const PNPM_BIN = 'pnpm';
 
+export const shouldUseCmd = (command) => {
+  if (!IS_WINDOWS) return false;
+  const normalized = command.toLowerCase();
+  return (
+    normalized.endsWith('.cmd') ||
+    normalized.endsWith('.bat') ||
+    normalized === 'pnpm' ||
+    normalized === 'corepack'
+  );
+};
+
 const withMergedEnv = (options = {}) => ({
   ...options,
   env: { ...process.env, ...(options.env ?? {}) }
@@ -24,10 +35,9 @@ const logFailureContext = (command, options = {}) => {
 };
 
 const runExecFileSync = (command, args, options = {}) => {
-  if (IS_WINDOWS) {
+  if (shouldUseCmd(command)) {
     const payload = buildCommandString(command, args);
-    const cmdPayload = `""${payload}""`;
-    return execFileSync(COMSPEC, ['/d', '/s', '/c', cmdPayload], options);
+    return execFileSync(COMSPEC, ['/d', '/s', '/c', payload], options);
   }
 
   return execFileSync(command, args, options);
