@@ -156,8 +156,12 @@ Tooling & Distribution (Package Manager + Action + Demo Repo)
 
 - [ ] Adopt pnpm as the workspace standard; keep `pnpm-lock.yaml` committed and never gitignored.
 - [ ] Enforce a single pnpm version source via `package.json#packageManager`; CI setup must not pin a conflicting pnpm version (use aligned `pnpm/action-setup` or Corepack behavior).
-- [ ] Launch a `playbook-demo` repository for a sub-30-second `npx playbook analyze` experience, linked from this repo README.
-- [ ] Ship a first-class GitHub Action distribution path (for example `uses: ZachariahRedfield/playbook/verify@<ref>` or equivalent) for low-friction CI adoption.
+
+Near-Term Productization Milestones
+
+- [ ] Demo Repository (developer onboarding): add `examples/demo-repo/` so developers can immediately run `npx playbook analyze` and receive a meaningful report. The demo should intentionally include small architecture violations, documentation drift, and governance examples to show Playbook in action.
+- [ ] GitHub Action Integration (CI-native adoption): deliver a first-class `uses: playbook/verify` path, with initial implementation via `.github/workflows/playbook-verify.yml`. Initial capabilities should include `playbook verify`, architecture contract checks, and governance rule checks.
+- [ ] NPM Package Publishing (public adoption): publish Playbook as an installable CLI with support for `npx playbook analyze` and `npm install playbook-cli`, backed by an npm publishing pipeline, clear versioning strategy, and reliable CLI distribution.
 
 Initial Rule
 
@@ -197,8 +201,9 @@ Progress (current)
 - [x] Smoke test script and automated tests are present
 - [x] pnpm policy explicitly documented and enforced as the toolchain standard
 - [ ] pnpm version governance consolidated to `packageManager` as the authoritative source
-- [ ] Public `playbook-demo` repo linked for instant `npx playbook analyze` onboarding
-- [ ] GitHub Action packaging path finalized for `uses:`-style integrations
+- [ ] `examples/demo-repo/` ships as an onboarding path with intentional architecture/doc/governance drift and meaningful analysis output
+- [ ] GitHub Action path finalized for `uses: playbook/verify` with verify + architecture + governance checks
+- [ ] npm package distribution live with publish pipeline, versioning strategy, and installable Playbook CLI
 PHASE 2 — REPOSITORY INTELLIGENCE
 
 Months 3–4
