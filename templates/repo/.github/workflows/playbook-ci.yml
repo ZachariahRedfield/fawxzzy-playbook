@@ -1,0 +1,25 @@
+name: playbook
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  playbook:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Playbook CI action (local)
+        if: github.repository == 'playbook/playbook'
+        uses: ./.github/actions/playbook-ci
+        with:
+          node-version: "22"
+
+      - name: Run Playbook CI action (published)
+        if: github.repository != 'playbook/playbook'
+        uses: playbook/playbook/.github/actions/playbook-ci@main
+        with:
+          node-version: "22"

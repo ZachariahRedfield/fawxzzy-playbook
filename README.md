@@ -52,6 +52,12 @@ Install:
 pnpm install
 ```
 
+Lint:
+
+```bash
+pnpm lint
+```
+
 Build:
 
 ```bash
@@ -73,6 +79,7 @@ pnpm smoke
 ## CI
 
 - CI runs the Playbook composite action at `.github/actions/playbook-ci`.
+- CI runs: install → lint → build → test → smoke.
 - CI is strict: missing CLI dist output fails smoke checks, and install must pass with a frozen lockfile.
 - If `pnpm install` fails due to proxy/network runner constraints, reproduce locally or fix runner networking rather than weakening CI guarantees.
 

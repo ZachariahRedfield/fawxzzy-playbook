@@ -1,6 +1,6 @@
 name: Playbook CI
 
-description: Reusable CI action for Playbook install, build, test, and smoke checks.
+description: Reusable CI action for Playbook install, lint, build, test, and smoke checks.
 
 inputs:
   node-version:
@@ -37,12 +37,13 @@ runs:
         cache: pnpm
         cache-dependency-path: pnpm-lock.yaml
 
-    - name: Install, build, test, and optional smoke
+    - name: Install, lint, build, test, and optional smoke
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
         echo "==> Running Playbook CI"
         pnpm install ${{ inputs.install-args }}
+        pnpm lint
         pnpm build
         pnpm test
         node packages/cli/dist/main.js --help
