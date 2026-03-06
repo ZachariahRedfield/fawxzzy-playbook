@@ -20,7 +20,7 @@
     "verify": "pnpm lint && pnpm check:tests && pnpm test && pnpm smoke:ci",
     "playbook": "node scripts/run-playbook.mjs",
     "playbook:help": "node scripts/run-playbook.mjs --help",
-    "playbook:diagram": "pnpm --filter playbook... run build && pnpm --filter playbook exec node dist/main.js diagram --repo . --out docs/ARCHITECTURE_DIAGRAMS.md",
+    "playbook:diagram": "pnpm -r build && node packages/cli/dist/main.js diagram --repo . --out docs/ARCHITECTURE_DIAGRAMS.md",
     "prepare": "node scripts/prepare.mjs",
     "pack:check": "node scripts/check-pack.mjs",
     "pack:cli": "pnpm -C packages/cli pack --out ../../packages/cli/fawxzzy-playbook-%v.tgz",
