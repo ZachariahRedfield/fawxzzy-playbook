@@ -32,8 +32,8 @@ export type RemediationDerivationInput = {
   unavailableReason?: string;
 };
 
-export type VerifyFindingFacts = {
-  findingCount: number;
+export type VerifyFailureFacts = {
+  failureCount: number;
   sources: string[];
 };
 
@@ -46,42 +46,31 @@ const getInteger = (value: unknown): number | undefined => {
   return value;
 };
 
-export const deriveVerifyFindingFacts = (verifyPayload: unknown): VerifyFindingFacts => {
+export const deriveVerifyFailureFacts = (verifyPayload: unknown): VerifyFailureFacts => {
   if (!isObject(verifyPayload)) {
-    return { findingCount: 0, sources: [] };
+    return { failureCount: 0, sources: [] };
   }
 
   const candidates: number[] = [];
   const sources: string[] = [];
 
-  const findings = verifyPayload.findings;
-  if (Array.isArray(findings)) {
-    candidates.push(findings.length);
-    sources.push('findings.length');
-  }
-
   const failures = verifyPayload.failures;
-  const warnings = verifyPayload.warnings;
-  const structuredFailures = Array.isArray(failures) ? failures.length : undefined;
-  const structuredWarnings = Array.isArray(warnings) ? warnings.length : undefined;
-
-  if (structuredFailures !== undefined || structuredWarnings !== undefined) {
-    candidates.push((structuredFailures ?? 0) + (structuredWarnings ?? 0));
-    sources.push('failures.length+warnings.length');
+  if (Array.isArray(failures)) {
+    candidates.push(failures.length);
+    sources.push('failures.length');
   }
 
   const summary = verifyPayload.summary;
   if (isObject(summary)) {
     const summaryFailures = getInteger(summary.failures);
-    const summaryWarnings = getInteger(summary.warnings);
-    if (summaryFailures !== undefined || summaryWarnings !== undefined) {
-      candidates.push((summaryFailures ?? 0) + (summaryWarnings ?? 0));
-      sources.push('summary.failures+summary.warnings');
+    if (summaryFailures !== undefined) {
+      candidates.push(summaryFailures);
+      sources.push('summary.failures');
     }
   }
 
   return {
-    findingCount: candidates.length > 0 ? Math.max(...candidates) : 0,
+    failureCount: candidates.length > 0 ? Math.max(...candidates) : 0,
     sources
   };
 };

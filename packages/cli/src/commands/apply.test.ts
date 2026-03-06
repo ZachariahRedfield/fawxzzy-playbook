@@ -241,6 +241,7 @@ describe('runApply remediation status preconditions', () => {
 
     expect(exitCode).toBe(ExitCode.Success);
     expect(applyExecutionPlan).not.toHaveBeenCalled();
+    expect(loadVerifyRules).not.toHaveBeenCalled();
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(payload.remediation.status).toBe('not_needed');
     expect(payload.message).toBe('No verify failures were detected.');
@@ -260,5 +261,42 @@ describe('runApply remediation status preconditions', () => {
       'Cannot apply remediation: Verify failures were detected but no remediation tasks are currently available.'
     );
     expect(applyExecutionPlan).not.toHaveBeenCalled();
+    expect(loadVerifyRules).not.toHaveBeenCalled();
+  });
+});
+
+describe('runApply warning-only remediation handling', () => {
+  beforeEach(() => {
+    generatePlanContract.mockReset();
+    applyExecutionPlan.mockReset();
+    parsePlanArtifact.mockReset();
+    loadVerifyRules.mockReset();
+  });
+
+  it('treats warning-only verify output as apply no-op instead of unavailable remediation', async () => {
+    const { runApply } = await import('./apply.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    generatePlanContract.mockReturnValue({
+      verify: {
+        ok: true,
+        summary: { failures: 0, warnings: 1 },
+        failures: [],
+        warnings: [{ id: 'base-selection', message: 'Repository is not a git work tree.' }]
+      },
+      tasks: []
+    });
+
+    const exitCode = await runApply('/repo', { format: 'json', ci: false, quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(applyExecutionPlan).not.toHaveBeenCalled();
+    expect(loadVerifyRules).not.toHaveBeenCalled();
+
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.remediation.status).toBe('not_needed');
+    expect(payload.message).toBe('No verify failures were detected.');
+
+    logSpy.mockRestore();
   });
 });

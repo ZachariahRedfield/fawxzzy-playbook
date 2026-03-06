@@ -104,8 +104,22 @@ try {
   }
 
   run(nodeBin, [cliPath, 'verify'], { cwd: projectDir });
-  run(nodeBin, [cliPath, 'plan'], { cwd: projectDir });
-  run(nodeBin, [cliPath, 'apply'], { cwd: projectDir });
+  const planPlain = runWithStatus(nodeBin, [cliPath, 'plan'], { cwd: projectDir });
+  if (planPlain.status !== 0) {
+    throw new Error(`smoke-test failed: expected plan exit status=0 in initialized non-git fixture, got ${planPlain.status}`);
+  }
+  if (planPlain.stderr.includes('fatal: not a git repository')) {
+    throw new Error('smoke-test failed: expected plan to avoid raw git fatal stderr output in non-git fixture');
+  }
+
+  const applyPlain = runWithStatus(nodeBin, [cliPath, 'apply'], { cwd: projectDir });
+  if (applyPlain.status !== 0) {
+    throw new Error(`smoke-test failed: expected apply exit status=0 in initialized non-git fixture, got ${applyPlain.status}`);
+  }
+  if (applyPlain.stderr.includes('fatal: not a git repository')) {
+    throw new Error('smoke-test failed: expected apply to avoid raw git fatal stderr output in non-git fixture');
+  }
+
   run(nodeBin, [cliPath, 'status'], { cwd: projectDir });
 
 
@@ -116,11 +130,23 @@ try {
     throw new Error('smoke-test failed: expected apply --json to return schemaVersion=1.0, command=apply, and results array');
   }
 
+  if (applyJsonResult.remediation?.status !== 'not_needed') {
+    throw new Error(`smoke-test failed: expected apply --json remediation.status=not_needed in initialized non-git fixture, got ${String(applyJsonResult.remediation?.status)}`);
+  }
+
   const planJson = runWithStatus(nodeBin, [cliPath, 'plan', '--json'], { cwd: projectDir });
   const planJsonResult = JSON.parse(planJson.stdout);
 
   if (planJsonResult.schemaVersion !== '1.0' || planJsonResult.command !== 'plan' || !Array.isArray(planJsonResult.tasks)) {
     throw new Error('smoke-test failed: expected plan --json to return schemaVersion=1.0, command=plan, and tasks array');
+  }
+
+  if (planJsonResult.remediation?.status !== 'not_needed') {
+    throw new Error(`smoke-test failed: expected plan --json remediation.status=not_needed in initialized non-git fixture, got ${String(planJsonResult.remediation?.status)}`);
+  }
+
+  if (applyJson.stderr.includes('fatal: not a git repository')) {
+    throw new Error('smoke-test failed: expected apply --json to avoid raw git fatal stderr output in non-git fixture');
   }
 
   const rulesJson = runWithStatus(nodeBin, [cliPath, 'rules', '--json'], { cwd: projectDir });

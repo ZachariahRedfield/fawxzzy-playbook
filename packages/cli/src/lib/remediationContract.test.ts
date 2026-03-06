@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildPlanRemediation,
-  deriveVerifyFindingFacts,
+  deriveVerifyFailureFacts,
   parsePlanRemediation,
   remediationToApplyPrecondition
 } from './remediationContract.js';
@@ -60,28 +60,27 @@ describe('remediationContract', () => {
     ).toThrow('Plan JSON contract has invalid remediation.status.');
   });
 
-  it('derives finding count from verify findings payload shape', () => {
+  it('derives failure count from verify payload shape', () => {
     expect(
-      deriveVerifyFindingFacts({
-        findings: [{ id: 'verify.warning.one' }],
-        summary: { failures: 0, warnings: 0 }
+      deriveVerifyFailureFacts({
+        failures: [{ id: 'f-1' }],
+        summary: { failures: 0, warnings: 3 }
       })
     ).toEqual({
-      findingCount: 1,
-      sources: ['findings.length', 'summary.failures+summary.warnings']
+      failureCount: 1,
+      sources: ['failures.length', 'summary.failures']
     });
   });
 
-  it('prefers the strongest available source fact across verify payload shapes', () => {
+  it('does not treat warnings as remediable failures', () => {
     expect(
-      deriveVerifyFindingFacts({
-        failures: [{ id: 'f-1' }],
+      deriveVerifyFailureFacts({
         warnings: [{ id: 'w-1' }],
-        summary: { failures: 0, warnings: 0 }
+        summary: { failures: 0, warnings: 1 }
       })
     ).toEqual({
-      findingCount: 2,
-      sources: ['failures.length+warnings.length', 'summary.failures+summary.warnings']
+      failureCount: 0,
+      sources: ['summary.failures']
     });
   });
 });

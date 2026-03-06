@@ -1,6 +1,6 @@
 import { generatePlanContract } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
-import { buildPlanRemediation, deriveVerifyFindingFacts } from '../lib/remediationContract.js';
+import { buildPlanRemediation, deriveVerifyFailureFacts } from '../lib/remediationContract.js';
 
 const renderTextPlan = (tasks: Array<{ ruleId: string; action: string }>): void => {
   console.log('Plan');
@@ -25,9 +25,9 @@ export const runPlan = async (
   options: { format: 'text' | 'json'; ci: boolean; quiet: boolean }
 ): Promise<number> => {
   const plan = generatePlanContract(cwd);
-  const findingFacts = deriveVerifyFindingFacts(plan.verify);
-  const findingCount = findingFacts.findingCount;
-  const remediation = buildPlanRemediation({ findingCount, stepCount: plan.tasks.length });
+  const failureFacts = deriveVerifyFailureFacts(plan.verify);
+  const failureCount = failureFacts.failureCount;
+  const remediation = buildPlanRemediation({ findingCount: failureCount, stepCount: plan.tasks.length });
 
   if (process.env.PLAYBOOK_DEBUG_REMEDIATION === '1') {
     console.error(
@@ -35,10 +35,10 @@ export const runPlan = async (
         {
           command: 'plan',
           remediationDerivation: {
-            findingCount,
+            failureCount,
             stepCount: plan.tasks.length,
             remediationStatus: remediation.status,
-            verifyFindingSources: findingFacts.sources
+            verifyFailureSources: failureFacts.sources
           },
           verifyPayload: plan.verify
         },
