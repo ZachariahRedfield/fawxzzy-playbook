@@ -32,6 +32,15 @@ const ensureInitScaffoldContract = (projectDir) => {
   // project opts into them, but they are not required baseline scaffold output.
 };
 
+const ensureInstalledCliContract = (projectDir) => {
+  const installedPkgDir = path.join(projectDir, 'node_modules', '@fawxzzy', 'playbook');
+  const installedPkg = JSON.parse(fs.readFileSync(path.join(installedPkgDir, 'package.json'), 'utf8'));
+  const binPath = path.join(installedPkgDir, installedPkg.bin.playbook);
+
+  ensureFile(binPath, 'installed CLI bin target');
+  return binPath;
+};
+
 const readPackedPackageJson = (tarballPath) => {
   const raw = run('tar', ['-xOf', tarballPath, 'package/package.json']);
   return JSON.parse(raw);
@@ -142,12 +151,7 @@ try {
   );
 
   installFromTarballs(projectDir, [...dependencyTarballs, cliTarball]);
-
-  const installedPkgDir = path.join(projectDir, 'node_modules', '@fawxzzy', 'playbook');
-  const installedPkg = JSON.parse(fs.readFileSync(path.join(installedPkgDir, 'package.json'), 'utf8'));
-  const binPath = path.join(installedPkgDir, installedPkg.bin.playbook);
-
-  ensureFile(binPath, 'installed CLI bin target');
+  const binPath = ensureInstalledCliContract(projectDir);
 
   runLogged(nodeBin, [binPath, '--help'], { cwd: projectDir });
   runLogged(nodeBin, [binPath, 'init'], { cwd: projectDir });
