@@ -18,3 +18,6 @@ export type { RepositoryHealth, GovernanceStatusItem } from './doctor/index.js';
 
 export { generateRepositoryIndex } from './indexer/repoIndexer.js';
 export type { RepositoryIndex } from './indexer/repoIndexer.js';
+
+export { queryRepositoryIndex, SUPPORTED_QUERY_FIELDS } from './query/repoQuery.js';
+export type { RepositoryQueryField, RepositoryQueryResult } from './query/repoQuery.js';

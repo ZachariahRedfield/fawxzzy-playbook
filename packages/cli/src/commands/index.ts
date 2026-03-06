@@ -197,6 +197,16 @@ export const commandRegistry: RegisteredCommand[] = [
     }
   },
 
+
+  {
+    name: 'query',
+    description: 'Query machine-readable repository intelligence from .playbook/repo-index.json',
+    run: async ({ cwd, commandArgs, format, quiet }) => {
+      const { runQuery } = await import('./query.js');
+      return runQuery(cwd, commandArgs, { format, quiet });
+    }
+  },
+
   {
     name: 'session',
     description: 'Import, merge, and cleanup session snapshots',
