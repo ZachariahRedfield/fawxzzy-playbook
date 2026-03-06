@@ -1,9 +1,8 @@
-import { formatHuman, verify } from '@zachariahredfield/playbook-core';
-import { createNodeContext } from '@zachariahredfield/playbook-node';
+import { formatHuman, verifyRepo } from '@zachariahredfield/playbook-engine';
 import { emitResult, ExitCode } from '../lib/cliContract.js';
 import { loadVerifyRules } from '../lib/loadVerifyRules.js';
 
-export type VerifyReport = Awaited<ReturnType<typeof verify>>;
+export type VerifyReport = ReturnType<typeof verifyRepo>;
 type VerifyFailure = VerifyReport['failures'][number];
 type VerifyWarning = VerifyReport['warnings'][number];
 
@@ -18,7 +17,7 @@ const resolveFailureGuidance = (
   };
 };
 
-export const collectVerifyReport = async (cwd: string): Promise<VerifyReport> => verify(createNodeContext({ cwd }));
+export const collectVerifyReport = async (cwd: string): Promise<VerifyReport> => verifyRepo(cwd);
 
 export const runVerify = async (
   cwd: string,

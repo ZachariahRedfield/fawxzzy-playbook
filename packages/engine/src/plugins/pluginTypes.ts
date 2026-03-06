@@ -1,14 +1,6 @@
-import type { PlaybookConfig } from '../config/schema.js';
-import type { ReportFailure } from '../report/types.js';
+import type { Rule } from '../execution/types.js';
 
-export interface PlaybookRule {
-  id: string;
-  run(context: {
-    repoRoot: string;
-    changedFiles: string[];
-    config: PlaybookConfig;
-  }): ReportFailure[];
-}
+export type PlaybookRule = Rule;
 
 export interface StackDetector {
   id: string;

@@ -10,3 +10,5 @@ export { generateArchitectureDiagrams, scanRepoStructure, scanWorkspaceDeps, gen
 export type { DiagramOptions, StructureModel, DependencyModel, MermaidDiagramResult, DiagramRunOptions, DiagramOutput } from './diagrams/index.js';
 
 export * from './sessions/index.js';
+
+export { runRuleExecution, generateExecutionPlan, applyExecutionPlan, RuleRunner, PlanGenerator, FixExecutor } from './execution/index.js';

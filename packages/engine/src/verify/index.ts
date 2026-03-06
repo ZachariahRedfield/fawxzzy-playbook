@@ -3,30 +3,9 @@ import { getChangedFiles } from '../git/diff.js';
 import { resolveDiffBase } from '../git/base.js';
 import type { VerifyReport } from '../report/types.js';
 import { loadPlugins } from '../plugins/loadPlugins.js';
-import { requireNotesFileWhenGovernanceExists } from "./rules/requireNotesFileWhenGovernanceExists.js";
-import {
-  getRegisteredRules,
-  registerRule,
-  resetPluginRegistry
-} from '../plugins/pluginRegistry.js';
-import type { PlaybookRule } from '../plugins/pluginTypes.js';
-import { requireNotesOnChanges } from './rules/requireNotesOnChanges.js';
-import { requireTestsForNewCommands } from './rules/requireTestsForNewCommands.js';
-
-const coreRules = (config: ReturnType<typeof loadConfig>["config"]): PlaybookRule[] => [
-  {
-    id: "requireNotesFileWhenGovernanceExists",
-    run: ({ repoRoot }) => requireNotesFileWhenGovernanceExists(repoRoot)
-  },
-  {
-    id: "requireNotesOnChanges",
-    run: ({ changedFiles }) => requireNotesOnChanges(changedFiles, config.verify.rules.requireNotesOnChanges)
-  },
-  {
-    id: "verify.rule.tests.required",
-    run: ({ repoRoot, changedFiles }) => requireTestsForNewCommands(repoRoot, changedFiles)
-  }
-];
+import { getRegisteredRules, registerRule, resetPluginRegistry } from '../plugins/pluginRegistry.js';
+import { getCoreRules } from '../rules/coreRules.js';
+import { RuleRunner } from '../execution/ruleRunner.js';
 
 export const verifyRepo = (repoRoot: string): VerifyReport => {
   const warnings: VerifyReport['warnings'] = [];
@@ -39,12 +18,11 @@ export const verifyRepo = (repoRoot: string): VerifyReport => {
   const changedFiles = base.baseSha ? getChangedFiles(repoRoot, base.baseSha) : [];
 
   resetPluginRegistry();
-  coreRules(config).forEach(registerRule);
+  getCoreRules(config).forEach(registerRule);
   loadPlugins(repoRoot);
 
-  const failures = getRegisteredRules().flatMap((rule) =>
-    rule.run({ repoRoot, changedFiles, config })
-  );
+  const runner = new RuleRunner(getRegisteredRules());
+  const { failures } = runner.run({ repoRoot, changedFiles });
 
   return {
     ok: failures.length === 0,

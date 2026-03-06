@@ -54,6 +54,14 @@ export const commandRegistry: RegisteredCommand[] = [
     }
   },
   {
+    name: 'plan',
+    description: 'Generate a structured fix plan from rule findings',
+    run: async ({ cwd, ci, format, quiet }) => {
+      const { runPlan } = await import('./plan.js');
+      return runPlan(cwd, { ci, format, quiet });
+    }
+  },
+  {
     name: 'fix',
     description: 'Apply safe, deterministic autofixes for verify findings',
     run: async ({ cwd, commandArgs, ci, explain, format, quiet }) => {

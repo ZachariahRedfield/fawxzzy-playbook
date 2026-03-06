@@ -1,5 +1,7 @@
 export type Severity = 'WARN' | 'RECOMMEND' | 'INFO';
 
+export type { FixHandler, FixResult, Rule, RuleContext, RuleFailure, RuleResult, Task } from './rules.js';
+
 export type Finding = {
   id: string;
   title: string;

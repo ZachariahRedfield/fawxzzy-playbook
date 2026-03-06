@@ -24,7 +24,7 @@ describe('plugin loader', () => {
       path.join(pluginDir, 'index.js'),
       `module.exports = {
         name: 'test-plugin',
-        rules: [{ id: 'plugin-rule', run: () => [] }],
+        rules: [{ id: 'plugin-rule', description: 'plugin rule', check: () => ({ failures: [] }) }],
         detectors: [{
           id: 'plugin-detector',
           label: 'Plugin Detector',

@@ -1,5 +1,6 @@
+import { applyExecutionPlan, generateExecutionPlan } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
-import { collectVerifyReport, type VerifyReport } from './verify.js';
+import { collectVerifyReport } from './verify.js';
 import { fixRegistry } from '../lib/fixes.js';
 import { loadVerifyRules } from '../lib/loadVerifyRules.js';
 
@@ -104,32 +105,29 @@ const outputJson = (result: FixJsonResult): void => {
 export const runFix = async (cwd: string, options: FixOptions): Promise<number> => {
   try {
     const verifyRules = await loadVerifyRules(cwd);
-    const initialReport = await collectVerifyReport(cwd);
     const onlyFilter = parseOnlyFilter(options.only);
+    const generatedPlan = generateExecutionPlan(cwd);
 
-    const candidateFailures = initialReport.failures.filter((failure: VerifyReport['failures'][number]) => {
+    const tasks = generatedPlan.tasks.filter((task: { ruleId: string }) => {
       if (!onlyFilter) {
         return true;
       }
-      return onlyFilter.has(failure.id);
+      return onlyFilter.has(task.ruleId);
     });
 
-    const plan = candidateFailures.map((failure: VerifyReport['failures'][number]) => {
-      const pluginRule = verifyRules.find((rule) => rule.id === failure.id || rule.check({ failure }));
-      return {
-        findingId: failure.id,
-        handler: pluginRule?.fix ?? fixRegistry[failure.id]
-      };
-    });
+    const handlers = Object.fromEntries(
+      tasks.map((task: { ruleId: string }) => {
+        const pluginRule = verifyRules.find((rule) => rule.id === task.ruleId);
+        return [task.ruleId, pluginRule?.fix ?? fixRegistry[task.ruleId]];
+      })
+    );
 
     const applied: AppliedFix[] = [];
     const skipped: SkippedFix[] = [];
 
-    if (!options.dryRun && !options.yes && !options.ci && plan.length > 0) {
+    if (!options.dryRun && !options.yes && !options.ci && tasks.length > 0) {
       const reason = 'Interactive prompts are not available; re-run with --yes to apply fixes.';
-      const fullSkipped = skipped.concat(
-        plan.map((entry: { findingId: string }) => ({ findingId: entry.findingId, reason }))
-      );
+      const fullSkipped = skipped.concat(tasks.map((entry: { ruleId: string }) => ({ findingId: entry.ruleId, reason })));
       const result: FixJsonResult = {
         schemaVersion: '1.0',
         command: 'fix',
@@ -150,18 +148,15 @@ export const runFix = async (cwd: string, options: FixOptions): Promise<number> 
       return ExitCode.Failure;
     }
 
-    for (const entry of plan) {
-      if (!entry.handler) {
-        skipped.push({
-          findingId: entry.findingId,
-          reason: 'Not auto-fixable in playbook fix v1.'
-        });
-        continue;
-      }
-
-      const result = await entry.handler({ repoRoot: cwd, dryRun: options.dryRun });
-      applied.push({ findingId: entry.findingId, filesChanged: result.filesChanged, summary: result.summary });
-    }
+    const execution = await applyExecutionPlan(cwd, tasks, handlers, { dryRun: options.dryRun });
+    applied.push(
+      ...execution.applied.map((item: { ruleId: string; filesChanged: string[]; summary: string }) => ({
+        findingId: item.ruleId,
+        filesChanged: item.filesChanged,
+        summary: item.summary
+      }))
+    );
+    skipped.push(...execution.skipped.map((item: { ruleId: string; reason: string }) => ({ findingId: item.ruleId, reason: item.reason })));
 
     const reverify = options.dryRun
       ? undefined
