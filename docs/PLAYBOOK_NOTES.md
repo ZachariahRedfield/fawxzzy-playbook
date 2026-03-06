@@ -142,3 +142,15 @@ Developer workflows should be executable commands rather than only written docum
 
 - Failure Mode:
   Multiple commands independently analyzing the repo instead of sharing the index.
+
+
+- Rule: Demo Validation Must Use Local CLI
+
+Demo validation must execute the locally built Playbook CLI
+rather than installing the CLI from npm.
+
+Reason:
+CI validates the current repository state, not a published version.
+
+Implementation:
+node packages/cli/dist/main.js <command>

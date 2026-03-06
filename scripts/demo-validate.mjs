@@ -3,10 +3,12 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const DEMO_REPO_URL = process.env.PLAYBOOK_DEMO_REPO_URL ?? 'https://github.com/ZachariahRedfield/playbook-demo.git';
-const CLI_PACKAGE = process.env.PLAYBOOK_CLI_PACKAGE ?? '@fawxzzy/playbook';
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const localCliEntrypoint = path.resolve(projectRoot, 'packages/cli/dist/main.js');
 
 const run = ({ cwd, command, args, allowFailure = false }) => {
   const result = spawnSync(command, args, {
@@ -61,12 +63,18 @@ const installDemoDependencies = (demoDir) => {
 const runPlaybookCli = ({ cwd, commandArgs, expectSuccess = true }) =>
   run({
     cwd,
-    command: 'npx',
-    args: ['--yes', '--package', CLI_PACKAGE, 'playbook', ...commandArgs],
+    command: 'node',
+    args: [localCliEntrypoint, ...commandArgs],
     allowFailure: !expectSuccess
   });
 
 const main = () => {
+  if (!fs.existsSync(localCliEntrypoint)) {
+    throw new Error(
+      `Local Playbook CLI build is missing at ${localCliEntrypoint}. Build the workspace first (pnpm -r build).`
+    );
+  }
+
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-demo-validate-'));
   const demoDir = path.join(tempRoot, 'playbook-demo');
 
