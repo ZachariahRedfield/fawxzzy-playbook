@@ -1,4 +1,4 @@
-import { collectAnalyzeReport } from './analyze.js';
+import { collectAnalyzeReport, ensureRepoIndex } from './analyze.js';
 import { collectDoctorReport } from './doctor.js';
 import { collectVerifyReport } from './verify.js';
 import { ExitCode } from '../lib/cliContract.js';
@@ -90,10 +90,11 @@ const resolveTopIssue = (
   return { id: warningRecommendation.id, description: warningRecommendation.title };
 };
 
-const toStatusResult = async (cwd: string): Promise<{ result: StatusResult; exitCode: ExitCode; topIssue: TopIssue | null }> => {
+const toStatusResult = async (cwd: string): Promise<{ result: StatusResult; exitCode: ExitCode; topIssue: TopIssue | null; repoRoot: string }> => {
   const doctor = await collectDoctorReport(cwd);
   const analyze = await collectAnalyzeReport(cwd);
   const verify = await collectVerifyReport(cwd);
+  ensureRepoIndex(analyze.repoPath);
 
   const warnings = analyze.recommendations.filter((rec: { severity: string }) => rec.severity === 'WARN').length;
   const errors = 0;
@@ -114,7 +115,7 @@ const toStatusResult = async (cwd: string): Promise<{ result: StatusResult; exit
       ? ExitCode.Success
       : ExitCode.PolicyFailure;
 
-  return { result, exitCode, topIssue: resolveTopIssue(verify, analyze) };
+  return { result, exitCode, topIssue: resolveTopIssue(verify, analyze), repoRoot: analyze.repoPath };
 };
 
 const printHuman = (
@@ -168,7 +169,7 @@ const printHuman = (
 
 export const runStatus = async (cwd: string, options: StatusOptions): Promise<number> => {
   try {
-    const { result, exitCode, topIssue } = await toStatusResult(cwd);
+    const { result, exitCode, topIssue, repoRoot } = await toStatusResult(cwd);
 
     if (options.format === 'json') {
       console.log(JSON.stringify(result, null, 2));
@@ -176,7 +177,7 @@ export const runStatus = async (cwd: string, options: StatusOptions): Promise<nu
     }
 
     if (!(options.quiet && result.ok)) {
-      const repoIndexSummary = readRepoIndexSummary(cwd);
+      const repoIndexSummary = readRepoIndexSummary(repoRoot);
       printHuman(result, options.ci, repoIndexSummary, topIssue);
     }
 

@@ -4,10 +4,11 @@ import type { AnalyzeReport } from './analyze.js';
 import type { VerifyReport } from './verify.js';
 
 const collectAnalyzeReport = vi.fn<(cwd: string) => Promise<AnalyzeReport>>();
+const ensureRepoIndex = vi.fn<(repoRoot: string) => string>();
 const collectDoctorReport = vi.fn();
 const collectVerifyReport = vi.fn<(cwd: string) => Promise<VerifyReport>>();
 
-vi.mock('./analyze.js', () => ({ collectAnalyzeReport }));
+vi.mock('./analyze.js', () => ({ collectAnalyzeReport, ensureRepoIndex }));
 vi.mock('./doctor.js', () => ({ collectDoctorReport }));
 vi.mock('./verify.js', () => ({ collectVerifyReport }));
 
@@ -35,6 +36,8 @@ describe('runStatus', () => {
     collectDoctorReport.mockReset();
     collectAnalyzeReport.mockReset();
     collectVerifyReport.mockReset();
+    ensureRepoIndex.mockReset();
+    ensureRepoIndex.mockImplementation((repoRoot: string) => `${repoRoot}/.playbook/repo-index.json`);
   });
 
   it('prints top issue guidance when findings exist', async () => {
@@ -84,6 +87,22 @@ describe('runStatus', () => {
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(payload.command).toBe('status');
     expect(payload).not.toHaveProperty('topIssue');
+
+    logSpy.mockRestore();
+  });
+
+  it('generates repo index when missing before printing status output', async () => {
+    const { runStatus } = await import('./status.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    collectDoctorReport.mockResolvedValue({ ok: true, exitCode: ExitCode.Success, findings: [] });
+    collectAnalyzeReport.mockResolvedValue(makeAnalyzeReport({ repoPath: '/tmp/repo-root' }));
+    collectVerifyReport.mockResolvedValue(makeVerifyReport());
+
+    const exitCode = await runStatus('/tmp/subdir', { ci: false, format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(ensureRepoIndex).toHaveBeenCalledWith('/tmp/repo-root');
 
     logSpy.mockRestore();
   });
