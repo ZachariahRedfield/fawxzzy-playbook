@@ -4,7 +4,7 @@
 
 When changing package layout or cross-package dependencies:
 
-1. Run `playbook diagram --repo . --out docs/ARCHITECTURE_DIAGRAMS.md`.
+1. Run `pnpm -r build && node packages/cli/dist/main.js diagram --repo . --out docs/ARCHITECTURE_DIAGRAMS.md` for repo-internal execution.
 2. Review `Structure` to understand folder/workspace containment.
 3. Review `Dependencies` to avoid introducing unintended couplings.
 4. Regenerate diagrams after architecture updates and commit the updated markdown.
@@ -63,3 +63,10 @@ Current product-facing command/artifact surface:
 `index` is the next planned command and is not implemented yet.
 
 If docs disagree with implementation, treat code as source of truth and realign docs.
+
+
+## Internal CI command rule
+
+- Rule: Repo-internal CI must execute the built CLI directly, not through `npx`.
+- Pattern: Separate internal CLI execution (`node packages/cli/dist/main.js ...`) from consumer-install execution (`npx --yes @fawxzzy/playbook ...`).
+- Failure Mode: `npx could not determine executable to run` indicates package/bin resolution failure, not necessarily a command implementation bug.

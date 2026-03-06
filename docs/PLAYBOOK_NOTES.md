@@ -81,7 +81,7 @@ Developer workflows should be executable commands rather than only written docum
 - WHAT changed: Wired `.github/workflows/ci.yml` to run the reusable `./.github/actions/playbook-ci` composite action and aligned demo integration docs to `ZachariahRedfield/playbook/actions/verify@main` with Node 22 + `--ci` inputs.
 - WHY it changed: Removes CI/documentation drift and placeholder adoption wiring so governance checks and external usage stay consistent.
 
-- WHAT changed: Removed the standalone `pnpm build` step from `.github/workflows/playbook-diagrams-check.yml` so the workflow only runs `pnpm playbook:diagram` before diff validation.
+- WHAT changed: Removed the standalone `pnpm build` step from `.github/workflows/playbook-diagrams-check.yml` so the workflow runs `pnpm playbook:diagram` (which builds and then runs `node packages/cli/dist/main.js`) before diff validation.
 - WHY it changed: Diagrams CI now builds only the Playbook CLI scope needed for diagram generation, avoiding unrelated package build toolchains (including engine/node tsup/rollup paths) that were blocking this workflow.
 
 - WHAT changed: Standardized Playbook npm distribution scope to `@fawxzzy`, replaced Unix-only `sh -c` lifecycle script direction with cross-platform Node-script guidance, and defined GitHub Action distribution as a composite action that runs `npx @fawxzzy/playbook verify --ci`.

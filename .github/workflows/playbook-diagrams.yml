@@ -41,7 +41,7 @@ jobs:
         run: pnpm -r build
 
       - name: Generate Playbook diagrams
-        run: pnpm --filter playbook exec node dist/main.js diagram --repo . --out docs/ARCHITECTURE_DIAGRAMS.md
+        run: node packages/cli/dist/main.js diagram --repo . --out docs/ARCHITECTURE_DIAGRAMS.md
 
       - name: Commit diagram updates
         uses: stefanzweifel/git-auto-commit-action@v5
