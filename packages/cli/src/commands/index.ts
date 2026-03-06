@@ -117,7 +117,7 @@ export const commandRegistry: RegisteredCommand[] = [
   },
   {
     name: 'doctor',
-    description: 'Check local setup (optionally apply safe fixes)',
+    description: 'Repository health entry point for architecture, governance, and issues',
     run: async ({ cwd, commandArgs, format, quiet }) => {
       const { runDoctor } = await import('./doctor.js');
       return runDoctor(cwd, {

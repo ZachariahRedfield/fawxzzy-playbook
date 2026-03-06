@@ -97,21 +97,19 @@ const toStatusResult = async (cwd: string): Promise<{ result: StatusResult; exit
   const warnings = analyze.recommendations.filter((rec: { severity: string }) => rec.severity === 'WARN').length;
   const errors = 0;
 
+  const environmentOk = doctor.governanceStatus.some((item: { id: string; ok: boolean }) => item.id === 'playbook-config' && item.ok);
+
   const result: StatusResult = {
     schemaVersion: '1.0',
     command: 'status',
-    ok: doctor.ok && verify.ok,
-    environment: { ok: doctor.exitCode !== ExitCode.EnvironmentPrereq },
+    ok: doctor.verifySummary.failures === 0 && verify.ok,
+    environment: { ok: environmentOk },
     analysis: { warnings, errors },
     verification: { ok: verify.ok },
     summary: { warnings, errors }
   };
 
-  const exitCode = doctor.exitCode === ExitCode.EnvironmentPrereq
-    ? ExitCode.EnvironmentPrereq
-    : verify.ok
-      ? ExitCode.Success
-      : ExitCode.PolicyFailure;
+  const exitCode = verify.ok ? ExitCode.Success : ExitCode.PolicyFailure;
 
   return { result, exitCode, topIssue: await resolveTopIssue(cwd, verify, analyze), repoRoot: analyze.repoPath };
 };

@@ -1,8 +1,5 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { execFileSync } from 'node:child_process';
-import { readConfig } from '../lib/config.js';
-import { emitResult, ExitCode } from '../lib/cliContract.js';
+import { generateRepositoryHealth } from '@zachariahredfield/playbook-engine';
+import { ExitCode } from '../lib/cliContract.js';
 import { doctorFixes } from '../lib/doctorFixes.js';
 
 type DoctorOptions = {
@@ -13,13 +10,7 @@ type DoctorOptions = {
   yes: boolean;
 };
 
-export type DoctorReport = {
-  ok: boolean;
-  exitCode: ExitCode;
-  summary: string;
-  findings: { id: string; level: 'info' | 'warning' | 'error'; message: string }[];
-  nextActions: string[];
-};
+export type DoctorReport = ReturnType<typeof generateRepositoryHealth>;
 
 type DoctorFixApplied = {
   id: string;
@@ -32,95 +23,92 @@ type DoctorFixSkipped = {
   reason: string;
 };
 
-type DoctorFixJsonResult = {
-  schemaVersion: '1.0';
-  command: 'doctor';
-  ok: boolean;
-  exitCode: ExitCode;
-  summary: string;
-  applied: DoctorFixApplied[];
-  skipped: DoctorFixSkipped[];
-  environment: DoctorReport;
+const toExitCode = (report: DoctorReport): ExitCode => {
+  if (report.verifySummary.failures > 0) {
+    return ExitCode.PolicyFailure;
+  }
+
+  return report.issues.length > 0 ? ExitCode.WarningsOnly : ExitCode.Success;
 };
 
-export const collectDoctorReport = async (cwd: string): Promise<DoctorReport> => {
-  const warnings: string[] = [];
-  const findings: DoctorReport['findings'] = [];
+export const collectDoctorReport = async (cwd: string): Promise<DoctorReport> => generateRepositoryHealth(cwd);
 
-  try {
-    execFileSync('git', ['--version'], { encoding: 'utf8' });
-    findings.push({ id: 'doctor.git.installed', level: 'info', message: 'git installed' });
-  } catch {
-    return {
-      ok: false,
-      exitCode: ExitCode.EnvironmentPrereq,
-      summary: 'Doctor checks failed: git is not installed.',
-      findings: [{ id: 'doctor.git.missing', level: 'error', message: 'git is not installed' }],
-      nextActions: ['Install git and rerun `playbook doctor --ci`.']
-    };
+const printHealthReport = (report: DoctorReport, safeFixCount: number): void => {
+  const statusIcon = (ok: boolean): string => (ok ? '✔' : '⚠');
+
+  console.log('Repository Health');
+  console.log('─────────────────');
+  console.log('');
+  console.log(`Framework: ${report.framework}`);
+  console.log(`Language: ${report.language}`);
+  console.log(`Architecture: ${report.architecture}`);
+  console.log('');
+  console.log('Governance');
+  console.log('──────────');
+  console.log('');
+
+  for (const item of report.governanceStatus) {
+    console.log(`${statusIcon(item.ok)} ${item.message}`);
   }
 
-  try {
-    execFileSync('git', ['rev-parse', '--is-inside-work-tree'], { cwd, encoding: 'utf8' });
-    findings.push({ id: 'doctor.git.repo', level: 'info', message: 'git repository detected' });
-  } catch {
-    warnings.push('Not inside a git repo.');
-    findings.push({ id: 'doctor.git.repo.missing', level: 'warning', message: 'Not inside a git repo.' });
-  }
+  console.log('');
+  console.log('Automation');
+  console.log('──────────');
+  console.log('');
+  console.log(`${safeFixCount} safe fixes available`);
 
-  const { config, warning } = await readConfig(cwd);
-  if (warning) {
-    warnings.push(warning);
-    findings.push({ id: 'doctor.config.warning', level: 'warning', message: warning });
+  if (report.suggestedActions.length > 0) {
+    console.log('');
+    console.log('Run:');
+    for (const action of report.suggestedActions) {
+      console.log(action);
+    }
   }
+};
 
-  for (const docPath of Object.values(config.docs) as string[]) {
-    const abs = path.join(cwd, docPath);
-    if (!fs.existsSync(abs)) {
-      const message = `Missing doc path: ${docPath}`;
-      warnings.push(message);
-      findings.push({ id: `doctor.docs.missing.${docPath.replace(/[^a-zA-Z0-9]+/g, '-')}`, level: 'warning', message });
+const printJsonReport = (report: DoctorReport): void => {
+  console.log(
+    JSON.stringify(
+      {
+        command: 'doctor',
+        framework: report.framework,
+        architecture: report.architecture,
+        issues: report.issues,
+        suggestedActions: report.suggestedActions
+      },
+      null,
+      2
+    )
+  );
+};
+
+const getSafeFixCount = async (cwd: string, dryRun: boolean): Promise<number> => {
+  let count = 0;
+
+  for (const fix of doctorFixes) {
+    const result = await fix.check({ cwd, dryRun });
+    if (result.applicable && fix.safeToAutoApply) {
+      count += 1;
     }
   }
 
-  if (warnings.length) {
-    return {
-      ok: true,
-      exitCode: ExitCode.WarningsOnly,
-      summary: 'Doctor checks completed with warnings.',
-      findings,
-      nextActions: ['Run `playbook init` and commit governance docs.']
-    };
-  }
-
-  return {
-    ok: true,
-    exitCode: ExitCode.Success,
-    summary: '✔ configuration and docs look good',
-    findings,
-    nextActions: []
-  };
+  return count;
 };
 
 export const runDoctor = async (cwd: string, options: DoctorOptions): Promise<number> => {
+  const report = await collectDoctorReport(cwd);
+
   if (!options.fix) {
-    const report = await collectDoctorReport(cwd);
+    if (options.format === 'json') {
+      printJsonReport(report);
+    } else if (!(options.quiet && report.issues.length === 0 && report.verifySummary.failures === 0)) {
+      const safeFixCount = await getSafeFixCount(cwd, options.dryRun);
+      printHealthReport(report, safeFixCount);
+    }
 
-    emitResult({
-      format: options.format,
-      quiet: options.quiet,
-      command: 'doctor',
-      ok: report.ok,
-      exitCode: report.exitCode,
-      summary: report.summary,
-      findings: report.findings,
-      nextActions: report.nextActions
-    });
-
-    return report.exitCode;
+    return toExitCode(report);
   }
 
-  const report = await collectDoctorReport(cwd);
   const plan: Array<{ id: string; description: string; safeToAutoApply: boolean }> = [];
 
   for (const fix of doctorFixes) {
@@ -161,66 +149,54 @@ export const runDoctor = async (cwd: string, options: DoctorOptions): Promise<nu
   const environment = shouldApply ? await collectDoctorReport(cwd) : report;
 
   if (options.format === 'json') {
-    const summary = shouldApply
-      ? `Doctor --fix completed: ${applied.length} applied, ${skipped.length} skipped.`
-      : `Doctor --fix preview: ${plan.length} fix(es) available.`;
-    const jsonResult: DoctorFixJsonResult = {
-      schemaVersion: '1.0',
-      command: 'doctor',
-      ok: environment.ok,
-      exitCode: environment.exitCode,
-      summary,
-      applied,
-      skipped,
-      environment
-    };
-
-    console.log(JSON.stringify(jsonResult, null, 2));
-    return environment.exitCode;
+    console.log(
+      JSON.stringify(
+        {
+          schemaVersion: '1.0',
+          command: 'doctor',
+          summary: shouldApply
+            ? `Doctor --fix completed: ${applied.length} applied, ${skipped.length} skipped.`
+            : `Doctor --fix preview: ${plan.length} fix(es) available.`,
+          applied,
+          skipped,
+          environment
+        },
+        null,
+        2
+      )
+    );
+    return toExitCode(environment);
   }
 
-  if (!(options.quiet && environment.ok && applied.length === 0 && skipped.length === 0)) {
-    console.log('Doctor fix plan:');
-    if (plan.length === 0) {
-      console.log('  (no safe deterministic fixes available)');
-    } else {
-      for (const entry of plan) {
-        console.log(`  - ${entry.id}: ${entry.description}`);
-      }
+  console.log('Doctor fix plan:');
+  if (plan.length === 0) {
+    console.log('  (no safe deterministic fixes available)');
+  } else {
+    for (const entry of plan) {
+      console.log(`  - ${entry.id}: ${entry.description}`);
     }
+  }
 
-    console.log(options.dryRun ? 'Planned changes:' : 'Applied fixes:');
-    if (applied.length === 0) {
-      console.log('  (none)');
-    } else {
-      for (const entry of applied) {
-        console.log(`  - ${entry.id}: ${entry.description}`);
-        for (const change of entry.changes) {
-          console.log(`    ${change}`);
-        }
-      }
-    }
-
-    console.log('Skipped fixes:');
-    if (skipped.length === 0) {
-      console.log('  (none)');
-    } else {
-      for (const entry of skipped) {
-        console.log(`  - ${entry.id}: ${entry.reason}`);
+  console.log(options.dryRun ? 'Planned changes:' : 'Applied fixes:');
+  if (applied.length === 0) {
+    console.log('  (none)');
+  } else {
+    for (const entry of applied) {
+      console.log(`  - ${entry.id}: ${entry.description}`);
+      for (const change of entry.changes) {
+        console.log(`    ${change}`);
       }
     }
   }
 
-  emitResult({
-    format: options.format,
-    quiet: options.quiet,
-    command: 'doctor',
-    ok: environment.ok,
-    exitCode: environment.exitCode,
-    summary: environment.summary,
-    findings: environment.findings,
-    nextActions: environment.nextActions
-  });
+  console.log('Skipped fixes:');
+  if (skipped.length === 0) {
+    console.log('  (none)');
+  } else {
+    for (const entry of skipped) {
+      console.log(`  - ${entry.id}: ${entry.reason}`);
+    }
+  }
 
-  return environment.exitCode;
+  return toExitCode(environment);
 };

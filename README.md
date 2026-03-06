@@ -48,9 +48,20 @@ Playbook's canonical remediation loop is:
 
 `fix` remains available as a convenience direct-remediation path (for example `--dry-run`, `--yes`, `--only`) when you want a single-command local workflow instead of explicit plan/apply steps.
 
+## Getting Started
+
+Run:
+
+```bash
+npx playbook doctor
+```
+
+`playbook doctor` provides a high-level repository health report with framework, architecture, governance checks, and suggested next actions.
+
 ## Quickstart
 
 ```bash
+npx playbook doctor
 npx playbook status
 npx playbook rules
 npx playbook explain <ruleId>

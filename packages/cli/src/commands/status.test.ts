@@ -44,7 +44,7 @@ describe('runStatus', () => {
     const { runStatus } = await import('./status.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-    collectDoctorReport.mockResolvedValue({ ok: true, exitCode: ExitCode.Success, findings: [] });
+    collectDoctorReport.mockResolvedValue({ governanceStatus: [{ id: 'playbook-config', ok: true }], verifySummary: { failures: 0 } });
     collectAnalyzeReport.mockResolvedValue(
       makeAnalyzeReport({
         ok: false,
@@ -77,7 +77,7 @@ describe('runStatus', () => {
     const { runStatus } = await import('./status.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-    collectDoctorReport.mockResolvedValue({ ok: true, exitCode: ExitCode.Success, findings: [] });
+    collectDoctorReport.mockResolvedValue({ governanceStatus: [{ id: 'playbook-config', ok: true }], verifySummary: { failures: 0 } });
     collectAnalyzeReport.mockResolvedValue(makeAnalyzeReport());
     collectVerifyReport.mockResolvedValue(makeVerifyReport());
 
@@ -95,7 +95,7 @@ describe('runStatus', () => {
     const { runStatus } = await import('./status.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-    collectDoctorReport.mockResolvedValue({ ok: true, exitCode: ExitCode.Success, findings: [] });
+    collectDoctorReport.mockResolvedValue({ governanceStatus: [{ id: 'playbook-config', ok: true }], verifySummary: { failures: 0 } });
     collectAnalyzeReport.mockResolvedValue(makeAnalyzeReport({ repoPath: '/tmp/repo-root' }));
     collectVerifyReport.mockResolvedValue(makeVerifyReport());
 
