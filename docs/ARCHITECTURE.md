@@ -1,36 +1,47 @@
 # Playbook Architecture
 
-Playbook now follows a platform-style monorepo layout:
+This document describes **current-state architecture**. Future-state initiatives live in [PLAYBOOK_PRODUCT_ROADMAP.md](./PLAYBOOK_PRODUCT_ROADMAP.md).
 
-## packages/core
+## System layering
 
-Pure governance engine.
+Playbook is organized as a layered monorepo:
 
-- Exposes `analyze(ctx, opts)` and `verify(ctx, opts)`.
-- Defines shared report/finding/severity/result types.
-- Contains deterministic, side-effect free business logic (no direct `fs`, `process`, or `console` use).
+- **`packages/cli`**: command parsing, output rendering, and exit codes.
+- **`packages/engine`**: deterministic analysis, verification, plan generation, and fix execution.
+- **`packages/node`**: Node/runtime adapter utilities used by CLI and engine integration points.
+- **`packages/core`**: shared core contracts/utilities retained for package compatibility.
 
-## packages/node
+Primary flow:
 
-Node runtime adapter.
+`CLI -> engine (+ node adapter) -> repository`
 
-- Exposes `createNodeContext({ cwd? })`.
-- Implements file-system and git-backed capabilities used by core.
-- Detects repository root and provides changed-file/base-ref helpers.
+## CLI command architecture
 
-## packages/cli
+- CLI command handlers live in `packages/cli/src/commands/`.
+- `packages/cli/src/commands/index.ts` is the central command registry and dispatch surface.
+- Shared CLI helpers live in `packages/cli/src/lib/`.
+- Engine behavior and rule execution logic should stay in `packages/engine`, not command files.
 
-Thin user-facing command surface.
+This separation keeps command modules thin and keeps governance logic reusable/testable.
 
-- Parses `process.argv` and command flags.
-- Creates node context via `createNodeContext`.
-- Calls core engine functions and handles output formatting/exit codes.
-- Maintains published bin surface: `playbook -> dist/main.js`.
+## Analyze -> verify -> plan -> apply flow
 
-## Package layering
+Playbook governance execution follows a staged flow:
 
-`cli -> node + core`  
-`node -> core (types)`  
-`core -> (no runtime adapters)`
+1. **`analyze`** detects repository structure and stack signals.
+2. **`verify`** executes deterministic governance rules and returns findings.
+3. **`plan`** converts verify failures into ordered, machine-safe tasks.
+4. **Apply stage** executes fix tasks (currently surfaced through `playbook fix`).
 
-This keeps policy logic portable while preserving current CLI behavior.
+`plan` and `fix` are the machine-safe planning/execution path for remediation.
+
+## Deterministic task and output contracts
+
+The plan/execution pipeline is deterministic by contract:
+
+- Verify findings are sorted before task generation.
+- Task fields are stable (`ruleId`, `file`, `action`, `autoFix`).
+- Nullable values are normalized (`file: null` when evidence is absent).
+- JSON responses are structured for automation, not best-effort prose parsing.
+
+Deterministic JSON output is treated as a public interface for CI, tooling, and agents.

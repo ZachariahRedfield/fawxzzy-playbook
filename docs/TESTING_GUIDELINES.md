@@ -1,69 +1,44 @@
 # Testing Guidelines
 
-All new Playbook CLI commands and rule-engine rules must include tests at creation time.
+Playbook treats tests as a product feature. As commands/rules are added, coverage must expand with them.
+
+## Command-level expectations
+
+Each new CLI command should add:
+
+- command-local CLI tests (`packages/cli/src/commands/<command>.test.ts`)
+- engine-level tests for underlying deterministic logic (if engine behavior is introduced)
+- JSON contract tests for `--json` output shape/stability
+- integration/smoke coverage when behavior spans command + engine + filesystem
 
 ## Unit tests
 
-Each new CLI command module must include a command-local unit test file:
+Command tests should validate:
 
-- Source: `packages/cli/src/commands/<command>.ts`
-- Test: `packages/cli/src/commands/<command>.test.ts`
-
-Examples:
-
-- `status.ts` → `status.test.ts`
-- `plan.ts` → `plan.test.ts`
-- `apply.ts` → `apply.test.ts`
-
-Unit tests should validate command behavior for:
-
-- expected success output
-- expected failure output
-- structured JSON output where supported
+- success and failure behavior
 - exit code behavior
+- deterministic JSON output fields and envelope shape
 
-## Integration tests
+## Integration coverage
 
-Rule-engine interactions must include integration coverage for command-to-rule and rule-to-task execution paths.
+When command flows span the engine, include integration paths such as:
 
-Required scenarios:
+- `verify` -> rule execution
+- `plan` -> verify findings to task mapping
+- `fix` -> fix handler execution
 
-- `verify` → rule execution
-- `plan` → rule → task mapping
-- `apply` → fix handler execution
+## Smoke test philosophy
 
-Integration tests should validate rule IDs, findings, and remediation/fix behavior in realistic repo states.
+Smoke tests validate **built/packed/installed behavior**, not only in-repo execution.
 
-## Smoke tests
-
-End-to-end CLI workflows must be exercised by `scripts/smoke-test.mjs`.
-
-At minimum, smoke coverage must include:
-
-- `init`
-- `status`
-- `plan`
-- `apply`
-- `verify`
+`scripts/smoke-test.mjs` should verify key commands and JSON contract shapes end-to-end, including expected fields like `schemaVersion`, `command`, `ok`, and command-specific payloads.
 
 ## CI enforcement
 
-CI enforces this policy with `scripts/check-tests.mjs`.
+CI enforces test-presence policy with `scripts/check-tests.mjs`.
 
 The check fails when a newly added CLI command file or verify-rule file is missing a corresponding test file.
 
 ## Verify rule
 
-`verify.rule.tests.required` is a core verify rule that fails verification when changed command/rule files do not have required tests.
-
-## Reporting environment-specific test failures
-
-When a test failure is attributable to infrastructure or environment behavior, document it explicitly so reviewers do not misclassify it as a product regression.
-
-Preferred wording for the current `plan.test.ts` environment issue:
-
-> Ran CLI plan unit tests with `pnpm --filter @fawxzzy/playbook test -- plan.test.ts`. In this environment, the run failed due to a Vite import-analysis workspace package entry resolution issue. This appears to be environment-specific and does not indicate a functional regression in the new plan contract behavior.
-
-Stronger wording for PR/testing notes:
-
-> Ran CLI plan unit tests with `pnpm --filter @fawxzzy/playbook test -- plan.test.ts`. The failure observed here is attributable to environment-specific Vite import-analysis behavior when resolving workspace package entrypoints, rather than to the plan contract changes themselves. No evidence from this failure suggests a regression in the new contract behavior.
+`verify.rule.tests.required` is a core verify rule that fails verification when changed command/rule files do not include required test coverage.

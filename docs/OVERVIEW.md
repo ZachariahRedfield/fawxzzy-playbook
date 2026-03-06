@@ -15,3 +15,12 @@ This keeps governance deterministic and auditable instead of relying on informal
 AI agents can ship code quickly, but speed increases risk when repository constraints are implicit. Without explicit rules, teams experience documentation drift, architectural erosion, and inconsistent implementation decisions.
 
 Playbook gives repositories structured guardrails so agent-assisted changes stay aligned with engineering intent.
+## Product positioning
+
+Playbook is an AI-operable development tool:
+
+- human-usable in local CLI workflows
+- machine-readable through deterministic JSON contracts
+- CI-enforceable with stable exit codes and policy checks
+- agent-compatible through explicit command and rule surfaces
+

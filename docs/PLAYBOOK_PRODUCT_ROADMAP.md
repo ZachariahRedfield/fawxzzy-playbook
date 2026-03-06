@@ -97,6 +97,23 @@ Governance Engine
 Playbook Cloud (Optional)
 YEAR 1 OBJECTIVE
 
+## Product positioning (current)
+
+Playbook is positioned as an **AI-operable development tool**:
+
+- human-usable for local engineering workflows
+- machine-readable for CI and automation
+- CI-enforceable through deterministic exit codes and contracts
+- agent-compatible through stable JSON responses and explicit command surfaces
+
+## Roadmap framing (future-state)
+
+The following items are planned and should be treated as future-state roadmap work:
+
+- **Playbook Demo Repo (`playbook-demo`)**: a fast first-run onboarding repository where developers can run `analyze`/`verify` immediately and see value in minutes.
+- **AI Repository Intelligence (`playbook index`)**: planned command to generate `.playbook/repo-index.json` describing modules, dependencies, framework signals, schema surfaces, and architecture contracts for AI-safe repository understanding/modification.
+
+
 Establish Playbook as a trusted governance tool in the developer ecosystem.
 
 Target outcomes:
@@ -207,6 +224,12 @@ Tooling & Distribution (Package Manager + Action + Demo Repo)
 - [ ] Provide a first-class GitHub Action distribution path via a composite action that runs `npx @fawxzzy/playbook verify`.
 
 Near-Term Productization Milestones
+
+### Future milestone: AI Repository Intelligence (planned)
+
+- [ ] Add `playbook index` command (future) to emit `.playbook/repo-index.json`.
+- [ ] Include deterministic repository metadata: module boundaries, internal dependencies, detected framework/runtime signals, and documented architecture contracts.
+- [ ] Treat index output as machine-readable context for safe AI-assisted repository changes.
 
 - [ ] CLI command architecture cleanup: standardize all CLI commands under `packages/cli/src/commands/`, wire `packages/cli/src/commands/index.ts` as the single command registry, and keep shared helpers under `packages/cli/src/lib/`.
 - [ ] Command documentation baseline: add `docs/commands/` with short per-command docs for `analyze`, `doctor`, `diagram`, and `upgrade` so contributors and AI agents can quickly discover supported behavior.
@@ -592,7 +615,7 @@ Output:
 {
   "tasks": [
     {
-      "rule": "PB001",
+      "ruleId": "PB001",
       "file": "docs/ARCHITECTURE.md",
       "action": "update architecture docs",
       "autoFix": true
@@ -605,17 +628,17 @@ Purpose:
 
 Allow AI agents and automation to determine what actions should be taken.
 
-Feature: playbook apply
+Feature: playbook fix (current apply-stage command)
 
-Execute a planned fix deterministically.
+Execute deterministic eligible autofixes from governance findings.
 
 Example:
 
-npx playbook apply PB001
+npx playbook fix --yes
 
 Purpose:
 
-Allow tools and agents to apply changes safely without editing files directly.
+Allow tools and agents to apply changes safely without editing files directly through the current command surface.
 
 Feature: Plugin Ecosystem
 
@@ -642,7 +665,7 @@ Expose machine-readable interfaces:
 - playbook analyze --json
 - playbook status --json
 - playbook plan --json
-- playbook apply
+- playbook fix --json
 - playbook verify --json
 
 Purpose:
