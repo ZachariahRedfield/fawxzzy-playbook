@@ -40,3 +40,31 @@ A good demo repo should provide a stable before/after story:
 - verifiable clean end state
 
 This keeps the demo useful as both an onboarding surface and a governance learning artifact.
+
+## Rule: optimize for product clarity over command breadth
+
+The demo repo is the product perception layer.
+
+Design decisions in `playbook-demo` should prioritize explaining Playbook's value clearly, even if that means covering fewer commands in a single walkthrough.
+
+## Pattern: analyze → verify → plan must align on the same issues
+
+The core demo narrative should be intentionally sequenced:
+
+1. `analyze` highlights the expected architectural drift signals.
+2. `verify` confirms governance failures on the same drift themes.
+3. `plan` proposes deterministic remediation for those exact items.
+
+All three steps should describe the same small set of intentional issues so users can trust the flow from diagnosis to action.
+
+## Pattern: model realistic architectural drift
+
+Intentional demo issues should resemble real repository drift (for example, docs lagging after architectural changes), not random or artificial breakage.
+
+This keeps outputs educational, credible, and easy to transfer to real repos.
+
+## Failure mode: too many intentional issues create noise
+
+If the demo contains too many seeded problems, outputs from `analyze`, `verify`, and `plan` feel noisy and less trustworthy.
+
+Keep issue count low and legible so command output remains screenshot-friendly for README/docs and easy to follow in live demos.
