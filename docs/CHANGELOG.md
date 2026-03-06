@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- WHAT: Added a first-class `playbook demo` command with deterministic text and JSON onboarding contracts, registered it in CLI help/command registry, added command tests, and documented the CLI-first demo discovery path. WHY: Makes the demo repository discoverable from the product surface and gives humans/agents a stable side-effect-free onboarding workflow without environment-dependent behavior.
 - WHAT: Bumped root toolchain pin from `pnpm@10.0.0` to `pnpm@10.23.0` and updated CI Corepack activation to read `package.json#packageManager` in reusable and diagram workflows. WHY: Keeps pnpm provisioning deterministic while reducing version drift risk across local and CI runs.
 - WHAT: Added a minimal root `.gitattributes` (LF for lockfile/shell/scripts/yaml), made smoke-test runtime/path logging explicit, and added a smoke assertion for bundled `packages/cli/dist/templates/repo`. WHY: Prevents cross-platform lockfile EOL churn and keeps CI/package init behavior deterministic with clearer diagnostics.
 - WHAT: CLI builds now copy `templates/repo` into `packages/cli/dist/templates/repo` via a post-`tsc` step. WHY: `tsc` does not copy non-TypeScript assets, which caused `playbook init` smoke tests and packaged CLI runs to fail with missing templates.

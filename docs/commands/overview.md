@@ -46,3 +46,11 @@ Command roles:
 - `fix`: convenience/direct remediation path for local/manual workflows (`--dry-run`, `--yes`, `--only`).
 
 Pattern: reviewed intent before execution. In automation, generate plan output first, review the artifact, then execute that exact artifact.
+
+
+## Onboarding discoverability doctrine
+
+- Rule: demo discovery should be available from the Playbook CLI, not only repository docs.
+- Pattern: onboarding commands should return both human-readable output and a machine-readable JSON contract.
+- Rule: initial demo command behavior must remain deterministic and side-effect free.
+- Failure mode: environment-dependent onboarding steps (implicit clone/open/install behavior) reduce trust when user systems vary.

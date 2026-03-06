@@ -8,13 +8,24 @@ Playbook is a governance CLI for repositories that keeps checks deterministic fo
 
 ## Try Playbook in 30 seconds
 
-The fastest way to experience Playbook is the demo repository.
+The canonical way to discover the official demo flow is:
 
+```bash
+npx playbook demo
+```
+
+Then run the guided onboarding workflow in the demo repository:
+
+```bash
 git clone https://github.com/ZachariahRedfield/playbook-demo
 cd playbook-demo
-
-- npm install
-- npx playbook verify
+npm install
+npx playbook analyze
+npx playbook verify
+npx playbook explain
+npx playbook fix
+npx playbook verify
+```
 
 ## Canonical remediation workflow
 

@@ -20,6 +20,15 @@ Automation-safe variant:
 - `--quiet`: suppress success output in text mode.
 - `--explain`: include rationale/remediation context in text mode where supported.
 
+
+## `playbook demo [--json] [--quiet]`
+
+Show the official Playbook demo repository and deterministic first-run workflow.
+
+- Returns a side-effect-free onboarding contract in both text and JSON modes.
+- JSON includes stable fields for automation (`schemaVersion`, `command`, `repository`, `workflow`, `expectedInitialFindings`).
+- Command behavior is intentionally deterministic in v1: no auto-clone, no shell execution, no browser opening.
+
 ## `playbook init [--ci] [--json] [--quiet]`
 
 Initialize Playbook baseline docs and configuration for a repository.
