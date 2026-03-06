@@ -39,4 +39,37 @@ describe('verify -> plan -> apply -> verify workflow', () => {
     const finalVerify = verifyRepo(root);
     expect(finalVerify.ok).toBe(true);
   });
+
+  it('includes plugin findings in generated plan tasks', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-workflow-plugin-'));
+    fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'fixture' }));
+    fs.writeFileSync(
+      path.join(root, 'playbook.config.json'),
+      JSON.stringify({ version: 1, plugins: ['test-plugin'] })
+    );
+
+    const pluginDir = path.join(root, 'node_modules', 'test-plugin');
+    fs.mkdirSync(pluginDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pluginDir, 'index.js'),
+      `module.exports = {
+        name: 'test-plugin',
+        rules: [{
+          id: 'plugin-rule',
+          description: 'plugin rule',
+          check: () => ({ failures: [{ id: 'plugin.failure', message: 'plugin finding', evidence: 'docs/PLUGIN.md' }] })
+        }]
+      };`
+    );
+
+    const plan = generateExecutionPlan(root);
+    expect(plan.tasks).toEqual([
+      {
+        ruleId: 'plugin.failure',
+        file: 'docs/PLUGIN.md',
+        action: 'plugin finding',
+        autoFix: false
+      }
+    ]);
+  });
 });

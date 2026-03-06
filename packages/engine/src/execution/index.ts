@@ -1,4 +1,4 @@
-import type { FixHandler, Task } from './types.js';
+import type { FixHandler, PlanTask } from './types.js';
 import { loadConfig } from '../config/load.js';
 import { getChangedFiles } from '../git/diff.js';
 import { resolveDiffBase } from '../git/base.js';
@@ -29,7 +29,7 @@ export const runRuleExecution = (repoRoot: string) => {
   return runner.run({ repoRoot, changedFiles: collectExecutionInputs(repoRoot).changedFiles });
 };
 
-export const generateExecutionPlan = (repoRoot: string): { tasks: Task[] } => {
+export const generateExecutionPlan = (repoRoot: string): { tasks: PlanTask[] } => {
   const findings = runRuleExecution(repoRoot);
   const planner = new PlanGenerator();
   return planner.generate(findings.failures);
@@ -37,7 +37,7 @@ export const generateExecutionPlan = (repoRoot: string): { tasks: Task[] } => {
 
 export const applyExecutionPlan = async (
   repoRoot: string,
-  tasks: Task[],
+  tasks: PlanTask[],
   handlers: Record<string, FixHandler | undefined>,
   options: { dryRun: boolean }
 ) => {
@@ -48,3 +48,4 @@ export const applyExecutionPlan = async (
 export { RuleRunner } from './ruleRunner.js';
 export { PlanGenerator } from './planGenerator.js';
 export { FixExecutor } from './fixExecutor.js';
+export type { PlanTask, RuleFailure, Rule, FixHandler } from './types.js';

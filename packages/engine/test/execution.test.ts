@@ -29,12 +29,24 @@ describe('execution pipeline units', () => {
 
     expect(plan.tasks).toEqual([
       {
-        id: 'task-1',
         ruleId: 'PB001',
-        action: 'update architecture docs',
         file: 'docs/ARCHITECTURE.md',
-        fix: 'update architecture docs'
+        action: 'update architecture docs',
+        autoFix: true
       }
+    ]);
+  });
+
+  it('PlanGenerator sorts tasks deterministically and marks non-fixable findings', () => {
+    const planner = new PlanGenerator();
+    const plan = planner.generate([
+      { id: 'B', message: 'second' },
+      { id: 'A', message: 'first' }
+    ]);
+
+    expect(plan.tasks).toEqual([
+      { ruleId: 'A', file: null, action: 'first', autoFix: false },
+      { ruleId: 'B', file: null, action: 'second', autoFix: false }
     ]);
   });
 
@@ -45,8 +57,8 @@ describe('execution pipeline units', () => {
 
     const result = await executor.apply(
       [
-        { id: 'task-1', ruleId: 'known', action: 'apply known fix' },
-        { id: 'task-2', ruleId: 'unknown', action: 'apply unknown fix' }
+        { ruleId: 'known', file: null, action: 'apply known fix', autoFix: true },
+        { ruleId: 'unknown', file: null, action: 'apply unknown fix', autoFix: false }
       ],
       { repoRoot: '.', dryRun: false }
     );

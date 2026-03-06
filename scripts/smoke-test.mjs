@@ -104,7 +104,15 @@ try {
   }
 
   run(nodeBin, [cliPath, 'verify'], { cwd: projectDir });
+  run(nodeBin, [cliPath, 'plan'], { cwd: projectDir });
   run(nodeBin, [cliPath, 'status'], { cwd: projectDir });
+
+  const planJson = runWithStatus(nodeBin, [cliPath, 'plan', '--json'], { cwd: projectDir });
+  const planJsonResult = JSON.parse(planJson.stdout);
+
+  if (planJsonResult.schemaVersion !== '1.0' || planJsonResult.command !== 'plan' || !Array.isArray(planJsonResult.tasks)) {
+    throw new Error('smoke-test failed: expected plan --json to return schemaVersion=1.0, command=plan, and tasks array');
+  }
 
   const rulesJson = runWithStatus(nodeBin, [cliPath, 'rules', '--json'], { cwd: projectDir });
   const rulesJsonResult = JSON.parse(rulesJson.stdout);

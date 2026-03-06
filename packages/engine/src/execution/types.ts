@@ -11,12 +11,11 @@ export type Rule = {
   check(context: { repoRoot: string; changedFiles: string[] }): { failures: RuleFailure[] };
 };
 
-export type Task = {
-  id: string;
+export type PlanTask = {
   ruleId: string;
+  file: string | null;
   action: string;
-  file?: string;
-  fix?: string;
+  autoFix: boolean;
 };
 
 export type FixHandler = (context: { repoRoot: string; dryRun: boolean }) => Promise<{ filesChanged: string[]; summary: string }>;

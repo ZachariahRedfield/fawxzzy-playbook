@@ -1,6 +1,24 @@
 import { generateExecutionPlan } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 
+const renderTextPlan = (tasks: Array<{ ruleId: string; action: string }>): void => {
+  console.log('Plan');
+  console.log('────────');
+  console.log('');
+  console.log(`Tasks: ${tasks.length}`);
+  console.log('');
+
+  if (tasks.length === 0) {
+    console.log('(none)');
+    return;
+  }
+
+  for (const task of tasks) {
+    const sentenceAction = task.action.charAt(0).toUpperCase() + task.action.slice(1);
+    console.log(`${task.ruleId} ${sentenceAction}`);
+  }
+};
+
 export const runPlan = async (
   cwd: string,
   options: { format: 'text' | 'json'; ci: boolean; quiet: boolean }
@@ -25,17 +43,7 @@ export const runPlan = async (
   }
 
   if (!options.quiet) {
-    console.log('Planned tasks:');
-    if (plan.tasks.length === 0) {
-      console.log('  (none)');
-    } else {
-      for (const task of plan.tasks) {
-        console.log(`  - [${task.ruleId}] ${task.action}`);
-        if (task.file) {
-          console.log(`    file: ${task.file}`);
-        }
-      }
-    }
+    renderTextPlan(plan.tasks);
   }
 
   return ExitCode.Success;

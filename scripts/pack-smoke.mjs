@@ -157,6 +157,7 @@ try {
   runLogged(nodeBin, [binPath, 'init'], { cwd: projectDir });
   runLogged(nodeBin, [binPath, 'analyze'], { cwd: projectDir });
   runLogged(nodeBin, [binPath, 'verify'], { cwd: projectDir });
+  runLogged(nodeBin, [binPath, 'plan', '--json'], { cwd: projectDir });
 
   ensureInitScaffoldContract(projectDir);
 

@@ -19,13 +19,14 @@ export type FixResult = {
   summary: string;
 };
 
-export type Task = {
-  id: string;
+export type PlanTask = {
   ruleId: string;
+  file: string | null;
   action: string;
-  file?: string;
-  fix?: string;
+  autoFix: boolean;
 };
+
+export type Task = PlanTask;
 
 export interface Rule {
   id: string;
