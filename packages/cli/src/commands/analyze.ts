@@ -158,12 +158,23 @@ export const buildRepoIndex = (repoRoot: string): RepoIndex => {
   };
 };
 
+const repoIndexPathForRoot = (repoRoot: string): string => path.join(repoRoot, '.playbook', 'repo-index.json');
+
 const writeRepoIndex = (repoRoot: string): string => {
-  const outPath = path.join(repoRoot, '.playbook', 'repo-index.json');
+  const outPath = repoIndexPathForRoot(repoRoot);
   const payload = buildRepoIndex(repoRoot);
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
   return outPath;
+};
+
+export const ensureRepoIndex = (repoRoot: string): string => {
+  const outPath = repoIndexPathForRoot(repoRoot);
+  if (fs.existsSync(outPath)) {
+    return outPath;
+  }
+
+  return writeRepoIndex(repoRoot);
 };
 
 const resolveRecommendationGuidance = (recommendation: AnalyzeRecommendation): { explanation?: string; remediation?: string[] } => {
