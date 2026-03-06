@@ -48,7 +48,9 @@ Global options:
   --version                   Show version`);
 };
 
-if (args.length === 0 || parseFlag(args, '--help') || parseFlag(args, '-h')) {
+const globalHelpRequested = parseFlag(args, '--help') || parseFlag(args, '-h');
+
+if (args.length === 0 || (globalHelpRequested && !commandArg)) {
   showHelp();
   process.exit(ExitCode.Success);
 }

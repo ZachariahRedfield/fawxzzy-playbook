@@ -26,9 +26,15 @@ export const commandRegistry: RegisteredCommand[] = [
   {
     name: 'init',
     description: 'Initialize playbook docs/config',
-    run: async ({ cwd, format, quiet, ci }) => {
+    run: async ({ cwd, commandArgs, format, quiet, ci }) => {
       const { runInit } = await import('./init.js');
-      return runInit(cwd, { format, quiet, ci });
+      return runInit(cwd, {
+        format,
+        quiet,
+        ci,
+        force: parseFlag(commandArgs, '--force'),
+        help: parseFlag(commandArgs, '--help') || parseFlag(commandArgs, '-h')
+      });
     }
   },
   {

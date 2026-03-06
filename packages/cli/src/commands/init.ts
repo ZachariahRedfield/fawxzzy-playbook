@@ -1,111 +1,149 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { ensureDir, listFilesRecursive } from "../lib/fs.js";
-import { emitResult, ExitCode } from "../lib/cliContract.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const resolveRepoTemplateRoot = (): string | undefined => {
-  let current = __dirname;
-
-  while (true) {
-    const candidate = path.resolve(current, "templates/repo");
-    if (fs.existsSync(candidate)) {
-      return candidate;
-    }
-
-    const parent = path.dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-
-    current = parent;
-  }
-};
-
-const resolveTemplateRoot = (): string => {
-  const envTemplateRoot = process.env.PLAYBOOK_TEMPLATES_DIR;
-  if (envTemplateRoot) {
-    return envTemplateRoot;
-  }
-
-  const distTemplateRoot = path.resolve(__dirname, "../templates/repo");
-  if (fs.existsSync(distTemplateRoot)) {
-    return distTemplateRoot;
-  }
-
-  const repoTemplateRoot = resolveRepoTemplateRoot();
-  if (repoTemplateRoot) {
-    return repoTemplateRoot;
-  }
-
-  return distTemplateRoot;
-};
-
-const templateRoot = resolveTemplateRoot();
+import fs from 'node:fs';
+import path from 'node:path';
+import { emitResult, ExitCode } from '../lib/cliContract.js';
 
 type InitOptions = {
   format: 'text' | 'json';
   quiet: boolean;
   ci: boolean;
+  force: boolean;
+  help: boolean;
+};
+
+type ScaffoldFile = {
+  relativePath: string;
+  content: string;
+};
+
+const INIT_FILES: ScaffoldFile[] = [
+  {
+    relativePath: path.join('docs', 'ARCHITECTURE.md'),
+    content: '# Architecture\n\nDescribe your system architecture and major components.\n'
+  },
+  {
+    relativePath: path.join('docs', 'CHANGELOG.md'),
+    content: '# Changelog\n\nDocument notable changes to this repository here.\n'
+  },
+  {
+    relativePath: path.join('docs', 'PLAYBOOK_CHECKLIST.md'),
+    content: '# Playbook Checklist\n\nTrack implementation and governance checklist items.\n'
+  },
+  {
+    relativePath: path.join('docs', 'PLAYBOOK_NOTES.md'),
+    content: '# Playbook Notes\n\nCapture release notes, decisions, and implementation context.\n'
+  },
+  {
+    relativePath: path.join('.playbook', 'config.json'),
+    content: '{\n  "version": 1\n}\n'
+  }
+];
+
+const normalizeForOutput = (relativePath: string): string => relativePath.split(path.sep).join('/');
+
+const showInitHelp = (): void => {
+  console.log(`Usage: playbook init [options]
+
+Scaffold the minimal Playbook docs and config into the current repository.
+
+Options:
+  --force                     Overwrite existing files
+  --help                      Show help`);
 };
 
 export const runInit = (cwd: string, options: InitOptions): number => {
-  if (!fs.existsSync(templateRoot)) {
-    emitResult({
-      format: options.format,
-      quiet: options.quiet,
-      command: 'init',
-      ok: false,
-      exitCode: ExitCode.EnvironmentPrereq,
-      summary: `Templates directory not found: ${templateRoot}`,
-      findings: [
-        {
-          id: 'init.templates.missing',
-          level: 'error',
-          message: 'Templates directory not found.'
-        }
-      ],
-      nextActions: ['Set PLAYBOOK_TEMPLATES_DIR to a valid templates/repo directory.']
-    });
-    return ExitCode.EnvironmentPrereq;
+  if (options.help) {
+    showInitHelp();
+    return ExitCode.Success;
   }
 
-  const files = listFilesRecursive(templateRoot);
   const created: string[] = [];
+  const overwritten: string[] = [];
   const skipped: string[] = [];
 
-  for (const srcFile of files) {
-    const rel = path.relative(templateRoot, srcFile);
-    const dest = path.join(cwd, rel);
-    ensureDir(path.dirname(dest));
+  for (const file of INIT_FILES) {
+    const destination = path.join(cwd, file.relativePath);
+    const outputPath = normalizeForOutput(file.relativePath);
+    const alreadyExists = fs.existsSync(destination);
 
-    if (fs.existsSync(dest)) {
-      skipped.push(rel);
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+
+    if (alreadyExists && !options.force) {
+      skipped.push(outputPath);
       continue;
     }
 
-    fs.copyFileSync(srcFile, dest);
-    created.push(rel);
+    fs.writeFileSync(destination, file.content, 'utf8');
+
+    if (alreadyExists) {
+      overwritten.push(outputPath);
+    } else {
+      created.push(outputPath);
+    }
   }
 
   const findings = [
-    ...created.map((entry) => ({ id: `init.created.${entry.replace(/[^a-zA-Z0-9]+/g, '-')}`, level: 'info' as const, message: `created ${entry}` })),
-    ...skipped.map((entry) => ({ id: `init.skipped.${entry.replace(/[^a-zA-Z0-9]+/g, '-')}`, level: 'info' as const, message: `skipped ${entry}` }))
+    ...created.map((entry) => ({
+      id: `init.created.${entry.replace(/[^a-zA-Z0-9]+/g, '-')}`,
+      level: 'info' as const,
+      message: entry
+    })),
+    ...overwritten.map((entry) => ({
+      id: `init.overwritten.${entry.replace(/[^a-zA-Z0-9]+/g, '-')}`,
+      level: 'info' as const,
+      message: `${entry} (overwritten)`
+    })),
+    ...skipped.map((entry) => ({
+      id: `init.skipped.${entry.replace(/[^a-zA-Z0-9]+/g, '-')}`,
+      level: 'info' as const,
+      message: `${entry} (exists, use --force to overwrite)`
+    }))
   ];
 
-  emitResult({
-    format: options.format,
-    quiet: options.quiet || options.ci,
-    command: 'init',
-    ok: true,
-    exitCode: ExitCode.Success,
-    summary: `Initialized playbook templates: ${created.length} created, ${skipped.length} skipped.`,
-    findings,
-    nextActions: []
-  });
+  const nextActions = ['npx playbook status', 'npx playbook fix', 'npx playbook verify'];
+
+  if (options.format === 'json') {
+    emitResult({
+      format: options.format,
+      quiet: options.quiet || options.ci,
+      command: 'init',
+      ok: true,
+      exitCode: ExitCode.Success,
+      summary: 'Playbook initialized.',
+      findings,
+      nextActions
+    });
+
+    return ExitCode.Success;
+  }
+
+  if (!(options.quiet || options.ci)) {
+    console.log('Playbook initialized.');
+    console.log('');
+    console.log('Created:');
+
+    for (const entry of created) {
+      console.log(`- ${entry}`);
+    }
+
+    for (const entry of overwritten) {
+      console.log(`- ${entry} (overwritten)`);
+    }
+
+    if (skipped.length > 0) {
+      console.log('');
+      console.log('Skipped:');
+      for (const entry of skipped) {
+        console.log(`- ${entry}`);
+      }
+    }
+
+    console.log('');
+    console.log('Next steps:');
+    console.log('');
+    for (const [index, step] of nextActions.entries()) {
+      console.log(`${index + 1}. ${step}`);
+    }
+  }
 
   return ExitCode.Success;
 };
