@@ -62,9 +62,11 @@ npx playbook verify
 - `diagram`
 - `rules`
 
-### Future
+### Repository Intelligence
 
-- `index` (planned; not yet implemented)
+- `index`
+
+Run `npx playbook index` to generate a deterministic machine-readable repository intelligence artifact at `.playbook/repo-index.json`.
 
 Authoritative command status lives in [docs/commands/README.md](docs/commands/README.md).
 

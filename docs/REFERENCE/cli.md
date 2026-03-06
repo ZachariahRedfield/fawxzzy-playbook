@@ -59,6 +59,19 @@ Repository-specific governance docs (for example `docs/PROJECT_GOVERNANCE.md`) a
 
 Analyze repository stack signals and output recommendations.
 
+## `playbook index [--json] [--quiet]`
+
+Generate deterministic repository intelligence and write `.playbook/repo-index.json`.
+
+JSON output includes:
+
+- `command`
+- `ok`
+- `indexFile`
+- `framework`
+- `architecture`
+- `modules`
+
 ## `playbook verify [--ci] [--json] [--quiet]`
 
 Run deterministic governance checks.

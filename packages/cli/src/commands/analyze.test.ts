@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { ExitCode } from '../lib/cliContract.js';
-import { buildRepoIndex, runAnalyze } from './analyze.js';
+import { ensureRepoIndex, runAnalyze } from './analyze.js';
 
 const createFile = (filePath: string, content = ''): void => {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -11,28 +11,34 @@ const createFile = (filePath: string, content = ''): void => {
 };
 
 describe('analyze repository index', () => {
-  it('builds a machine-readable repository index', async () => {
+  it('creates .playbook/repo-index.json when missing', async () => {
     const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-analyze-index-'));
     createFile(path.join(repoRoot, 'package.json'), '{"name":"test"}\n');
     createFile(path.join(repoRoot, 'tsconfig.json'), '{"compilerOptions":{}}\n');
-    createFile(path.join(repoRoot, 'ARCHITECTURE.md'), '# Architecture\n');
-    createFile(path.join(repoRoot, 'CHANGELOG.md'), '# Changelog\n');
-    createFile(path.join(repoRoot, 'src/features/workouts/index.ts'), '');
-    createFile(path.join(repoRoot, 'src/features/users/index.ts'), '');
-    createFile(path.join(repoRoot, 'src/shared/logger/index.ts'), '');
+    createFile(path.join(repoRoot, 'src', 'features', 'users', 'index.ts'), '');
 
-    const index = await buildRepoIndex(repoRoot);
+    const indexPath = await ensureRepoIndex(repoRoot);
 
-    expect(index.framework).toBe('node');
-    expect(index.language).toBe('typescript');
-    expect(index.modules).toEqual(['src/features/users', 'src/features/workouts']);
-    expect(index.shared_modules).toEqual(['src/shared', 'src/shared/logger']);
-    expect(index.docs).toEqual(['ARCHITECTURE.md', 'CHANGELOG.md']);
-    expect(index.rules.length).toBeGreaterThan(0);
-    expect(index.architecture).toEqual({
-      features: ['users', 'workouts'],
-      shared: ['logger', 'shared']
+    expect(indexPath).toBe(path.join(repoRoot, '.playbook', 'repo-index.json'));
+    const index = JSON.parse(fs.readFileSync(indexPath, 'utf8')) as {
+      schemaVersion: string;
+      framework: string;
+      language: string;
+      architecture: string;
+      modules: string[];
+      database: string;
+      rules: string[];
+    };
+
+    expect(index).toMatchObject({
+      schemaVersion: '1.0',
+      framework: 'node',
+      language: 'typescript',
+      architecture: 'modular-monolith',
+      modules: ['features'],
+      database: 'none'
     });
+    expect(index.rules.length).toBeGreaterThan(0);
   });
 
   it('writes .playbook/repo-index.json during analyze', async () => {
@@ -48,26 +54,22 @@ describe('analyze repository index', () => {
     expect(fs.existsSync(outFile)).toBe(true);
 
     const payload = JSON.parse(fs.readFileSync(outFile, 'utf8')) as {
+      schemaVersion: string;
       framework: string;
       language: string;
+      architecture: string;
       modules: string[];
-      shared_modules: string[];
-      docs: string[];
+      database: string;
       rules: string[];
-      architecture: {
-        features: string[];
-        shared: string[];
-      };
     };
 
+    expect(payload.schemaVersion).toBe('1.0');
     expect(payload.framework).toBe('node');
     expect(typeof payload.language).toBe('string');
     expect(Array.isArray(payload.modules)).toBe(true);
-    expect(Array.isArray(payload.shared_modules)).toBe(true);
-    expect(Array.isArray(payload.docs)).toBe(true);
+    expect(typeof payload.architecture).toBe('string');
+    expect(typeof payload.database).toBe('string');
     expect(Array.isArray(payload.rules)).toBe(true);
-    expect(Array.isArray(payload.architecture.features)).toBe(true);
-    expect(Array.isArray(payload.architecture.shared)).toBe(true);
 
     logSpy.mockRestore();
   });

@@ -189,6 +189,15 @@ export const commandRegistry: RegisteredCommand[] = [
   },
 
   {
+    name: 'index',
+    description: 'Generate machine-readable repository intelligence index',
+    run: async ({ cwd, format, quiet }) => {
+      const { runIndex } = await import('./repoIndex.js');
+      return runIndex(cwd, { format, quiet });
+    }
+  },
+
+  {
     name: 'session',
     description: 'Import, merge, and cleanup session snapshots',
     run: async ({ cwd, commandArgs, format, quiet }) => {

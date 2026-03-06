@@ -14,7 +14,7 @@ This is the authoritative command-state snapshot for Playbook product docs.
 | `plan` | Generate deterministic remediation tasks from verify findings. | Current (implemented) | `playbook plan --json` |
 | `apply` | Execute deterministic auto-fixable plan tasks. | Current (implemented) | `playbook apply --from-plan .playbook/plan.json` |
 | `playbook-demo` (artifact) | Official onboarding repository, discoverable via `playbook demo`. | Current (artifact + CLI discovery) | `playbook demo` |
-| `index` | Emit machine-readable repository index context for AI workflows. | Planned next (not implemented) | `playbook index` _(planned)_ |
+| `index` | Emit machine-readable repository index context for AI workflows. | Current (implemented) | `playbook index --json` |
 
 ## Additional implemented CLI utility commands
 

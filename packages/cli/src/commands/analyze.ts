@@ -1,10 +1,10 @@
 import { analyze, formatAnalyzeCi, formatAnalyzeHuman } from '@zachariahredfield/playbook-core';
+import { generateRepositoryIndex } from '@zachariahredfield/playbook-engine';
 import { createNodeContext } from '@zachariahredfield/playbook-node';
 import fs from 'node:fs';
 import path from 'node:path';
 import { emitResult, ExitCode } from '../lib/cliContract.js';
 import { loadAnalyzeRules } from '../lib/loadAnalyzeRules.js';
-import { loadVerifyRules } from '../lib/loadVerifyRules.js';
 
 export type AnalyzeReport = Awaited<ReturnType<typeof analyze>>;
 type AnalyzeRecommendation = AnalyzeReport['recommendations'][number];
@@ -16,153 +16,11 @@ type AnalyzeOptions = {
   quiet: boolean;
 };
 
-type RepoIndex = {
-  framework: string;
-  language: string;
-  modules: string[];
-  shared_modules: string[];
-  docs: string[];
-  rules: string[];
-  architecture: {
-    features: string[];
-    shared: string[];
-  };
-};
-
-
-const scanDirectories = (root: string, current = ''): string[] => {
-  const full = path.join(root, current);
-  if (!fs.existsSync(full)) {
-    return [];
-  }
-
-  const entries = fs.readdirSync(full, { withFileTypes: true });
-  const dirs: string[] = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory()) {
-      continue;
-    }
-
-    if (['.git', '.playbook', 'node_modules', 'dist', 'coverage'].includes(entry.name)) {
-      continue;
-    }
-
-    const relative = current ? path.posix.join(current, entry.name) : entry.name;
-    dirs.push(relative);
-    dirs.push(...scanDirectories(root, relative));
-  }
-
-  return dirs;
-};
-
-const detectFramework = (repoRoot: string): string => {
-  if (fs.existsSync(path.join(repoRoot, 'package.json'))) return 'node';
-  if (fs.existsSync(path.join(repoRoot, 'pyproject.toml')) || fs.existsSync(path.join(repoRoot, 'requirements.txt'))) return 'python';
-  if (fs.existsSync(path.join(repoRoot, 'Cargo.toml'))) return 'rust';
-  if (fs.existsSync(path.join(repoRoot, 'go.mod'))) return 'go';
-  if (fs.existsSync(path.join(repoRoot, 'Gemfile'))) return 'ruby';
-  return 'unknown';
-};
-
-const repoHasFileExtension = (root: string, extensions: Set<string>, current = ''): boolean => {
-  const full = path.join(root, current);
-  if (!fs.existsSync(full)) {
-    return false;
-  }
-
-  const entries = fs.readdirSync(full, { withFileTypes: true });
-  for (const entry of entries) {
-    if (entry.name.startsWith('.')) {
-      continue;
-    }
-
-    if (entry.isDirectory()) {
-      if (['node_modules', 'dist', 'coverage', 'build', 'target', '.git', '.playbook'].includes(entry.name)) {
-        continue;
-      }
-      const relative = current ? path.posix.join(current, entry.name) : entry.name;
-      if (repoHasFileExtension(root, extensions, relative)) {
-        return true;
-      }
-      continue;
-    }
-
-    const extension = path.extname(entry.name).toLowerCase();
-    if (extensions.has(extension)) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
-const detectLanguage = (repoRoot: string, framework: string): string => {
-  if (framework === 'python') return 'python';
-  if (framework === 'rust') return 'rust';
-  if (framework === 'go') return 'go';
-  if (framework === 'ruby') return 'ruby';
-
-  if (framework === 'node') {
-    if (fs.existsSync(path.join(repoRoot, 'tsconfig.json')) || repoHasFileExtension(repoRoot, new Set(['.ts', '.tsx']))) {
-      return 'typescript';
-    }
-    return 'javascript';
-  }
-
-  if (repoHasFileExtension(repoRoot, new Set(['.ts', '.tsx']))) return 'typescript';
-  if (repoHasFileExtension(repoRoot, new Set(['.js', '.jsx', '.mjs', '.cjs']))) return 'javascript';
-  if (repoHasFileExtension(repoRoot, new Set(['.py']))) return 'python';
-  if (repoHasFileExtension(repoRoot, new Set(['.rs']))) return 'rust';
-  if (repoHasFileExtension(repoRoot, new Set(['.go']))) return 'go';
-
-  return 'unknown';
-};
-
-export const buildRepoIndex = async (repoRoot: string): Promise<RepoIndex> => {
-  const dirs = scanDirectories(repoRoot);
-  const framework = detectFramework(repoRoot);
-  const language = detectLanguage(repoRoot, framework);
-
-  const modules = dirs
-    .filter((dir) => dir === 'src/features' || dir.startsWith('src/features/') || dir.endsWith('/src/features') || dir.includes('/src/features/'))
-    .filter((dir) => dir !== 'src/features')
-    .sort();
-
-  const sharedModules = dirs
-    .filter((dir) => dir === 'src/shared' || dir.startsWith('src/shared/') || dir.endsWith('/src/shared') || dir.includes('/src/shared/'))
-    .sort();
-
-  const architecture = {
-    features: [...new Set(modules.map((modulePath) => modulePath.split('/').at(2)).filter((feature): feature is string => Boolean(feature)))].sort(),
-    shared: [...new Set(sharedModules.map((modulePath) => path.posix.basename(modulePath)).filter((segment) => segment.length > 0))].sort()
-  };
-
-  const docs = fs
-    .readdirSync(repoRoot, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && /\.mdx?$/i.test(entry.name))
-    .map((entry) => entry.name)
-    .sort();
-
-  const analyzeRules = await loadAnalyzeRules();
-  const verifyRules = await loadVerifyRules(repoRoot);
-  const rules = [...new Set([...verifyRules.map((rule) => rule.id), ...analyzeRules.map((rule) => rule.id)])].sort();
-
-  return {
-    framework,
-    language,
-    modules,
-    shared_modules: sharedModules,
-    docs,
-    rules,
-    architecture
-  };
-};
-
 const repoIndexPathForRoot = (repoRoot: string): string => path.join(repoRoot, '.playbook', 'repo-index.json');
 
 const writeRepoIndex = async (repoRoot: string): Promise<string> => {
   const outPath = repoIndexPathForRoot(repoRoot);
-  const payload = await buildRepoIndex(repoRoot);
+  const payload = generateRepositoryIndex(repoRoot);
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
   return outPath;

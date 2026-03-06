@@ -15,6 +15,7 @@ declare module "@zachariahredfield/playbook-node" {
 declare module "@zachariahredfield/playbook-engine" {
   export const loadConfig: (...args: any[]) => Promise<any>;
   export const generateRepositoryHealth: (...args: any[]) => any;
+  export const generateRepositoryIndex: (...args: any[]) => any;
   export const generateArchitectureDiagrams: (...args: any[]) => Promise<any>;
   export const verifyRepo: (...args: any[]) => any;
   export const formatHuman: (...args: any[]) => string;

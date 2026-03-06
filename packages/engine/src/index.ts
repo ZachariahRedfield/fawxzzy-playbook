@@ -15,3 +15,6 @@ export { runRuleExecution, generateExecutionPlan, generatePlanContract, applyExe
 
 export { generateRepositoryHealth } from './doctor/index.js';
 export type { RepositoryHealth, GovernanceStatusItem } from './doctor/index.js';
+
+export { generateRepositoryIndex } from './indexer/repoIndexer.js';
+export type { RepositoryIndex } from './indexer/repoIndexer.js';
