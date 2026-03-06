@@ -1,6 +1,6 @@
 import { generatePlanContract } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
-import { buildPlanRemediation } from '../lib/remediationContract.js';
+import { buildPlanRemediation, deriveVerifyFindingFacts } from '../lib/remediationContract.js';
 
 const renderTextPlan = (tasks: Array<{ ruleId: string; action: string }>): void => {
   console.log('Plan');
@@ -25,11 +25,28 @@ export const runPlan = async (
   options: { format: 'text' | 'json'; ci: boolean; quiet: boolean }
 ): Promise<number> => {
   const plan = generatePlanContract(cwd);
-  const structuredFindingCount =
-    (Array.isArray(plan.verify.failures) ? plan.verify.failures.length : 0) +
-    (Array.isArray(plan.verify.warnings) ? plan.verify.warnings.length : 0);
-  const findingCount = structuredFindingCount > 0 ? structuredFindingCount : plan.verify.summary.failures + plan.verify.summary.warnings;
+  const findingFacts = deriveVerifyFindingFacts(plan.verify);
+  const findingCount = findingFacts.findingCount;
   const remediation = buildPlanRemediation({ findingCount, stepCount: plan.tasks.length });
+
+  if (process.env.PLAYBOOK_DEBUG_REMEDIATION === '1') {
+    console.error(
+      JSON.stringify(
+        {
+          command: 'plan',
+          remediationDerivation: {
+            findingCount,
+            stepCount: plan.tasks.length,
+            remediationStatus: remediation.status,
+            verifyFindingSources: findingFacts.sources
+          },
+          verifyPayload: plan.verify
+        },
+        null,
+        2
+      )
+    );
+  }
 
   if (options.format === 'json') {
     console.log(

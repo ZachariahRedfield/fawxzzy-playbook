@@ -8,6 +8,7 @@ import { spawnSync } from 'node:child_process';
 
 const DEMO_REPO_URL = process.env.PLAYBOOK_DEMO_REPO_URL ?? 'https://github.com/ZachariahRedfield/playbook-demo.git';
 const DEMO_REPO_LOCAL_PATH = process.env.PLAYBOOK_DEMO_LOCAL_PATH;
+const DEMO_DEBUG = process.env.PLAYBOOK_DEMO_DEBUG === '1';
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const localCliEntrypoint = path.resolve(projectRoot, 'packages/cli/dist/main.js');
 
@@ -94,6 +95,10 @@ const main = () => {
 
   const initialVerifyResult = runPlaybookCli({ cwd: demoDir, commandArgs: ['verify', '--json'], expectSuccess: false });
   const initialVerify = parseJsonOutput(initialVerifyResult.stdout, 'Initial verify');
+  if (DEMO_DEBUG) {
+    console.log('Initial verify payload:');
+    console.log(JSON.stringify(initialVerify, null, 2));
+  }
   const initialFindings = Array.isArray(initialVerify.findings) ? initialVerify.findings.length : 0;
   if (initialFindings <= 0) {
     throw new Error('Initial verify must report at least one finding.');
@@ -102,6 +107,10 @@ const main = () => {
 
   const planResult = runPlaybookCli({ cwd: demoDir, commandArgs: ['plan', '--json'] });
   const plan = parseJsonOutput(planResult.stdout, 'Plan');
+  if (DEMO_DEBUG) {
+    console.log('Plan payload:');
+    console.log(JSON.stringify(plan, null, 2));
+  }
   const remediation = plan.remediation;
   if (!remediation || typeof remediation !== 'object') {
     throw new Error('Plan JSON contract is missing remediation object.');
@@ -133,6 +142,17 @@ const main = () => {
   }
 
   if (remediationStatus === 'not_needed' && initialFindings > 0) {
+    console.error('Demo validate debug payloads (not_needed with verify findings):');
+    console.error(
+      JSON.stringify(
+        {
+          initialVerify,
+          plan
+        },
+        null,
+        2
+      )
+    );
     throw new Error('Plan reported not_needed remediation despite initial verify findings.');
   }
 
