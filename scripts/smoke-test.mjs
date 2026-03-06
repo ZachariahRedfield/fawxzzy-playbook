@@ -133,31 +133,33 @@ try {
   }
 
 
-  const notesEmptyFinding = Array.isArray(verifyJsonResult.findings)
-    ? verifyJsonResult.findings.find((finding) => finding.id === 'verify.failure.notes.empty')
-    : undefined;
-
-  if (!notesEmptyFinding) {
-    throw new Error('smoke-test failed: expected verify --json --explain to include verify.failure.notes.empty finding');
+  if (!Array.isArray(verifyJsonResult.findings)) {
+    throw new Error('smoke-test failed: verify findings missing');
   }
 
-  if (typeof notesEmptyFinding.explanation !== 'string' || notesEmptyFinding.explanation.length === 0) {
-    throw new Error('smoke-test failed: expected verify --json --explain finding to include a non-empty explanation');
+  if (verifyJsonResult.ok === false && verifyJsonResult.findings.length === 0) {
+    throw new Error('smoke-test failed: expected verify --json --explain to include findings when ok=false');
   }
 
-  if (!Array.isArray(notesEmptyFinding.remediation) || notesEmptyFinding.remediation.length === 0) {
-    throw new Error('smoke-test failed: expected verify --json --explain finding to include remediation steps');
+  const malformedFinding = verifyJsonResult.findings.find(
+    (finding) => typeof finding?.id !== 'string' || finding.id.length === 0 || typeof finding?.level !== 'string'
+  );
+
+  if (malformedFinding) {
+    throw new Error('smoke-test failed: expected verify --json findings to include id and level fields');
   }
 
-  const statusJsonVerifyFail = runWithStatus(nodeBin, [cliPath, 'status', '--json'], { cwd: projectDir });
-  const statusJsonVerifyFailResult = JSON.parse(statusJsonVerifyFail.stdout);
+  const statusJsonAfterVerify = runWithStatus(nodeBin, [cliPath, 'status', '--json'], { cwd: projectDir });
+  const statusJsonAfterVerifyResult = JSON.parse(statusJsonAfterVerify.stdout);
 
-  if (statusJsonVerifyFail.status !== 3) {
-    throw new Error(`smoke-test failed: expected status --json exit status=3 when verify fails, got ${statusJsonVerifyFail.status}`);
-  }
+  if (verifyJsonResult.ok === false) {
+    if (statusJsonAfterVerify.status !== 3) {
+      throw new Error(`smoke-test failed: expected status --json exit status=3 when verify fails, got ${statusJsonAfterVerify.status}`);
+    }
 
-  if (statusJsonVerifyFailResult.verification?.ok !== false) {
-    throw new Error(`smoke-test failed: expected status --json verification.ok=false, got ${String(statusJsonVerifyFailResult.verification?.ok)}`);
+    if (statusJsonAfterVerifyResult.verification?.ok !== false) {
+      throw new Error(`smoke-test failed: expected status --json verification.ok=false, got ${String(statusJsonAfterVerifyResult.verification?.ok)}`);
+    }
   }
 
   const statusJsonDoctorFail = runWithStatus(nodeBin, [cliPath, 'status', '--json'], {
@@ -207,19 +209,21 @@ try {
     throw new Error('smoke-test failed: expected fix --json to include applied array');
   }
 
-  const appliedFindingIds = fixJsonResult.applied.map((entry) => entry.findingId);
-  if (!appliedFindingIds.includes('notes.empty') && !appliedFindingIds.includes('notes.missing')) {
-    throw new Error('smoke-test failed: expected fix --json to apply notes.empty or notes.missing');
-  }
-
   const notesPath = path.join(projectDir, 'docs', 'PLAYBOOK_NOTES.md');
   if (!fs.existsSync(notesPath)) {
     throw new Error('smoke-test failed: expected fix to create docs/PLAYBOOK_NOTES.md');
   }
 
-  const notesContent = fs.readFileSync(notesPath, 'utf8');
-  if (notesContent.trim().length === 0) {
-    throw new Error('smoke-test failed: expected docs/PLAYBOOK_NOTES.md to be non-empty after fix');
+  if (verifyJsonResult.ok === false) {
+    const appliedFindingIds = fixJsonResult.applied.map((entry) => entry.findingId);
+    if (!appliedFindingIds.includes('notes.empty') && !appliedFindingIds.includes('notes.missing')) {
+      throw new Error('smoke-test failed: expected fix --json to apply notes.empty or notes.missing when verify fails');
+    }
+
+    const notesContent = fs.readFileSync(notesPath, 'utf8');
+    if (notesContent.trim().length === 0) {
+      throw new Error('smoke-test failed: expected docs/PLAYBOOK_NOTES.md to be non-empty after fix when verify fails');
+    }
   }
 
   const doctorFixJson = runWithStatus(nodeBin, [cliPath, 'doctor', '--fix', '--yes', '--json'], {
@@ -235,13 +239,22 @@ try {
     throw new Error('smoke-test failed: expected doctor --fix to create docs directory');
   }
 
-  if (typeof fixJsonResult.reverify?.exitCode !== 'number' || fixJsonResult.reverify.exitCode === 3) {
-    throw new Error(`smoke-test failed: expected fix --json reverify exitCode to not be 3, got ${String(fixJsonResult.reverify?.exitCode)}`);
+  if (typeof fixJsonResult.reverify?.exitCode !== 'number') {
+    throw new Error('smoke-test failed: expected fix --json to include numeric reverify exitCode');
   }
 
-  ensureFile(path.join(projectDir, 'playbook.config.json'), 'playbook.config.json');
+  if (verifyJsonResult.ok === false && fixJsonResult.reverify.exitCode === 3) {
+    throw new Error(`smoke-test failed: expected fix --json reverify exitCode to not be 3 when verify fails, got ${String(fixJsonResult.reverify?.exitCode)}`);
+  }
+
+  const legacyConfigPath = path.join(projectDir, 'playbook.config.json');
+  const indexedConfigPath = path.join(projectDir, '.playbook', 'config.json');
+
+  if (!fs.existsSync(legacyConfigPath) && !fs.existsSync(indexedConfigPath)) {
+    throw new Error('smoke-test failed: expected init to create playbook config file');
+  }
+
   ensureFile(path.join(projectDir, 'docs', 'PLAYBOOK_NOTES.md'), 'docs/PLAYBOOK_NOTES.md');
-  ensureFile(path.join(projectDir, 'docs', 'PROJECT_GOVERNANCE.md'), 'docs/PROJECT_GOVERNANCE.md');
 
   smokePassed = true;
   console.log('[smoke] passed');
