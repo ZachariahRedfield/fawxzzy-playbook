@@ -1,6 +1,11 @@
 import { generateRepositoryHealth } from '@zachariahredfield/playbook-engine';
+import fs from 'node:fs';
+import path from 'node:path';
 import { ExitCode } from '../lib/cliContract.js';
+import { hasRegisteredCommand } from './index.js';
+import { runSchema } from './schema.js';
 import { doctorFixes } from '../lib/doctorFixes.js';
+import { loadVerifyRules } from '../lib/loadVerifyRules.js';
 
 type DoctorOptions = {
   format: 'text' | 'json';
@@ -8,6 +13,7 @@ type DoctorOptions = {
   fix: boolean;
   dryRun: boolean;
   yes: boolean;
+  ai: boolean;
 };
 
 export type DoctorReport = ReturnType<typeof generateRepositoryHealth>;
@@ -21,6 +27,12 @@ type DoctorFixApplied = {
 type DoctorFixSkipped = {
   id: string;
   reason: string;
+};
+
+type AiDoctorCheck = {
+  name: 'schema' | 'context' | 'repoIndex' | 'verifyRules';
+  status: 'pass' | 'warn' | 'fail';
+  message: string;
 };
 
 const toExitCode = (): ExitCode => ExitCode.Success;
@@ -89,7 +101,88 @@ const getSafeFixCount = async (cwd: string, dryRun: boolean): Promise<number> =>
   return count;
 };
 
+const runAiChecks = async (cwd: string): Promise<AiDoctorCheck[]> => {
+  const checks: AiDoctorCheck[] = [];
+
+  const schemaExitCode = await runSchema(cwd, [], { format: 'text', quiet: true });
+  checks.push({
+    name: 'schema',
+    status: schemaExitCode === ExitCode.Success ? 'pass' : 'fail',
+    message: 'Playbook schema available'
+  });
+
+  checks.push({
+    name: 'context',
+    status: hasRegisteredCommand('context') ? 'pass' : 'fail',
+    message: 'Playbook context command available'
+  });
+
+  const repoIndexPath = path.join(cwd, '.playbook', 'repo-index.json');
+  checks.push({
+    name: 'repoIndex',
+    status: fs.existsSync(repoIndexPath) ? 'pass' : 'warn',
+    message: fs.existsSync(repoIndexPath) ? 'Repository intelligence generated' : 'Repository intelligence not generated'
+  });
+
+  const verifyRules = await loadVerifyRules(cwd);
+  checks.push({
+    name: 'verifyRules',
+    status: verifyRules.length > 0 ? 'pass' : 'fail',
+    message: verifyRules.length > 0 ? 'Verify rules loaded' : 'Verify rules unavailable'
+  });
+
+  return checks;
+};
+
+const printAiTextReport = (checks: AiDoctorCheck[]): void => {
+  const iconByStatus = {
+    pass: '✓',
+    warn: '⚠',
+    fail: '✗'
+  } as const;
+
+  console.log('AI Environment Check');
+  console.log('────────────────────');
+  console.log('');
+
+  for (const check of checks) {
+    console.log(`${iconByStatus[check.status]} ${check.message}`);
+  }
+
+  if (checks.some((check) => check.name === 'repoIndex' && check.status === 'warn')) {
+    console.log('');
+    console.log('Suggested action:');
+    console.log('Run `playbook index` to generate repository intelligence.');
+  }
+};
+
 export const runDoctor = async (cwd: string, options: DoctorOptions): Promise<number> => {
+  if (options.ai) {
+    const checks = await runAiChecks(cwd);
+
+    if (options.format === 'json') {
+      console.log(
+        JSON.stringify(
+          {
+            schemaVersion: '1.0',
+            command: 'doctor',
+            mode: 'ai',
+            checks: checks.map((check) => ({ name: check.name, status: check.status }))
+          },
+          null,
+          2
+        )
+      );
+      return toExitCode();
+    }
+
+    if (!options.quiet) {
+      printAiTextReport(checks);
+    }
+
+    return toExitCode();
+  }
+
   const report = await collectDoctorReport(cwd);
 
   if (!options.fix) {

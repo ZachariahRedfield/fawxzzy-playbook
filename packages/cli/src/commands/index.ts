@@ -125,7 +125,8 @@ export const commandRegistry: RegisteredCommand[] = [
         quiet,
         fix: parseFlag(commandArgs, '--fix'),
         dryRun: parseFlag(commandArgs, '--dry-run'),
-        yes: parseFlag(commandArgs, '--yes')
+        yes: parseFlag(commandArgs, '--yes'),
+        ai: parseFlag(commandArgs, '--ai')
       });
     }
   },

@@ -140,6 +140,16 @@ npx playbook doctor
 
 `playbook doctor` provides a high-level repository health report with framework, architecture, governance checks, and suggested next actions.
 
+## AI Environment Diagnostics
+
+Run:
+
+```bash
+npx playbook doctor --ai
+```
+
+This command verifies that the repository is correctly configured for AI-assisted Playbook workflows.
+
 ## How to discover capabilities
 
 The CLI help output is the authoritative source for supported commands and flags.

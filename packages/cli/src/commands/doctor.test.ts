@@ -2,6 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ExitCode } from '../lib/cliContract.js';
 
 const generateRepositoryHealth = vi.fn();
+const runSchema = vi.fn();
+const hasRegisteredCommand = vi.fn();
+const loadVerifyRules = vi.fn();
+const existsSync = vi.fn();
+
 const doctorFixes = [
   {
     id: 'doctor.fix.docs.directory',
@@ -21,6 +26,27 @@ const doctorFixes = [
 
 vi.mock('@zachariahredfield/playbook-engine', () => ({
   generateRepositoryHealth
+}));
+
+vi.mock('node:fs', () => ({
+  default: { existsSync },
+  existsSync
+}));
+
+vi.mock('./schema.js', () => ({
+  runSchema
+}));
+
+vi.mock('./index.js', async () => {
+  const actual = await vi.importActual('./index.js');
+  return {
+    ...(actual as object),
+    hasRegisteredCommand
+  };
+});
+
+vi.mock('../lib/loadVerifyRules.js', () => ({
+  loadVerifyRules
 }));
 
 vi.mock('../lib/doctorFixes.js', () => ({
@@ -45,6 +71,10 @@ const healthyReport = {
 describe('runDoctor', () => {
   beforeEach(() => {
     generateRepositoryHealth.mockReset();
+    runSchema.mockReset();
+    hasRegisteredCommand.mockReset();
+    loadVerifyRules.mockReset();
+    existsSync.mockReset();
     doctorFixes[0].check.mockClear();
     doctorFixes[1].check.mockClear();
   });
@@ -59,7 +89,8 @@ describe('runDoctor', () => {
       quiet: false,
       fix: false,
       dryRun: false,
-      yes: false
+      yes: false,
+      ai: false
     });
 
     const output = logSpy.mock.calls.map((call) => String(call[0])).join('\n');
@@ -86,7 +117,8 @@ describe('runDoctor', () => {
       quiet: false,
       fix: false,
       dryRun: false,
-      yes: false
+      yes: false,
+      ai: false
     });
 
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
@@ -102,64 +134,116 @@ describe('runDoctor', () => {
     logSpy.mockRestore();
   });
 
-  it('handles empty repository health defaults', async () => {
+  it('prints doctor --ai text output when repo index exists', async () => {
     const { runDoctor } = await import('./doctor.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    generateRepositoryHealth.mockReturnValue({
-      framework: 'Unknown',
-      language: 'Unknown',
-      architecture: 'Unknown',
-      governanceStatus: [
-        { id: 'playbook-config', ok: false, message: 'Playbook config missing; defaults loaded' },
-        { id: 'architecture-docs', ok: false, message: 'Architecture docs missing' },
-        { id: 'checklist-verify-step', ok: false, message: 'PLAYBOOK_CHECKLIST missing verify step' },
-        { id: 'repo-index', ok: false, message: 'Repo index missing' }
-      ],
-      verifySummary: { ok: true, failures: 0, warnings: 0 },
-      suggestedActions: ['playbook analyze'],
-      issues: ['Repo index missing']
-    });
+
+    runSchema.mockResolvedValue(ExitCode.Success);
+    hasRegisteredCommand.mockReturnValue(true);
+    existsSync.mockReturnValue(true);
+    loadVerifyRules.mockResolvedValue([{ id: 'rule-1' }]);
 
     const exitCode = await runDoctor(process.cwd(), {
       format: 'text',
       quiet: false,
       fix: false,
       dryRun: false,
-      yes: false
+      yes: false,
+      ai: true
     });
 
     const output = logSpy.mock.calls.map((call) => String(call[0])).join('\n');
     expect(exitCode).toBe(ExitCode.Success);
-    expect(output).toContain('Framework: Unknown');
-    expect(output).toContain('⚠ Repo index missing');
-    expect(output).toContain('playbook analyze');
+    expect(output).toContain('AI Environment Check');
+    expect(output).toContain('✓ Playbook schema available');
+    expect(output).toContain('✓ Playbook context command available');
+    expect(output).toContain('✓ Repository intelligence generated');
+    expect(output).toContain('✓ Verify rules loaded');
 
     logSpy.mockRestore();
   });
 
-  it('suggests playbook plan when verify findings exist', async () => {
+  it('prints doctor --ai --json output when repo index is missing', async () => {
     const { runDoctor } = await import('./doctor.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-    generateRepositoryHealth.mockReturnValue({
-      ...healthyReport,
-      verifySummary: { ok: false, failures: 1, warnings: 0 },
-      suggestedActions: ['playbook plan'],
-      issues: ['PLAYBOOK_CHECKLIST missing verify step']
-    });
+    runSchema.mockResolvedValue(ExitCode.Success);
+    hasRegisteredCommand.mockReturnValue(true);
+    existsSync.mockReturnValue(false);
+    loadVerifyRules.mockResolvedValue([{ id: 'rule-1' }]);
 
     const exitCode = await runDoctor(process.cwd(), {
-      format: 'text',
+      format: 'json',
       quiet: false,
       fix: false,
       dryRun: false,
-      yes: false
+      yes: false,
+      ai: true
     });
 
-    const output = logSpy.mock.calls.map((call) => String(call[0])).join('\n');
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(exitCode).toBe(ExitCode.Success);
-    expect(output).toContain('Run:');
-    expect(output).toContain('playbook plan');
+    expect(payload).toEqual({
+      schemaVersion: '1.0',
+      command: 'doctor',
+      mode: 'ai',
+      checks: [
+        { name: 'schema', status: 'pass' },
+        { name: 'context', status: 'pass' },
+        { name: 'repoIndex', status: 'warn' },
+        { name: 'verifyRules', status: 'pass' }
+      ]
+    });
+
+    logSpy.mockRestore();
+  });
+
+  it('fails verify rules check when registry is empty', async () => {
+    const { runDoctor } = await import('./doctor.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    runSchema.mockResolvedValue(ExitCode.Success);
+    hasRegisteredCommand.mockReturnValue(true);
+    existsSync.mockReturnValue(true);
+    loadVerifyRules.mockResolvedValue([]);
+
+    const exitCode = await runDoctor(process.cwd(), {
+      format: 'json',
+      quiet: false,
+      fix: false,
+      dryRun: false,
+      yes: false,
+      ai: true
+    });
+
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(payload.checks).toContainEqual({ name: 'verifyRules', status: 'fail' });
+
+    logSpy.mockRestore();
+  });
+
+  it('fails context check when context command is missing', async () => {
+    const { runDoctor } = await import('./doctor.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    runSchema.mockResolvedValue(ExitCode.Success);
+    hasRegisteredCommand.mockReturnValue(false);
+    existsSync.mockReturnValue(true);
+    loadVerifyRules.mockResolvedValue([{ id: 'rule-1' }]);
+
+    const exitCode = await runDoctor(process.cwd(), {
+      format: 'json',
+      quiet: false,
+      fix: false,
+      dryRun: false,
+      yes: false,
+      ai: true
+    });
+
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(payload.checks).toContainEqual({ name: 'context', status: 'fail' });
 
     logSpy.mockRestore();
   });
