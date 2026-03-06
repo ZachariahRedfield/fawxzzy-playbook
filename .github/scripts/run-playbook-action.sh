@@ -18,16 +18,23 @@ fi
 
 cd "$repo_path"
 
+playbook_cli=(node "$GITHUB_WORKSPACE/packages/cli/dist/main.js")
+
+if [[ ! -f "$GITHUB_WORKSPACE/packages/cli/dist/main.js" ]]; then
+  echo "Built Playbook CLI not found at $GITHUB_WORKSPACE/packages/cli/dist/main.js" >&2
+  exit 1
+fi
+
 case "$mode" in
   verify)
     # shellcheck disable=SC2206
     args=( $verify_args )
-    playbook verify "${args[@]}"
+    "${playbook_cli[@]}" verify "${args[@]}"
     ;;
   plan)
     mkdir -p .playbook
     plan_path=".playbook/plan.json"
-    playbook plan --json > "$plan_path"
+    "${playbook_cli[@]}" plan --json > "$plan_path"
     echo "plan_path=$repo_path/$plan_path" >> "$GITHUB_OUTPUT"
     ;;
   apply)
@@ -41,7 +48,7 @@ case "$mode" in
       exit 1
     fi
 
-    playbook apply --from-plan "$plan_artifact"
+    "${playbook_cli[@]}" apply --from-plan "$plan_artifact"
     ;;
   *)
     echo "Invalid mode '$mode'. Expected verify, plan, or apply." >&2

@@ -14,7 +14,7 @@ inputs:
     required: false
     default: "."
   playbook-version:
-    description: Version of @fawxzzy/playbook to install.
+    description: Deprecated (reserved for future published-package support). Ignored in repo-local mode.
     required: false
     default: "latest"
   node-version:
@@ -43,15 +43,36 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
-    - name: Install Playbook CLI
+    - name: Setup pnpm via Corepack
       shell: bash
-      run: npm install --global @fawxzzy/playbook@${{ inputs.playbook-version }}
+      run: |
+        PM="$(node -p \"require(process.env.GITHUB_WORKSPACE + '/package.json').packageManager\")"
+        if [[ -z "$PM" || "$PM" != pnpm@* ]]; then
+          echo "Invalid or missing packageManager in package.json (expected pnpm@...). Got: '$PM'"
+          exit 1
+        fi
+        corepack enable
+        corepack prepare "$PM" --activate
+        pnpm -v
+
+    - name: Install workspace dependencies
+      shell: bash
+      working-directory: ${{ inputs.repo-path }}
+      run: |
+        node "$GITHUB_WORKSPACE/scripts/assert-install-env.mjs"
+        pnpm install --frozen-lockfile
+
+    - name: Build Playbook CLI from repository source
+      shell: bash
+      working-directory: ${{ inputs.repo-path }}
+      run: pnpm -r build
 
     - name: Run Playbook workflow mode
       id: run
       shell: bash
       run: ${{ github.action_path }}/scripts/run-playbook-action.sh
       env:
+        GITHUB_WORKSPACE: ${{ github.workspace }}
         INPUT_MODE: ${{ inputs.mode }}
         INPUT_PLAN_ARTIFACT: ${{ inputs.plan-artifact }}
         INPUT_REPO_PATH: ${{ inputs.repo-path }}

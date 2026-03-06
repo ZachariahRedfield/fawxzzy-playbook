@@ -99,6 +99,13 @@ Developer workflows should be executable commands rather than only written docum
 
 ## 2026-03-06
 
+- WHAT changed: Reworked the official composite action at `.github/action.yml` to run from checked-out repository source by activating pnpm from `packageManager`, installing with `pnpm install --frozen-lockfile`, building the workspace, and invoking `node packages/cli/dist/main.js` for `verify`, `plan`, and `apply` modes.
+- WHY it changed: CI was coupled to `npm install --global @fawxzzy/playbook@latest`, which fails before npm publishing is a deliberate product contract and breaks deterministic automation.
+- Rule: Official Playbook GitHub Actions should execute checked-in source until npm publishing is an explicit supported contract.
+- Pattern: Prefer repo-local CI execution for deterministic verify/plan/apply workflows during early product hardening.
+- Failure Mode: Action workflow assumed npm package availability before release/publish pipeline existed.
+- GitHub Action distribution phases: phase 1 = repo-local build/run, phase 2 = optional published-package consumption.
+
 - WHAT changed: Hardened remediation execution by formalizing handler contract semantics (`applied`, `skipped`, `unsupported`, `failed`) and centralizing handler resolution precedence (plugin handlers override built-ins when defined; undefined plugin handlers do not shadow built-ins).
 - WHY it changed: Apply is now critical product surface area, so deterministic execution and explicit unsupported/failure signaling reduce ambiguity for CI and AI automation.
 

@@ -1,9 +1,9 @@
 name: Playbook Verify
-description: Run Playbook verification in any repository using the published Playbook CLI.
+description: Run Playbook verification from checked-out repository source.
 
 inputs:
   playbook_version:
-    description: Version of the published Playbook CLI package to run (for example, latest or 0.1.1).
+    description: Deprecated (reserved for future published-package support). Ignored in repo-local mode.
     required: false
     default: "latest"
   args:
@@ -23,6 +23,28 @@ runs:
       with:
         node-version: ${{ inputs.node_version }}
 
+    - name: Setup pnpm via Corepack
+      shell: bash
+      run: |
+        PM="$(node -p "require(process.env.GITHUB_WORKSPACE + '/package.json').packageManager")"
+        if [[ -z "$PM" || "$PM" != pnpm@* ]]; then
+          echo "Invalid or missing packageManager in package.json (expected pnpm@...). Got: '$PM'"
+          exit 1
+        fi
+        corepack enable
+        corepack prepare "$PM" --activate
+        pnpm -v
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        node "$GITHUB_WORKSPACE/scripts/assert-install-env.mjs"
+        pnpm install --frozen-lockfile
+
+    - name: Build workspace
+      shell: bash
+      run: pnpm -r build
+
     - name: Run Playbook verify
       shell: bash
-      run: npx --yes @fawxzzy/playbook@${{ inputs.playbook_version }} verify ${{ inputs.args }}
+      run: node "$GITHUB_WORKSPACE/packages/cli/dist/main.js" verify ${{ inputs.args }}

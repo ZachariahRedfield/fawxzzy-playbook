@@ -116,11 +116,15 @@ Playbook includes an official composite action that supports deterministic CI au
 
 `verify -> plan -> review -> apply -> verify`
 
+The action runs from checked-out repository source (it installs with the workspace lockfile, builds the CLI, and invokes `node packages/cli/dist/main.js`). It does **not** require `npm install -g` or a published npm package.
+
 The action lives at `./.github/action.yml` in this repository and accepts:
 
 - `mode`: `verify | plan | apply`
 - `plan-artifact`: required for `mode: apply`
 - `repo-path`: optional, defaults to `.`
+- `node-version`: optional, defaults to `22`
+- `verify-args`: optional, defaults to `--ci`
 
 ### Verify on pull requests
 
