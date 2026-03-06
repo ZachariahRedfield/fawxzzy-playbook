@@ -27,7 +27,7 @@ export const runPlan = async (
   const plan = generatePlanContract(cwd);
   const failureFacts = deriveVerifyFailureFacts(plan.verify);
   const failureCount = failureFacts.failureCount;
-  const remediation = buildPlanRemediation({ findingCount: failureCount, stepCount: plan.tasks.length });
+  const remediation = buildPlanRemediation({ failureCount, stepCount: plan.tasks.length });
 
   if (process.env.PLAYBOOK_DEBUG_REMEDIATION === '1') {
     console.error(

@@ -147,7 +147,7 @@ export const runApply = async (cwd: string, options: ApplyOptions): Promise<numb
         const failureFacts = deriveVerifyFailureFacts(generatedPlan.verify);
         return {
           tasks: generatedPlan.tasks,
-          remediation: buildPlanRemediation({ findingCount: failureFacts.failureCount, stepCount: generatedPlan.tasks.length })
+          remediation: buildPlanRemediation({ failureCount: failureFacts.failureCount, stepCount: generatedPlan.tasks.length })
         };
       })();
   const applyPrecondition = remediationToApplyPrecondition(plan.remediation);

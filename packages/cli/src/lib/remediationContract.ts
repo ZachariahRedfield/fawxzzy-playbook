@@ -26,9 +26,9 @@ export type PlanJsonResult = {
 };
 
 export type RemediationDerivationInput = {
-  findingCount: number;
+  failureCount: number;
   stepCount: number;
-  unresolvedFindingCount?: number;
+  unresolvedFailureCount?: number;
   unavailableReason?: string;
 };
 
@@ -46,6 +46,20 @@ const getInteger = (value: unknown): number | undefined => {
   return value;
 };
 
+const isFailureLevelFinding = (finding: unknown): boolean => {
+  if (!isObject(finding)) {
+    return false;
+  }
+
+  const level = finding.level;
+  if (typeof level !== 'string') {
+    return false;
+  }
+
+  const normalizedLevel = level.toLowerCase();
+  return normalizedLevel === 'failure' || normalizedLevel === 'error';
+};
+
 export const deriveVerifyFailureFacts = (verifyPayload: unknown): VerifyFailureFacts => {
   if (!isObject(verifyPayload)) {
     return { failureCount: 0, sources: [] };
@@ -58,6 +72,12 @@ export const deriveVerifyFailureFacts = (verifyPayload: unknown): VerifyFailureF
   if (Array.isArray(failures)) {
     candidates.push(failures.length);
     sources.push('failures.length');
+  }
+
+  const findings = verifyPayload.findings;
+  if (Array.isArray(findings)) {
+    candidates.push(findings.filter(isFailureLevelFinding).length);
+    sources.push('findings[level=failure|error].length');
   }
 
   const summary = verifyPayload.summary;
@@ -76,12 +96,12 @@ export const deriveVerifyFailureFacts = (verifyPayload: unknown): VerifyFailureF
 };
 
 export const buildPlanRemediation = ({
-  findingCount,
+  failureCount,
   stepCount,
-  unresolvedFindingCount,
+  unresolvedFailureCount,
   unavailableReason
 }: RemediationDerivationInput): PlanRemediation => {
-  if (findingCount === 0) {
+  if (failureCount === 0) {
     return {
       status: 'not_needed',
       totalSteps: stepCount,
@@ -94,7 +114,7 @@ export const buildPlanRemediation = ({
     return {
       status: 'unavailable',
       totalSteps: stepCount,
-      unresolvedFailures: unresolvedFindingCount ?? findingCount,
+      unresolvedFailures: unresolvedFailureCount ?? failureCount,
       reason: unavailableReason ?? 'Verify failures were detected but no remediation tasks are currently available.'
     };
   }
@@ -102,7 +122,7 @@ export const buildPlanRemediation = ({
   return {
     status: 'ready',
     totalSteps: stepCount,
-    unresolvedFailures: unresolvedFindingCount ?? Math.max(0, findingCount - stepCount)
+    unresolvedFailures: unresolvedFailureCount ?? Math.max(0, failureCount - stepCount)
   };
 };
 

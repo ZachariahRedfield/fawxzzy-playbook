@@ -8,7 +8,7 @@ import {
 
 describe('remediationContract', () => {
   it('builds ready remediation when failures have tasks', () => {
-    expect(buildPlanRemediation({ findingCount: 2, stepCount: 1 })).toEqual({
+    expect(buildPlanRemediation({ failureCount: 2, stepCount: 1 })).toEqual({
       status: 'ready',
       totalSteps: 1,
       unresolvedFailures: 1
@@ -16,7 +16,7 @@ describe('remediationContract', () => {
   });
 
   it('builds not_needed remediation when no failures are present', () => {
-    expect(buildPlanRemediation({ findingCount: 0, stepCount: 0 })).toEqual({
+    expect(buildPlanRemediation({ failureCount: 0, stepCount: 0 })).toEqual({
       status: 'not_needed',
       totalSteps: 0,
       unresolvedFailures: 0,
@@ -25,7 +25,7 @@ describe('remediationContract', () => {
   });
 
   it('builds unavailable remediation when failures have no tasks', () => {
-    expect(buildPlanRemediation({ findingCount: 2, stepCount: 0 })).toEqual({
+    expect(buildPlanRemediation({ failureCount: 2, stepCount: 0 })).toEqual({
       status: 'unavailable',
       totalSteps: 0,
       unresolvedFailures: 2,
@@ -33,8 +33,8 @@ describe('remediationContract', () => {
     });
   });
 
-  it('never reports not_needed when findings exist without deterministic steps', () => {
-    expect(buildPlanRemediation({ findingCount: 1, stepCount: 0 }).status).toBe('unavailable');
+  it('never reports not_needed when failures exist without deterministic steps', () => {
+    expect(buildPlanRemediation({ failureCount: 1, stepCount: 0 }).status).toBe('unavailable');
   });
 
   it('parses remediation status object deterministically', () => {
@@ -81,6 +81,21 @@ describe('remediationContract', () => {
     ).toEqual({
       failureCount: 0,
       sources: ['summary.failures']
+    });
+  });
+
+  it('derives failure count from findings levels when failures array is absent', () => {
+    expect(
+      deriveVerifyFailureFacts({
+        findings: [
+          { id: 'f-1', level: 'failure' },
+          { id: 'w-1', level: 'warning' },
+          { id: 'e-1', level: 'error' }
+        ]
+      })
+    ).toEqual({
+      failureCount: 2,
+      sources: ['findings[level=failure|error].length']
     });
   });
 });
