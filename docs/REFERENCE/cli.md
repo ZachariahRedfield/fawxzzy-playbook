@@ -4,6 +4,21 @@ See also: [Command Contract Overview](../commands/overview.md).
 
 Current Playbook CLI commands:
 
+Current product-facing surface (see authoritative index: [../commands/README.md](../commands/README.md)):
+
+- `analyze`
+- `verify`
+- `rules`
+- `doctor`
+- `diagram`
+- `plan`
+- `apply`
+- `playbook-demo` onboarding artifact (discoverable via `playbook demo`)
+
+Next planned command:
+
+- `index` (planned, not implemented)
+
 Current canonical remediation workflow:
 
 `verify -> plan -> apply -> verify`

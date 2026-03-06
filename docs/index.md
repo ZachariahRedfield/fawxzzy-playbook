@@ -12,14 +12,14 @@
 
 ## Commands
 
+- [Command status index (authoritative)](./commands/README.md)
 - [analyze](./commands/analyze.md)
 - [verify](./commands/verify.md)
-- [plan](./commands/plan.md)
-- [fix](./commands/fix.md)
-- [doctor](./commands/doctor.md)
 - [rules](./commands/rules.md)
+- [doctor](./commands/doctor.md)
 - [diagram](./commands/diagram.md)
-- [upgrade](./commands/upgrade.md)
+- [plan](./commands/plan.md)
+- [apply](./commands/apply.md)
 
 ## Concepts
 
