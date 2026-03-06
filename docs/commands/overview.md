@@ -2,6 +2,8 @@
 
 This page documents the **CLI contract philosophy** for automation and contributors.
 
+For current command status (current vs planned), use [Command Status Index](./README.md).
+
 ## Output modes
 
 All top-level commands should support:

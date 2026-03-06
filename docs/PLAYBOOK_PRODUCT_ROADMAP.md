@@ -106,12 +106,22 @@ Playbook is positioned as an **AI-operable development tool**:
 - CI-enforceable through deterministic exit codes and contracts
 - agent-compatible through stable JSON responses and explicit command surfaces
 
+Current implemented product-facing command/artifact set:
+
+- `analyze`
+- `verify`
+- `rules`
+- `doctor`
+- `diagram`
+- `plan`
+- `apply`
+- `playbook-demo` artifact (exposed through `playbook demo`)
+
 ## Roadmap framing (future-state)
 
 The following items are planned and should be treated as future-state roadmap work:
 
-- **Playbook Demo Repo (`playbook-demo`)**: a fast first-run onboarding repository where developers can run `analyze`/`verify` immediately and see value in minutes.
-- **AI Repository Intelligence (`playbook index`)**: planned command to generate `.playbook/repo-index.json` describing modules, dependencies, framework signals, schema surfaces, and architecture contracts for AI-safe repository understanding/modification.
+- **AI Repository Intelligence (`playbook index`)**: next planned command to generate `.playbook/repo-index.json` describing modules, dependencies, framework signals, schema surfaces, and architecture contracts for AI-safe repository understanding/modification.
 
 
 Establish Playbook as a trusted governance tool in the developer ecosystem.
@@ -150,12 +160,20 @@ playbook
 └ README.md
 CLI Commands
 
-Initial commands:
+Current product-facing commands/artifacts:
 
-playbook init
 playbook analyze
 playbook verify
+playbook rules
 playbook doctor
+playbook diagram
+playbook plan
+playbook apply
+playbook-demo (discoverable via `playbook demo`)
+
+Next planned command:
+
+playbook index (planned)
 
 AI-Aware Engineering Guardrails
 
@@ -227,14 +245,14 @@ Near-Term Productization Milestones
 
 ### Future milestone: AI Repository Intelligence (planned)
 
-- [ ] Add `playbook index` command (future) to emit `.playbook/repo-index.json`.
+- [ ] Add `playbook index` command (next planned) to emit `.playbook/repo-index.json`.
 - [ ] Include deterministic repository metadata: module boundaries, internal dependencies, detected framework/runtime signals, and documented architecture contracts.
 - [ ] Treat index output as machine-readable context for safe AI-assisted repository changes.
 
 - [ ] CLI command architecture cleanup: standardize all CLI commands under `packages/cli/src/commands/`, wire `packages/cli/src/commands/index.ts` as the single command registry, and keep shared helpers under `packages/cli/src/lib/`.
 - [ ] Command documentation baseline: add `docs/commands/` with short per-command docs for `analyze`, `doctor`, `diagram`, and `upgrade` so contributors and AI agents can quickly discover supported behavior.
 - [ ] Docs merge and roadmap cleanup: keep roadmap/checklist/docs language aligned so near-term CLI structure and distribution priorities remain explicit.
-- [ ] Playbook Demo Repo milestone (`playbook-demo`): provide a first-class onboarding repository where developers can run `npx --yes @fawxzzy/playbook analyze` immediately and see meaningful governance output.
+- [x] Playbook Demo Repo milestone (`playbook-demo`): first-class onboarding repository and deterministic CLI discovery via `playbook demo`.
 - [ ] GitHub Action Integration (CI-native adoption): deliver a first-class `uses: playbook/verify` path, with initial implementation via `.github/workflows/playbook-verify.yml`. Initial capabilities should include `playbook verify`, architecture contract checks, and governance rule checks.
 - [ ] NPM Package Publishing (public adoption): publish Playbook as an installable CLI with support for `npx --yes @fawxzzy/playbook analyze`, backed by an npm publishing pipeline, clear versioning strategy, and reliable scoped CLI distribution.
 
@@ -242,9 +260,9 @@ Near-Term Productization Milestones
 
 - ☑ Docs merge tooling
 - ☑ Session merge/import system
-- ⬜ CLI command registry as single source of truth
-- ⬜ `docs/commands/` baseline documentation
-- ⬜ Playbook demo repository (`playbook-demo`)
+- ☑ CLI command registry as single source of truth
+- ☑ `docs/commands/` baseline documentation
+- ☑ Playbook demo repository (`playbook-demo`)
 - ⬜ GitHub Action
 - ⬜ Canonical session outputs
 
@@ -672,3 +690,22 @@ Purpose:
 
 Automate governance checks in CI.
 
+
+
+## Rule: Product State Must Be Anchored
+
+When a new command or major workflow ships, update the authoritative product-state surfaces in the same change (or immediately after):
+
+- `README.md`
+- `docs/PLAYBOOK_PRODUCT_ROADMAP.md`
+- command reference docs
+- demo docs/contracts
+- `docs/CHANGELOG.md`
+
+Pattern: **AI Anchor Drift**.
+
+Command-state rule for current roadmap framing:
+
+- New command additions must update README, roadmap, command reference, demo docs, and changelog.
+- `index` is the next planned command after `plan`, `apply`, `diagram`, `doctor`, and `playbook-demo`.
+- When docs and implementation disagree, code is source of truth.

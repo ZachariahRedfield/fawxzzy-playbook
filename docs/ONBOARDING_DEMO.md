@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`playbook-demo` is the planned fast onboarding repository for first-run adoption.
+`playbook-demo` is the official fast onboarding repository artifact for first-run adoption.
 
 Goal: let developers run Playbook (`analyze` and `verify`) immediately and see useful governance output without repository setup work.
 
@@ -16,7 +16,7 @@ The demo repo is part of product adoption strategy:
 
 ## Current status
 
-This is roadmap work (future-state). Use this repository's local quickstart/docs for current onboarding until `playbook-demo` is published as a maintained first-class demo surface.
+`playbook-demo` is now an active product artifact and is exposed directly through `playbook demo` (deterministic text/JSON onboarding contract).
 
 ## Rule: Demo Terminology Sync
 
