@@ -210,7 +210,10 @@ Tooling & Distribution (Package Manager + Action + Demo Repo)
 
 Near-Term Productization Milestones
 
-- [ ] Demo Repository (developer onboarding): add `examples/demo-repo/` so developers can immediately run `npx --yes @fawxzzy/playbook analyze` and receive a meaningful report. The demo should intentionally include small architecture violations, documentation drift, and governance examples to show Playbook in action.
+- [ ] CLI command architecture cleanup: standardize all CLI commands under `packages/cli/src/commands/`, wire `packages/cli/src/commands/index.ts` as the single command registry, and keep shared helpers under `packages/cli/src/lib/`.
+- [ ] Command documentation baseline: add `docs/commands/` with short per-command docs for `analyze`, `doctor`, `diagram`, and `upgrade` so contributors and AI agents can quickly discover supported behavior.
+- [ ] Docs merge and roadmap cleanup: keep roadmap/checklist/docs language aligned so near-term CLI structure and distribution priorities remain explicit.
+- [ ] Playbook Demo Repo milestone (`playbook-demo`): provide a first-class onboarding repository where developers can run `npx --yes @fawxzzy/playbook analyze` immediately and see meaningful governance output.
 - [ ] GitHub Action Integration (CI-native adoption): deliver a first-class `uses: playbook/verify` path, with initial implementation via `.github/workflows/playbook-verify.yml`. Initial capabilities should include `playbook verify`, architecture contract checks, and governance rule checks.
 - [ ] NPM Package Publishing (public adoption): publish Playbook as an installable CLI with support for `npx --yes @fawxzzy/playbook analyze`, backed by an npm publishing pipeline, clear versioning strategy, and reliable scoped CLI distribution.
 
@@ -218,7 +221,9 @@ Near-Term Productization Milestones
 
 - ☑ Docs merge tooling
 - ☑ Session merge/import system
-- ⬜ Demo repository
+- ⬜ CLI command registry as single source of truth
+- ⬜ `docs/commands/` baseline documentation
+- ⬜ Playbook demo repository (`playbook-demo`)
 - ⬜ GitHub Action
 - ⬜ Canonical session outputs
 
@@ -554,3 +559,21 @@ FOCUS MANTRA
 Every feature must answer one question:
 
 How do we keep AI-generated code aligned with architecture?
+
+
+## Phase: AI Repository Intelligence (Future)
+
+This phase is planned and intentionally not implemented in the current stabilization window.
+
+Planned feature: `playbook index`
+
+- Command intent: generate a machine-readable repository intelligence artifact for AI-safe repository understanding.
+- Planned output path: `.playbook/repo-index.json`.
+- Planned index coverage:
+  - modules
+  - dependencies
+  - database schema
+  - framework
+  - architecture contracts
+- Product purpose: enable AI agents to safely understand repository structure and constraints before making code changes.
+- Scope note: this roadmap phase documents intent only; index generation is not part of the current implementation scope.

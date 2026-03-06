@@ -3,6 +3,22 @@
 • Pattern: AI-operable repository interface
 Playbook commands expose repository structure, health, and architecture so AI agents can reason about a codebase without reading the entire source tree.
 
+• Pattern: CLI Command Architecture
+Commands live under `packages/cli/src/commands` with a central registry at `packages/cli/src/commands/index.ts`, while shared helpers stay under `packages/cli/src/lib`.
+
+Example structure:
+```
+commands/
+  analyze.ts
+  doctor.ts
+  diagram.ts
+  upgrade.ts
+lib/
+  shared utilities
+```
+
+This pattern prevents CLI sprawl and improves command discoverability for contributors and AI agents.
+
 • Principle: Machine-readable developer workflows
 Developer workflows should be executable commands rather than only written documentation.
 
@@ -61,3 +77,13 @@ Developer workflows should be executable commands rather than only written docum
 
 - WHAT changed: Standardized Playbook npm distribution scope to `@fawxzzy`, replaced Unix-only `sh -c` lifecycle script direction with cross-platform Node-script guidance, and defined GitHub Action distribution as a composite action that runs `npx @fawxzzy/playbook verify --ci`.
 - WHY it changed: This keeps onboarding and CI compatible across Windows (PowerShell/CMD) and Unix shells, reflects that unscoped `playbook` is unavailable for `npx`, and lowers adoption friction with a copy/paste CI path that stays product-language/agent/platform-agnostic.
+
+- WHAT changed: Added a centralized CLI command registry (`packages/cli/src/commands/index.ts`) and updated the CLI entrypoint to resolve and run commands through that registry.
+- WHY it changed: A single source of truth for command wiring reduces drift between help output and command execution while keeping behavior stable.
+
+- WHAT changed: Added `docs/commands/` with minimal pages for `analyze`, `doctor`, `diagram`, and `upgrade`.
+- WHY it changed: Establishes a predictable command-documentation baseline so contributors and AI agents can quickly find usage, flags, and intent.
+
+- WHAT changed: Updated roadmap planning to include near-term CLI/docs cleanup milestones and a future AI Repository Intelligence phase centered on planned `playbook index` output at `.playbook/repo-index.json`.
+- WHY it changed: Keeps foundation-phase delivery focused while documenting the intended machine-readable repository index direction without prematurely implementing it.
+

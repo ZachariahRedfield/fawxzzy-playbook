@@ -1,0 +1,145 @@
+import { ExitCode } from '../lib/cliContract.js';
+
+type CommandContext = {
+  cwd: string;
+  args: string[];
+  commandArgs: string[];
+  ci: boolean;
+  explain: boolean;
+  format: 'text' | 'json';
+  quiet: boolean;
+};
+
+type RegisteredCommand = {
+  name: string;
+  description: string;
+  run: (context: CommandContext) => Promise<number>;
+};
+
+const parseFlag = (allArgs: string[], flag: string): boolean => allArgs.includes(flag);
+const parseOptionValue = (allArgs: string[], name: string): string | undefined => {
+  const index = allArgs.indexOf(name);
+  return index >= 0 && allArgs[index + 1] ? String(allArgs[index + 1]) : undefined;
+};
+
+export const commandRegistry: RegisteredCommand[] = [
+  {
+    name: 'init',
+    description: 'Initialize playbook docs/config',
+    run: async ({ cwd, format, quiet, ci }) => {
+      const { runInit } = await import('./init.js');
+      return runInit(cwd, { format, quiet, ci });
+    }
+  },
+  {
+    name: 'analyze',
+    description: 'Analyze project stack',
+    run: async ({ cwd, ci, explain, format, quiet }) => {
+      const { runAnalyze } = await import('./analyze.js');
+      return runAnalyze(cwd, { ci, explain, format, quiet });
+    }
+  },
+  {
+    name: 'verify',
+    description: 'Verify governance rules',
+    run: async ({ cwd, ci, explain, format, quiet }) => {
+      const { runVerify } = await import('./verify.js');
+      return runVerify(cwd, { ci, explain, format, quiet });
+    }
+  },
+  {
+    name: 'fix',
+    description: 'Apply safe, deterministic autofixes for verify findings',
+    run: async ({ cwd, commandArgs, ci, explain, format, quiet }) => {
+      const { runFix } = await import('./fix.js');
+      return runFix(cwd, {
+        dryRun: parseFlag(commandArgs, '--dry-run'),
+        yes: parseFlag(commandArgs, '--yes'),
+        only: parseOptionValue(commandArgs, '--only'),
+        ci,
+        explain,
+        format,
+        quiet
+      });
+    }
+  },
+  {
+    name: 'doctor',
+    description: 'Check local setup (optionally apply safe fixes)',
+    run: async ({ cwd, commandArgs, format, quiet }) => {
+      const { runDoctor } = await import('./doctor.js');
+      return runDoctor(cwd, {
+        format,
+        quiet,
+        fix: parseFlag(commandArgs, '--fix'),
+        dryRun: parseFlag(commandArgs, '--dry-run'),
+        yes: parseFlag(commandArgs, '--yes')
+      });
+    }
+  },
+  {
+    name: 'status',
+    description: 'Show overall Playbook repository health',
+    run: async ({ cwd, ci, format, quiet }) => {
+      const { runStatus } = await import('./status.js');
+      return runStatus(cwd, { ci, format, quiet });
+    }
+  },
+  {
+    name: 'upgrade',
+    description: 'Plan safe upgrades and local deterministic migrations',
+    run: async ({ cwd, commandArgs, ci, explain, format, quiet }) => {
+      const { runUpgrade } = await import('./upgrade.js');
+      return runUpgrade(cwd, {
+        check: parseFlag(commandArgs, '--check'),
+        apply: parseFlag(commandArgs, '--apply'),
+        dryRun: parseFlag(commandArgs, '--dry-run'),
+        offline: parseFlag(commandArgs, '--offline'),
+        from: parseOptionValue(commandArgs, '--from'),
+        to: parseOptionValue(commandArgs, '--to'),
+        ci,
+        explain,
+        format,
+        quiet
+      });
+    }
+  },
+  {
+    name: 'diagram',
+    description: 'Generate deterministic architecture Mermaid diagrams',
+    run: async ({ cwd, commandArgs, format, quiet }) => {
+      const { runDiagram } = await import('./diagram.js');
+      return runDiagram(cwd, {
+        repo: parseOptionValue(commandArgs, '--repo') ?? '.',
+        out: parseOptionValue(commandArgs, '--out') ?? 'docs/ARCHITECTURE_DIAGRAMS.md',
+        deps: parseFlag(commandArgs, '--deps'),
+        structure: parseFlag(commandArgs, '--structure'),
+        format,
+        quiet
+      });
+    }
+  },
+  {
+    name: 'session',
+    description: 'Import, merge, and cleanup session snapshots',
+    run: async ({ cwd, commandArgs, format, quiet }) => {
+      const { runSession } = await import('./session.js');
+      return runSession(cwd, commandArgs, { format, quiet });
+    }
+  }
+];
+
+const commandMap = new Map(commandRegistry.map((command) => [command.name, command]));
+
+export const listRegisteredCommands = (): RegisteredCommand[] => [...commandRegistry];
+
+export const hasRegisteredCommand = (commandName: string): boolean => commandMap.has(commandName);
+
+export const runRegisteredCommand = async (commandName: string, context: CommandContext): Promise<number> => {
+  const command = commandMap.get(commandName);
+  if (!command) {
+    return ExitCode.Failure;
+  }
+
+  return command.run(context);
+};
