@@ -16,6 +16,10 @@ declare module "@zachariahredfield/playbook-engine" {
   export const loadConfig: (...args: any[]) => Promise<any>;
   export const generateRepositoryHealth: (...args: any[]) => any;
   export const generateRepositoryIndex: (...args: any[]) => any;
+
+  export const queryRepositoryIndex: (...args: any[]) => any;
+  export const SUPPORTED_QUERY_FIELDS: readonly string[];
+  export type RepositoryQueryField = string;
   export const generateArchitectureDiagrams: (...args: any[]) => Promise<any>;
   export const verifyRepo: (...args: any[]) => any;
   export const formatHuman: (...args: any[]) => string;

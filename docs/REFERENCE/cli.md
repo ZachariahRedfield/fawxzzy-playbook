@@ -13,11 +13,9 @@ Current product-facing surface (see authoritative index: [../commands/README.md]
 - `diagram`
 - `plan`
 - `apply`
+- `index`
+- `query`
 - `playbook-demo` onboarding artifact (discoverable via `playbook demo`)
-
-Next planned command:
-
-- `index` (planned, not implemented)
 
 Current canonical remediation workflow:
 
@@ -71,6 +69,35 @@ JSON output includes:
 - `framework`
 - `architecture`
 - `modules`
+
+
+## `playbook query <field> [--json] [--quiet]`
+
+Query repository intelligence from `.playbook/repo-index.json` without rerunning repository analysis.
+
+Supported fields:
+
+- `architecture`
+- `framework`
+- `language`
+- `modules`
+- `database`
+- `rules`
+
+JSON output includes:
+
+- `command`
+- `field`
+- `result`
+
+### Querying Repository Intelligence
+
+```bash
+playbook index
+playbook query modules
+playbook query architecture
+playbook query modules --json
+```
 
 ## `playbook verify [--ci] [--json] [--quiet]`
 

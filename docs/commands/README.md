@@ -15,6 +15,7 @@ This is the authoritative command-state snapshot for Playbook product docs.
 | `apply` | Execute deterministic auto-fixable plan tasks. | Current (implemented) | `playbook apply --from-plan .playbook/plan.json` |
 | `playbook-demo` (artifact) | Official onboarding repository, discoverable via `playbook demo`. | Current (artifact + CLI discovery) | `playbook demo` |
 | `index` | Emit machine-readable repository index context for AI workflows. | Current (implemented) | `playbook index --json` |
+| `query` | Query machine-readable repository intelligence fields from `.playbook/repo-index.json`. | Current (implemented) | `playbook query modules --json` |
 
 ## Additional implemented CLI utility commands
 
