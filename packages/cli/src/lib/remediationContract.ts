@@ -32,7 +32,59 @@ export type RemediationDerivationInput = {
   unavailableReason?: string;
 };
 
+export type VerifyFindingFacts = {
+  findingCount: number;
+  sources: string[];
+};
+
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
+
+const getInteger = (value: unknown): number | undefined => {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+    return undefined;
+  }
+  return value;
+};
+
+export const deriveVerifyFindingFacts = (verifyPayload: unknown): VerifyFindingFacts => {
+  if (!isObject(verifyPayload)) {
+    return { findingCount: 0, sources: [] };
+  }
+
+  const candidates: number[] = [];
+  const sources: string[] = [];
+
+  const findings = verifyPayload.findings;
+  if (Array.isArray(findings)) {
+    candidates.push(findings.length);
+    sources.push('findings.length');
+  }
+
+  const failures = verifyPayload.failures;
+  const warnings = verifyPayload.warnings;
+  const structuredFailures = Array.isArray(failures) ? failures.length : undefined;
+  const structuredWarnings = Array.isArray(warnings) ? warnings.length : undefined;
+
+  if (structuredFailures !== undefined || structuredWarnings !== undefined) {
+    candidates.push((structuredFailures ?? 0) + (structuredWarnings ?? 0));
+    sources.push('failures.length+warnings.length');
+  }
+
+  const summary = verifyPayload.summary;
+  if (isObject(summary)) {
+    const summaryFailures = getInteger(summary.failures);
+    const summaryWarnings = getInteger(summary.warnings);
+    if (summaryFailures !== undefined || summaryWarnings !== undefined) {
+      candidates.push((summaryFailures ?? 0) + (summaryWarnings ?? 0));
+      sources.push('summary.failures+summary.warnings');
+    }
+  }
+
+  return {
+    findingCount: candidates.length > 0 ? Math.max(...candidates) : 0,
+    sources
+  };
+};
 
 export const buildPlanRemediation = ({
   findingCount,

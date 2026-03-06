@@ -109,4 +109,31 @@ describe('runPlan', () => {
 
     logSpy.mockRestore();
   });
+
+  it('derives remediation status from verify.findings payload shape used by verify --json', async () => {
+    const { runPlan } = await import('./plan.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    generatePlanContract.mockReturnValue({
+      verify: {
+        ok: false,
+        summary: { failures: 0, warnings: 0 },
+        findings: [{ id: 'verify.warning.missing-note', level: 'warning', message: 'Missing note.' }]
+      },
+      tasks: []
+    });
+
+    const exitCode = await runPlan('/repo', { format: 'json', ci: false, quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.remediation).toEqual({
+      status: 'unavailable',
+      totalSteps: 0,
+      unresolvedFailures: 1,
+      reason: 'Verify failures were detected but no remediation tasks are currently available.'
+    });
+
+    logSpy.mockRestore();
+  });
 });

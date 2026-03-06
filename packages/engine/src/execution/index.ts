@@ -10,6 +10,7 @@ import { FixExecutor, HandlerResolver } from './fixExecutor.js';
 import { PlanGenerator } from './planGenerator.js';
 import { RuleRunner } from './ruleRunner.js';
 import type { VerifyReport } from '../report/types.js';
+import { verifyRepo } from '../verify/index.js';
 
 export type PlanContract = {
   verify: {
@@ -54,19 +55,16 @@ export const generateExecutionPlan = (repoRoot: string): { tasks: PlanTask[] } =
 };
 
 export const generatePlanContract = (repoRoot: string): PlanContract => {
-  const findings = runRuleExecution(repoRoot);
+  const verify = verifyRepo(repoRoot);
   const planner = new PlanGenerator();
-  const plan = planner.generate(findings.failures);
+  const plan = planner.generate(verify.failures);
 
   return {
     verify: {
-      ok: findings.failures.length === 0,
-      summary: {
-        failures: findings.failures.length,
-        warnings: 0
-      },
-      failures: findings.failures,
-      warnings: []
+      ok: verify.ok,
+      summary: verify.summary,
+      failures: verify.failures,
+      warnings: verify.warnings
     },
     tasks: plan.tasks
   };

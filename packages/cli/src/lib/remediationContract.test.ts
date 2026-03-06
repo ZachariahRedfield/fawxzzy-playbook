@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildPlanRemediation,
+  deriveVerifyFindingFacts,
   parsePlanRemediation,
   remediationToApplyPrecondition
 } from './remediationContract.js';
@@ -57,5 +58,30 @@ describe('remediationContract', () => {
         unresolvedFailures: 0
       })
     ).toThrow('Plan JSON contract has invalid remediation.status.');
+  });
+
+  it('derives finding count from verify findings payload shape', () => {
+    expect(
+      deriveVerifyFindingFacts({
+        findings: [{ id: 'verify.warning.one' }],
+        summary: { failures: 0, warnings: 0 }
+      })
+    ).toEqual({
+      findingCount: 1,
+      sources: ['findings.length', 'summary.failures+summary.warnings']
+    });
+  });
+
+  it('prefers the strongest available source fact across verify payload shapes', () => {
+    expect(
+      deriveVerifyFindingFacts({
+        failures: [{ id: 'f-1' }],
+        warnings: [{ id: 'w-1' }],
+        summary: { failures: 0, warnings: 0 }
+      })
+    ).toEqual({
+      findingCount: 2,
+      sources: ['failures.length+warnings.length', 'summary.failures+summary.warnings']
+    });
   });
 });
