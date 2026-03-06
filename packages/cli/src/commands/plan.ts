@@ -1,38 +1,6 @@
 import { generatePlanContract } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
-
-type PlanRemediation = {
-  status: 'ready' | 'not_needed' | 'unavailable';
-  totalSteps: number;
-  unresolvedFailures: number;
-  reason?: string;
-};
-
-const buildRemediationSummary = (failureCount: number, totalSteps: number): PlanRemediation => {
-  if (failureCount === 0) {
-    return {
-      status: 'not_needed',
-      totalSteps,
-      unresolvedFailures: 0,
-      reason: 'No verify failures were detected.'
-    };
-  }
-
-  if (totalSteps === 0) {
-    return {
-      status: 'unavailable',
-      totalSteps,
-      unresolvedFailures: failureCount,
-      reason: 'Verify failures were detected but no remediation tasks are currently available.'
-    };
-  }
-
-  return {
-    status: 'ready',
-    totalSteps,
-    unresolvedFailures: Math.max(0, failureCount - totalSteps)
-  };
-};
+import { buildPlanRemediation } from '../lib/remediationContract.js';
 
 const renderTextPlan = (tasks: Array<{ ruleId: string; action: string }>): void => {
   console.log('Plan');
@@ -57,7 +25,7 @@ export const runPlan = async (
   options: { format: 'text' | 'json'; ci: boolean; quiet: boolean }
 ): Promise<number> => {
   const plan = generatePlanContract(cwd);
-  const remediation = buildRemediationSummary(plan.verify.summary.failures, plan.tasks.length);
+  const remediation = buildPlanRemediation(plan.verify.summary.failures, plan.tasks.length);
 
   if (options.format === 'json') {
     console.log(

@@ -12,6 +12,11 @@ Examples:
 
 Contract rules:
 
+- Reads the canonical `plan.remediation` object and maps status explicitly:
+  - `ready` → proceed with task execution.
+  - `not_needed` → no-op with explicit message and success exit code.
+  - `unavailable` → fail clearly and deterministically before execution.
+
 - Executes only tasks with `autoFix: true`.
 - Marks non-auto-fix tasks as `skipped`.
 - Marks missing handlers as `unsupported`.
@@ -53,6 +58,8 @@ playbook apply --from-plan .playbook/plan.json --json
   "command": "apply",
   "ok": true,
   "exitCode": 0,
+  "remediation": { "status": "ready", "totalSteps": 1, "unresolvedFailures": 0 },
+  "message": "Plan remediation is ready. Applying available tasks.",
   "results": [
     {
       "id": "<stable-task-id>",

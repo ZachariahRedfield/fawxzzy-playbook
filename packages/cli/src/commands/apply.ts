@@ -3,6 +3,12 @@ import path from 'node:path';
 import { applyExecutionPlan, generatePlanContract, parsePlanArtifact } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 import { loadVerifyRules } from '../lib/loadVerifyRules.js';
+import {
+  buildPlanRemediation,
+  parsePlanRemediation,
+  remediationToApplyPrecondition,
+  type PlanRemediation
+} from '../lib/remediationContract.js';
 
 type ApplyOptions = {
   format: 'text' | 'json';
@@ -27,6 +33,8 @@ type ApplyJsonResult = {
   command: 'apply';
   ok: boolean;
   exitCode: number;
+  remediation: PlanRemediation;
+  message?: string;
   results: ApplyResult[];
   summary: {
     applied: number;
@@ -44,7 +52,12 @@ type PlanTask = {
   autoFix: boolean;
 };
 
-const loadPlanFromFile = (cwd: string, fromPlan: string): { tasks: PlanTask[] } => {
+type PlanSelection = {
+  tasks: PlanTask[];
+  remediation: PlanRemediation;
+};
+
+const loadPlanFromFile = (cwd: string, fromPlan: string): PlanSelection => {
   const resolvedPath = path.resolve(cwd, fromPlan);
 
   let rawPayload = '';
@@ -63,7 +76,18 @@ const loadPlanFromFile = (cwd: string, fromPlan: string): { tasks: PlanTask[] } 
     throw new Error(`Invalid plan JSON in ${resolvedPath}: ${message}`);
   }
 
-  return parsePlanArtifact(payload);
+  const parsedPlan = parsePlanArtifact(payload);
+
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Invalid plan payload: expected an object envelope.');
+  }
+
+  const remediation = parsePlanRemediation((payload as Record<string, unknown>).remediation);
+
+  return {
+    tasks: parsedPlan.tasks,
+    remediation
+  };
 };
 
 
@@ -115,7 +139,45 @@ export const runApply = async (cwd: string, options: ApplyOptions): Promise<numb
     throw new Error('The --task flag requires --from-plan so task selection is tied to a reviewed artifact.');
   }
 
-  const plan = options.fromPlan ? loadPlanFromFile(cwd, options.fromPlan) : generatePlanContract(cwd);
+  const plan = options.fromPlan
+    ? loadPlanFromFile(cwd, options.fromPlan)
+    : (() => {
+        const generatedPlan = generatePlanContract(cwd);
+        return {
+          tasks: generatedPlan.tasks,
+          remediation: buildPlanRemediation(generatedPlan.verify.summary.failures, generatedPlan.tasks.length)
+        };
+      })();
+  const applyPrecondition = remediationToApplyPrecondition(plan.remediation);
+
+  if (applyPrecondition.action === 'fail') {
+    throw new Error(`Cannot apply remediation: ${applyPrecondition.message}`);
+  }
+
+  if (applyPrecondition.action === 'no_op') {
+    const payload: ApplyJsonResult = {
+      schemaVersion: '1.0',
+      command: 'apply',
+      ok: true,
+      exitCode: ExitCode.Success,
+      remediation: plan.remediation,
+      message: applyPrecondition.message,
+      results: [],
+      summary: { applied: 0, skipped: 0, unsupported: 0, failed: 0 }
+    };
+
+    if (options.format === 'json') {
+      console.log(JSON.stringify(payload, null, 2));
+      return ExitCode.Success;
+    }
+
+    if (!options.quiet) {
+      console.log(applyPrecondition.message);
+    }
+
+    return ExitCode.Success;
+  }
+
   const selectedTasks = selectPlanTasks(plan.tasks, options.tasks);
   const verifyRules = await loadVerifyRules(cwd);
 
@@ -135,6 +197,8 @@ export const runApply = async (cwd: string, options: ApplyOptions): Promise<numb
     command: 'apply',
     ok: exitCode === ExitCode.Success,
     exitCode,
+    remediation: plan.remediation,
+    message: applyPrecondition.message,
     results: execution.results,
     summary: execution.summary
   };

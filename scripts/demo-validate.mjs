@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const DEMO_REPO_URL = process.env.PLAYBOOK_DEMO_REPO_URL ?? 'https://github.com/ZachariahRedfield/playbook-demo.git';
+const DEMO_REPO_LOCAL_PATH = process.env.PLAYBOOK_DEMO_LOCAL_PATH;
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const localCliEntrypoint = path.resolve(projectRoot, 'packages/cli/dist/main.js');
 
@@ -81,7 +82,11 @@ const main = () => {
   console.log('Playbook Demo Validation');
   console.log('');
 
-  run({ cwd: tempRoot, command: 'git', args: ['clone', '--depth', '1', DEMO_REPO_URL, demoDir] });
+  if (DEMO_REPO_LOCAL_PATH) {
+    run({ cwd: tempRoot, command: 'cp', args: ['-R', DEMO_REPO_LOCAL_PATH, demoDir] });
+  } else {
+    run({ cwd: tempRoot, command: 'git', args: ['clone', '--depth', '1', DEMO_REPO_URL, demoDir] });
+  }
   installDemoDependencies(demoDir);
 
   runPlaybookCli({ cwd: demoDir, commandArgs: ['analyze'] });
@@ -98,23 +103,40 @@ const main = () => {
   const planResult = runPlaybookCli({ cwd: demoDir, commandArgs: ['plan', '--json'] });
   const plan = parseJsonOutput(planResult.stdout, 'Plan');
   const remediation = plan.remediation;
-  const planSteps = remediation && typeof remediation.totalSteps === 'number' ? remediation.totalSteps : -1;
-  const remediationStatus = remediation && typeof remediation.status === 'string' ? remediation.status : 'unknown';
-
-  if (planSteps < 0) {
-    throw new Error('Plan JSON contract is missing remediation.totalSteps.');
+  if (!remediation || typeof remediation !== 'object') {
+    throw new Error('Plan JSON contract is missing remediation object.');
   }
 
-  if (initialFindings > 0 && remediationStatus === 'unavailable') {
-    const reason = remediation && typeof remediation.reason === 'string' ? remediation.reason : 'No reason provided.';
+  const planSteps = remediation.totalSteps;
+  const unresolvedFailures = remediation.unresolvedFailures;
+  const remediationStatus = remediation.status;
+
+  if (!Number.isInteger(planSteps) || planSteps < 0) {
+    throw new Error('Plan JSON contract has invalid remediation.totalSteps.');
+  }
+
+  if (!Number.isInteger(unresolvedFailures) || unresolvedFailures < 0) {
+    throw new Error('Plan JSON contract has invalid remediation.unresolvedFailures.');
+  }
+
+  if (remediationStatus !== 'ready' && remediationStatus !== 'not_needed' && remediationStatus !== 'unavailable') {
+    throw new Error('Plan JSON contract has invalid remediation.status.');
+  }
+
+  if (remediationStatus === 'unavailable') {
+    const reason = typeof remediation.reason === 'string' ? remediation.reason : 'No reason provided.';
     throw new Error(`Plan reported unavailable remediation: ${reason}`);
   }
 
-  if (initialFindings > 0 && planSteps <= 0) {
-    throw new Error('Plan must report at least one remediation step.');
+  if (remediationStatus === 'ready' && planSteps <= 0) {
+    throw new Error('Plan reported ready remediation but did not include any steps.');
   }
 
-  console.log(`Plan: ${planSteps} fixes`);
+  if (remediationStatus === 'not_needed' && initialFindings > 0) {
+    throw new Error('Plan reported not_needed remediation despite initial verify findings.');
+  }
+
+  console.log(`Plan: ${planSteps} fixes (${remediationStatus})`);
 
   runPlaybookCli({ cwd: demoDir, commandArgs: ['apply'] });
   console.log('Apply: OK');

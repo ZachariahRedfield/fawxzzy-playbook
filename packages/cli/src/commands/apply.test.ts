@@ -24,7 +24,7 @@ describe('runApply', () => {
     const { runApply } = await import('./apply.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-    generatePlanContract.mockReturnValue({ verify: { ok: false }, tasks: [{ id: 'task-1', ruleId: 'PB001', file: 'docs/ARCHITECTURE.md', action: 'update docs', autoFix: true }] });
+    generatePlanContract.mockReturnValue({ verify: { ok: false, summary: { failures: 1, warnings: 0 } }, tasks: [{ id: 'task-1', ruleId: 'PB001', file: 'docs/ARCHITECTURE.md', action: 'update docs', autoFix: true }] });
     parsePlanArtifact.mockReturnValue({ tasks: [{ id: 'task-from-file', ruleId: 'plugin.failure', file: 'docs/PLUGIN.md', action: 'create plugin doc', autoFix: true }] });
     loadVerifyRules.mockResolvedValue([]);
     applyExecutionPlan.mockResolvedValue({
@@ -47,7 +47,7 @@ describe('runApply', () => {
     const { runApply } = await import('./apply.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-    generatePlanContract.mockReturnValue({ verify: { ok: false }, tasks: [{ id: 'task-3', ruleId: 'PB003', file: 'docs/PLAYBOOK_CHECKLIST.md', action: 'add verify step', autoFix: false }] });
+    generatePlanContract.mockReturnValue({ verify: { ok: false, summary: { failures: 1, warnings: 0 } }, tasks: [{ id: 'task-3', ruleId: 'PB003', file: 'docs/PLAYBOOK_CHECKLIST.md', action: 'add verify step', autoFix: false }] });
     parsePlanArtifact.mockReturnValue({ tasks: [{ id: 'task-from-file', ruleId: 'plugin.failure', file: 'docs/PLUGIN.md', action: 'create plugin doc', autoFix: true }] });
     loadVerifyRules.mockResolvedValue([]);
     applyExecutionPlan.mockResolvedValue({
@@ -64,6 +64,8 @@ describe('runApply', () => {
       command: 'apply',
       ok: true,
       exitCode: ExitCode.Success,
+      remediation: { status: 'ready', totalSteps: 1, unresolvedFailures: 0 },
+      message: 'Plan remediation is ready. Applying available tasks.',
       results: [{ id: 'task-3', ruleId: 'PB003', file: 'docs/PLAYBOOK_CHECKLIST.md', action: 'add verify step', autoFix: false, status: 'skipped' }],
       summary: { applied: 0, skipped: 1, unsupported: 0, failed: 0 }
     });
@@ -81,6 +83,7 @@ describe('runApply', () => {
       JSON.stringify({
         schemaVersion: '1.0',
         command: 'plan',
+        remediation: { status: 'ready', totalSteps: 1, unresolvedFailures: 0 },
         tasks: [{ id: 'task-from-file', ruleId: 'plugin.failure', file: 'docs/PLUGIN.md', action: 'create plugin doc', autoFix: true }]
       })
     );
@@ -126,7 +129,7 @@ describe('runApply', () => {
     const { runApply } = await import('./apply.js');
     const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-apply-select-'));
     const planPath = path.join(tmpRoot, 'plan.json');
-    fs.writeFileSync(planPath, JSON.stringify({ schemaVersion: '1.0', command: 'plan', tasks: [] }));
+    fs.writeFileSync(planPath, JSON.stringify({ schemaVersion: '1.0', command: 'plan', remediation: { status: 'ready', totalSteps: 2, unresolvedFailures: 0 }, tasks: [] }));
 
     parsePlanArtifact.mockReturnValue({
       tasks: [
@@ -159,7 +162,7 @@ describe('runApply', () => {
   it('supports selecting multiple task ids with deduplication while preserving artifact order', async () => {
     const { runApply } = await import('./apply.js');
     const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-apply-multi-select-'));
-    fs.writeFileSync(path.join(tmpRoot, 'plan.json'), JSON.stringify({ schemaVersion: '1.0', command: 'plan', tasks: [] }));
+    fs.writeFileSync(path.join(tmpRoot, 'plan.json'), JSON.stringify({ schemaVersion: '1.0', command: 'plan', remediation: { status: 'ready', totalSteps: 3, unresolvedFailures: 0 }, tasks: [] }));
 
     parsePlanArtifact.mockReturnValue({
       tasks: [
@@ -192,7 +195,7 @@ describe('runApply', () => {
   it('fails clearly when task selection includes unknown task ids', async () => {
     const { runApply } = await import('./apply.js');
     const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-apply-unknown-task-'));
-    fs.writeFileSync(path.join(tmpRoot, 'plan.json'), JSON.stringify({ schemaVersion: '1.0', command: 'plan', tasks: [] }));
+    fs.writeFileSync(path.join(tmpRoot, 'plan.json'), JSON.stringify({ schemaVersion: '1.0', command: 'plan', remediation: { status: 'ready', totalSteps: 3, unresolvedFailures: 0 }, tasks: [] }));
 
     parsePlanArtifact.mockReturnValue({ tasks: [{ id: 'task-1', ruleId: 'one', file: null, action: 'first', autoFix: true }] });
 
@@ -207,7 +210,7 @@ describe('runApply', () => {
     const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-apply-invalid-envelope-'));
     const planPath = path.join(tmpRoot, 'plan.json');
 
-    fs.writeFileSync(planPath, JSON.stringify({ schemaVersion: '1.0', command: 'plan', tasks: [] }));
+    fs.writeFileSync(planPath, JSON.stringify({ schemaVersion: '1.0', command: 'plan', remediation: { status: 'ready', totalSteps: 0, unresolvedFailures: 0 }, tasks: [] }));
     parsePlanArtifact.mockImplementation(() => {
       throw new Error('Invalid plan payload: each task must include id, ruleId, action, and autoFix.');
     });
@@ -218,4 +221,44 @@ describe('runApply', () => {
     expect(generatePlanContract).not.toHaveBeenCalled();
   });
 
+});
+
+describe('runApply remediation status preconditions', () => {
+  beforeEach(() => {
+    generatePlanContract.mockReset();
+    applyExecutionPlan.mockReset();
+    parsePlanArtifact.mockReset();
+    loadVerifyRules.mockReset();
+  });
+
+  it('returns explicit no-op when remediation status is not_needed', async () => {
+    const { runApply } = await import('./apply.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    generatePlanContract.mockReturnValue({ verify: { ok: true, summary: { failures: 0, warnings: 0 } }, tasks: [] });
+
+    const exitCode = await runApply('/repo', { format: 'json', ci: false, quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(applyExecutionPlan).not.toHaveBeenCalled();
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.remediation.status).toBe('not_needed');
+    expect(payload.message).toBe('No verify failures were detected.');
+
+    logSpy.mockRestore();
+  });
+
+  it('fails deterministically when remediation status is unavailable', async () => {
+    const { runApply } = await import('./apply.js');
+
+    generatePlanContract.mockReturnValue({
+      verify: { ok: false, summary: { failures: 2, warnings: 0 } },
+      tasks: []
+    });
+
+    await expect(runApply('/repo', { format: 'json', ci: false, quiet: false })).rejects.toThrow(
+      'Cannot apply remediation: Verify failures were detected but no remediation tasks are currently available.'
+    );
+    expect(applyExecutionPlan).not.toHaveBeenCalled();
+  });
 });
