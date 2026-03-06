@@ -2,8 +2,12 @@ import { collectAnalyzeReport } from './analyze.js';
 import { collectDoctorReport } from './doctor.js';
 import { collectVerifyReport } from './verify.js';
 import { ExitCode } from '../lib/cliContract.js';
+import { loadAnalyzeRules } from '../lib/loadAnalyzeRules.js';
+import { loadVerifyRules } from '../lib/loadVerifyRules.js';
 import fs from 'node:fs';
 import path from 'node:path';
+import type { AnalyzeReport } from './analyze.js';
+import type { VerifyReport } from './verify.js';
 
 type StatusOptions = {
   ci: boolean;
@@ -31,6 +35,14 @@ type RepoIndexSummary = {
   rules: string[];
 };
 
+type TopIssue = {
+  id: string;
+  description: string;
+};
+
+const analyzeRules = loadAnalyzeRules();
+const verifyRules = loadVerifyRules();
+
 const readRepoIndexSummary = (cwd: string): RepoIndexSummary | null => {
   const repoIndexPath = path.join(cwd, '.playbook', 'repo-index.json');
   if (!fs.existsSync(repoIndexPath)) {
@@ -52,7 +64,33 @@ const readRepoIndexSummary = (cwd: string): RepoIndexSummary | null => {
   };
 };
 
-const toStatusResult = async (cwd: string): Promise<{ result: StatusResult; exitCode: ExitCode }> => {
+const resolveTopIssue = (
+  verify: VerifyReport,
+  analyze: AnalyzeReport
+): TopIssue | null => {
+  const failure = verify.failures[0];
+  if (failure) {
+    const matchingRule = verifyRules.find((rule) => rule.check({ failure }));
+    if (matchingRule) {
+      return { id: matchingRule.id, description: matchingRule.description };
+    }
+    return { id: failure.id, description: failure.message };
+  }
+
+  const warningRecommendation = analyze.recommendations.find((recommendation: { severity: string }) => recommendation.severity === 'WARN');
+  if (!warningRecommendation) {
+    return null;
+  }
+
+  const matchingRule = analyzeRules.find((rule) => rule.check({ recommendation: warningRecommendation }));
+  if (matchingRule) {
+    return { id: matchingRule.id, description: matchingRule.description };
+  }
+
+  return { id: warningRecommendation.id, description: warningRecommendation.title };
+};
+
+const toStatusResult = async (cwd: string): Promise<{ result: StatusResult; exitCode: ExitCode; topIssue: TopIssue | null }> => {
   const doctor = await collectDoctorReport(cwd);
   const analyze = await collectAnalyzeReport(cwd);
   const verify = await collectVerifyReport(cwd);
@@ -76,10 +114,15 @@ const toStatusResult = async (cwd: string): Promise<{ result: StatusResult; exit
       ? ExitCode.Success
       : ExitCode.PolicyFailure;
 
-  return { result, exitCode };
+  return { result, exitCode, topIssue: resolveTopIssue(verify, analyze) };
 };
 
-const printHuman = (result: StatusResult, ci: boolean, repoIndexSummary: RepoIndexSummary | null): void => {
+const printHuman = (
+  result: StatusResult,
+  ci: boolean,
+  repoIndexSummary: RepoIndexSummary | null,
+  topIssue: TopIssue | null
+): void => {
   if (ci) {
     console.log(result.ok ? 'playbook status: PASS' : 'playbook status: FAIL');
     return;
@@ -111,11 +154,21 @@ const printHuman = (result: StatusResult, ci: boolean, repoIndexSummary: RepoInd
   console.log(`  Overall: ${result.ok ? 'healthy' : 'issues detected'}`);
   console.log(`  Warnings: ${result.summary.warnings}`);
   console.log(`  Errors: ${result.summary.errors}`);
+
+  if (topIssue) {
+    console.log('');
+    console.log('Top issue');
+    console.log('─────────');
+    console.log(`${topIssue.id} – ${topIssue.description}`);
+    console.log('');
+    console.log('Run:');
+    console.log(`npx playbook explain ${topIssue.id}`);
+  }
 };
 
 export const runStatus = async (cwd: string, options: StatusOptions): Promise<number> => {
   try {
-    const { result, exitCode } = await toStatusResult(cwd);
+    const { result, exitCode, topIssue } = await toStatusResult(cwd);
 
     if (options.format === 'json') {
       console.log(JSON.stringify(result, null, 2));
@@ -124,7 +177,7 @@ export const runStatus = async (cwd: string, options: StatusOptions): Promise<nu
 
     if (!(options.quiet && result.ok)) {
       const repoIndexSummary = readRepoIndexSummary(cwd);
-      printHuman(result, options.ci, repoIndexSummary);
+      printHuman(result, options.ci, repoIndexSummary, topIssue);
     }
 
     return exitCode;
