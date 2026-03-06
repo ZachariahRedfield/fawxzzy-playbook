@@ -17,6 +17,24 @@ const SUPPORTED_FIELDS_MESSAGE = SUPPORTED_QUERY_FIELDS.join(', ');
 const isRepositoryQueryField = (field: string): field is RepositoryQueryField =>
   SUPPORTED_QUERY_FIELDS.includes(field as RepositoryQueryField);
 
+const normalizeRepositoryQueryField = (input: string): RepositoryQueryField | null => {
+  if (isRepositoryQueryField(input)) {
+    return input;
+  }
+
+  const normalizedTokens = input
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((token) => token.length > 0);
+
+  const matches = SUPPORTED_QUERY_FIELDS.filter((field) => normalizedTokens.includes(field));
+  if (matches.length === 1) {
+    return matches[0];
+  }
+
+  return null;
+};
+
 const readRepositoryIndex = (projectRoot: string): RepositoryIndex => {
   const indexPath = path.join(projectRoot, INDEX_RELATIVE_PATH);
   if (!fs.existsSync(indexPath)) {
@@ -36,14 +54,15 @@ const readRepositoryIndex = (projectRoot: string): RepositoryIndex => {
 };
 
 export const queryRepositoryIndex = (projectRoot: string, field: string): RepositoryQueryResult => {
-  if (!isRepositoryQueryField(field)) {
+  const resolvedField = normalizeRepositoryQueryField(field);
+  if (!resolvedField) {
     throw new Error(`playbook query: unsupported field "${field}". Supported fields: ${SUPPORTED_FIELDS_MESSAGE}.`);
   }
 
   const index = readRepositoryIndex(projectRoot);
 
   return {
-    field,
-    result: index[field]
+    field: resolvedField,
+    result: index[resolvedField]
   };
 };

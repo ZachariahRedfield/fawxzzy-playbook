@@ -121,7 +121,7 @@ Current implemented product-facing command/artifact set:
 
 The following items are planned and should be treated as future-state roadmap work:
 
-- **AI Repository Intelligence (`playbook index`)**: next planned command to generate `.playbook/repo-index.json` describing modules, dependencies, framework signals, schema surfaces, and architecture contracts for AI-safe repository understanding/modification.
+- **AI Repository Intelligence (`playbook index`)**: implemented command that generates `.playbook/repo-index.json` with deterministic architecture/module/framework signals for automation-safe repository understanding.
 
 
 Establish Playbook as a trusted governance tool in the developer ecosystem.
@@ -173,7 +173,7 @@ playbook-demo (discoverable via `playbook demo`)
 
 Next planned command:
 
-playbook index (planned)
+playbook index
 
 AI-Aware Engineering Guardrails
 
@@ -243,14 +243,16 @@ Tooling & Distribution (Package Manager + Action + Demo Repo)
 
 Near-Term Productization Milestones
 
+Progress (current): repository intelligence commands (`index`, `query`, `ask`, `explain`) are implemented with deterministic JSON-oriented contracts for AI-operable workflows.
+
 ### Future milestone: AI Repository Intelligence (planned)
 
-- [ ] Add `playbook index` command (next planned) to emit `.playbook/repo-index.json`.
-- [ ] Include deterministic repository metadata: module boundaries, internal dependencies, detected framework/runtime signals, and documented architecture contracts.
-- [ ] Treat index output as machine-readable context for safe AI-assisted repository changes.
+- [x] Add `playbook index` command to emit `.playbook/repo-index.json`.
+- [x] Include deterministic repository metadata: module boundaries, internal dependencies, detected framework/runtime signals, and documented architecture contracts.
+- [x] Treat index output as machine-readable context for safe AI-assisted repository changes.
 
-- [ ] CLI command architecture cleanup: standardize all CLI commands under `packages/cli/src/commands/`, wire `packages/cli/src/commands/index.ts` as the single command registry, and keep shared helpers under `packages/cli/src/lib/`.
-- [ ] Command documentation baseline: add `docs/commands/` with short per-command docs for `analyze`, `doctor`, `diagram`, and `upgrade` so contributors and AI agents can quickly discover supported behavior.
+- [x] CLI command architecture cleanup: standardize all CLI commands under `packages/cli/src/commands/`, wire `packages/cli/src/commands/index.ts` as the single command registry, and keep shared helpers under `packages/cli/src/lib/`.
+- [x] Command documentation baseline: maintain `docs/commands/` with short per-command docs for current command surface so contributors and AI agents can quickly discover supported behavior.
 - [ ] Docs merge and roadmap cleanup: keep roadmap/checklist/docs language aligned so near-term CLI structure and distribution priorities remain explicit.
 - [x] Playbook Demo Repo milestone (`playbook-demo`): first-class onboarding repository and deterministic CLI discovery via `playbook demo`.
 - [ ] GitHub Action Integration (CI-native adoption): deliver a first-class `uses: playbook/verify` path, with initial implementation via `.github/workflows/playbook-verify.yml`. Initial capabilities should include `playbook verify`, architecture contract checks, and governance rule checks.

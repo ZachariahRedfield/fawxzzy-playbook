@@ -17,6 +17,7 @@ This is the authoritative command-state snapshot for Playbook product docs.
 | `index` | Emit machine-readable repository index context for AI workflows. | Current (implemented) | `playbook index --json` |
 | `query` | Query machine-readable repository intelligence fields from `.playbook/repo-index.json`. | Current (implemented) | `playbook query modules --json` |
 | `ask` | Answer repository guidance questions from machine-readable repository intelligence context. | Current (implemented) | `playbook ask "where should a new feature live?" --json` |
+| `explain` | Deterministically explain rule/module/architecture targets from engine + repo index context. | Current (implemented) | `playbook explain architecture --json` |
 
 ## Additional implemented CLI utility commands
 
@@ -27,7 +28,6 @@ The CLI registry currently also exposes utility commands not treated as part of 
 - `fix`
 - `status`
 - `upgrade`
-- `explain`
 - `session`
 
 Source of truth: `packages/cli/src/commands/index.ts`.

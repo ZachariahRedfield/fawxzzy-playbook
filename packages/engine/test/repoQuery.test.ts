@@ -29,6 +29,22 @@ describe('queryRepositoryIndex', () => {
     expect(queryRepositoryIndex(repo, 'modules')).toEqual({ field: 'modules', result: ['users', 'workouts'] });
   });
 
+
+  it('normalizes natural language query field requests to supported fields', () => {
+    const repo = createRepo('playbook-repo-query-natural-language');
+    writeRepoIndex(repo, {
+      schemaVersion: '1.0',
+      framework: 'node',
+      language: 'typescript',
+      architecture: 'modular-monolith',
+      modules: ['api', 'worker'],
+      database: 'none',
+      rules: ['notes.missing']
+    });
+
+    expect(queryRepositoryIndex(repo, 'list modules')).toEqual({ field: 'modules', result: ['api', 'worker'] });
+  });
+
   it('throws deterministic errors for unsupported fields', () => {
     const repo = createRepo('playbook-repo-query-unsupported-field');
     writeRepoIndex(repo, {

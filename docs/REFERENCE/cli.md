@@ -16,6 +16,7 @@ Current product-facing surface (see authoritative index: [../commands/README.md]
 - `index`
 - `query`
 - `ask`
+- `explain`
 - `playbook-demo` onboarding artifact (discoverable via `playbook demo`)
 
 Current canonical remediation workflow:
@@ -184,3 +185,21 @@ Plan and apply deterministic local upgrade migrations.
 ## `playbook session <import|merge|cleanup> [--ci] [--json] [--quiet]`
 
 Import, merge, and cleanup session snapshots.
+
+
+## Capability discovery guidance
+
+For developers and AI agents, command discovery should start from CLI help output (authoritative source):
+
+```bash
+playbook --help
+playbook <command> --help
+```
+
+Deterministic repository intelligence discovery flow:
+
+```bash
+playbook rules
+playbook explain <rule>
+playbook explain architecture
+```

@@ -92,6 +92,27 @@ try {
   run(nodeBin, [cliPath, 'init'], { cwd: projectDir });
   run(nodeBin, [cliPath, 'analyze'], { cwd: projectDir });
 
+  const indexResult = runWithStatus(nodeBin, [cliPath, 'index', '--json'], { cwd: projectDir });
+  const indexJson = JSON.parse(indexResult.stdout);
+
+  if (indexJson.command !== 'index' || indexJson.ok !== true || typeof indexJson.indexFile !== 'string') {
+    throw new Error('smoke-test failed: expected index --json to include command=index, ok=true, and indexFile');
+  }
+
+  if (!Array.isArray(indexJson.modules)) {
+    throw new Error('smoke-test failed: expected index --json modules to be an array');
+  }
+
+  fs.mkdirSync(path.join(projectDir, 'tmp'), { recursive: true });
+  const diagramOut = path.join(projectDir, 'tmp', 'diagram.md');
+  run(nodeBin, [cliPath, 'diagram', '--repo', '.', '--out', 'tmp/diagram.md'], { cwd: projectDir });
+  if (!fs.existsSync(diagramOut)) {
+    throw new Error('smoke-test failed: expected diagram output at tmp/diagram.md');
+  }
+
+  run(nodeBin, [cliPath, 'ask', 'what architecture is this repo?'], { cwd: projectDir });
+  run(nodeBin, [cliPath, 'query', 'list modules'], { cwd: projectDir });
+
   const analyzeJson = runWithStatus(nodeBin, [cliPath, 'analyze', '--json', '--explain'], { cwd: projectDir });
   const analyzeJsonResult = JSON.parse(analyzeJson.stdout);
 
@@ -152,15 +173,34 @@ try {
   const rulesJson = runWithStatus(nodeBin, [cliPath, 'rules', '--json'], { cwd: projectDir });
   const rulesJsonResult = JSON.parse(rulesJson.stdout);
 
+  if (rulesJsonResult.schemaVersion !== '1.0' || rulesJsonResult.command !== 'rules') {
+    throw new Error('smoke-test failed: expected rules --json to include schemaVersion=1.0 and command=rules');
+  }
+
   if (!Array.isArray(rulesJsonResult.verify) || !Array.isArray(rulesJsonResult.analyze)) {
     throw new Error('smoke-test failed: expected rules --json to include verify and analyze arrays');
   }
 
-  const explainJson = runWithStatus(nodeBin, [cliPath, 'explain', 'notes.missing', '--json'], { cwd: projectDir });
-  const explainJsonResult = JSON.parse(explainJson.stdout);
+  const explainRuleJson = runWithStatus(nodeBin, [cliPath, 'explain', 'PB001', '--json'], { cwd: projectDir });
+  const explainRuleJsonResult = JSON.parse(explainRuleJson.stdout);
 
-  if (explainJsonResult.type !== 'rule' || explainJsonResult.explanation?.id !== 'notes.missing') {
-    throw new Error('smoke-test failed: expected explain notes.missing --json to include type=rule and explanation.id=notes.missing');
+  if (explainRuleJsonResult.command !== 'explain' || explainRuleJsonResult.target !== 'PB001') {
+    throw new Error('smoke-test failed: expected explain PB001 --json to include command=explain and target=PB001');
+  }
+
+  if (explainRuleJsonResult.type !== 'rule' || typeof explainRuleJsonResult.explanation !== 'object') {
+    throw new Error('smoke-test failed: expected explain PB001 --json to include type=rule and explanation object');
+  }
+
+  const explainArchitectureJson = runWithStatus(nodeBin, [cliPath, 'explain', 'architecture', '--json'], { cwd: projectDir });
+  const explainArchitectureJsonResult = JSON.parse(explainArchitectureJson.stdout);
+
+  if (explainArchitectureJsonResult.command !== 'explain' || explainArchitectureJsonResult.target !== 'architecture') {
+    throw new Error('smoke-test failed: expected explain architecture --json to include command=explain and target=architecture');
+  }
+
+  if (explainArchitectureJsonResult.type !== 'architecture' || typeof explainArchitectureJsonResult.explanation !== 'object') {
+    throw new Error('smoke-test failed: expected explain architecture --json to include type=architecture and explanation object');
   }
 
   const statusJsonHealthy = runWithStatus(nodeBin, [cliPath, 'status', '--json'], { cwd: projectDir });

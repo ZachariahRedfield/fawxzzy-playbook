@@ -56,3 +56,10 @@ Pattern: reviewed intent before execution. In automation, generate plan output f
 - Pattern: onboarding commands should return both human-readable output and a machine-readable JSON contract.
 - Rule: initial demo command behavior must remain deterministic and side-effect free.
 - Failure mode: environment-dependent onboarding steps (implicit clone/open/install behavior) reduce trust when user systems vary.
+
+
+## Capability discovery guidance
+
+- The CLI help output is authoritative for command and flag discovery (`playbook --help`, `playbook <command> --help`).
+- Use `playbook rules` to discover active deterministic rules.
+- Use `playbook explain <rule>` and `playbook explain architecture` to retrieve deterministic rule and repository-intelligence explanations.
