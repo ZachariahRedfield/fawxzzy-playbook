@@ -1,6 +1,7 @@
 import { ExitCode } from '../lib/cliContract.js';
 import { collectVerifyReport, type VerifyReport } from './verify.js';
 import { fixRegistry } from '../lib/fixes.js';
+import { loadVerifyRules } from '../lib/loadVerifyRules.js';
 
 type FixOptions = {
   dryRun: boolean;
@@ -102,6 +103,7 @@ const outputJson = (result: FixJsonResult): void => {
 
 export const runFix = async (cwd: string, options: FixOptions): Promise<number> => {
   try {
+    const verifyRules = await loadVerifyRules(cwd);
     const initialReport = await collectVerifyReport(cwd);
     const onlyFilter = parseOnlyFilter(options.only);
 
@@ -112,10 +114,13 @@ export const runFix = async (cwd: string, options: FixOptions): Promise<number> 
       return onlyFilter.has(failure.id);
     });
 
-    const plan = candidateFailures.map((failure: VerifyReport['failures'][number]) => ({
-      findingId: failure.id,
-      handler: fixRegistry[failure.id]
-    }));
+    const plan = candidateFailures.map((failure: VerifyReport['failures'][number]) => {
+      const pluginRule = verifyRules.find((rule) => rule.id === failure.id || rule.check({ failure }));
+      return {
+        findingId: failure.id,
+        handler: pluginRule?.fix ?? fixRegistry[failure.id]
+      };
+    });
 
     const applied: AppliedFix[] = [];
     const skipped: SkippedFix[] = [];

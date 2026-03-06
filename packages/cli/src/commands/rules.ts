@@ -49,8 +49,8 @@ export const runRules = async (
   const result: RulesResult = {
     schemaVersion: '1.0',
     command: 'rules',
-    verify: loadVerifyRules().map((rule) => toRuleSummary(rule, options.explain)),
-    analyze: loadAnalyzeRules().map((rule) => toRuleSummary(rule, options.explain))
+    verify: (await loadVerifyRules(_cwd)).map((rule) => toRuleSummary(rule, options.explain)),
+    analyze: (await loadAnalyzeRules(_cwd)).map((rule) => toRuleSummary(rule, options.explain))
   };
 
   if (options.format === 'json') {

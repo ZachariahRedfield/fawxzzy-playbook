@@ -7,9 +7,10 @@ export type VerifyReport = Awaited<ReturnType<typeof verify>>;
 type VerifyFailure = VerifyReport['failures'][number];
 type VerifyWarning = VerifyReport['warnings'][number];
 
-const verifyRules = loadVerifyRules();
-
-const resolveFailureGuidance = (failure: VerifyFailure): { explanation?: string; remediation?: string[] } => {
+const resolveFailureGuidance = (
+  verifyRules: Awaited<ReturnType<typeof loadVerifyRules>>,
+  failure: VerifyFailure
+): { explanation?: string; remediation?: string[] } => {
   const rule = verifyRules.find((candidate) => candidate.check({ failure }));
   return {
     explanation: rule?.explanation,
@@ -23,6 +24,7 @@ export const runVerify = async (
   cwd: string,
   options: { format: 'text' | 'json'; ci: boolean; quiet: boolean; explain: boolean }
 ): Promise<number> => {
+  const verifyRules = await loadVerifyRules(cwd);
   const report = await collectVerifyReport(cwd);
 
   if (options.format === 'text' && !options.ci && !options.explain) {
@@ -47,7 +49,7 @@ export const runVerify = async (
     summary: report.ok ? 'Verification passed.' : 'Verification failed.',
     findings: [
       ...report.failures.map((failure: VerifyFailure) => ({
-        ...resolveFailureGuidance(failure),
+        ...resolveFailureGuidance(verifyRules, failure),
         id: `verify.failure.${failure.id}`,
         level: 'error' as const,
         message: failure.message

@@ -4,7 +4,7 @@ import type { AnalyzeReport } from './analyze.js';
 import type { VerifyReport } from './verify.js';
 
 const collectAnalyzeReport = vi.fn<(cwd: string) => Promise<AnalyzeReport>>();
-const ensureRepoIndex = vi.fn<(repoRoot: string) => string>();
+const ensureRepoIndex = vi.fn<(repoRoot: string) => Promise<string>>();
 const collectDoctorReport = vi.fn();
 const collectVerifyReport = vi.fn<(cwd: string) => Promise<VerifyReport>>();
 
@@ -37,7 +37,7 @@ describe('runStatus', () => {
     collectAnalyzeReport.mockReset();
     collectVerifyReport.mockReset();
     ensureRepoIndex.mockReset();
-    ensureRepoIndex.mockImplementation((repoRoot: string) => `${repoRoot}/.playbook/repo-index.json`);
+    ensureRepoIndex.mockImplementation(async (repoRoot: string) => `${repoRoot}/.playbook/repo-index.json`);
   });
 
   it('prints top issue guidance when findings exist', async () => {

@@ -11,7 +11,7 @@ const createFile = (filePath: string, content = ''): void => {
 };
 
 describe('analyze repository index', () => {
-  it('builds a machine-readable repository index', () => {
+  it('builds a machine-readable repository index', async () => {
     const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-analyze-index-'));
     createFile(path.join(repoRoot, 'package.json'), '{"name":"test"}\n');
     createFile(path.join(repoRoot, 'tsconfig.json'), '{"compilerOptions":{}}\n');
@@ -21,7 +21,7 @@ describe('analyze repository index', () => {
     createFile(path.join(repoRoot, 'src/features/users/index.ts'), '');
     createFile(path.join(repoRoot, 'src/shared/logger/index.ts'), '');
 
-    const index = buildRepoIndex(repoRoot);
+    const index = await buildRepoIndex(repoRoot);
 
     expect(index.framework).toBe('node');
     expect(index.language).toBe('typescript');

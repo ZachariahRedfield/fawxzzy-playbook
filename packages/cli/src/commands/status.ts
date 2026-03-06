@@ -40,9 +40,6 @@ type TopIssue = {
   description: string;
 };
 
-const analyzeRules = loadAnalyzeRules();
-const verifyRules = loadVerifyRules();
-
 const readRepoIndexSummary = (cwd: string): RepoIndexSummary | null => {
   const repoIndexPath = path.join(cwd, '.playbook', 'repo-index.json');
   if (!fs.existsSync(repoIndexPath)) {
@@ -64,13 +61,14 @@ const readRepoIndexSummary = (cwd: string): RepoIndexSummary | null => {
   };
 };
 
-const resolveTopIssue = (
+const resolveTopIssue = async (
+  cwd: string,
   verify: VerifyReport,
   analyze: AnalyzeReport
-): TopIssue | null => {
+): Promise<TopIssue | null> => {
   const failure = verify.failures[0];
   if (failure) {
-    const matchingRule = verifyRules.find((rule) => rule.check({ failure }));
+    const matchingRule = (await loadVerifyRules(cwd)).find((rule) => rule.check({ failure }));
     if (matchingRule) {
       return { id: matchingRule.id, description: matchingRule.description };
     }
@@ -82,7 +80,7 @@ const resolveTopIssue = (
     return null;
   }
 
-  const matchingRule = analyzeRules.find((rule) => rule.check({ recommendation: warningRecommendation }));
+  const matchingRule = (await loadAnalyzeRules(cwd)).find((rule) => rule.check({ recommendation: warningRecommendation }));
   if (matchingRule) {
     return { id: matchingRule.id, description: matchingRule.description };
   }
@@ -94,7 +92,7 @@ const toStatusResult = async (cwd: string): Promise<{ result: StatusResult; exit
   const doctor = await collectDoctorReport(cwd);
   const analyze = await collectAnalyzeReport(cwd);
   const verify = await collectVerifyReport(cwd);
-  ensureRepoIndex(analyze.repoPath);
+  await ensureRepoIndex(analyze.repoPath);
 
   const warnings = analyze.recommendations.filter((rec: { severity: string }) => rec.severity === 'WARN').length;
   const errors = 0;
@@ -115,7 +113,7 @@ const toStatusResult = async (cwd: string): Promise<{ result: StatusResult; exit
       ? ExitCode.Success
       : ExitCode.PolicyFailure;
 
-  return { result, exitCode, topIssue: resolveTopIssue(verify, analyze), repoRoot: analyze.repoPath };
+  return { result, exitCode, topIssue: await resolveTopIssue(cwd, verify, analyze), repoRoot: analyze.repoPath };
 };
 
 const printHuman = (

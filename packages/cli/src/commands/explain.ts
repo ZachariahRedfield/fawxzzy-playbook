@@ -16,8 +16,8 @@ type ExplainResult = {
   rule: ExplainRule;
 };
 
-const findRule = (ruleId: string): ExplainRule | undefined => {
-  const verifyRule = loadVerifyRules().find((rule) => rule.id === ruleId);
+const findRule = async (cwd: string, ruleId: string): Promise<ExplainRule | undefined> => {
+  const verifyRule = (await loadVerifyRules(cwd)).find((rule) => rule.id === ruleId);
   if (verifyRule) {
     return {
       kind: 'verify',
@@ -28,7 +28,7 @@ const findRule = (ruleId: string): ExplainRule | undefined => {
     };
   }
 
-  const analyzeRule = loadAnalyzeRules().find((rule) => rule.id === ruleId);
+  const analyzeRule = (await loadAnalyzeRules(cwd)).find((rule) => rule.id === ruleId);
   if (analyzeRule) {
     return {
       kind: 'analyze',
@@ -65,7 +65,7 @@ const printText = (rule: ExplainRule): void => {
 };
 
 export const runExplain = async (
-  _cwd: string,
+  cwd: string,
   commandArgs: string[],
   options: { format: 'text' | 'json'; quiet: boolean }
 ): Promise<number> => {
@@ -75,7 +75,7 @@ export const runExplain = async (
     return ExitCode.Failure;
   }
 
-  const rule = findRule(ruleId);
+  const rule = await findRule(cwd, ruleId);
   if (!rule) {
     console.error(`playbook explain: rule not found: ${ruleId}`);
     return ExitCode.Failure;

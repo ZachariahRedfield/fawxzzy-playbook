@@ -29,8 +29,6 @@ type RepoIndex = {
   };
 };
 
-const analyzeRules = loadAnalyzeRules();
-const verifyRules = loadVerifyRules();
 
 const scanDirectories = (root: string, current = ''): string[] => {
   const full = path.join(root, current);
@@ -120,7 +118,7 @@ const detectLanguage = (repoRoot: string, framework: string): string => {
   return 'unknown';
 };
 
-export const buildRepoIndex = (repoRoot: string): RepoIndex => {
+export const buildRepoIndex = async (repoRoot: string): Promise<RepoIndex> => {
   const dirs = scanDirectories(repoRoot);
   const framework = detectFramework(repoRoot);
   const language = detectLanguage(repoRoot, framework);
@@ -145,6 +143,8 @@ export const buildRepoIndex = (repoRoot: string): RepoIndex => {
     .map((entry) => entry.name)
     .sort();
 
+  const analyzeRules = await loadAnalyzeRules(repoRoot);
+  const verifyRules = await loadVerifyRules(repoRoot);
   const rules = [...new Set([...verifyRules.map((rule) => rule.id), ...analyzeRules.map((rule) => rule.id)])].sort();
 
   return {
@@ -160,24 +160,27 @@ export const buildRepoIndex = (repoRoot: string): RepoIndex => {
 
 const repoIndexPathForRoot = (repoRoot: string): string => path.join(repoRoot, '.playbook', 'repo-index.json');
 
-const writeRepoIndex = (repoRoot: string): string => {
+const writeRepoIndex = async (repoRoot: string): Promise<string> => {
   const outPath = repoIndexPathForRoot(repoRoot);
-  const payload = buildRepoIndex(repoRoot);
+  const payload = await buildRepoIndex(repoRoot);
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
   return outPath;
 };
 
-export const ensureRepoIndex = (repoRoot: string): string => {
+export const ensureRepoIndex = async (repoRoot: string): Promise<string> => {
   const outPath = repoIndexPathForRoot(repoRoot);
   if (fs.existsSync(outPath)) {
     return outPath;
   }
 
-  return writeRepoIndex(repoRoot);
+  return await writeRepoIndex(repoRoot);
 };
 
-const resolveRecommendationGuidance = (recommendation: AnalyzeRecommendation): { explanation?: string; remediation?: string[] } => {
+const resolveRecommendationGuidance = (
+  analyzeRules: Awaited<ReturnType<typeof loadAnalyzeRules>>,
+  recommendation: AnalyzeRecommendation
+): { explanation?: string; remediation?: string[] } => {
   const rule = analyzeRules.find((candidate) => candidate.check({ recommendation }));
   return {
     explanation: rule?.explanation ?? recommendation.why,
@@ -190,7 +193,8 @@ export const collectAnalyzeReport = async (cwd: string): Promise<AnalyzeReport> 
 export const runAnalyze = async (cwd: string, opts: AnalyzeOptions): Promise<number> => {
   const ctx = await createNodeContext({ cwd });
   const result = await analyze(ctx);
-  const repoIndexPath = writeRepoIndex(ctx.repoRoot);
+  const analyzeRules = await loadAnalyzeRules(ctx.repoRoot);
+  const repoIndexPath = await writeRepoIndex(ctx.repoRoot);
 
   if (opts.format === 'text' && !opts.ci) {
     if (!opts.explain) {
@@ -219,7 +223,7 @@ export const runAnalyze = async (cwd: string, opts: AnalyzeOptions): Promise<num
     exitCode: result.ok ? ExitCode.Success : ExitCode.Failure,
     summary: result.ok ? 'Analyze completed successfully.' : 'Analyze completed with findings.',
     findings: result.recommendations.map((rec: AnalyzeRecommendation) => ({
-      ...resolveRecommendationGuidance(rec),
+      ...resolveRecommendationGuidance(analyzeRules, rec),
       id: `analyze.recommendation.${rec.id}`,
       level: rec.severity === 'WARN' ? 'warning' as const : 'info' as const,
       message: rec.message
