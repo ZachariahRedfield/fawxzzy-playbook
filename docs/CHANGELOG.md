@@ -4,6 +4,8 @@
 
 ### Added
 
+- WHAT: Pinned Cosign installer to `sigstore/cosign-installer@v4.0.0` (with explicit `cosign-release`) and added an in-pipeline `cosign verify-blob` step after signing SBOM artifacts. WHY: Avoids mutable action tag drift and fails CI if signature generation/verification breaks or artifact integrity is compromised.
+
 - WHAT: Replaced npm-based Cosign invocation in the security workflow with the official `sigstore/cosign-installer@v4` + `cosign sign-blob` sequence while retaining keyless signing permissions. WHY: Cosign is a standalone CLI and must be installed explicitly in GitHub Actions for reliable signing.
 
 - WHAT: Hardened SBOM generation in security CI by adding CycloneDX `--ignore-npm-errors`, pinned output to spec v1.5, and added an Anchore SBOM scan stage against `artifacts/sbom.json`. WHY: Prevents pnpm workspace false-failures from npm tree warnings while improving automated supply-chain vulnerability detection.

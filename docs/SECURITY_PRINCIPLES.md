@@ -67,6 +67,10 @@ Note: gitleaks partial-scan/no-leaks output does not mean the job passed; git-hi
 
 ## Cosign Signing Requirements in CI
 
+
+- Cosign GitHub Action references should use full version tags (for example, `sigstore/cosign-installer@v4.0.0`) rather than floating `@v4`.
+- Playbook CI installs Cosign using `sigstore/cosign-installer@v4.0.0`.
+- SBOM artifacts are signed with Sigstore keyless signing using GitHub OIDC.
 - Cosign is a standalone CLI, not an npm package.
 - CI must install cosign using `sigstore/cosign-installer`.
 - SBOM artifacts are signed with `cosign sign-blob`.
