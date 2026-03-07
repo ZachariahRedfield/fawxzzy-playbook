@@ -4,6 +4,8 @@
 
 ### Added
 
+- Standardized workspace command execution across Playbook by replacing pnpm workspace filters with deterministic directory targeting (`pnpm -C packages/<workspace>`), preventing automation and agent failures caused by incorrect workspace package name resolution.
+
 - Added deterministic architectural risk analysis via `playbook query risk <module>` with explainable weighted signals (`fanIn`, `impact`, `verifyFailures`, `hub`) and stable JSON/text output.
 - Added deterministic documentation coverage analysis via `playbook query docs-coverage [module]` to identify documented and under-documented modules from repository intelligence and docs heuristics.
 - Added query schema contract coverage for risk payloads via `playbook schema query`.

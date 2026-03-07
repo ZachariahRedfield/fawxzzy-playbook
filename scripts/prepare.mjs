@@ -19,6 +19,6 @@ if (!hasPnpm()) {
   process.exit(0);
 }
 
-const cmd = "pnpm --filter @fawxzzy/playbook run build";
+const cmd = "pnpm -C packages/cli build";
 console.log(`[prepare] ${cmd}`);
 execSync(cmd, { stdio: "inherit" });

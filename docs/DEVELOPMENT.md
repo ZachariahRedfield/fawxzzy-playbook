@@ -19,17 +19,17 @@ pnpm -r test
 
 ## Workspace command tips
 
-Run commands in a single workspace package with filters:
+Run commands in a single workspace package with deterministic directory targeting:
 
 ```bash
-pnpm --filter <pkg> <cmd>
+pnpm -C <workspace-path> <cmd>
 ```
 
 Examples:
 
 ```bash
-pnpm --filter @playbook/cli build
-pnpm --filter @playbook/engine test
+pnpm -C packages/cli build
+pnpm -C packages/engine test
 ```
 
 ## CI and pnpm version policy
