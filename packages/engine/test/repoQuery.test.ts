@@ -7,6 +7,7 @@ import { queryDependencies } from '../src/query/dependencies.js';
 import { queryImpact } from '../src/query/impact.js';
 import { queryRisk } from '../src/query/risk.js';
 import { queryDocsCoverage } from '../src/query/docsCoverage.js';
+import { queryRuleOwners } from '../src/query/ruleOwners.js';
 
 const createRepo = (name: string): string => fs.mkdtempSync(path.join(os.tmpdir(), `${name}-`));
 
@@ -308,6 +309,68 @@ describe('queryRepositoryIndex', () => {
     expect(() => queryImpact(repo, 'worker')).toThrow('playbook query impact: unknown module "worker".');
     expect(() => queryRisk(repo, 'worker')).toThrow('playbook query risk: unknown module "worker".');
     expect(() => queryDocsCoverage(repo, 'worker')).toThrow('playbook query docs-coverage: unknown module "worker".');
+  });
+
+
+
+  it('returns rule owner mappings for all rules', () => {
+    const result = queryRuleOwners();
+
+    expect(result).toEqual({
+      schemaVersion: '1.0',
+      command: 'query',
+      type: 'rule-owners',
+      rules: [
+        {
+          ruleId: 'notes.empty',
+          area: 'governance',
+          owners: ['governance'],
+          remediationType: 'notes-maintenance'
+        },
+        {
+          ruleId: 'notes.missing',
+          area: 'governance',
+          owners: ['governance'],
+          remediationType: 'notes-maintenance'
+        },
+        {
+          ruleId: 'PB001',
+          area: 'documentation',
+          owners: ['docs'],
+          remediationType: 'docs-sync'
+        },
+        {
+          ruleId: 'requireNotesOnChanges',
+          area: 'governance',
+          owners: ['governance'],
+          remediationType: 'notes-maintenance'
+        },
+        {
+          ruleId: 'verify.rule.tests.required',
+          area: 'quality',
+          owners: ['cli', 'testing'],
+          remediationType: 'test-coverage'
+        }
+      ]
+    });
+  });
+
+  it('returns a single rule ownership mapping', () => {
+    expect(queryRuleOwners('PB001')).toEqual({
+      schemaVersion: '1.0',
+      command: 'query',
+      type: 'rule-owners',
+      rule: {
+        ruleId: 'PB001',
+        area: 'documentation',
+        owners: ['docs'],
+        remediationType: 'docs-sync'
+      }
+    });
+  });
+
+  it('throws deterministic errors for unknown rule owner queries', () => {
+    expect(() => queryRuleOwners('PB404')).toThrow('playbook query rule-owners: unknown rule "PB404".');
   });
 
   it('throws deterministic errors when index file is missing', () => {

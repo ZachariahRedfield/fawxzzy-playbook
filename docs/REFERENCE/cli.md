@@ -13,6 +13,7 @@ Current product-facing surface (see authoritative index: [../commands/README.md]
 - `impact`
 - `risk`
 - `docs-coverage`
+- `rule-owners`
 - `schema`
 - `doctor`
 - `diagram`
@@ -95,6 +96,7 @@ Supported fields:
 - `impact`
 - `risk`
 - `docs-coverage`
+- `rule-owners`
 
 JSON output includes:
 
@@ -128,6 +130,8 @@ This command returns all modules that depend on the specified module (including 
 ```bash
 playbook query risk workouts
 playbook query risk workouts --json
+playbook query rule-owners
+playbook query rule-owners PB001 --json
 playbook query docs-coverage
 playbook query docs-coverage workouts --json
 ```
@@ -135,6 +139,16 @@ playbook query docs-coverage workouts --json
 This command combines deterministic dependency fan-in, transitive impact radius, architectural hub status, and verify failure signals (when available) to estimate how dangerous a module is to modify.
 
 Use `impact` for blast radius (“what breaks?”) and `risk` for change danger (“how risky is this change target?”).
+
+
+### Rule Ownership Analysis
+
+```bash
+playbook query rule-owners
+playbook query rule-owners PB001 --json
+```
+
+This query returns deterministic ownership mappings for known rule IDs so CI, AI remediation, and onboarding flows can route findings to stable owners without heuristic inference.
 
 ## `playbook deps [module] [--json] [--quiet]`
 

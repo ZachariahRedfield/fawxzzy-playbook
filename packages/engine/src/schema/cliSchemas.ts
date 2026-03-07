@@ -315,6 +315,64 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
           }
         }
       },
+
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: ['schemaVersion', 'command', 'type', 'rules'],
+        properties: {
+          schemaVersion: { const: '1.0' },
+          command: { const: 'query' },
+          type: { const: 'rule-owners' },
+          rules: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['ruleId', 'area', 'owners', 'remediationType'],
+              properties: {
+                ruleId: { type: 'string' },
+                area: { type: 'string' },
+                owners: { type: 'array', items: { type: 'string' } },
+                remediationType: { type: 'string' }
+              }
+            }
+          }
+        }
+      },
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: ['schemaVersion', 'command', 'type', 'rule'],
+        properties: {
+          schemaVersion: { const: '1.0' },
+          command: { const: 'query' },
+          type: { const: 'rule-owners' },
+          rule: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['ruleId', 'area', 'owners', 'remediationType'],
+            properties: {
+              ruleId: { type: 'string' },
+              area: { type: 'string' },
+              owners: { type: 'array', items: { type: 'string' } },
+              remediationType: { type: 'string' }
+            }
+          }
+        }
+      },
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: ['schemaVersion', 'command', 'type', 'ruleId', 'error'],
+        properties: {
+          schemaVersion: { const: '1.0' },
+          command: { const: 'query' },
+          type: { const: 'rule-owners' },
+          ruleId: { type: ['string', 'null'] },
+          error: { type: 'string' }
+        }
+      },
       {
         type: 'object',
         additionalProperties: false,

@@ -40,3 +40,6 @@ export type { RiskQueryResult, RiskLevel, RiskSignals, RiskContributions } from 
 
 export { queryDocsCoverage } from './query/docsCoverage.js';
 export type { DocsCoverageQueryResult, DocsCoverageModuleResult, DocsCoverageSummary } from './query/docsCoverage.js';
+
+export { queryRuleOwners } from './query/ruleOwners.js';
+export type { RuleOwnersQueryResult, RuleOwnershipEntry } from './query/ruleOwners.js';

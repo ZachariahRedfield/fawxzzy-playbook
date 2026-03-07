@@ -141,6 +141,7 @@ playbook query modules
 playbook query architecture
 playbook query risk workouts
 playbook query docs-coverage
+playbook query rule-owners
 playbook ask "where should a new feature live?"
 playbook ask "what modules exist?" --json
 playbook explain workouts

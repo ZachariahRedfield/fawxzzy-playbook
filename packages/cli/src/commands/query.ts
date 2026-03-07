@@ -4,6 +4,7 @@ import {
   queryRisk,
   queryDocsCoverage,
   queryRepositoryIndex,
+  queryRuleOwners,
   SUPPORTED_QUERY_FIELDS,
   type DependenciesQueryResult,
   type ImpactQueryResult,
@@ -11,7 +12,8 @@ import {
   type DocsCoverageQueryResult,
   type DocsCoverageModuleResult,
   type RepositoryModule,
-  type RepositoryQueryField
+  type RepositoryQueryField,
+  type RuleOwnersQueryResult
 } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 
@@ -126,6 +128,37 @@ const printDocsCoverageText = (payload: DocsCoverageQueryResult): void => {
   console.log('');
   console.log('Summary');
   console.log(`  ${payload.summary.documentedModules} / ${payload.summary.totalModules} modules documented`);
+};
+
+
+const printRuleOwnersText = (payload: RuleOwnersQueryResult): void => {
+  if ('rule' in payload) {
+    const entry = payload.rule;
+    console.log('Rule Ownership');
+    console.log('──────────────');
+    console.log('');
+    console.log(`Rule: ${entry.ruleId}`);
+    console.log(`Area: ${entry.area}`);
+    console.log(`Owners: ${entry.owners.join(', ')}`);
+    console.log(`Remediation type: ${entry.remediationType}`);
+    return;
+  }
+
+  console.log('Rule Owners');
+  console.log('───────────');
+
+  if (payload.rules.length === 0) {
+    console.log('none');
+    return;
+  }
+
+  for (const entry of payload.rules) {
+    console.log('');
+    console.log(entry.ruleId);
+    console.log(`  Area: ${entry.area}`);
+    console.log(`  Owners: ${entry.owners.join(', ')}`);
+    console.log(`  Remediation type: ${entry.remediationType}`);
+  }
 };
 
 const printRiskText = (payload: RiskQueryResult): void => {
@@ -308,6 +341,47 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     }
   }
 
+
+  if (fieldArg === 'rule-owners') {
+    const ruleIdArg = commandArgs.find((arg, index) => index > commandArgs.indexOf(fieldArg) && !arg.startsWith('-'));
+
+    try {
+      const payload = queryRuleOwners(ruleIdArg);
+      if (options.format === 'json') {
+        console.log(JSON.stringify(payload, null, 2));
+        return ExitCode.Success;
+      }
+
+      if (!options.quiet) {
+        printRuleOwnersText(payload);
+      }
+
+      return ExitCode.Success;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      if (options.format === 'json') {
+        console.log(
+          JSON.stringify(
+            {
+              schemaVersion: '1.0',
+              command: 'query',
+              type: 'rule-owners',
+              ruleId: ruleIdArg ?? null,
+              error: message
+            },
+            null,
+            2
+          )
+        );
+      } else {
+        console.error(message);
+      }
+
+      return ExitCode.Failure;
+    }
+  }
+
   if (fieldArg === 'risk') {
     const moduleArg = commandArgs.find((arg, index) => index > commandArgs.indexOf(fieldArg) && !arg.startsWith('-'));
 
@@ -399,7 +473,7 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
             command: 'query',
             field: fieldArg,
             error: message,
-            supportedFields: [...SUPPORTED_QUERY_FIELDS, 'dependencies', 'impact', 'risk', 'docs-coverage']
+            supportedFields: [...SUPPORTED_QUERY_FIELDS, 'dependencies', 'impact', 'risk', 'docs-coverage', 'rule-owners']
           },
           null,
           2

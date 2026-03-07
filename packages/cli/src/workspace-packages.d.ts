@@ -22,6 +22,7 @@ declare module "@zachariahredfield/playbook-engine" {
   export const queryImpact: (...args: any[]) => any;
   export const queryRisk: (...args: any[]) => any;
   export const queryDocsCoverage: (...args: any[]) => any;
+  export const queryRuleOwners: (...args: any[]) => any;
   export type DependenciesQueryResult = any;
   export type ImpactQueryResult = any;
   export type RiskQueryResult = any;
@@ -34,6 +35,10 @@ declare module "@zachariahredfield/playbook-engine" {
     modules: DocsCoverageModuleResult[];
     summary: DocsCoverageSummary;
   };
+  export type RuleOwnershipEntry = { ruleId: string; area: string; owners: string[]; remediationType: string };
+  export type RuleOwnersQueryResult =
+    | { schemaVersion: '1.0'; command: 'query'; type: 'rule-owners'; rules: RuleOwnershipEntry[] }
+    | { schemaVersion: '1.0'; command: 'query'; type: 'rule-owners'; rule: RuleOwnershipEntry };
   export type RepositoryModule = any;
   export const answerRepositoryQuestion: (...args: any[]) => any;
   export const explainTarget: (...args: any[]) => any;

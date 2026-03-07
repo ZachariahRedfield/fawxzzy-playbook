@@ -17,6 +17,8 @@ Query structured repository intelligence from `.playbook/repo-index.json`.
 - `playbook query risk workouts --json`
 - `playbook query docs-coverage`
 - `playbook query docs-coverage workouts --json`
+- `playbook query rule-owners`
+- `playbook query rule-owners PB001 --json`
 
 ## Behavior
 
@@ -40,6 +42,7 @@ Supported fields:
 - `impact`
 - `risk`
 - `docs-coverage`
+- `rule-owners`
 
 For `dependencies`, the command can return either the full module dependency graph (`playbook query dependencies`) or one module's direct dependencies (`playbook query dependencies <module>`).
 
@@ -59,6 +62,10 @@ Heuristics are intentionally deterministic and include:
 
 `playbook query` never modifies repository files and never reruns repository analysis.
 
+For `rule-owners`, the command returns deterministic ownership metadata for known verify/explain rules (`playbook query rule-owners` or `playbook query rule-owners <rule-id>`).
+
+Ownership payloads are sourced from explicit rule metadata (not heuristics) so routing remains stable for CI and AI remediation workflows.
+
 ## Querying Repository Intelligence
 
 ```bash
@@ -70,6 +77,8 @@ playbook query impact workouts
 playbook query risk workouts
 playbook query docs-coverage
 playbook query docs-coverage workouts --json
+playbook query rule-owners
+playbook query rule-owners PB001 --json
 ```
 
 ## JSON contracts
@@ -183,6 +192,41 @@ Docs coverage query:
     "totalModules": 2,
     "documentedModules": 1,
     "undocumentedModules": 1
+  }
+}
+```
+
+
+Rule owners query (all rules):
+
+```json
+{
+  "schemaVersion": "1.0",
+  "command": "query",
+  "type": "rule-owners",
+  "rules": [
+    {
+      "ruleId": "PB001",
+      "area": "documentation",
+      "owners": ["docs"],
+      "remediationType": "docs-sync"
+    }
+  ]
+}
+```
+
+Rule owners query (single rule):
+
+```json
+{
+  "schemaVersion": "1.0",
+  "command": "query",
+  "type": "rule-owners",
+  "rule": {
+    "ruleId": "PB001",
+    "area": "documentation",
+    "owners": ["docs"],
+    "remediationType": "docs-sync"
   }
 }
 ```

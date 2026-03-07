@@ -181,6 +181,111 @@ describe('runQuery', () => {
 
 
 
+
+  it('prints rule-owners query JSON output for all rules', async () => {
+    const repo = createRepo('playbook-cli-query-rule-owners-all');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['rule-owners'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload).toEqual({
+      schemaVersion: '1.0',
+      command: 'query',
+      type: 'rule-owners',
+      rules: [
+        {
+          ruleId: 'notes.empty',
+          area: 'governance',
+          owners: ['governance'],
+          remediationType: 'notes-maintenance'
+        },
+        {
+          ruleId: 'notes.missing',
+          area: 'governance',
+          owners: ['governance'],
+          remediationType: 'notes-maintenance'
+        },
+        {
+          ruleId: 'PB001',
+          area: 'documentation',
+          owners: ['docs'],
+          remediationType: 'docs-sync'
+        },
+        {
+          ruleId: 'requireNotesOnChanges',
+          area: 'governance',
+          owners: ['governance'],
+          remediationType: 'notes-maintenance'
+        },
+        {
+          ruleId: 'verify.rule.tests.required',
+          area: 'quality',
+          owners: ['cli', 'testing'],
+          remediationType: 'test-coverage'
+        }
+      ]
+    });
+
+    logSpy.mockRestore();
+  });
+
+  it('prints rule-owners query JSON output for a single rule', async () => {
+    const repo = createRepo('playbook-cli-query-rule-owners-single');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['rule-owners', 'PB001'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload).toEqual({
+      schemaVersion: '1.0',
+      command: 'query',
+      type: 'rule-owners',
+      rule: {
+        ruleId: 'PB001',
+        area: 'documentation',
+        owners: ['docs'],
+        remediationType: 'docs-sync'
+      }
+    });
+
+    logSpy.mockRestore();
+  });
+
+  it('prints rule-owners query text output for a single rule', async () => {
+    const repo = createRepo('playbook-cli-query-rule-owners-text');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['rule-owners', 'PB001'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(logSpy.mock.calls.map((call) => String(call[0]))).toEqual([
+      'Rule Ownership',
+      '──────────────',
+      '',
+      'Rule: PB001',
+      'Area: documentation',
+      'Owners: docs',
+      'Remediation type: docs-sync'
+    ]);
+
+    logSpy.mockRestore();
+  });
+
+  it('fails rule-owners query for unknown rules', async () => {
+    const repo = createRepo('playbook-cli-query-rule-owners-unknown');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['rule-owners', 'PB404'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    expect(errorSpy).toHaveBeenCalledWith('playbook query rule-owners: unknown rule "PB404".');
+
+    errorSpy.mockRestore();
+  });
+
   it('prints risk query JSON output', async () => {
     const repo = createRepo('playbook-cli-query-risk');
     writeRepoIndex(repo);
