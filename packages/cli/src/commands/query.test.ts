@@ -40,6 +40,23 @@ const writeDocsCoverageFixtures = (repo: string): void => {
   fs.writeFileSync(path.join(repo, 'docs', 'modules', 'workouts.md'), '# Workouts\nDetails\n');
 };
 
+
+const writeModuleOwners = (repo: string): void => {
+  const ownersPath = path.join(repo, '.playbook', 'module-owners.json');
+  fs.mkdirSync(path.dirname(ownersPath), { recursive: true });
+  fs.writeFileSync(
+    ownersPath,
+    JSON.stringify(
+      {
+        workouts: { owners: ['fitness'], area: 'product' },
+        analytics: { owners: ['data'], area: 'platform' }
+      },
+      null,
+      2
+    )
+  );
+};
+
 const writeVerifyReport = (repo: string): void => {
   const verifyPath = path.join(repo, '.playbook', 'verify-report.json');
   fs.mkdirSync(path.dirname(verifyPath), { recursive: true });
@@ -282,6 +299,112 @@ describe('runQuery', () => {
 
     expect(exitCode).toBe(ExitCode.Failure);
     expect(errorSpy).toHaveBeenCalledWith('playbook query rule-owners: unknown rule "PB404".');
+
+    errorSpy.mockRestore();
+  });
+
+
+  it('prints module-owners query JSON output for all modules', async () => {
+    const repo = createRepo('playbook-cli-query-module-owners-all');
+    writeRepoIndex(repo);
+    writeModuleOwners(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['module-owners'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload).toEqual({
+      schemaVersion: '1.0',
+      command: 'query',
+      type: 'module-owners',
+      modules: [
+        { name: 'analytics', owners: ['data'], area: 'platform' },
+        { name: 'auth', owners: [], area: 'unassigned' },
+        { name: 'workouts', owners: ['fitness'], area: 'product' }
+      ]
+    });
+
+    logSpy.mockRestore();
+  });
+
+  it('prints module-owners query JSON output for a single module', async () => {
+    const repo = createRepo('playbook-cli-query-module-owners-single');
+    writeRepoIndex(repo);
+    writeModuleOwners(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['module-owners', 'workouts'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload).toEqual({
+      schemaVersion: '1.0',
+      command: 'query',
+      type: 'module-owners',
+      module: {
+        name: 'workouts',
+        owners: ['fitness'],
+        area: 'product'
+      }
+    });
+
+    logSpy.mockRestore();
+  });
+
+  it('prints module-owners query text output for a single module', async () => {
+    const repo = createRepo('playbook-cli-query-module-owners-text');
+    writeRepoIndex(repo);
+    writeModuleOwners(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['module-owners', 'workouts'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(logSpy.mock.calls.map((call) => String(call[0]))).toEqual([
+      'Module Ownership',
+      '────────────────',
+      '',
+      'Module: workouts',
+      'Owners: fitness',
+      'Area: product'
+    ]);
+
+    logSpy.mockRestore();
+  });
+
+  it('falls back deterministically when ownership mapping is missing', async () => {
+    const repo = createRepo('playbook-cli-query-module-owners-fallback');
+    writeRepoIndex(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['module-owners', 'auth'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload).toEqual({
+      schemaVersion: '1.0',
+      command: 'query',
+      type: 'module-owners',
+      module: {
+        name: 'auth',
+        owners: [],
+        area: 'unassigned'
+      }
+    });
+
+    logSpy.mockRestore();
+  });
+
+  it('fails module-owners query for unknown modules', async () => {
+    const repo = createRepo('playbook-cli-query-module-owners-unknown');
+    writeRepoIndex(repo);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['module-owners', 'missing'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    expect(errorSpy).toHaveBeenCalledWith('playbook query module-owners: unknown module "missing".');
 
     errorSpy.mockRestore();
   });

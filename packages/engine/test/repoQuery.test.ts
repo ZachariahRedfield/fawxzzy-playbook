@@ -8,6 +8,7 @@ import { queryImpact } from '../src/query/impact.js';
 import { queryRisk } from '../src/query/risk.js';
 import { queryDocsCoverage } from '../src/query/docsCoverage.js';
 import { queryRuleOwners } from '../src/query/ruleOwners.js';
+import { queryModuleOwners } from '../src/query/moduleOwners.js';
 
 const createRepo = (name: string): string => fs.mkdtempSync(path.join(os.tmpdir(), `${name}-`));
 
@@ -15,6 +16,13 @@ const writeRepoIndex = (repo: string, payload: Record<string, unknown>): void =>
   const indexPath = path.join(repo, '.playbook', 'repo-index.json');
   fs.mkdirSync(path.dirname(indexPath), { recursive: true });
   fs.writeFileSync(indexPath, JSON.stringify(payload, null, 2));
+};
+
+
+const writeModuleOwners = (repo: string, payload: Record<string, unknown>): void => {
+  const ownersPath = path.join(repo, '.playbook', 'module-owners.json');
+  fs.mkdirSync(path.dirname(ownersPath), { recursive: true });
+  fs.writeFileSync(ownersPath, JSON.stringify(payload, null, 2));
 };
 
 describe('queryRepositoryIndex', () => {
@@ -371,6 +379,80 @@ describe('queryRepositoryIndex', () => {
 
   it('throws deterministic errors for unknown rule owner queries', () => {
     expect(() => queryRuleOwners('PB404')).toThrow('playbook query rule-owners: unknown rule "PB404".');
+  });
+
+
+  it('returns module owner mappings for all modules with deterministic fallback values', () => {
+    const repo = createRepo('playbook-repo-query-module-owners-all');
+    writeRepoIndex(repo, {
+      schemaVersion: '1.0',
+      framework: 'node',
+      language: 'typescript',
+      architecture: 'modular-monolith',
+      modules: [
+        { name: 'auth', dependencies: [] },
+        { name: 'workouts', dependencies: ['auth'] }
+      ],
+      database: 'none',
+      rules: []
+    });
+    writeModuleOwners(repo, {
+      workouts: { owners: ['fitness'], area: 'product' }
+    });
+
+    expect(queryModuleOwners(repo)).toEqual({
+      schemaVersion: '1.0',
+      command: 'query',
+      type: 'module-owners',
+      modules: [
+        { name: 'auth', owners: [], area: 'unassigned' },
+        { name: 'workouts', owners: ['fitness'], area: 'product' }
+      ]
+    });
+  });
+
+  it('returns a single module ownership mapping', () => {
+    const repo = createRepo('playbook-repo-query-module-owners-single');
+    writeRepoIndex(repo, {
+      schemaVersion: '1.0',
+      framework: 'node',
+      language: 'typescript',
+      architecture: 'modular-monolith',
+      modules: [
+        { name: 'workouts', dependencies: [] }
+      ],
+      database: 'none',
+      rules: []
+    });
+    writeModuleOwners(repo, {
+      workouts: { owners: ['fitness'], area: 'product' }
+    });
+
+    expect(queryModuleOwners(repo, 'workouts')).toEqual({
+      schemaVersion: '1.0',
+      command: 'query',
+      type: 'module-owners',
+      module: {
+        name: 'workouts',
+        owners: ['fitness'],
+        area: 'product'
+      }
+    });
+  });
+
+  it('throws deterministic errors for unknown module owner queries', () => {
+    const repo = createRepo('playbook-repo-query-module-owners-unknown');
+    writeRepoIndex(repo, {
+      schemaVersion: '1.0',
+      framework: 'node',
+      language: 'typescript',
+      architecture: 'modular-monolith',
+      modules: [{ name: 'workouts', dependencies: [] }],
+      database: 'none',
+      rules: []
+    });
+
+    expect(() => queryModuleOwners(repo, 'missing')).toThrow('playbook query module-owners: unknown module "missing".');
   });
 
   it('throws deterministic errors when index file is missing', () => {

@@ -14,6 +14,7 @@ Current product-facing surface (see authoritative index: [../commands/README.md]
 - `risk`
 - `docs-coverage`
 - `rule-owners`
+- `module-owners`
 - `schema`
 - `doctor`
 - `diagram`
@@ -97,6 +98,7 @@ Supported fields:
 - `risk`
 - `docs-coverage`
 - `rule-owners`
+- `module-owners`
 
 JSON output includes:
 
@@ -134,6 +136,8 @@ playbook query rule-owners
 playbook query rule-owners PB001 --json
 playbook query docs-coverage
 playbook query docs-coverage workouts --json
+playbook query module-owners
+playbook query module-owners workouts --json
 ```
 
 This command combines deterministic dependency fan-in, transitive impact radius, architectural hub status, and verify failure signals (when available) to estimate how dangerous a module is to modify.
@@ -149,6 +153,15 @@ playbook query rule-owners PB001 --json
 ```
 
 This query returns deterministic ownership mappings for known rule IDs so CI, AI remediation, and onboarding flows can route findings to stable owners without heuristic inference.
+
+### Module Ownership Analysis
+
+```bash
+playbook query module-owners
+playbook query module-owners workouts --json
+```
+
+This query returns deterministic ownership mappings for indexed modules using explicit `.playbook/module-owners.json` metadata, with fallback output (`owners: []`, `area: unassigned`) when a mapping is absent.
 
 ## `playbook deps [module] [--json] [--quiet]`
 

@@ -361,6 +361,50 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
           }
         }
       },
+
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: ['schemaVersion', 'command', 'type', 'modules'],
+        properties: {
+          schemaVersion: { const: '1.0' },
+          command: { const: 'query' },
+          type: { const: 'module-owners' },
+          modules: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['name', 'owners', 'area'],
+              properties: {
+                name: { type: 'string' },
+                owners: { type: 'array', items: { type: 'string' } },
+                area: { type: 'string' }
+              }
+            }
+          }
+        }
+      },
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: ['schemaVersion', 'command', 'type', 'module'],
+        properties: {
+          schemaVersion: { const: '1.0' },
+          command: { const: 'query' },
+          type: { const: 'module-owners' },
+          module: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['name', 'owners', 'area'],
+            properties: {
+              name: { type: 'string' },
+              owners: { type: 'array', items: { type: 'string' } },
+              area: { type: 'string' }
+            }
+          }
+        }
+      },
       {
         type: 'object',
         additionalProperties: false,
@@ -380,7 +424,7 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
         properties: {
           schemaVersion: { const: '1.0' },
           command: { const: 'query' },
-          type: { enum: ['dependencies', 'impact', 'risk', 'docs-coverage'] },
+          type: { enum: ['dependencies', 'impact', 'risk', 'docs-coverage', 'module-owners'] },
           module: { type: ['string', 'null'] },
           error: { type: 'string' }
         }

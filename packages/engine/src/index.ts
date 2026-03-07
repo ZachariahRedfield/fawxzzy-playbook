@@ -43,3 +43,6 @@ export type { DocsCoverageQueryResult, DocsCoverageModuleResult, DocsCoverageSum
 
 export { queryRuleOwners } from './query/ruleOwners.js';
 export type { RuleOwnersQueryResult, RuleOwnershipEntry } from './query/ruleOwners.js';
+
+export { queryModuleOwners } from './query/moduleOwners.js';
+export type { ModuleOwnersQueryResult, ModuleOwnershipEntry } from './query/moduleOwners.js';

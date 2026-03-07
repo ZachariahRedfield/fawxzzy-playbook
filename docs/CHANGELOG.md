@@ -10,6 +10,7 @@
 - Added deterministic documentation coverage analysis via `playbook query docs-coverage [module]` to identify documented and under-documented modules from repository intelligence and docs heuristics.
 - Added query schema contract coverage for risk payloads via `playbook schema query`.
 - Added deterministic rule ownership intelligence via `playbook query rule-owners [rule-id]` with explicit owner/area/remediation metadata for routing and remediation workflows.
+- Added deterministic module ownership intelligence via `playbook query module-owners [module]` backed by explicit `.playbook/module-owners.json` mappings with deterministic fallbacks for unmapped modules.
 
 - `playbook ai-context` command providing a concise AI bootstrap interface for repository intelligence.
 - Documentation updates aligning Playbook with an AI-first repository workflow.

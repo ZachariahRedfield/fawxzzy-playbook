@@ -19,6 +19,8 @@ Query structured repository intelligence from `.playbook/repo-index.json`.
 - `playbook query docs-coverage workouts --json`
 - `playbook query rule-owners`
 - `playbook query rule-owners PB001 --json`
+- `playbook query module-owners`
+- `playbook query module-owners workouts --json`
 
 ## Behavior
 
@@ -43,6 +45,7 @@ Supported fields:
 - `risk`
 - `docs-coverage`
 - `rule-owners`
+- `module-owners`
 
 For `dependencies`, the command can return either the full module dependency graph (`playbook query dependencies`) or one module's direct dependencies (`playbook query dependencies <module>`).
 
@@ -66,6 +69,10 @@ For `rule-owners`, the command returns deterministic ownership metadata for know
 
 Ownership payloads are sourced from explicit rule metadata (not heuristics) so routing remains stable for CI and AI remediation workflows.
 
+For `module-owners`, the command returns deterministic ownership metadata for indexed modules from `.playbook/module-owners.json` (`playbook query module-owners` or `playbook query module-owners <module>`).
+
+When a module exists in the index but has no ownership mapping, the output remains deterministic with fallback values: `owners: []` and `area: "unassigned"`.
+
 ## Querying Repository Intelligence
 
 ```bash
@@ -79,6 +86,8 @@ playbook query docs-coverage
 playbook query docs-coverage workouts --json
 playbook query rule-owners
 playbook query rule-owners PB001 --json
+playbook query module-owners
+playbook query module-owners workouts --json
 ```
 
 ## JSON contracts
@@ -227,6 +236,22 @@ Rule owners query (single rule):
     "area": "documentation",
     "owners": ["docs"],
     "remediationType": "docs-sync"
+  }
+}
+```
+
+
+Module owners query (single module):
+
+```json
+{
+  "schemaVersion": "1.0",
+  "command": "query",
+  "type": "module-owners",
+  "module": {
+    "name": "workouts",
+    "owners": ["fitness"],
+    "area": "product"
   }
 }
 ```

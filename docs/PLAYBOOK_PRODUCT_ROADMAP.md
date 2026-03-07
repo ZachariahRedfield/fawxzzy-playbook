@@ -121,6 +121,7 @@ Current implemented product-facing command/artifact set:
 - deterministic architectural risk intelligence (`playbook query risk <module>`)
 - deterministic documentation coverage intelligence (`playbook query docs-coverage [module]`)
 - deterministic rule ownership intelligence (`playbook query rule-owners [rule-id]`)
+- deterministic module ownership intelligence (`playbook query module-owners [module]`)
 
 ## Roadmap framing (current baseline + future enhancements)
 
