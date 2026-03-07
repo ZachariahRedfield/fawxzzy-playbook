@@ -4,6 +4,8 @@
 
 ### Added
 
+- Added deterministic AI contract readiness validation to `playbook doctor --ai`, including contract availability/validity checks, intelligence source validation, required command/query surface checks, remediation workflow readiness, and expanded JSON contract fields for readiness details.
+
 - Added a security contract system under `docs/contracts/security/` with machine-readable definitions for repository boundary, apply scope, plan determinism, secret redaction, and policy gate guarantees.
 - Added deterministic security contract tests under `test/contracts/security/` and expanded `pnpm test:security` to run contract + regression suites.
 - Integrated security contract verification into CI via the reusable Playbook CI composite action.

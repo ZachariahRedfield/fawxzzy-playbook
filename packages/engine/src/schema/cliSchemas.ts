@@ -1,6 +1,17 @@
 const JSON_SCHEMA_DRAFT = 'https://json-schema.org/draft/2020-12/schema' as const;
 
-export type CliSchemaCommand = 'rules' | 'explain' | 'index' | 'verify' | 'plan' | 'context' | 'ai-context' | 'ai-contract' | 'query' | 'docs';
+export type CliSchemaCommand =
+  | 'rules'
+  | 'explain'
+  | 'index'
+  | 'verify'
+  | 'plan'
+  | 'context'
+  | 'ai-context'
+  | 'ai-contract'
+  | 'doctor'
+  | 'query'
+  | 'docs';
 
 export type JsonSchema = {
   [key: string]: unknown;
@@ -302,6 +313,114 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
         }
       }
     }
+  },
+
+
+  doctor: {
+    $schema: JSON_SCHEMA_DRAFT,
+    title: 'PlaybookDoctorOutput',
+    oneOf: [
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: ['command', 'framework', 'architecture', 'issues', 'suggestedActions'],
+        properties: {
+          command: { const: 'doctor' },
+          framework: { type: 'string' },
+          architecture: { type: 'string' },
+          issues: { type: 'array', items: { type: 'string' } },
+          suggestedActions: { type: 'array', items: { type: 'string' } }
+        }
+      },
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: ['schemaVersion', 'command', 'mode', 'checks'],
+        properties: {
+          schemaVersion: { const: '1.0' },
+          command: { const: 'doctor' },
+          mode: { const: 'ai' },
+          checks: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['name', 'status'],
+              properties: {
+                name: {
+                  enum: [
+                    'schema',
+                    'context',
+                    'repoIndex',
+                    'verifyRules',
+                    'aiContractAvailability',
+                    'aiContractValidity',
+                    'intelligenceSources',
+                    'querySurface',
+                    'commandSurface',
+                    'remediationWorkflow'
+                  ]
+                },
+                status: { enum: ['pass', 'warn', 'fail'] },
+                source: { enum: ['file', 'generated'] },
+                reason: { type: 'string' },
+                missingCommands: { type: 'array', items: { type: 'string' } },
+                missingQueries: { type: 'array', items: { type: 'string' } },
+                details: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['path', 'status', 'required'],
+                    properties: {
+                      path: { type: 'string' },
+                      status: { enum: ['present', 'missing'] },
+                      required: { type: 'boolean' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: ['schemaVersion', 'command', 'summary', 'applied', 'skipped', 'environment'],
+        properties: {
+          schemaVersion: { const: '1.0' },
+          command: { const: 'doctor' },
+          summary: { type: 'string' },
+          applied: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['id', 'description', 'changes'],
+              properties: {
+                id: { type: 'string' },
+                description: { type: 'string' },
+                changes: { type: 'array', items: { type: 'string' } }
+              }
+            }
+          },
+          skipped: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['id', 'reason'],
+              properties: {
+                id: { type: 'string' },
+                reason: { type: 'string' }
+              }
+            }
+          },
+          environment: { type: 'object' }
+        }
+      }
+    ]
   },
 
   docs: {
@@ -661,6 +780,7 @@ export const getCliSchemas = (): Record<CliSchemaCommand, JsonSchema> => ({
   context: cliSchemas.context,
   'ai-context': cliSchemas['ai-context'],
   'ai-contract': cliSchemas['ai-contract'],
+  doctor: cliSchemas.doctor,
   docs: cliSchemas.docs,
   query: cliSchemas.query
 });

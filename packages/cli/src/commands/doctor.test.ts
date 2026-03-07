@@ -6,6 +6,30 @@ const runSchema = vi.fn();
 const hasRegisteredCommand = vi.fn();
 const loadVerifyRules = vi.fn();
 const existsSync = vi.fn();
+const loadAiContract = vi.fn();
+
+const SUPPORTED_QUERY_FIELDS = ['architecture', 'framework', 'language', 'modules', 'database', 'rules'] as const;
+
+const validContract = {
+  schemaVersion: '1.0' as const,
+  kind: 'playbook-ai-contract' as const,
+  ai_runtime: 'playbook-agent' as const,
+  workflow: ['index', 'query', 'plan', 'apply', 'verify'] as const,
+  intelligence_sources: {
+    repoIndex: '.playbook/repo-index.json' as const,
+    moduleOwners: '.playbook/module-owners.json' as const
+  },
+  queries: ['architecture', 'dependencies', 'impact', 'risk', 'docs-coverage', 'rule-owners', 'module-owners'] as const,
+  remediation: {
+    canonicalFlow: ['verify', 'plan', 'apply', 'verify'] as const,
+    diagnosticAugmentation: ['explain'] as const
+  },
+  rules: {
+    requireIndexBeforeQuery: true as const,
+    preferPlaybookCommandsOverAdHocInspection: true as const,
+    allowDirectEditsWithoutPlan: false as const
+  }
+};
 
 const doctorFixes = [
   {
@@ -25,7 +49,10 @@ const doctorFixes = [
 ];
 
 vi.mock('@zachariahredfield/playbook-engine', () => ({
-  generateRepositoryHealth
+  AI_CONTRACT_FILE: '.playbook/ai-contract.json',
+  SUPPORTED_QUERY_FIELDS,
+  generateRepositoryHealth,
+  loadAiContract
 }));
 
 vi.mock('node:fs', () => ({
@@ -68,6 +95,14 @@ const healthyReport = {
   issues: []
 };
 
+const setAvailableCommands = (commands: string[]): void => {
+  hasRegisteredCommand.mockImplementation((name: string) => commands.includes(name));
+};
+
+const setExistsPaths = (paths: string[]): void => {
+  existsSync.mockImplementation((value: string) => paths.some((suffix) => value.endsWith(suffix)));
+};
+
 describe('runDoctor', () => {
   beforeEach(() => {
     generateRepositoryHealth.mockReset();
@@ -75,8 +110,15 @@ describe('runDoctor', () => {
     hasRegisteredCommand.mockReset();
     loadVerifyRules.mockReset();
     existsSync.mockReset();
+    loadAiContract.mockReset();
     doctorFixes[0].check.mockClear();
     doctorFixes[1].check.mockClear();
+
+    runSchema.mockResolvedValue(ExitCode.Success);
+    loadVerifyRules.mockResolvedValue([{ id: 'rule-1' }]);
+    setAvailableCommands(['context', 'index', 'query', 'plan', 'apply', 'verify', 'ai-contract', 'explain']);
+    setExistsPaths(['.playbook/repo-index.json', '.playbook/module-owners.json', '.playbook/ai-contract.json']);
+    loadAiContract.mockReturnValue({ source: 'file', contract: validContract, contractFile: '.playbook/ai-contract.json' });
   });
 
   it('prints repository health text output', async () => {
@@ -134,14 +176,9 @@ describe('runDoctor', () => {
     logSpy.mockRestore();
   });
 
-  it('prints doctor --ai text output when repo index exists', async () => {
+  it('prints doctor --ai text output with contract readiness sections', async () => {
     const { runDoctor } = await import('./doctor.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
-
-    runSchema.mockResolvedValue(ExitCode.Success);
-    hasRegisteredCommand.mockReturnValue(true);
-    existsSync.mockReturnValue(true);
-    loadVerifyRules.mockResolvedValue([{ id: 'rule-1' }]);
 
     const exitCode = await runDoctor(process.cwd(), {
       format: 'text',
@@ -155,24 +192,26 @@ describe('runDoctor', () => {
     const output = logSpy.mock.calls.map((call) => String(call[0])).join('\n');
     expect(exitCode).toBe(ExitCode.Success);
     expect(output).toContain('AI Environment Check');
-    expect(output).toContain('✓ Playbook schema available');
-    expect(output).toContain('✓ Playbook context command available');
-    expect(output).toContain('✓ Repository intelligence generated');
-    expect(output).toContain('✓ Verify rules loaded');
+    expect(output).toContain('Core AI Checks');
+    expect(output).toContain('AI Contract Readiness');
+    expect(output).toContain('✓ AI contract available (source: file)');
+    expect(output).toContain('✓ AI contract valid');
+    expect(output).toContain('✓ Required query surface available');
+    expect(output).toContain('✓ Remediation workflow ready');
+    expect(output).toContain('Result');
+    expect(output).toContain('Playbook repository is AI-contract ready.');
 
     logSpy.mockRestore();
   });
 
-  it('prints doctor --ai --json output when repo index is missing', async () => {
+  it('returns generated-contract fallback as warn', async () => {
     const { runDoctor } = await import('./doctor.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-    runSchema.mockResolvedValue(ExitCode.Success);
-    hasRegisteredCommand.mockReturnValue(true);
-    existsSync.mockReturnValue(false);
-    loadVerifyRules.mockResolvedValue([{ id: 'rule-1' }]);
+    setExistsPaths(['.playbook/repo-index.json', '.playbook/module-owners.json']);
+    loadAiContract.mockReturnValue({ source: 'generated', contract: validContract, contractFile: '.playbook/ai-contract.json' });
 
-    const exitCode = await runDoctor(process.cwd(), {
+    await runDoctor(process.cwd(), {
       format: 'json',
       quiet: false,
       fix: false,
@@ -182,32 +221,24 @@ describe('runDoctor', () => {
     });
 
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
-    expect(exitCode).toBe(ExitCode.Success);
-    expect(payload).toEqual({
-      schemaVersion: '1.0',
-      command: 'doctor',
-      mode: 'ai',
-      checks: [
-        { name: 'schema', status: 'pass' },
-        { name: 'context', status: 'pass' },
-        { name: 'repoIndex', status: 'warn' },
-        { name: 'verifyRules', status: 'pass' }
-      ]
+    expect(payload.checks).toContainEqual({
+      name: 'aiContractAvailability',
+      status: 'warn',
+      source: 'generated'
     });
 
     logSpy.mockRestore();
   });
 
-  it('fails verify rules check when registry is empty', async () => {
+  it('fails when AI contract cannot be loaded', async () => {
     const { runDoctor } = await import('./doctor.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-    runSchema.mockResolvedValue(ExitCode.Success);
-    hasRegisteredCommand.mockReturnValue(true);
-    existsSync.mockReturnValue(true);
-    loadVerifyRules.mockResolvedValue([]);
+    loadAiContract.mockImplementation(() => {
+      throw new Error('Unsupported AI contract schemaVersion "2.0". Expected "1.0".');
+    });
 
-    const exitCode = await runDoctor(process.cwd(), {
+    await runDoctor(process.cwd(), {
       format: 'json',
       quiet: false,
       fix: false,
@@ -217,22 +248,20 @@ describe('runDoctor', () => {
     });
 
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
-    expect(exitCode).toBe(ExitCode.Success);
-    expect(payload.checks).toContainEqual({ name: 'verifyRules', status: 'fail' });
+    expect(payload.checks).toContainEqual(
+      expect.objectContaining({ name: 'aiContractValidity', status: 'fail' })
+    );
 
     logSpy.mockRestore();
   });
 
-  it('fails context check when context command is missing', async () => {
+  it('fails for missing required intelligence source', async () => {
     const { runDoctor } = await import('./doctor.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-    runSchema.mockResolvedValue(ExitCode.Success);
-    hasRegisteredCommand.mockReturnValue(false);
-    existsSync.mockReturnValue(true);
-    loadVerifyRules.mockResolvedValue([{ id: 'rule-1' }]);
+    setExistsPaths(['.playbook/ai-contract.json']);
 
-    const exitCode = await runDoctor(process.cwd(), {
+    await runDoctor(process.cwd(), {
       format: 'json',
       quiet: false,
       fix: false,
@@ -242,8 +271,88 @@ describe('runDoctor', () => {
     });
 
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
-    expect(exitCode).toBe(ExitCode.Success);
-    expect(payload.checks).toContainEqual({ name: 'context', status: 'fail' });
+    const intelligenceSources = payload.checks.find((check: { name: string }) => check.name === 'intelligenceSources');
+    expect(intelligenceSources.status).toBe('fail');
+
+    logSpy.mockRestore();
+  });
+
+  it('warns for missing optional intelligence source', async () => {
+    const { runDoctor } = await import('./doctor.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    setExistsPaths(['.playbook/repo-index.json', '.playbook/ai-contract.json']);
+
+    await runDoctor(process.cwd(), {
+      format: 'json',
+      quiet: false,
+      fix: false,
+      dryRun: false,
+      yes: false,
+      ai: true
+    });
+
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    const intelligenceSources = payload.checks.find((check: { name: string }) => check.name === 'intelligenceSources');
+    expect(intelligenceSources.status).toBe('warn');
+
+    logSpy.mockRestore();
+  });
+
+  it('fails required query and command surface checks when unavailable', async () => {
+    const { runDoctor } = await import('./doctor.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    loadAiContract.mockReturnValue({
+      source: 'file',
+      contract: {
+        ...validContract,
+        queries: [...validContract.queries, 'not-a-query']
+      },
+      contractFile: '.playbook/ai-contract.json'
+    });
+    setAvailableCommands(['context', 'index', 'query', 'apply', 'verify']);
+
+    await runDoctor(process.cwd(), {
+      format: 'json',
+      quiet: false,
+      fix: false,
+      dryRun: false,
+      yes: false,
+      ai: true
+    });
+
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    const querySurface = payload.checks.find((check: { name: string }) => check.name === 'querySurface');
+    const commandSurface = payload.checks.find((check: { name: string }) => check.name === 'commandSurface');
+
+    expect(querySurface.status).toBe('fail');
+    expect(querySurface.missingQueries).toContain('not-a-query');
+    expect(commandSurface.status).toBe('fail');
+    expect(commandSurface.missingCommands).toEqual(expect.arrayContaining(['plan', 'ai-contract']));
+
+    logSpy.mockRestore();
+  });
+
+  it('fails remediation workflow readiness when required command is missing', async () => {
+    const { runDoctor } = await import('./doctor.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    setAvailableCommands(['context', 'index', 'query', 'plan', 'verify', 'ai-contract', 'explain']);
+
+    await runDoctor(process.cwd(), {
+      format: 'json',
+      quiet: false,
+      fix: false,
+      dryRun: false,
+      yes: false,
+      ai: true
+    });
+
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    const remediation = payload.checks.find((check: { name: string }) => check.name === 'remediationWorkflow');
+    expect(remediation.status).toBe('fail');
+    expect(remediation.missingCommands).toContain('apply');
 
     logSpy.mockRestore();
   });

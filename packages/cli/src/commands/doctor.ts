@@ -1,4 +1,4 @@
-import { generateRepositoryHealth } from '@zachariahredfield/playbook-engine';
+import { loadAiContract, SUPPORTED_QUERY_FIELDS, generateRepositoryHealth } from '@zachariahredfield/playbook-engine';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ExitCode } from '../lib/cliContract.js';
@@ -30,9 +30,105 @@ type DoctorFixSkipped = {
 };
 
 type AiDoctorCheck = {
-  name: 'schema' | 'context' | 'repoIndex' | 'verifyRules';
+  name:
+    | 'schema'
+    | 'context'
+    | 'repoIndex'
+    | 'verifyRules'
+    | 'aiContractAvailability'
+    | 'aiContractValidity'
+    | 'intelligenceSources'
+    | 'querySurface'
+    | 'commandSurface'
+    | 'remediationWorkflow';
   status: 'pass' | 'warn' | 'fail';
   message: string;
+  source?: ReturnType<typeof loadAiContract>['source'];
+  details?: Array<{ path: string; status: 'present' | 'missing'; required: boolean }>;
+  missingCommands?: string[];
+  missingQueries?: string[];
+  reason?: string;
+};
+
+const AI_CONTRACT_FILE = '.playbook/ai-contract.json';
+const OPTIONAL_AI_INTELLIGENCE_SOURCES = new Set(['moduleOwners']);
+const REQUIRED_AI_SURFACE_COMMANDS = ['index', 'query', 'plan', 'apply', 'verify', 'ai-contract'] as const;
+const SUPPORTED_AI_CONTRACT_QUERIES = new Set([
+  ...SUPPORTED_QUERY_FIELDS,
+  'dependencies',
+  'impact',
+  'risk',
+  'docs-coverage',
+  'rule-owners',
+  'module-owners'
+]);
+
+const hasMissingCommands = (commands: readonly string[]): string[] =>
+  commands.filter((command) => !hasRegisteredCommand(command));
+
+type LoadedAiContract = ReturnType<typeof loadAiContract>;
+type AiDoctorContract = LoadedAiContract['contract'];
+
+const getIntelligenceSourceChecks = (cwd: string, contract: AiDoctorContract): AiDoctorCheck => {
+  const sourceDetails = Object.entries(contract.intelligence_sources as Record<string, string>).map(([sourceName, sourcePath]) => {
+    const required = !OPTIONAL_AI_INTELLIGENCE_SOURCES.has(sourceName);
+    const resolvedPath = path.join(cwd, sourcePath);
+    const present = fs.existsSync(resolvedPath);
+
+    return {
+      path: sourcePath,
+      status: present ? ('present' as const) : ('missing' as const),
+      required
+    };
+  });
+
+  const missingRequired = sourceDetails.some((detail) => detail.required && detail.status === 'missing');
+  const missingOptional = sourceDetails.some((detail) => !detail.required && detail.status === 'missing');
+
+  return {
+    name: 'intelligenceSources',
+    status: missingRequired ? 'fail' : missingOptional ? 'warn' : 'pass',
+    message: missingRequired
+      ? 'Required repository intelligence source missing'
+      : missingOptional
+        ? 'Optional repository intelligence source missing'
+        : 'Repository intelligence sources available',
+    details: sourceDetails
+  };
+};
+
+const getQuerySurfaceCheck = (contract: AiDoctorContract): AiDoctorCheck => {
+  const missingQueries = contract.queries.filter((query: string) => !SUPPORTED_AI_CONTRACT_QUERIES.has(query));
+
+  return {
+    name: 'querySurface',
+    status: missingQueries.length === 0 ? 'pass' : 'fail',
+    message: missingQueries.length === 0 ? 'Required query surface available' : 'Required query surface unavailable',
+    missingQueries
+  };
+};
+
+const getCommandSurfaceCheck = (): AiDoctorCheck => {
+  const missingCommands = hasMissingCommands(REQUIRED_AI_SURFACE_COMMANDS);
+
+  return {
+    name: 'commandSurface',
+    status: missingCommands.length === 0 ? 'pass' : 'fail',
+    message: missingCommands.length === 0 ? 'Required command surface available' : 'Required command surface unavailable',
+    missingCommands
+  };
+};
+
+const getRemediationWorkflowCheck = (contract: AiDoctorContract): AiDoctorCheck => {
+  const requiredFlow = contract.remediation.canonicalFlow;
+  const missingCommands = hasMissingCommands(requiredFlow);
+
+  return {
+    name: 'remediationWorkflow',
+    status: missingCommands.length === 0 ? 'pass' : 'fail',
+    message: missingCommands.length === 0 ? 'Remediation workflow ready' : 'Remediation workflow unavailable',
+    missingCommands
+  };
 };
 
 const toExitCode = (): ExitCode => ExitCode.Success;
@@ -131,6 +227,62 @@ const runAiChecks = async (cwd: string): Promise<AiDoctorCheck[]> => {
     message: verifyRules.length > 0 ? 'Verify rules loaded' : 'Verify rules unavailable'
   });
 
+  const hasFileBackedContract = fs.existsSync(path.join(cwd, AI_CONTRACT_FILE));
+
+  try {
+    const loadedContract = loadAiContract(cwd);
+
+    checks.push({
+      name: 'aiContractAvailability',
+      status: hasFileBackedContract ? 'pass' : 'warn',
+      message: hasFileBackedContract
+        ? 'AI contract available (source: file)'
+        : 'AI contract available (source: generated)',
+      source: loadedContract.source
+    });
+
+    checks.push({
+      name: 'aiContractValidity',
+      status: 'pass',
+      message: 'AI contract valid'
+    });
+
+    checks.push(getIntelligenceSourceChecks(cwd, loadedContract.contract));
+    checks.push(getCommandSurfaceCheck());
+    checks.push(getQuerySurfaceCheck(loadedContract.contract));
+    checks.push(getRemediationWorkflowCheck(loadedContract.contract));
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    checks.push({
+      name: 'aiContractAvailability',
+      status: 'fail',
+      message: 'AI contract unavailable',
+      reason
+    });
+    checks.push({
+      name: 'aiContractValidity',
+      status: 'fail',
+      message: 'AI contract invalid',
+      reason
+    });
+    checks.push({
+      name: 'intelligenceSources',
+      status: 'warn',
+      message: 'Skipped intelligence source checks (AI contract unavailable)'
+    });
+    checks.push(getCommandSurfaceCheck());
+    checks.push({
+      name: 'querySurface',
+      status: 'warn',
+      message: 'Skipped query surface checks (AI contract unavailable)'
+    });
+    checks.push({
+      name: 'remediationWorkflow',
+      status: 'warn',
+      message: 'Skipped remediation workflow checks (AI contract unavailable)'
+    });
+  }
+
   return checks;
 };
 
@@ -145,14 +297,51 @@ const printAiTextReport = (checks: AiDoctorCheck[]): void => {
   console.log('────────────────────');
   console.log('');
 
-  for (const check of checks) {
+  console.log('Core AI Checks');
+  console.log('──────────────');
+  console.log('');
+
+  for (const check of checks.filter((entry) => ['schema', 'context', 'repoIndex', 'verifyRules'].includes(entry.name))) {
     console.log(`${iconByStatus[check.status]} ${check.message}`);
+  }
+
+  console.log('');
+  console.log('AI Contract Readiness');
+  console.log('─────────────────────');
+  console.log('');
+
+  for (const check of checks.filter((entry) => !['schema', 'context', 'repoIndex', 'verifyRules'].includes(entry.name))) {
+    console.log(`${iconByStatus[check.status]} ${check.message}`);
+    if (check.reason) {
+      console.log(`  ${check.reason}`);
+    }
+    if (check.details) {
+      for (const detail of check.details) {
+        if (detail.status === 'missing') {
+          console.log(`  ${detail.required ? 'required' : 'optional'} missing: ${detail.path}`);
+        }
+      }
+    }
+    if (check.missingQueries && check.missingQueries.length > 0) {
+      console.log(`  missing queries: ${check.missingQueries.join(', ')}`);
+    }
+    if (check.missingCommands && check.missingCommands.length > 0) {
+      console.log(`  missing commands: ${check.missingCommands.join(', ')}`);
+    }
   }
 
   if (checks.some((check) => check.name === 'repoIndex' && check.status === 'warn')) {
     console.log('');
     console.log('Suggested action:');
     console.log('Run `playbook index` to generate repository intelligence.');
+  }
+
+  console.log('');
+  console.log('Result');
+  if (checks.some((check) => check.status === 'fail')) {
+    console.log('Playbook repository is not AI-contract ready.');
+  } else {
+    console.log('Playbook repository is AI-contract ready.');
   }
 };
 
@@ -167,7 +356,25 @@ export const runDoctor = async (cwd: string, options: DoctorOptions): Promise<nu
             schemaVersion: '1.0',
             command: 'doctor',
             mode: 'ai',
-            checks: checks.map((check) => ({ name: check.name, status: check.status }))
+            checks: checks.map((check) => {
+              const payload: Record<string, unknown> = { name: check.name, status: check.status };
+              if (check.source) {
+                payload.source = check.source;
+              }
+              if (check.details) {
+                payload.details = check.details;
+              }
+              if (check.missingQueries && check.missingQueries.length > 0) {
+                payload.missingQueries = check.missingQueries;
+              }
+              if (check.missingCommands && check.missingCommands.length > 0) {
+                payload.missingCommands = check.missingCommands;
+              }
+              if (check.reason) {
+                payload.reason = check.reason;
+              }
+              return payload;
+            })
           },
           null,
           2

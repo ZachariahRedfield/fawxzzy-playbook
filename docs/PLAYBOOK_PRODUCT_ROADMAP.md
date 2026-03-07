@@ -118,6 +118,7 @@ Current implemented product-facing command/artifact set:
 - `playbook-demo` artifact (exposed through `playbook demo`)
 - `ai-context`
 - `ai-contract` (`.playbook/ai-contract.json` handshake contract)
+- `doctor --ai` AI-contract readiness gate (deterministic validation of contract + intelligence + remediation surfaces)
 - repository intelligence (`index`, `query`, `deps`, `ask`, `explain`)
 - deterministic architectural risk intelligence (`playbook query risk <module>`)
 - deterministic documentation coverage intelligence (`playbook query docs-coverage [module]`)

@@ -223,7 +223,7 @@ Run:
 npx playbook doctor --ai
 ```
 
-This command verifies that the repository is correctly configured for AI-assisted Playbook workflows.
+This command verifies that the repository is correctly configured for AI-assisted Playbook workflows, including deterministic AI contract readiness validation (contract availability/validity, intelligence sources, required command/query surface, and remediation workflow readiness). It is the readiness gate before future Playbook agent execution.
 
 ## How to discover capabilities
 
