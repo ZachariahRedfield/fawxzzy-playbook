@@ -10,51 +10,53 @@ const printUsage = (): void => {
   console.log('Usage: playbook audit architecture [--json]');
 };
 
+const printSection = (
+  sectionLabel: string,
+  sectionAudits: Array<{
+    id: string;
+    title: string;
+    status: 'pass' | 'warn' | 'fail';
+    severity: 'low' | 'medium' | 'high';
+    evidence: string[];
+    recommendation: string;
+  }>,
+  withRecommendations: boolean
+): void => {
+  if (sectionAudits.length === 0) {
+    return;
+  }
+
+  console.log('');
+  console.log(sectionLabel);
+  for (const audit of sectionAudits) {
+    console.log(`- [${audit.status.toUpperCase()}] ${audit.id} (${audit.severity})`);
+    console.log(`  ${audit.title}`);
+    for (const evidenceLine of audit.evidence) {
+      console.log(`  - evidence: ${evidenceLine}`);
+    }
+    if (withRecommendations) {
+      console.log(`  - action: ${audit.recommendation}`);
+    }
+  }
+};
+
 const printHumanReport = (report: ReturnType<typeof runArchitectureAudit>): void => {
   console.log(`playbook audit architecture: ${report.summary.status.toUpperCase()}`);
   console.log(
-    `Checks: ${report.summary.checks} (pass: ${report.summary.pass}, warn: ${report.summary.warn}, fail: ${report.summary.fail})`
+    `Summary: checks=${report.summary.checks}, pass=${report.summary.pass}, warn=${report.summary.warn}, fail=${report.summary.fail}`
   );
 
-  const grouped = new Map<typeof report.audits[number]['status'], typeof report.audits>([
-    ['fail', []],
-    ['warn', []],
-    ['pass', []]
-  ]);
+  const failAndWarn = report.audits.filter(
+    (audit: (typeof report.audits)[number]) => audit.status === 'fail' || audit.status === 'warn'
+  );
+  const pass = report.audits.filter((audit: (typeof report.audits)[number]) => audit.status === 'pass');
 
-  for (const audit of report.audits) {
-    const entries = grouped.get(audit.status);
-    if (entries) {
-      entries.push(audit);
-    }
-  }
-
-  const sections: Array<{ label: string; status: 'fail' | 'warn' | 'pass' }> = [
-    { label: 'Failures', status: 'fail' },
-    { label: 'Warnings', status: 'warn' },
-    { label: 'Passing checks', status: 'pass' }
-  ];
-
-  for (const section of sections) {
-    const items = grouped.get(section.status) ?? [];
-    if (items.length === 0) {
-      continue;
-    }
-
-    console.log('');
-    console.log(`${section.label}:`);
-    for (const item of items) {
-      console.log(`- [${item.id}] ${item.title} (${item.severity})`);
-      for (const evidenceLine of item.evidence) {
-        console.log(`  evidence: ${evidenceLine}`);
-      }
-      console.log(`  recommendation: ${item.recommendation}`);
-    }
-  }
+  printSection('Actionable findings', failAndWarn, true);
+  printSection('Passing checks', pass, false);
 
   if (report.nextActions.length > 0) {
     console.log('');
-    console.log('Next actions:');
+    console.log('Next actions');
     for (const action of report.nextActions) {
       console.log(`- ${action}`);
     }

@@ -7,6 +7,11 @@ const queryRisk = vi.fn();
 const runDocsAudit = vi.fn();
 const existsSync = vi.fn();
 const collectVerifyReport = vi.fn();
+const runArchitectureAudit = vi.fn();
+
+vi.mock('@zachariahredfield/playbook-core', () => ({
+  runArchitectureAudit
+}));
 
 vi.mock('@zachariahredfield/playbook-engine', () => ({
   generateRepositoryHealth,
@@ -32,6 +37,7 @@ describe('runDoctor', () => {
     runDocsAudit.mockReset();
     existsSync.mockReset();
     collectVerifyReport.mockReset();
+    runArchitectureAudit.mockReset();
 
     existsSync.mockReturnValue(true);
     generateRepositoryHealth.mockReturnValue({
@@ -48,6 +54,14 @@ describe('runDoctor', () => {
       warnings: []
     });
     runDocsAudit.mockReturnValue({ ok: true, status: 'pass', summary: { errors: 0, warnings: 0, checksRun: 1 }, findings: [] });
+    runArchitectureAudit.mockReturnValue({
+      schemaVersion: '1.0',
+      command: 'audit-architecture',
+      ok: true,
+      summary: { status: 'pass', checks: 8, pass: 8, warn: 0, fail: 0 },
+      audits: [],
+      nextActions: ['No action required. Architecture guardrails satisfy deterministic checks.']
+    });
     queryRepositoryIndex.mockReturnValue({
       command: 'query',
       field: 'modules',
