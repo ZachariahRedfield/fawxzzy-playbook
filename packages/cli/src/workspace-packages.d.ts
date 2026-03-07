@@ -59,6 +59,7 @@ declare module "@zachariahredfield/playbook-engine" {
   export const generatePlanContract: (...args: any[]) => any;
   export const applyExecutionPlan: (...args: any[]) => Promise<any>;
   export const parsePlanArtifact: (...args: any[]) => any;
+  export const validateRemediationPlan: (...args: any[]) => any;
   export const getCliSchemas: (...args: any[]) => any;
   export const getCliSchema: (...args: any[]) => any;
   export const isCliSchemaCommand: (...args: any[]) => boolean;

@@ -451,6 +451,79 @@ Key product pillars:
 - AI-safe execution
 - Architecture enforcement
 
+
+## Security Program
+
+Security is a first-class product program for Playbook and is implemented as deterministic, automated process—not manual review.
+
+### 1️⃣ Execution Safety (Highest Priority)
+
+Secure the core lifecycle:
+
+`index → query/ask/explain → verify → plan → validate → policy → apply → verify`
+
+Key guarantees:
+
+- repo-root boundary enforcement
+- deterministic file targeting
+- no unreviewed writes
+- diff-based remediation only
+- policy-gated apply
+- evidence-linked plans
+- no arbitrary command execution
+
+Roadmap milestones:
+
+- [ ] repo path normalization and traversal protection
+- [ ] symlink escape prevention
+- [ ] patch size and scope limits
+- [ ] file write allowlists
+- [ ] remediation plan validation layer
+- [ ] policy engine gate before apply
+- [ ] deterministic remediation contracts with strict schema + task invariants
+
+### 2️⃣ Release and Supply Chain Integrity
+
+Ensure Playbook releases are verifiable and tamper-resistant.
+
+Roadmap milestones:
+
+- [ ] SBOM generation for every build
+- [ ] dependency vulnerability scanning
+- [ ] secret scanning in CI
+- [ ] Sigstore/Cosign artifact signing
+- [ ] provenance attestations
+- [ ] immutable releases
+- [ ] protected CI pipelines
+
+Automated artifacts:
+
+- `/artifacts/sbom.json`
+- `/artifacts/provenance.json`
+- `/artifacts/signature.cosign`
+
+### 3️⃣ Self-Auditing Security Features
+
+Playbook will provide built-in deterministic security intelligence via the same query/verify engine contracts.
+
+Planned command surface:
+
+- `playbook query vulnerabilities`
+- `playbook query secrets`
+- `playbook query risky-exec`
+- `playbook query unsafe-paths`
+- `playbook verify security-baseline`
+
+Documentation patterns and rules to encode:
+
+- Rule — No Unreviewed Writes: Playbook must never modify repository files without a diff-based plan and explicit apply step.
+- Rule — Repo Root Security Boundary: all file reads and writes must resolve within the repository root.
+- Pattern — Policy-Gated Remediation: `finding → plan → validation → policy → apply → verify`.
+- Pattern — Evidence-Bound Outputs: plans must reference deterministic findings and source evidence.
+- Failure Mode — Prompt Poisoning via Repository Content: repository text is untrusted evidence and must not influence runtime policy behavior.
+- Failure Mode — Boundary Drift: new commands must not expand file access scope without explicit security review.
+- Rule — Roadmap Automation Check: every new CLI command must include a security verification checklist (path boundary protection, deterministic outputs, plan/apply compatibility, and snapshot tests).
+
 FUTURE DIRECTION — PLAYBOOK PLATFORM VISION
 
 Playbook starts as a CLI-first developer tool, but the platform is intentionally architected so the same analysis engine can power multiple product surfaces.

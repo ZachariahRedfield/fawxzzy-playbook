@@ -30,7 +30,8 @@
     "agents:update": "pnpm docs:update",
     "agents:check": "pnpm docs:check",
     "docs:update": "pnpm -r build && node scripts/update-managed-docs.mjs",
-    "docs:check": "pnpm -r build && node scripts/update-managed-docs.mjs --check"
+    "docs:check": "pnpm -r build && node scripts/update-managed-docs.mjs --check",
+    "test:security": "pnpm -r build && node --test test/security/**/*.test.mjs"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

@@ -1,4 +1,5 @@
 import type { FixHandler, FixHandlerResult, PlanTask } from './types.js';
+import { redactSecretsForLogs, validateRemediationPlan, validateRepoBoundary } from '../security/guards.js';
 
 export type ApplyTaskStatus = 'applied' | 'skipped' | 'unsupported' | 'failed';
 
@@ -39,10 +40,10 @@ export type FixExecutionResult = {
 
 const toMessage = (error: unknown): string => {
   if (error instanceof Error && error.message) {
-    return error.message;
+    return redactSecretsForLogs(error.message);
   }
 
-  return String(error);
+  return redactSecretsForLogs(String(error));
 };
 
 const validateFilesChanged = (filesChanged: unknown): string[] => {
@@ -57,11 +58,15 @@ const validateFilesChanged = (filesChanged: unknown): string[] => {
   return filesChanged;
 };
 
-const validateAppliedHandlerResult = (result: FixHandlerResult, task: PlanTask): void => {
+const validateAppliedHandlerResult = (result: FixHandlerResult, task: PlanTask, repoRoot: string): void => {
   const filesChanged = validateFilesChanged(result.filesChanged);
 
   if (typeof result.summary !== 'string' || result.summary.trim().length === 0) {
     throw new Error('Fix handler contract violation: summary must be a non-empty string for applied handlers.');
+  }
+
+  for (const changedFile of filesChanged) {
+    validateRepoBoundary(repoRoot, changedFile);
   }
 
   if (task.file && !filesChanged.includes(task.file)) {
@@ -79,13 +84,13 @@ const validateNonAppliedHandlerResult = (result: FixHandlerResult, status: 'skip
   }
 };
 
-const validateHandlerResult = (result: FixHandlerResult, task: PlanTask): void => {
+const validateHandlerResult = (result: FixHandlerResult, task: PlanTask, repoRoot: string): void => {
   if (!result || typeof result !== 'object') {
     throw new Error('Fix handler contract violation: handler must return an object result.');
   }
 
   if (result.status === 'applied') {
-    validateAppliedHandlerResult(result, task);
+    validateAppliedHandlerResult(result, task, repoRoot);
     return;
   }
 
@@ -135,6 +140,7 @@ export class FixExecutor {
 
   async apply(tasks: PlanTask[], options: { repoRoot: string; dryRun: boolean }): Promise<FixExecutionResult> {
     const results: ApplyTaskResult[] = [];
+    validateRemediationPlan(options.repoRoot, tasks);
 
     for (const task of tasks) {
       if (!task.autoFix) {
@@ -166,7 +172,7 @@ export class FixExecutor {
 
       try {
         const handlerResult = await resolved.handler({ repoRoot: options.repoRoot, dryRun: options.dryRun, task });
-        validateHandlerResult(handlerResult, task);
+        validateHandlerResult(handlerResult, task, options.repoRoot);
         results.push({
           id: task.id,
           ruleId: task.ruleId,

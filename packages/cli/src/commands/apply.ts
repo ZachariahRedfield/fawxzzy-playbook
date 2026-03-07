@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { applyExecutionPlan, generatePlanContract, parsePlanArtifact } from '@zachariahredfield/playbook-engine';
+import { applyExecutionPlan, generatePlanContract, parsePlanArtifact, validateRemediationPlan } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 import { loadVerifyRules } from '../lib/loadVerifyRules.js';
 import {
@@ -181,6 +181,7 @@ export const runApply = async (cwd: string, options: ApplyOptions): Promise<numb
   }
 
   const selectedTasks = selectPlanTasks(plan.tasks, options.tasks);
+  validateRemediationPlan(cwd, selectedTasks);
   const verifyRules = await loadVerifyRules(cwd);
 
   const handlers: Record<string, NonNullable<(typeof verifyRules)[number]['fix']>> = {};

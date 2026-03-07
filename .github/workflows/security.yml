@@ -1,0 +1,75 @@
+name: security
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  security-program:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm -r build
+
+      - name: Step 1 — Dependency Audit
+        run: pnpm audit --audit-level=critical
+
+      - name: Step 2 — Secret Scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Step 3 — SBOM Generation
+        run: |
+          mkdir -p artifacts
+          pnpm dlx @cyclonedx/cyclonedx-npm --output-file artifacts/sbom.json --spec-version 1.5
+
+      - name: Step 4 — Artifact Signing (Cosign)
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+        run: |
+          pnpm dlx @sigstore/cosign sign-blob --yes artifacts/sbom.json --output-signature artifacts/signature.cosign
+
+      - name: Step 5 — Provenance Attestation
+        run: |
+          mkdir -p artifacts
+          cat > artifacts/provenance.json <<'JSON'
+          {
+            "buildType": "playbook-security-program",
+            "builder": "github-actions",
+            "commit": "${{ github.sha }}",
+            "workflow": "${{ github.workflow }}",
+            "runId": "${{ github.run_id }}"
+          }
+          JSON
+
+      - name: Step 6 — Security Policy Gate
+        run: |
+          test -f artifacts/sbom.json
+          test -f artifacts/signature.cosign
+          test -f artifacts/provenance.json
+
+      - name: Security Regression Tests
+        run: pnpm test:security

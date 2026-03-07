@@ -7,9 +7,10 @@ import { ExitCode } from '../lib/cliContract.js';
 const generatePlanContract = vi.fn();
 const applyExecutionPlan = vi.fn();
 const parsePlanArtifact = vi.fn();
+const validateRemediationPlan = vi.fn();
 const loadVerifyRules = vi.fn();
 
-vi.mock('@zachariahredfield/playbook-engine', () => ({ generatePlanContract, applyExecutionPlan, parsePlanArtifact }));
+vi.mock('@zachariahredfield/playbook-engine', () => ({ generatePlanContract, applyExecutionPlan, parsePlanArtifact, validateRemediationPlan }));
 vi.mock('../lib/loadVerifyRules.js', () => ({ loadVerifyRules }));
 
 describe('runApply', () => {
@@ -17,6 +18,7 @@ describe('runApply', () => {
     generatePlanContract.mockReset();
     applyExecutionPlan.mockReset();
     parsePlanArtifact.mockReset();
+    validateRemediationPlan.mockReset();
     loadVerifyRules.mockReset();
   });
 
@@ -228,6 +230,7 @@ describe('runApply remediation status preconditions', () => {
     generatePlanContract.mockReset();
     applyExecutionPlan.mockReset();
     parsePlanArtifact.mockReset();
+    validateRemediationPlan.mockReset();
     loadVerifyRules.mockReset();
   });
 
@@ -270,6 +273,7 @@ describe('runApply warning-only remediation handling', () => {
     generatePlanContract.mockReset();
     applyExecutionPlan.mockReset();
     parsePlanArtifact.mockReset();
+    validateRemediationPlan.mockReset();
     loadVerifyRules.mockReset();
   });
 

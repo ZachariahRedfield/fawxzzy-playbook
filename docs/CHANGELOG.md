@@ -4,6 +4,8 @@
 
 ### Added
 
+- WHAT: Added an automated Security Program baseline across roadmap/principles/CI/runtime guardrails with repo-boundary validation, remediation plan policy checks, secret-redacted apply errors, security regression tests, and a dedicated `security.yml` pipeline for audit, secret scanning, SBOM, signing, provenance, and policy gating. WHY: Makes Playbook security continuous and deterministic across runtime and release workflows rather than manual spot checks.
+
 - Docs: captured deterministic engineering reasoning loop insight and interface/runtime governance pattern across `docs/PLAYBOOK_IMPROVEMENTS.md` and `docs/PLAYBOOK_PRODUCT_ROADMAP.md`.
 
 - Docs: captured repository memory system direction and the conversation-to-knowledge pipeline in `docs/PLAYBOOK_IMPROVEMENTS.md`, with roadmap alignment notes for durable engineering memory in `docs/PLAYBOOK_PRODUCT_ROADMAP.md`.

@@ -52,3 +52,5 @@ export type { ModuleOwnersQueryResult, ModuleOwnershipEntry } from './query/modu
 
 export { runDocsAudit } from './docs/audit.js';
 export type { DocsAuditResult, DocsAuditFinding, DocsAuditStatus, DocsAuditLevel } from './docs/audit.js';
+
+export { validateRepoBoundary, validateRemediationPlan, redactSecretsForLogs } from './security/guards.js';
