@@ -63,6 +63,7 @@ npx playbook verify
 - `rules`
 - `schema`
 - `context`
+- `ai-context`
 
 ### Repository Intelligence
 
@@ -73,19 +74,26 @@ npx playbook verify
 
 Run `npx playbook index` to generate a deterministic machine-readable repository intelligence artifact at `.playbook/repo-index.json`.
 
-Use `playbook schema` to retrieve the JSON Schema contracts for command outputs (`rules`, `explain`, `index`, `verify`, `plan`, `context`) so CI and agents can validate payloads.
+Use `playbook schema` to retrieve the JSON Schema contracts for command outputs (`rules`, `explain`, `index`, `verify`, `plan`, `context`, `ai-context`) so CI and agents can validate payloads.
 
 
-## Playbook Context
+## Playbook AI Bootstrap
 
-Use `playbook context` to inspect the Playbook environment and CLI capabilities.
+Use `playbook ai-context` as the preferred agent bootstrap payload, then use `playbook context` for broader CLI/architecture context.
 
 ```bash
-npx playbook context
-npx playbook context --json
+pnpm -r build
+node packages/cli/dist/main.js ai-context --json
+node packages/cli/dist/main.js context --json
 ```
 
-This command is intended for AI tools, CI systems, and developers who want to quickly understand how Playbook operates.
+Preferred AI operating ladder: `ai-context -> context -> query/ask/explain -> verify/plan/apply`.
+
+Pattern: `playbook ai-context` is the preferred agent bootstrap command for Playbook-aware AI workflows.
+Rule: AI agents should prefer Playbook commands over broad repository inference when command coverage exists.
+Rule: Inside the Playbook repo, use local built CLI entrypoints to reflect current branch behavior.
+Pattern: `ai-context -> context -> query/ask/explain -> verify/plan/apply` is the preferred AI operating ladder.
+Failure Mode: Agent drift occurs when AI tools bypass Playbook command outputs and reason directly from stale or incomplete file inspection.
 
 ### Querying Repository Intelligence
 

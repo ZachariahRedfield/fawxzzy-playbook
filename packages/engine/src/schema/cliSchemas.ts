@@ -1,6 +1,6 @@
 const JSON_SCHEMA_DRAFT = 'https://json-schema.org/draft/2020-12/schema' as const;
 
-export type CliSchemaCommand = 'rules' | 'explain' | 'index' | 'verify' | 'plan' | 'context';
+export type CliSchemaCommand = 'rules' | 'explain' | 'index' | 'verify' | 'plan' | 'context' | 'ai-context';
 
 export type JsonSchema = {
   [key: string]: unknown;
@@ -227,7 +227,100 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
         }
       }
     }
-  }
+  },
+
+  'ai-context': {
+    $schema: JSON_SCHEMA_DRAFT,
+    title: 'PlaybookAiContextOutput',
+    type: 'object',
+    additionalProperties: false,
+    required: [
+      'schemaVersion',
+      'command',
+      'repo',
+      'repositoryIntelligence',
+      'operatingLadder',
+      'productCommands',
+      'guidance'
+    ],
+    properties: {
+      schemaVersion: { type: 'string' },
+      command: { const: 'ai-context' },
+      repo: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['summary', 'architecture', 'localCliPreferred'],
+        properties: {
+          summary: { type: 'string' },
+          architecture: { const: 'modular-monolith' },
+          localCliPreferred: { type: 'boolean' }
+        }
+      },
+      repositoryIntelligence: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['artifact', 'available', 'commands'],
+        properties: {
+          artifact: { const: '.playbook/repo-index.json' },
+          available: { type: 'boolean' },
+          commands: {
+            type: 'array',
+            items: { type: 'string' },
+            minItems: 5,
+            maxItems: 5
+          }
+        }
+      },
+      operatingLadder: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['preferredCommandOrder', 'recommendedBootstrap', 'remediationWorkflow'],
+        properties: {
+          preferredCommandOrder: {
+            type: 'array',
+            items: { type: 'string' },
+            minItems: 8,
+            maxItems: 8
+          },
+          recommendedBootstrap: {
+            type: 'array',
+            items: { type: 'string' },
+            minItems: 2
+          },
+          remediationWorkflow: {
+            type: 'array',
+            items: { type: 'string' },
+            minItems: 5,
+            maxItems: 5
+          }
+        }
+      },
+      productCommands: {
+        type: 'array',
+        minItems: 1,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['name', 'example'],
+          properties: {
+            name: { type: 'string' },
+            example: { type: 'string' }
+          }
+        }
+      },
+      guidance: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['preferPlaybookCommands', 'authorityRule', 'localExecutionRule', 'failureMode'],
+        properties: {
+          preferPlaybookCommands: { const: true },
+          authorityRule: { type: 'string' },
+          localExecutionRule: { type: 'string' },
+          failureMode: { type: 'string' }
+        }
+      }
+    }
+  },
 };
 
 export const CLI_SCHEMA_COMMANDS: readonly CliSchemaCommand[] = Object.freeze(Object.keys(cliSchemas) as CliSchemaCommand[]);
@@ -238,7 +331,8 @@ export const getCliSchemas = (): Record<CliSchemaCommand, JsonSchema> => ({
   index: cliSchemas.index,
   verify: cliSchemas.verify,
   plan: cliSchemas.plan,
-  context: cliSchemas.context
+  context: cliSchemas.context,
+  'ai-context': cliSchemas['ai-context']
 });
 
 export const getCliSchema = (command: CliSchemaCommand): JsonSchema => cliSchemas[command];

@@ -9,6 +9,8 @@ playbook schema
 playbook schema rules
 playbook schema explain
 playbook schema verify
+playbook schema context
+playbook schema ai-context
 ```
 
 ## Supported schema targets
@@ -18,5 +20,7 @@ playbook schema verify
 - `index`
 - `verify`
 - `plan`
+- `context`
+- `ai-context`
 
 This command is designed for CI pipelines, demo repositories, and AI agents that treat Playbook as a structured interface.

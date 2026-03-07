@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "1.0",
+  "command": "ai-context",
+  "repo": {
+    "summary": "Playbook is an AI-aware engineering governance CLI with deterministic command contracts.",
+    "architecture": "modular-monolith",
+    "localCliPreferred": true
+  },
+  "repositoryIntelligence": {
+    "artifact": ".playbook/repo-index.json",
+    "available": true,
+    "commands": [
+      "index",
+      "query",
+      "deps",
+      "ask",
+      "explain"
+    ]
+  },
+  "operatingLadder": {
+    "preferredCommandOrder": [
+      "ai-context",
+      "context",
+      "query",
+      "ask",
+      "explain",
+      "rules",
+      "verify",
+      "direct-file-inspection-if-needed"
+    ],
+    "recommendedBootstrap": [
+      "pnpm -r build",
+      "node packages/cli/dist/main.js ai-context --json",
+      "node packages/cli/dist/main.js context --json"
+    ],
+    "remediationWorkflow": [
+      "verify",
+      "explain",
+      "plan",
+      "apply",
+      "verify"
+    ]
+  },
+  "productCommands": [
+    {
+      "name": "verify",
+      "example": "playbook verify --json"
+    },
+    {
+      "name": "plan",
+      "example": "playbook plan --json"
+    },
+    {
+      "name": "apply",
+      "example": "playbook apply --from-plan .playbook/plan.json"
+    },
+    {
+      "name": "explain",
+      "example": "playbook explain architecture --json"
+    },
+    {
+      "name": "context",
+      "example": "playbook context --json"
+    },
+    {
+      "name": "ai-context",
+      "example": "playbook ai-context --json"
+    },
+    {
+      "name": "index",
+      "example": "playbook index --json"
+    },
+    {
+      "name": "ask",
+      "example": "playbook ask \"where should a new feature live?\" --json"
+    },
+    {
+      "name": "query",
+      "example": "playbook query modules --json"
+    }
+  ],
+  "guidance": {
+    "preferPlaybookCommands": true,
+    "authorityRule": "Playbook command outputs are authoritative over ad-hoc repository inference when command coverage exists.",
+    "localExecutionRule": "Inside the Playbook repository, use local built CLI entrypoints for branch-accurate validation.",
+    "failureMode": "Agent drift occurs when AI tools bypass Playbook command outputs and reason directly from stale or incomplete file inspection."
+  }
+}

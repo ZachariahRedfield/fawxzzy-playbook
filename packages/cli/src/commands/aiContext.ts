@@ -1,0 +1,146 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { ExitCode } from '../lib/cliContract.js';
+import { listRegisteredCommands } from './index.js';
+
+type AiContextResult = {
+  schemaVersion: '1.0';
+  command: 'ai-context';
+  repo: {
+    summary: string;
+    architecture: 'modular-monolith';
+    localCliPreferred: boolean;
+  };
+  repositoryIntelligence: {
+    artifact: '.playbook/repo-index.json';
+    available: boolean;
+    commands: ['index', 'query', 'deps', 'ask', 'explain'];
+  };
+  operatingLadder: {
+    preferredCommandOrder: [
+      'ai-context',
+      'context',
+      'query',
+      'ask',
+      'explain',
+      'rules',
+      'verify',
+      'direct-file-inspection-if-needed'
+    ];
+    recommendedBootstrap: [
+      'pnpm -r build',
+      'node packages/cli/dist/main.js ai-context --json',
+      'node packages/cli/dist/main.js context --json'
+    ];
+    remediationWorkflow: ['verify', 'explain', 'plan', 'apply', 'verify'];
+  };
+  productCommands: Array<{
+    name: string;
+    example: string;
+  }>;
+  guidance: {
+    preferPlaybookCommands: true;
+    authorityRule: string;
+    localExecutionRule: string;
+    failureMode: string;
+  };
+};
+
+const buildAiContextResult = (cwd: string): AiContextResult => {
+  const indexFile = path.join(cwd, '.playbook', 'repo-index.json');
+
+  return {
+    schemaVersion: '1.0',
+    command: 'ai-context',
+    repo: {
+      summary: 'Playbook is an AI-aware engineering governance CLI with deterministic command contracts.',
+      architecture: 'modular-monolith',
+      localCliPreferred: true
+    },
+    repositoryIntelligence: {
+      artifact: '.playbook/repo-index.json',
+      available: fs.existsSync(indexFile),
+      commands: ['index', 'query', 'deps', 'ask', 'explain']
+    },
+    operatingLadder: {
+      preferredCommandOrder: [
+        'ai-context',
+        'context',
+        'query',
+        'ask',
+        'explain',
+        'rules',
+        'verify',
+        'direct-file-inspection-if-needed'
+      ],
+      recommendedBootstrap: [
+        'pnpm -r build',
+        'node packages/cli/dist/main.js ai-context --json',
+        'node packages/cli/dist/main.js context --json'
+      ],
+      remediationWorkflow: ['verify', 'explain', 'plan', 'apply', 'verify']
+    },
+    productCommands: listRegisteredCommands()
+      .filter((entry) => ['ai-context', 'context', 'index', 'query', 'ask', 'explain', 'verify', 'plan', 'apply'].includes(entry.name))
+      .map((entry) => {
+        const example =
+          entry.name === 'query'
+            ? 'playbook query modules --json'
+            : entry.name === 'ask'
+              ? 'playbook ask "where should a new feature live?" --json'
+              : entry.name === 'explain'
+                ? 'playbook explain architecture --json'
+                : entry.name === 'apply'
+                  ? 'playbook apply --from-plan .playbook/plan.json'
+                  : `playbook ${entry.name}${entry.name === 'ai-context' || entry.name === 'context' || entry.name === 'index' || entry.name === 'verify' || entry.name === 'plan' ? ' --json' : ''}`;
+
+        return { name: entry.name, example };
+      }),
+    guidance: {
+      preferPlaybookCommands: true,
+      authorityRule: 'Playbook command outputs are authoritative over ad-hoc repository inference when command coverage exists.',
+      localExecutionRule: 'Inside the Playbook repository, use local built CLI entrypoints for branch-accurate validation.',
+      failureMode: 'Agent drift occurs when AI tools bypass Playbook command outputs and reason directly from stale or incomplete file inspection.'
+    }
+  };
+};
+
+const printText = (result: AiContextResult): void => {
+  console.log('Playbook AI Context');
+  console.log('');
+  console.log('Repository');
+  console.log(result.repo.summary);
+  console.log(`Architecture: ${result.repo.architecture}`);
+  console.log(`Local CLI preferred: ${result.repo.localCliPreferred ? 'yes' : 'no'}`);
+  console.log('');
+  console.log('Repository Intelligence');
+  console.log(`Artifact: ${result.repositoryIntelligence.artifact}`);
+  console.log(`Available: ${result.repositoryIntelligence.available ? 'yes' : 'no'}`);
+  console.log(`Commands: ${result.repositoryIntelligence.commands.join(', ')}`);
+  console.log('');
+  console.log('AI Operating Ladder');
+  console.log(result.operatingLadder.preferredCommandOrder.join(' -> '));
+  console.log('');
+  console.log('Recommended Bootstrap');
+  for (const command of result.operatingLadder.recommendedBootstrap) {
+    console.log(command);
+  }
+  console.log('');
+  console.log('Canonical Remediation Workflow');
+  console.log(result.operatingLadder.remediationWorkflow.join(' -> '));
+};
+
+export const runAiContext = async (cwd: string, options: { format: 'text' | 'json'; quiet: boolean }): Promise<number> => {
+  const result = buildAiContextResult(cwd);
+
+  if (options.format === 'json') {
+    console.log(JSON.stringify(result, null, 2));
+    return ExitCode.Success;
+  }
+
+  if (!options.quiet) {
+    printText(result);
+  }
+
+  return ExitCode.Success;
+};

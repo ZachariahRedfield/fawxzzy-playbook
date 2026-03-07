@@ -16,6 +16,7 @@ describe('runSchema', () => {
     expect(payload).toHaveProperty('verify');
     expect(payload).toHaveProperty('plan');
     expect(payload).toHaveProperty('context');
+    expect(payload).toHaveProperty('ai-context');
 
     logSpy.mockRestore();
   });
@@ -58,6 +59,19 @@ describe('runSchema', () => {
 
     logSpy.mockRestore();
   });
+
+  it('prints the ai-context schema', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runSchema('/repo', ['ai-context'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+    expect(payload.title).toBe('PlaybookAiContextOutput');
+
+    logSpy.mockRestore();
+  });
+
   it('fails on unknown schema target', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 

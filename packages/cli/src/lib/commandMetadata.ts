@@ -82,6 +82,15 @@ export const commandMetadata: CommandMetadata[] = [
     example: 'playbook context --json',
     machineReadable: true
   },
+
+  {
+    name: 'ai-context',
+    description: 'Print deterministic AI bootstrap context for Playbook-aware agents',
+    category: 'Repository tools',
+    productFacing: true,
+    example: 'playbook ai-context --json',
+    machineReadable: true
+  },
   {
     name: 'index',
     description: 'Generate machine-readable repository intelligence index',

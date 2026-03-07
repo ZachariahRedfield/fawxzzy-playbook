@@ -65,6 +65,7 @@ When operating inside this repository, start from local source:
 
 ```bash
 pnpm -r build
+node packages/cli/dist/main.js ai-context --json
 node packages/cli/dist/main.js context --json
 ```
 
@@ -76,13 +77,14 @@ When command coverage exists, prefer Playbook command outputs over ad-hoc reposi
 
 Recommended authority order:
 
-1. `context`
-2. `query`
-3. `ask`
-4. `explain`
-5. `rules`
-6. `verify`
-7. Direct file inspection only when command coverage is insufficient
+1. `ai-context`
+2. `context`
+3. `query`
+4. `ask`
+5. `explain`
+6. `rules`
+7. `verify`
+8. Direct file inspection only when command coverage is insufficient
 
 ## Canonical remediation workflow
 
@@ -136,6 +138,12 @@ Copy-pastable governance bullets:
 - Pattern: Shared command metadata should feed command registry and AI-facing command inventory to reduce drift.
 - Failure Mode: AI Contract Drift occurs when new commands are added without refreshing AGENTS.md managed sections.
 
+- Pattern: `playbook ai-context` is the preferred agent bootstrap command for Playbook-aware AI workflows.
+- Rule: AI agents should prefer Playbook commands over broad repository inference when command coverage exists.
+- Rule: Inside the Playbook repo, use local built CLI entrypoints to reflect current branch behavior.
+- Pattern: `ai-context -> context -> query/ask/explain -> verify/plan/apply` is the preferred AI operating ladder.
+- Failure Mode: Agent drift occurs when AI tools bypass Playbook command outputs and reason directly from stale or incomplete file inspection.
+
 ## Managed command surface
 
 The following section is generated from shared command metadata.
@@ -166,6 +174,8 @@ Do not hand-edit entries inside the managed markers.
   - Example: `playbook schema verify --json`
 - `context`: Print deterministic CLI and architecture context for tools and agents
   - Example: `playbook context --json`
+- `ai-context`: Print deterministic AI bootstrap context for Playbook-aware agents
+  - Example: `playbook ai-context --json`
 
 ### Repository intelligence
 
@@ -208,6 +218,7 @@ Do not hand-edit entries inside the managed markers.
 | `rules` | `playbook rules --json` |
 | `schema` | `playbook schema verify --json` |
 | `context` | `playbook context --json` |
+| `ai-context` | `playbook ai-context --json` |
 | `index` | `playbook index --json` |
 | `query` | `playbook query modules --json` |
 | `deps` | `playbook deps workouts --json` |
