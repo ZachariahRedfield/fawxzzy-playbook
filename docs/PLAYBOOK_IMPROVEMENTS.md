@@ -75,3 +75,63 @@ Automatically detect implemented improvements and archive them.
 - Rule: `docs/index.md` should navigate documentation, not duplicate backlog or roadmap content.
 - Pattern: Historical one-off cleanup docs should be archived or removed once governance rules replace them.
 - Failure Mode: Docs-audit warning burn-down is faked if warnings are removed by weakening audit rules instead of aligning documents.
+
+---
+
+## Future Capability: Repository Memory System
+
+### Motivation
+
+Playbook is evolving toward an AI development operating system where repository intelligence, deterministic remediation, and durable engineering memory work together.
+
+Important engineering knowledge is often lost across chat threads, PR comments, and one-off investigations. A repository memory system would preserve this knowledge as deterministic artifacts that can be queried, audited, and promoted through normal governance workflows.
+
+### Memory artifact direction
+
+Potential structured memory layer:
+
+```text
+.playbook/memory/
+  decisions.json
+  patterns.json
+  failure-modes.json
+  open-questions.json
+```
+
+The intent is to preserve architecture decisions, patterns, failure modes, unresolved questions, module notes, and investigation outcomes as long-lived repository intelligence.
+
+### Conversation-to-knowledge workflow
+
+Playbook should support promoting important conversations into durable artifacts instead of leaving them in ephemeral chat history.
+
+Potential promotion targets:
+
+- structured repository memory entries
+- documentation candidates
+- improvement backlog entries
+- roadmap candidates when prioritized
+
+### Potential future command surface (concept only)
+
+- `playbook memory capture`
+- `playbook memory query`
+- `playbook memory promote`
+- `playbook memory prune`
+
+These command names are directional only and should be treated as backlog concepts, not implemented surface.
+
+### AI workflow + future conversation surface alignment
+
+A future Playbook conversational interface (for example, Playbook Chat) should act as a front-end to deterministic Playbook artifacts and commands rather than bypassing repository intelligence contracts.
+
+This keeps conversational UX grounded in the same deterministic governance/runtime model used by CLI and CI workflows.
+
+- Pattern: Conversation-to-Knowledge Pipeline
+  - Important engineering discussions should be promotable into structured repository memory and documentation artifacts.
+- Pattern: Durable Engineering Memory
+  - Repositories should preserve architectural rationale, decisions, and failure modes as structured artifacts rather than ephemeral conversations.
+- Pattern: Repository Memory Layer
+  - Playbook may introduce structured memory artifacts to capture decisions, patterns, and investigations across repository evolution.
+- Failure Mode: Chat Without Memory
+  - Conversational interfaces become shallow if decisions and investigations are not preserved as structured repository knowledge.
+

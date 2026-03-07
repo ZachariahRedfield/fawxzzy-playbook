@@ -185,6 +185,7 @@ Key capabilities in this direction include:
 - Architecture-aware impact analysis
 - Risk hotspot detection
 - Pull request intelligence and analysis
+- Durable engineering memory direction (`.playbook/memory/*`) to preserve decisions, rationale, and investigation history as queryable repository intelligence for richer AI reasoning.
 
 Rule: **Playbook analyzes but does not author.**
 

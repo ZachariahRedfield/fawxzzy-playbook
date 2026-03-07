@@ -4,6 +4,8 @@
 
 ### Added
 
+- Docs: captured repository memory system direction and the conversation-to-knowledge pipeline in `docs/PLAYBOOK_IMPROVEMENTS.md`, with roadmap alignment notes for durable engineering memory in `docs/PLAYBOOK_PRODUCT_ROADMAP.md`.
+
 - Consolidated documentation planning architecture by standardizing `docs/PLAYBOOK_PRODUCT_ROADMAP.md` as the single strategic roadmap, refreshing `docs/PLAYBOOK_IMPROVEMENTS.md` as the idea backlog, adding `docs/archive/` for backlog rotation, and clarifying documentation responsibilities/process boundaries across workflow and index docs.
 
 - Added deterministic AI repository contract support via `playbook ai-contract` with `.playbook/ai-contract.json` as the canonical AI-operability artifact, including generated fallback behavior, schema support (`playbook schema ai-contract`), and command-level tests.
