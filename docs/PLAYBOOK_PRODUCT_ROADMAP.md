@@ -512,3 +512,45 @@ Command-state rule for current roadmap framing:
 - New command additions must update README, roadmap, command reference, demo docs, and changelog.
 - `index` and the AI repository-intelligence surface are implemented; roadmap items should track enhancement quality and automation durability rather than command existence.
 - When docs and implementation disagree, code is source of truth.
+
+## Phase: Command Validation Automation & Self-Verifying Development Loop
+
+Goal:
+Make Playbook command development self-verifying so new commands are validated deterministically as they are added.
+
+Why this matters:
+Playbook is building an AI-operable CLI surface. That surface becomes much more trustworthy when every command addition expands both product capability and automated validation coverage.
+
+Development loop target:
+1. implement command
+2. add/update command contract tests
+3. run deterministic validation
+4. fix regressions before merge
+
+Required validation surfaces for new commands:
+- contract tests for deterministic JSON/text behavior where applicable
+- smoke coverage for runtime execution paths
+- local built CLI validation inside the Playbook repo
+- docs and command-inventory updates in the same change
+
+Codex-aligned workflow:
+- Codex should not stop at implementation
+- Codex should also add or update contract tests, run validation commands, and remediate failures before completion
+
+Baseline validation commands:
+- `pnpm -r build`
+- `pnpm test`
+- `pnpm smoke:ci`
+- branch-accurate CLI runs through `node packages/cli/dist/main.js ...`
+
+Pattern: Self-Verifying Command Development
+- Every new command should increase both feature coverage and validation coverage.
+
+Rule: Command Additions Must Ship With Validation
+- A new command is not complete until its deterministic behavior is exercised by automated tests or smoke coverage.
+
+Pattern: Branch-Accurate Command Validation
+- Inside the Playbook repository, command validation should run against the locally built CLI entrypoint rather than assuming published package behavior.
+
+Future enhancement:
+- introduce `playbook self-test` as a system-level validation entrypoint that exercises key commands and contracts against fixture repositories.
