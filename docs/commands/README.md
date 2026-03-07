@@ -4,27 +4,35 @@ This is the authoritative command-state snapshot for Playbook product docs.
 
 ## Product-facing command surface (current)
 
+The following section is generated from shared CLI command metadata.
+Do not hand-edit entries inside the managed markers.
+
+<!-- PLAYBOOK:DOCS_COMMAND_STATUS_START -->
+
 | Command / Artifact | Purpose | Status | Example |
 | --- | --- | --- | --- |
-| `analyze` | Analyze repository stack and architecture signals. | Current (implemented) | `playbook analyze --json` |
-| `verify` | Run deterministic governance checks. | Current (implemented) | `playbook verify --ci` |
-| `rules` | List loaded analyze/verify rules for humans and agents. | Current (implemented) | `playbook rules --json` |
-| `doctor` | Report repository health and diagnostics, with optional safe fix mode. | Current (implemented) | `playbook doctor --fix --dry-run` |
-| `diagram` | Generate deterministic architecture diagrams (Mermaid). | Current (implemented) | `playbook diagram --repo . --out docs/ARCHITECTURE_DIAGRAMS.md` |
-| `plan` | Generate deterministic remediation tasks from verify findings. | Current (implemented) | `playbook plan --json` |
-| `apply` | Execute deterministic auto-fixable plan tasks. | Current (implemented) | `playbook apply --from-plan .playbook/plan.json` |
-| `playbook-demo` (artifact) | Official onboarding repository, discoverable via `playbook demo`. | Current (artifact + CLI discovery) | `playbook demo` |
-| `index` | Emit machine-readable repository index context for AI workflows. | Current (implemented) | `playbook index --json` |
-| `query` | Query machine-readable repository intelligence fields from `.playbook/repo-index.json`. | Current (implemented) | `playbook query modules --json` |
-| `deps` | Print indexed module dependency relationships from `.playbook/repo-index.json`. | Current (implemented) | `playbook deps workouts --json` |
-| `ask` | Answer repository guidance questions from machine-readable repository intelligence context. | Current (implemented) | `playbook ask "where should a new feature live?" --json` |
-| `explain` | Deterministically explain rule/module/architecture targets from engine + repo index context. | Current (implemented) | `playbook explain architecture --json` |
-| `schema` | Emit JSON Schema contracts for Playbook JSON command outputs. | Current (implemented) | `playbook schema verify --json` |
-| `ai-context` | Agent bootstrap command that returns a concise machine-readable repository intelligence summary. | Current (implemented) | `playbook ai-context --json` |
+| `analyze` | Analyze project stack | Current (implemented) | `playbook analyze --json` |
+| `verify` | Verify governance rules | Current (implemented) | `playbook verify --ci --json` |
+| `plan` | Generate a structured fix plan from rule findings | Current (implemented) | `playbook plan --json` |
+| `apply` | Execute deterministic auto-fixable plan tasks | Current (implemented) | `playbook apply --from-plan .playbook/plan.json` |
+| `doctor` | Repository health entry point for architecture, governance, and issues | Current (implemented) | `playbook doctor --fix --dry-run` |
+| `diagram` | Generate deterministic architecture Mermaid diagrams | Current (implemented) | `playbook diagram --repo . --out docs/ARCHITECTURE_DIAGRAMS.md` |
+| `rules` | List loaded verify and analyze rules | Current (implemented) | `playbook rules --json` |
+| `schema` | Print JSON Schemas for Playbook CLI command outputs | Current (implemented) | `playbook schema verify --json` |
+| `context` | Print deterministic CLI and architecture context for tools and agents | Current (implemented) | `playbook context --json` |
+| `ai-context` | Print deterministic AI bootstrap context for Playbook-aware agents | Current (implemented) | `playbook ai-context --json` |
+| `index` | Generate machine-readable repository intelligence index | Current (implemented) | `playbook index --json` |
+| `query` | Query machine-readable repository intelligence from .playbook/repo-index.json | Current (implemented) | `playbook query modules --json` |
+| `deps` | Print module dependency graph from .playbook/repo-index.json | Current (implemented) | `playbook deps workouts --json` |
+| `ask` | Answer repository questions from machine-readable intelligence context | Current (implemented) | `playbook ask "where should a new feature live?" --json` |
+| `explain` | Explain rules, modules, or architecture from repository intelligence | Current (implemented) | `playbook explain architecture --json` |
+<!-- PLAYBOOK:DOCS_COMMAND_STATUS_END -->
 
 ## Additional implemented CLI utility commands
 
 The CLI registry currently also exposes utility commands not treated as part of the product-facing command set above:
+
+<!-- PLAYBOOK:DOCS_UTILITY_COMMANDS_START -->
 
 - `demo`
 - `init`
@@ -32,8 +40,9 @@ The CLI registry currently also exposes utility commands not treated as part of 
 - `status`
 - `upgrade`
 - `session`
+<!-- PLAYBOOK:DOCS_UTILITY_COMMANDS_END -->
 
-Source of truth: `packages/cli/src/commands/index.ts`.
+Source of truth: shared command metadata in `packages/cli/src/lib/commandMetadata.ts`.
 
 ## Product-state anchoring rule
 

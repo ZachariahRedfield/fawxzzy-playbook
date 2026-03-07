@@ -327,6 +327,15 @@ Progress (current)
 - [x] Docs hygiene tooling exercised with a deterministic `docs:merge` consolidation pass (SAFE mode, canonical pointers/stubs retained).
 - [x] Docs merge tooling completed and executed once on the Playbook repo.
 - [x] Session tooling implemented (`session import`, `session merge`, `session cleanup`).
+- [x] Documentation automation foundation added (`pnpm docs:update`, `pnpm docs:check`, `pnpm agents:update`, `pnpm agents:check`) with shared command metadata as source of truth.
+- [x] Deterministic session knowledge hygiene pipeline added to `session cleanup` with explicit normalize/deduplicate/truncate/prune/report stages and machine-readable JSON report output.
+
+Pattern: Drift-prone command documentation should be generated or validated from shared metadata.
+Rule: Knowledge hygiene must be deterministic and report exactly what was truncated, deduplicated, deleted, or preserved.
+Pattern: Session/knowledge cleanup should reduce junk data without hiding meaningful engineering context.
+Rule: Usage telemetry, if present, must be opt-in, local-first, and deletable.
+Failure Mode: Documentation Drift occurs when command/product state changes without structured doc regeneration or validation.
+Failure Mode: Knowledge Junk Accretion occurs when repeated summaries, duplicate artifacts, and placeholder data accumulate without deterministic cleanup rules.
 - [x] Repository hygiene rules established for `.playbook/`.
 - [ ] `examples/demo-repo/` ships as an onboarding path with intentional architecture/doc/governance drift and meaningful analysis output
 - [ ] GitHub Action path finalized for `uses: playbook/verify` with verify + architecture + governance checks

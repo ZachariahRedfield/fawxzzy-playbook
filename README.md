@@ -143,6 +143,10 @@ Authoritative command status lives in [docs/commands/README.md](docs/commands/RE
 
 AI operating contract for this repository lives in [AGENTS.md](AGENTS.md). Managed command inventory/examples are generated from shared CLI command metadata via `pnpm agents:update` and validated with `pnpm agents:check`.
 
+Managed command docs are generated/validated with `pnpm docs:update` and `pnpm docs:check` to reduce command-surface drift across `AGENTS.md` and `docs/commands/README.md`.
+
+Session knowledge hygiene is available via `playbook session cleanup --hygiene --dry-run --json-report .playbook/session-cleanup.report.json` for deterministic normalize/deduplicate/truncate/prune reporting.
+
 ## Demo
 
 See [`playbook-demo`](https://github.com/ZachariahRedfield/playbook-demo), also discoverable via `playbook demo`.

@@ -27,8 +27,10 @@
     "docs:merge": "node scripts/docs-merge.mjs",
     "test:cli": "node scripts/cli-smoke.mjs",
     "test:update-snapshots": "UPDATE_CONTRACT_SNAPSHOTS=1 pnpm -C packages/cli test -- cliContracts.test.ts",
-    "agents:update": "pnpm -r build && node scripts/update-agents.mjs --write",
-    "agents:check": "pnpm -r build && node scripts/update-agents.mjs --check"
+    "agents:update": "pnpm docs:update",
+    "agents:check": "pnpm docs:check",
+    "docs:update": "pnpm -r build && node scripts/update-managed-docs.mjs",
+    "docs:check": "pnpm -r build && node scripts/update-managed-docs.mjs --check"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

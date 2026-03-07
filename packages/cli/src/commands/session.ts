@@ -159,14 +159,25 @@ export const runSession = async (cwd: string, args: string[], options: SessionOp
     const sessionsDir = resolvePath(cwd, parseOption(rest, '--sessions-dir') ?? '.playbook/sessions');
     const maxDaysRaw = parseOption(rest, '--max-days');
     const maxCountRaw = parseOption(rest, '--max-count');
+    const maxEntryLengthRaw = parseOption(rest, '--max-entry-length');
     const dryRun = rest.includes('--dry-run');
+    const hygiene = rest.includes('--hygiene');
+    const reportJsonPath = parseOption(rest, '--json-report');
 
     const result = cleanupSessionSnapshots({
       sessionsDir,
       maxDays: maxDaysRaw ? Number(maxDaysRaw) : undefined,
       maxCount: maxCountRaw ? Number(maxCountRaw) : undefined,
+      maxEntryLength: maxEntryLengthRaw ? Number(maxEntryLengthRaw) : undefined,
+      hygiene,
       dryRun
     });
+
+    if (reportJsonPath) {
+      const resolved = resolvePath(cwd, reportJsonPath);
+      fs.mkdirSync(path.dirname(resolved), { recursive: true });
+      fs.writeFileSync(resolved, `${JSON.stringify(result, null, 2)}\n`, 'utf8');
+    }
 
     emitResult({
       format: options.format,
@@ -182,7 +193,32 @@ export const runSession = async (cwd: string, args: string[], options: SessionOp
           message: `${dryRun ? 'Would delete' : 'Deleted'}: ${path.relative(cwd, filePath)}`
         })),
         { id: 'session.cleanup.count.deleted', level: 'info', message: `deletedCount=${result.deletedCount}` },
-        { id: 'session.cleanup.count.kept', level: 'info', message: `keptCount=${result.keptCount}` }
+        { id: 'session.cleanup.count.kept', level: 'info', message: `keptCount=${result.keptCount}` },
+        {
+          id: 'session.cleanup.hygiene.enabled',
+          level: 'info' as const,
+          message: `hygieneEnabled=${result.hygieneReport.enabled}`
+        },
+        {
+          id: 'session.cleanup.hygiene.removed',
+          level: 'info' as const,
+          message: `deduplicated=${result.hygieneReport.itemsRemoved.deduplicated} junk=${result.hygieneReport.itemsRemoved.junk}`
+        },
+        {
+          id: 'session.cleanup.hygiene.compacted',
+          level: 'info' as const,
+          message: `truncated=${result.hygieneReport.itemsCompacted.truncated} normalized=${result.hygieneReport.itemsCompacted.normalized}`
+        },
+        {
+          id: 'session.cleanup.hygiene.reduction',
+          level: 'info' as const,
+          message: `bytesReduced=${result.hygieneReport.bytesReduced} linesReduced=${result.hygieneReport.linesReduced}`
+        },
+        ...result.hygieneReport.warnings.map((warning: string, index: number) => ({
+          id: `session.cleanup.hygiene.warning.${index + 1}`,
+          level: 'warning' as const,
+          message: warning
+        }))
       ],
       nextActions: []
     });
