@@ -186,6 +186,7 @@ Key capabilities in this direction include:
 - Risk hotspot detection
 - Pull request intelligence and analysis
 - Durable engineering memory direction (`.playbook/memory/*`) to preserve decisions, rationale, and investigation history as queryable repository intelligence for richer AI reasoning.
+- Playbook command surfaces already implement a reusable deterministic engineering reasoning loop (`observe -> understand -> diagnose -> plan -> act -> verify -> learn`) that should remain the core execution model across CLI, CI, and future interface layers.
 
 Rule: **Playbook analyzes but does not author.**
 
