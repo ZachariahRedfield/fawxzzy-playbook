@@ -90,6 +90,13 @@ describe('ask --repo-context', () => {
       enabled: true,
       sources: ['.playbook/repo-index.json', 'generated-ai-contract-fallback']
     });
+    expect(payload.scope).toEqual({
+      module: undefined,
+      diffContext: {
+        enabled: false,
+        baseRef: undefined
+      }
+    });
     expect(String(payload.question)).toBe('what modules exist?');
 
     logSpy.mockRestore();

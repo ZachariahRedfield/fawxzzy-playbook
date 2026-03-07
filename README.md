@@ -165,6 +165,7 @@ playbook query modules
 playbook ask "where should a new feature live?" --repo-context
 playbook ask "how does auth work?" --repo-context --mode concise
 playbook ask "how does this work?" --module workouts --repo-context
+playbook ask "what modules are affected by this change?" --diff-context
 playbook ask "how do I fix this rule violation?" --mode ultra
 playbook explain architecture
 playbook verify
@@ -210,6 +211,7 @@ playbook ask "where should a new feature live?"
 playbook ask "what modules exist?" --json
 playbook ask "how does auth work?" --repo-context --mode concise
 playbook ask "how does this work?" --module workouts --repo-context
+playbook ask "what modules are affected by this change?" --diff-context
 playbook ask "how do I fix this rule violation?" --mode ultra
 playbook explain workouts
 playbook explain PB001
@@ -237,6 +239,22 @@ playbook ask "what modules are affected by this?" --repo-context --json
 
 If `.playbook/repo-index.json` is missing, ask returns deterministic remediation guidance to run `playbook index` and retry.
 
+### Change-scoped ask (`playbook ask --diff-context`)
+
+Use `--diff-context` to answer branch/working-tree questions using trusted local diff + indexed intelligence.
+
+- Requires `.playbook/repo-index.json` and local git diff availability.
+- Produces deterministic changed-file, affected-module, impact, docs, and risk context.
+- Never silently broadens into full-repo inference when diff context is unavailable.
+- Optional `--base <ref>` narrows diff comparison against an explicit base (for example `main`).
+
+```bash
+playbook index
+playbook ask "what modules are affected by this change?" --diff-context
+playbook ask "what should I verify before merge?" --diff-context --mode concise
+playbook ask "summarize the architectural risk of this diff" --diff-context --json
+```
+
 ### AI Response Modes (`playbook ask --mode`)
 
 `playbook ask` supports response modes to control answer density.
@@ -251,6 +269,7 @@ Examples:
 playbook ask "how does auth work?"
 playbook ask "how does auth work?" --repo-context --mode concise
 playbook ask "how does this work?" --module workouts --repo-context
+playbook ask "what modules are affected by this change?" --diff-context
 playbook ask "how do I fix this rule violation?" --mode ultra
 ```
 

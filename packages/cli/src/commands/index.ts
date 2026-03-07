@@ -168,7 +168,9 @@ const commandRunners: Record<string, (context: CommandContext) => Promise<number
       quiet,
       mode: parseOptionValue(commandArgs, '--mode'),
       repoContext: parseFlag(commandArgs, '--repo-context'),
-      module: parseOptionValue(commandArgs, '--module')
+      module: parseOptionValue(commandArgs, '--module'),
+      diffContext: parseFlag(commandArgs, '--diff-context'),
+      base: parseOptionValue(commandArgs, '--base')
     });
   },
   deps: async ({ cwd, commandArgs, format, quiet }) => {

@@ -260,7 +260,7 @@ For app-integrated actions (internal dashboards, CI control planes, admin/dev pa
 - [ ] add a lightweight config/plugin/rule-pack architecture note with extension examples
 - [ ] draft first server-side library/API design stub for embedded `ask`/`query`/`explain` workflows
 - [x] add `ask --module <name>` scoped repo-context hydration
-- [ ] add `ask --diff-context` for change-scoped intelligence prompts
+- [x] add `ask --diff-context` for change-scoped intelligence prompts
 - [ ] expose ask context-source provenance contract in JSON for app/agent integrations
 - [ ] define explicit opt-in export/sync/telemetry policy language before any cloud-backed intelligence behavior
 
