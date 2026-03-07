@@ -6,6 +6,59 @@ AGENTS.md is the canonical AI operating contract for the Playbook repository.
 
 This document tells agents how to bootstrap, which commands to trust, and how to execute deterministic remediation workflows without drifting from Playbook's intended behavior.
 
+## Playbook-First AI Workflow
+
+Use Playbook as the primary repository intelligence layer for this task.
+
+AI agents should prefer Playbook commands over direct repository inspection whenever command coverage exists.
+
+### Recommended bootstrap
+
+Before making non-trivial changes:
+
+1. Build the local CLI so commands reflect the current branch.
+
+```
+pnpm -r build
+```
+
+2. Inspect Playbook agent context.
+
+Preferred (if available):
+
+```
+node packages/cli/dist/main.js ai-context --json
+```
+
+Fallback:
+
+```
+node packages/cli/dist/main.js context --json
+```
+
+3. Use repository intelligence commands before broad file inspection.
+
+Examples:
+
+```
+playbook query modules
+playbook query architecture
+playbook ask "where should a new feature live?"
+playbook explain <target>
+```
+
+4. When addressing rule or governance behavior, treat the deterministic remediation workflow as the source of truth:
+
+```
+playbook verify
+playbook explain <rule-id>
+playbook plan
+playbook apply
+playbook verify
+```
+
+Direct file inspection should only be used when Playbook command coverage is insufficient.
+
 ## Default AI bootstrap
 
 When operating inside this repository, start from local source:
