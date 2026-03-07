@@ -57,6 +57,14 @@ CI-friendly
 
 Avoid "AI guessing" for core enforcement.
 
+CI contract stance:
+
+- `playbook verify --json` is the canonical repository validation gate in CI.
+- CI should enforce product correctness, not automation maintenance.
+- Maintenance automation (for example `agents:update`, `agents:check`, docs audit) should run in dedicated scheduled/on-demand maintenance workflows.
+
+Failure Mode: If CI mixes product validation with maintenance tasks, pipelines become slow and fragile.
+
 3️⃣ Knowledge Capture
 
 Every meaningful engineering change must produce knowledge.
