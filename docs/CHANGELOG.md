@@ -4,6 +4,9 @@
 
 ### Added
 
+- Simplified primary CI validation by consolidating repository contract checks to `pnpm -r build`, `pnpm test`, and `node packages/cli/dist/main.js verify --json`, making `playbook verify` the canonical CI gate for product correctness.
+- Added `.github/workflows/maintenance.yml` as an optional scheduled/manual automation-maintenance workflow for `pnpm agents:update`, `pnpm agents:check`, and `node packages/cli/dist/main.js docs audit --json`.
+
 - Added deterministic inline PR diagnostics to `playbook analyze-pr` contracts via structured `findings` (including optional `file`/`line`, `ruleId`, `severity`, `message`, and `recommendation`) so formatter transports can target changed files without inference drift.
 - Added `playbook analyze-pr --format github-review` to export machine-readable GitHub review annotations (`path`, `line`, `body`) derived directly from canonical analyze-pr findings.
 - Extended `.github/workflows/analyze-pr-comment.yml` to transport both sticky summary markdown and synchronized inline review comments (add new diagnostics, skip duplicates, and remove resolved diagnostics) while keeping workflow logic transport-only.
