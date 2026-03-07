@@ -64,3 +64,14 @@ Rank highest-risk modules in the repository.
 
 Purpose:  
 Automatically detect implemented improvements and archive them.
+
+---
+
+## Docs Governance Follow-ups
+
+- Pattern: Documentation responsibility boundaries should be enforced by moving idea content to the improvement backlog rather than duplicating planning language across docs.
+- Rule: `docs/AI_AGENT_CONTEXT.md` should describe current AI operating context, not future feature planning.
+- Rule: `docs/PLAYBOOK_DEV_WORKFLOW.md` should describe development process, not act as a second roadmap.
+- Rule: `docs/index.md` should navigate documentation, not duplicate backlog or roadmap content.
+- Pattern: Historical one-off cleanup docs should be archived or removed once governance rules replace them.
+- Failure Mode: Docs-audit warning burn-down is faked if warnings are removed by weakening audit rules instead of aligning documents.

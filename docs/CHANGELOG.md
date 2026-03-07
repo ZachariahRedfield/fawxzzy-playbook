@@ -70,3 +70,4 @@
 - Added `playbook docs audit` with deterministic checks for required doc anchors, single-roadmap policy, idea leakage, responsibility boundaries, archive hygiene, and cleanup de-duplication reporting.
 - Added JSON schema support for `playbook docs audit --json` via `playbook schema docs`.
 - Integrated docs audit into Playbook CI and agent-facing validation guidance.
+- Completed first docs-governance cleanup pass by removing idea leakage from runtime/workflow/index docs, archiving superseded migration reporting, and deleting obsolete roadmap-update migration guidance.
