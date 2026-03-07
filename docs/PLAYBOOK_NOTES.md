@@ -45,7 +45,7 @@ Developer workflows should be executable commands rather than only written docum
 - WHAT changed: Added a shebang (`#!/usr/bin/env node`) to `packages/cli/src/main.ts` so the compiled `dist/main.js` remains directly executable as the package bin entry.
 - WHY it changed: `playbook` still resolves to `dist/main.js` via package `bin`, and the shebang preserves identical CLI execution behavior after moving away from the tsup banner.
 
-- WHAT changed: Updated `.github/actions/playbook-ci/action.yml` to run the CLI smoke invocation via `pnpm --dir "$GITHUB_WORKSPACE" --filter @fawxzzy/playbook run playbook -- --help` instead of `node packages/cli/dist/cli.js --help`.
+- WHAT changed: Updated `.github/actions/playbook-ci/action.yml` to run the CLI smoke invocation via `pnpm -C "$GITHUB_WORKSPACE/packages/cli" run playbook -- --help` instead of `node packages/cli/dist/cli.js --help`.
 - WHY it changed: CI was targeting a non-existent `dist/cli.js` file; invoking the package script ensures the published entrypoint (`dist/main.js`/`bin`) is exercised correctly from any configured working directory.
 
 - WHAT changed: Pinned pnpm in CI with Corepack (`corepack enable`, `corepack prepare pnpm@10.0.0 --activate`), forced npm/pnpm registry to `https://registry.npmjs.org/`, and added install-environment diagnostics prior to install.
@@ -163,3 +163,22 @@ node packages/cli/dist/main.js <command>
 
 - Failure Mode: False precision from heuristic inputs
   Stable output formatting can hide weak internal attribution. Persist module-scoped verify attribution as first-class contract data to keep risk scores explainable and automation-safe.
+
+
+• Pattern: Deterministic Workspace Command Execution
+Automation, CI, and AI agents should invoke workspace commands using directory targeting rather than pnpm workspace filters.
+
+Use:
+
+```bash
+pnpm -C <workspace-path> <command>
+```
+
+instead of:
+
+```bash
+pnpm --filter <package-name> <command>
+```
+
+Reason:
+Workspace filters rely on package names that may change or be incorrectly guessed by automation. Directory targeting is stable and deterministic.
