@@ -49,6 +49,26 @@ const createFixtureRepo = (): string => {
   return repo;
 };
 
+const createRoadmapToleranceFixture = (): string => {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-audit-architecture-roadmap-'));
+  fs.writeFileSync(path.join(repo, 'package.json'), JSON.stringify({ name: 'playbook-audit-roadmap-tolerance' }, null, 2));
+  fs.mkdirSync(path.join(repo, 'docs'), { recursive: true });
+  fs.writeFileSync(
+    path.join(repo, 'docs', 'PLAYBOOK_PRODUCT_ROADMAP.md'),
+    [
+      '# Product roadmap',
+      '',
+      '## Architecture guardrails coverage',
+      '- artifact evolution policy and schema version lifecycle',
+      '- shared git context layer and scm normalization plan',
+      '- remediation trust model with bounded scope levels',
+      '- incremental narrow context retrieval with token-aware budget controls',
+      '- repeatable architecture audit hardening controls'
+    ].join('\n')
+  );
+  return repo;
+};
+
 const expectedAuditIds = [
   'ai.determinism-boundary',
   'artifact.evolution-policy',
@@ -73,18 +93,36 @@ describe('audit architecture contract', () => {
       expect(payload.command).toBe('audit-architecture');
       expect(payload.summary.checks).toBe(expectedAuditIds.length);
       expect(payload.summary.status).toBe('warn');
+      expect(payload.summary.fail).toBe(0);
       expect(payload.audits.map((audit) => audit.id)).toEqual(expectedAuditIds);
       expect(payload.audits.every((audit) => ['pass', 'warn', 'fail'].includes(audit.status))).toBe(true);
       expect(payload.nextActions).toEqual([
-        'ai.determinism-boundary: Create docs/architecture/AI_DETERMINISM_BOUNDARY.md to define where AI assistance ends and deterministic enforcement begins.',
+        'ai.determinism-boundary: Update docs/architecture/AI_DETERMINISM_BOUNDARY.md to define where AI assistance ends and deterministic source-of-truth enforcement begins.',
         'artifact.evolution-policy: Create docs/contracts/ARTIFACT_EVOLUTION_POLICY.md with schema evolution, compatibility, and regeneration guidance.',
         'artifact.schema-versioning: Ensure all persisted artifacts include a top-level schemaVersion (missing: .playbook/repo-index.json).',
-        'docs.roadmap-coverage: Add a Platform Hardening roadmap section that explicitly covers artifact versioning, SCM normalization, remediation trust boundaries, ecosystem adapter isolation, context efficiency, and repeatable architecture audits.',
-        'ecosystem.adapter-boundaries: Create docs/architecture/ECOSYSTEM_ADAPTERS.md to define external tool isolation and adapter boundary contracts.',
-        'performance.context-efficiency: Create docs/architecture/CONTEXT_EFFICIENCY_STRATEGY.md with deterministic context/token efficiency patterns.',
+        'docs.roadmap-coverage: Add roadmap hardening coverage for artifact versioning/evolution, SCM normalization context, remediation trust scope boundaries, context/token efficiency, and repeatable architecture audit controls.',
+        'ecosystem.adapter-boundaries: Create or update docs/architecture/ECOSYSTEM_ADAPTERS.md to define external tool isolation and adapter boundary contracts.',
+        'performance.context-efficiency: Create or update docs/architecture/CONTEXT_EFFICIENCY_STRATEGY.md with deterministic context/token efficiency patterns.',
         'remediation.trust-model: Document deterministic remediation trust boundaries and explicit change levels in docs/architecture/REMEDIATION_TRUST_MODEL.md.',
         'scm.context-layer: Centralize SCM normalization in shared git-context utilities and document boundaries in docs/architecture/SCM_CONTEXT_LAYER.md.'
       ]);
+      expect(payload.audits.every((audit) => [...audit.evidence].sort((left, right) => left.localeCompare(right)).every((value, idx) => value === audit.evidence[idx]))).toBe(true);
+    } finally {
+      fs.rmSync(fixtureRepo, { recursive: true, force: true });
+    }
+  });
+
+  it('uses tolerant concept-based roadmap coverage matching', () => {
+    const fixtureRepo = createRoadmapToleranceFixture();
+
+    try {
+      const result = runCli(fixtureRepo, ['audit', 'architecture', '--json']);
+      expect(result.status).toBe(0);
+      const payload = JSON.parse(result.stdout.trim()) as AuditArchitecturePayload;
+      const roadmapAudit = payload.audits.find((audit) => audit.id === 'docs.roadmap-coverage');
+      expect(roadmapAudit).toBeDefined();
+      expect(roadmapAudit?.status).toBe('pass');
+      expect(roadmapAudit?.evidence.some((line) => line.includes('roadmap covers required hardening concepts'))).toBe(true);
     } finally {
       fs.rmSync(fixtureRepo, { recursive: true, force: true });
     }

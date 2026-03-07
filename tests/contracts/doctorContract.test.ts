@@ -86,6 +86,7 @@ describe('doctor contract', () => {
         command: 'doctor'
       });
       expect(Array.isArray(payload.findings)).toBe(true);
+      expect(payload.findings.some((finding) => finding.id.startsWith('doctor.architecture.audit.'))).toBe(true);
       assertDoctorExitSemantics(payload, result.status);
     } finally {
       fs.rmSync(fixtureRepo, { recursive: true, force: true });

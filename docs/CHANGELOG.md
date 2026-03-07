@@ -4,6 +4,9 @@
 
 ### Added
 
+- WHAT: Hardened `playbook audit architecture` (v1.1) with standardized `pass|warn|fail` semantics, deterministic ordering guarantees (checks, audit IDs, evidence, and next actions), and richer source-referenced evidence. WHY: Improves operator trust, CI snapshot stability, and actionable diagnostics across environments.
+- WHAT: Upgraded architecture checks from presence-only to minimum-quality deterministic validation (artifact schemaVersion, remediation trust boundaries, AI/determinism boundary clarity, adapter isolation, context-efficiency concepts, and tolerant roadmap concept coverage) and integrated architecture-audit findings into `playbook doctor`. WHY: Raises governance signal quality while keeping command surface stable and non-brittle.
+
 - WHAT: Added deterministic `playbook audit architecture` with reusable architecture-audit checks and stable `audit-architecture` JSON contract output, plus command/docs coverage updates. WHY: Prevents structural drift by continuously auditing platform hardening guardrails (artifact evolution/versioning, SCM context normalization, remediation trust boundaries, AI/determinism boundaries, ecosystem adapter isolation, context efficiency, and roadmap coverage).
 
 - WHAT: Completed a platform architecture guardrail audit and added explicit architecture/contracts docs for artifact evolution, SCM context normalization, remediation trust boundaries, AI determinism boundaries, ecosystem adapter isolation, and context efficiency strategy. WHY: Keeps foundational reliability constraints explicit and enforceable as Playbook command surface and AI-assisted workflows evolve.

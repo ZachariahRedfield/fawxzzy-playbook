@@ -1,3 +1,4 @@
+import { runArchitectureAudit } from '@zachariahredfield/playbook-core';
 import {
   generateRepositoryHealth,
   queryRepositoryIndex,
@@ -110,6 +111,39 @@ export const collectDoctorReport = async (cwd: string): Promise<DoctorReport> =>
       severity: 'warning',
       id: 'doctor.architecture.repo-index.missing',
       message: 'Repository intelligence index is missing. Run `playbook index`.'
+    });
+  }
+
+  try {
+    const architectureAudit = runArchitectureAudit(cwd);
+    for (const audit of architectureAudit.audits) {
+      if (audit.status === 'pass') {
+        continue;
+      }
+
+      findings.push({
+        category: 'Architecture',
+        severity: audit.status === 'fail' ? 'error' : 'warning',
+        id: `doctor.architecture.audit.${audit.id}`,
+        message: `${audit.title}: ${audit.recommendation}`
+      });
+    }
+
+    if (architectureAudit.summary.warn === 0 && architectureAudit.summary.fail === 0) {
+      findings.push({
+        category: 'Architecture',
+        severity: 'info',
+        id: 'doctor.architecture.audit.clean',
+        message: 'Architecture audit has no findings.'
+      });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    findings.push({
+      category: 'Architecture',
+      severity: 'warning',
+      id: 'doctor.architecture.audit.unavailable',
+      message: `Architecture audit unavailable: ${message}`
     });
   }
 

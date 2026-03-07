@@ -4,7 +4,7 @@
   "status": "error",
   "summary": {
     "errors": 6,
-    "warnings": 2,
+    "warnings": 9,
     "info": 2
   },
   "findings": [
@@ -43,6 +43,48 @@
       "severity": "error",
       "id": "doctor.docs.docs.required-anchor.missing",
       "message": "Required documentation anchor is missing. (docs/PLAYBOOK_PRODUCT_ROADMAP.md)"
+    },
+    {
+      "category": "Architecture",
+      "severity": "warning",
+      "id": "doctor.architecture.audit.ai.determinism-boundary",
+      "message": "AI vs deterministic boundary: Update docs/architecture/AI_DETERMINISM_BOUNDARY.md to define where AI assistance ends and deterministic source-of-truth enforcement begins."
+    },
+    {
+      "category": "Architecture",
+      "severity": "warning",
+      "id": "doctor.architecture.audit.artifact.evolution-policy",
+      "message": "Artifact evolution policy: Create docs/contracts/ARTIFACT_EVOLUTION_POLICY.md with schema evolution, compatibility, and regeneration guidance."
+    },
+    {
+      "category": "Architecture",
+      "severity": "warning",
+      "id": "doctor.architecture.audit.docs.roadmap-coverage",
+      "message": "Roadmap/docs coverage for hardening controls: Add roadmap hardening coverage for artifact versioning/evolution, SCM normalization context, remediation trust scope boundaries, context/token efficiency, and repeatable architecture audit controls."
+    },
+    {
+      "category": "Architecture",
+      "severity": "warning",
+      "id": "doctor.architecture.audit.ecosystem.adapter-boundaries",
+      "message": "Ecosystem adapter boundaries: Create or update docs/architecture/ECOSYSTEM_ADAPTERS.md to define external tool isolation and adapter boundary contracts."
+    },
+    {
+      "category": "Architecture",
+      "severity": "warning",
+      "id": "doctor.architecture.audit.performance.context-efficiency",
+      "message": "Context/token efficiency strategy: Create or update docs/architecture/CONTEXT_EFFICIENCY_STRATEGY.md with deterministic context/token efficiency patterns."
+    },
+    {
+      "category": "Architecture",
+      "severity": "warning",
+      "id": "doctor.architecture.audit.remediation.trust-model",
+      "message": "Remediation trust model: Document deterministic remediation trust boundaries and explicit change levels in docs/architecture/REMEDIATION_TRUST_MODEL.md."
+    },
+    {
+      "category": "Architecture",
+      "severity": "warning",
+      "id": "doctor.architecture.audit.scm.context-layer",
+      "message": "SCM/git context normalization layer: Centralize SCM normalization in shared git-context utilities and document boundaries in docs/architecture/SCM_CONTEXT_LAYER.md."
     },
     {
       "category": "Testing",
