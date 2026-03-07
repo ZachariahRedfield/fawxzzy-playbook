@@ -247,10 +247,13 @@ Use `playbook analyze-pr` for deterministic, machine-readable change analysis fr
 
 - `playbook ask --diff-context` is conversational change reasoning.
 - `playbook analyze-pr` is the structured review/report surface for automation and pre-merge checks.
+- `playbook analyze-pr --json` remains the canonical deterministic analysis contract for automation.
+- `playbook analyze-pr --format <text|json|github-comment>` selects presentation only over that contract.
 - `playbook analyze-pr --format github-comment` renders the same deterministic analysis contract as a GitHub-ready PR comment markdown export.
 
 ```bash
 npx playbook index
+npx playbook analyze-pr --format text
 npx playbook analyze-pr --json
 npx playbook analyze-pr --format github-comment
 ```

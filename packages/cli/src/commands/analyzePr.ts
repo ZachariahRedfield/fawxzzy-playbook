@@ -1,4 +1,4 @@
-import { analyzePullRequest, formatAnalyzePrGithubComment } from '@zachariahredfield/playbook-engine';
+import { analyzePullRequest, formatAnalyzePrOutput } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 
 type AnalyzePrOptions = {
@@ -19,44 +19,18 @@ Options:
   --help         Show help`);
 };
 
-
-const printGithubComment = (payload: ReturnType<typeof analyzePullRequest>): void => {
-  console.log(formatAnalyzePrGithubComment(payload));
-};
-
-const printHuman = (payload: ReturnType<typeof analyzePullRequest>): void => {
-  console.log('Playbook Pull Request Analysis');
-  console.log('');
-  console.log(`Base ref: ${payload.baseRef}`);
-  console.log(`Changed files: ${payload.summary.changedFileCount}`);
-  console.log(`Affected modules: ${payload.summary.affectedModuleCount}`);
-  console.log(`Risk: ${payload.risk.level}`);
-  console.log('');
-
-  console.log('Changed files');
-  if (payload.changedFiles.length === 0) {
-    console.log('  - none');
-  } else {
-    for (const file of payload.changedFiles) {
-      console.log(`  - ${file}`);
-    }
+const validateAnalyzePrFormat = (commandArgs: string[]): string | null => {
+  const formatIndex = commandArgs.indexOf('--format');
+  if (formatIndex < 0) {
+    return null;
   }
-  console.log('');
 
-  console.log('Affected modules');
-  if (payload.affectedModules.length === 0) {
-    console.log('  - none');
-  } else {
-    for (const moduleName of payload.affectedModules) {
-      console.log(`  - ${moduleName}`);
-    }
+  const value = commandArgs[formatIndex + 1];
+  if (!value || ['text', 'json', 'github-comment'].includes(value)) {
+    return null;
   }
-  console.log('');
 
-  console.log('Review guidance');
-  for (const entry of payload.reviewGuidance) {
-    console.log(`  - ${entry}`);
-  }
+  return `Unsupported analyze-pr format "${value}". Use one of: text, json, github-comment.`;
 };
 
 export const runAnalyzePr = async (cwd: string, commandArgs: string[], options: AnalyzePrOptions): Promise<number> => {
@@ -65,23 +39,35 @@ export const runAnalyzePr = async (cwd: string, commandArgs: string[], options: 
     return ExitCode.Success;
   }
 
+  const formatError = validateAnalyzePrFormat(commandArgs);
+  if (formatError) {
+    if (options.format === 'json') {
+      console.log(
+        JSON.stringify(
+          {
+            schemaVersion: '1.0',
+            command: 'analyze-pr',
+            error: formatError
+          },
+          null,
+          2
+        )
+      );
+    } else {
+      console.error(formatError);
+    }
+
+    return ExitCode.Failure;
+  }
+
   try {
     const payload = analyzePullRequest(cwd, { baseRef: options.baseRef });
 
-    if (options.format === 'json') {
-      console.log(JSON.stringify(payload, null, 2));
+    if (options.quiet && options.format === 'text') {
       return ExitCode.Success;
     }
 
-    if (options.format === 'github-comment') {
-      printGithubComment(payload);
-      return ExitCode.Success;
-    }
-
-    if (!options.quiet) {
-      printHuman(payload);
-    }
-
+    console.log(formatAnalyzePrOutput(payload, options.format));
     return ExitCode.Success;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

@@ -96,6 +96,45 @@ describe('analyze-pr', () => {
     logSpy.mockRestore();
   });
 
+
+  it('renders text summary when --format text is provided', async () => {
+    const repo = createRepo('playbook-cli-analyze-pr-text');
+    initGitRepo(repo);
+    writeRepoIndex(repo);
+
+    fs.mkdirSync(path.join(repo, 'src', 'auth'), { recursive: true });
+    fs.writeFileSync(path.join(repo, 'src', 'auth', 'index.ts'), 'export const auth = 1;\n');
+    runGit(repo, ['add', '.']);
+    runGit(repo, ['commit', '-m', 'initial']);
+
+    fs.mkdirSync(path.join(repo, 'src', 'workouts'), { recursive: true });
+    fs.writeFileSync(path.join(repo, 'src', 'workouts', 'index.ts'), 'export const workouts = 2;\n');
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runAnalyzePr(repo, ['--format', 'text'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const output = String(logSpy.mock.calls[0]?.[0]);
+    expect(output).toContain('Playbook Pull Request Analysis');
+    expect(output).toContain('Changed files');
+
+    logSpy.mockRestore();
+  });
+
+  it('fails with deterministic message for unsupported --format values', async () => {
+    const repo = createRepo('playbook-cli-analyze-pr-invalid-format');
+    initGitRepo(repo);
+    writeRepoIndex(repo);
+
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const exitCode = await runAnalyzePr(repo, ['--format', 'markdown'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    expect(String(errorSpy.mock.calls[0]?.[0])).toContain('Unsupported analyze-pr format "markdown"');
+
+    errorSpy.mockRestore();
+  });
+
   it('fails deterministically when repo index is missing', async () => {
     const repo = createRepo('playbook-cli-analyze-pr-missing-index');
     initGitRepo(repo);
