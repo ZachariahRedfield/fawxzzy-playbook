@@ -600,6 +600,7 @@ Current capabilities:
 - Surface docs review candidates and ownership-aware context
 - Emit stable machine-readable PR analysis output for automation
 - Export deterministic GitHub-ready PR review comment markdown via formatter mode (`--format github-comment`) without introducing new analysis logic
+- Standardize analyze-pr output selection through a single formatter layer (`--format text|json|github-comment`) so new presentation paths replace superseded ad-hoc branches
 
 Playbook should analyze PRs but not author them.
 

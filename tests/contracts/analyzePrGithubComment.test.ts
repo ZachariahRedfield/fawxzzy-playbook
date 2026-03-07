@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatAnalyzePrGithubComment } from '../../packages/engine/src/formatters/githubCommentFormatter.js';
+import { formatAnalyzePrGithubComment, formatAnalyzePrOutput } from '../../packages/engine/src/formatters/analyzePrFormatter.js';
 import type { AnalyzePullRequestResult } from '../../packages/engine/src/pr/analyzePr.js';
 
 const fixture: AnalyzePullRequestResult = {
@@ -75,5 +75,10 @@ const fixture: AnalyzePullRequestResult = {
 describe('analyze-pr github-comment formatter', () => {
   it('formats deterministic GitHub comment markdown output', () => {
     expect(formatAnalyzePrGithubComment(fixture)).toMatchSnapshot();
+  });
+
+  it('routes github-comment format through the canonical analyze-pr formatter pipeline', () => {
+    const output = formatAnalyzePrOutput(fixture, 'github-comment');
+    expect(output).toBe(formatAnalyzePrGithubComment(fixture));
   });
 });

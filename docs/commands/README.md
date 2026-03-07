@@ -97,12 +97,14 @@ playbook ask "what modules are affected by this?" --repo-context --json
 - Uses trusted local git diff + `.playbook/repo-index.json`.
 - Reuses indexed impact/risk/docs/ownership intelligence instead of duplicating logic.
 - Reports changed files, affected modules, downstream impact, architecture boundaries touched, docs review suggestions, and merge guidance.
+- Keeps `--json` as the canonical analysis contract and applies a single formatter pipeline for `--format text|json|github-comment`.
 - Supports formatter exports, including `--format github-comment` for GitHub-ready PR review summaries without adding new analysis inference.
 
 Examples:
 
 ```bash
 playbook analyze-pr
+playbook analyze-pr --format text
 playbook analyze-pr --json
 playbook analyze-pr --base main --json
 playbook analyze-pr --format github-comment
