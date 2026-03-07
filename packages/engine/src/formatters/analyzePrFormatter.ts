@@ -1,7 +1,8 @@
 import type { AnalyzePullRequestResult } from '../pr/analyzePr.js';
 import { formatAnalyzePrGithubComment } from './githubCommentFormatter.js';
+import { formatAnalyzePrGithubReview } from './githubReviewFormatter.js';
 
-export type AnalyzePrOutputFormat = 'text' | 'json' | 'github-comment';
+export type AnalyzePrOutputFormat = 'text' | 'json' | 'github-comment' | 'github-review';
 
 export const formatAnalyzePrText = (analysis: AnalyzePullRequestResult): string => {
   const lines: string[] = [];
@@ -36,10 +37,12 @@ export const formatAnalyzePrOutput = (analysis: AnalyzePullRequestResult, format
       return formatAnalyzePrJson(analysis);
     case 'github-comment':
       return formatAnalyzePrGithubComment(analysis);
+    case 'github-review':
+      return formatAnalyzePrGithubReview(analysis);
     case 'text':
     default:
       return formatAnalyzePrText(analysis);
   }
 };
 
-export { formatAnalyzePrGithubComment };
+export { formatAnalyzePrGithubComment, formatAnalyzePrGithubReview };

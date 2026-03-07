@@ -65,6 +65,7 @@ describe('analyze-pr', () => {
     expect(payload.changedFiles).toEqual(['src/workouts/index.ts']);
     expect(payload.affectedModules).toEqual(['workouts']);
     expect(payload.summary.changedFileCount).toBe(1);
+    expect(Array.isArray(payload.findings)).toBe(true);
     expect(Array.isArray(payload.reviewGuidance)).toBe(true);
 
     logSpy.mockRestore();
@@ -96,6 +97,30 @@ describe('analyze-pr', () => {
     logSpy.mockRestore();
   });
 
+
+
+  it('renders GitHub review diagnostics JSON when --format github-review is provided', async () => {
+    const repo = createRepo('playbook-cli-analyze-pr-github-review');
+    initGitRepo(repo);
+    writeRepoIndex(repo);
+
+    fs.mkdirSync(path.join(repo, 'src', 'auth'), { recursive: true });
+    fs.writeFileSync(path.join(repo, 'src', 'auth', 'index.ts'), 'export const auth = 1;\n');
+    runGit(repo, ['add', '.']);
+    runGit(repo, ['commit', '-m', 'initial']);
+
+    fs.mkdirSync(path.join(repo, 'src', 'workouts'), { recursive: true });
+    fs.writeFileSync(path.join(repo, 'src', 'workouts', 'index.ts'), 'export const workouts = 2;\n');
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runAnalyzePr(repo, ['--format', 'github-review'], { format: 'github-review', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(Array.isArray(output)).toBe(true);
+
+    logSpy.mockRestore();
+  });
 
   it('renders text summary when --format text is provided', async () => {
     const repo = createRepo('playbook-cli-analyze-pr-text');

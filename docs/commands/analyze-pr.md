@@ -9,6 +9,7 @@ Structured pull request intelligence using local diff + indexed repository intel
 - `playbook analyze-pr --json`
 - `playbook analyze-pr --base main --json`
 - `playbook analyze-pr --format github-comment`
+- `playbook analyze-pr --format github-review`
 
 ## Behavior
 
@@ -22,9 +23,9 @@ Structured pull request intelligence using local diff + indexed repository intel
 
 It returns deterministic review/report data for automation, including changed files, affected modules, downstream impact, architecture boundaries touched, risk summary, docs review recommendations, rule/module ownership, and pre-merge guidance.
 
-`--format <text|json|github-comment>` is a presentation/export selector over the same deterministic analysis contract. `--json` remains canonical analysis data; `github-comment` is deterministic markdown rendering for CI workflows.
+`--format <text|json|github-comment|github-review>` is a presentation/export selector over the same deterministic analysis contract. `--json` remains canonical analysis data; `github-comment` is deterministic markdown rendering for CI workflows; `github-review` is deterministic inline review annotation JSON for GitHub pull request files/lines.
 
-GitHub Actions PR-comment integration should treat `analyze-pr --format github-comment` as the only markdown producer and only transport/post it. The repository workflow posts a single sticky Playbook comment marked with `<!-- playbook:analyze-pr-comment -->` and updates that comment on reruns to avoid duplicates.
+GitHub Actions PR transport treats `analyze-pr --format github-comment` as the sticky summary markdown producer and `analyze-pr --format github-review` as the inline diagnostics producer. Summary comment transport updates one sticky comment marker (`<!-- playbook:analyze-pr-comment -->`) while inline diagnostics are synchronized on reruns (`<!-- playbook:analyze-pr-inline -->`) so stale diagnostics are removed and current diagnostics are posted without duplicate comment spam.
 
 Producer/consumer contract note: `playbook analyze-pr` requires `.playbook/repo-index.json` and must be preceded by `playbook index`; creating `.playbook/` alone does not satisfy the artifact prerequisite. CI should run artifact producers before consumers (index first, then analyze-pr/query/impact).
 
@@ -53,3 +54,16 @@ Deterministic failures are returned for:
 - no changed files in the resolved diff/worktree
 - git diff unavailable (non-git repo)
 - unresolved base ref when `--base <ref>` is provided
+
+
+## Inline diagnostics contract
+
+`analyze-pr --json` now includes deterministic `findings` entries with optional `file`/`line` coordinates and governance metadata (`ruleId`, `severity`, `message`, `recommendation`).
+
+`analyze-pr --format github-review` maps those findings directly into GitHub review annotations:
+
+- `path` ← `finding.file`
+- `line` ← `finding.line`
+- `body` ← deterministic formatter rendering (`ruleId` + message + optional recommendation)
+
+Rule: inline PR diagnostics must come from canonical analyze-pr contracts through formatter output, never from ad-hoc workflow inference.

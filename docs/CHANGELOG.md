@@ -4,6 +4,9 @@
 
 ### Added
 
+- Added deterministic inline PR diagnostics to `playbook analyze-pr` contracts via structured `findings` (including optional `file`/`line`, `ruleId`, `severity`, `message`, and `recommendation`) so formatter transports can target changed files without inference drift.
+- Added `playbook analyze-pr --format github-review` to export machine-readable GitHub review annotations (`path`, `line`, `body`) derived directly from canonical analyze-pr findings.
+- Extended `.github/workflows/analyze-pr-comment.yml` to transport both sticky summary markdown and synchronized inline review comments (add new diagnostics, skip duplicates, and remove resolved diagnostics) while keeping workflow logic transport-only.
 - Fixed PR-comment workflow diff-base resolution by checking out full history (`fetch-depth: 0`) and passing explicit PR base ref (`--base origin/${{ github.base_ref }}`) to `analyze-pr --format github-comment`.
 - Fixed PR-comment workflow artifact ordering by running `node packages/cli/dist/main.js index --json` before `analyze-pr --format github-comment`, enforcing producer→consumer contract readiness for `.playbook/repo-index.json`.
 - Hardened `.github/workflows/analyze-pr-comment.yml` shell setup by replacing fragile escaped `node -p` quoting with `node -e` packageManager extraction plus `${PM#pnpm@}` version split for `pnpm/action-setup`, preventing bash parse failures in GitHub Actions `run:` blocks.
@@ -117,6 +120,9 @@
 
 ### Added
 
+- Added deterministic inline PR diagnostics to `playbook analyze-pr` contracts via structured `findings` (including optional `file`/`line`, `ruleId`, `severity`, `message`, and `recommendation`) so formatter transports can target changed files without inference drift.
+- Added `playbook analyze-pr --format github-review` to export machine-readable GitHub review annotations (`path`, `line`, `body`) derived directly from canonical analyze-pr findings.
+- Extended `.github/workflows/analyze-pr-comment.yml` to transport both sticky summary markdown and synchronized inline review comments (add new diagnostics, skip duplicates, and remove resolved diagnostics) while keeping workflow logic transport-only.
 - Fixed PR-comment workflow diff-base resolution by checking out full history (`fetch-depth: 0`) and passing explicit PR base ref (`--base origin/${{ github.base_ref }}`) to `analyze-pr --format github-comment`.
 - Fixed PR-comment workflow artifact ordering by running `node packages/cli/dist/main.js index --json` before `analyze-pr --format github-comment`, enforcing producer→consumer contract readiness for `.playbook/repo-index.json`.
 - Hardened `.github/workflows/analyze-pr-comment.yml` shell setup by replacing fragile escaped `node -p` quoting with `node -e` packageManager extraction plus `${PM#pnpm@}` version split for `pnpm/action-setup`, preventing bash parse failures in GitHub Actions `run:` blocks.

@@ -591,6 +591,7 @@ Primary command:
 
 `playbook analyze-pr --json`
 `playbook analyze-pr --format github-comment`
+`playbook analyze-pr --format github-review`
 
 Current capabilities:
 
@@ -599,9 +600,11 @@ Current capabilities:
 - Aggregate risk signals from existing module-risk intelligence
 - Surface docs review candidates and ownership-aware context
 - Emit stable machine-readable PR analysis output for automation
-- Export deterministic GitHub-ready PR review comment markdown via formatter mode (`--format github-comment`) without introducing new analysis logic
-- Standardize analyze-pr output selection through a single formatter layer (`--format text|json|github-comment`) so new presentation paths replace superseded ad-hoc branches
+- Export deterministic GitHub-ready PR summary markdown via formatter mode (`--format github-comment`) without introducing new analysis logic
+- Export deterministic GitHub inline review diagnostics via formatter mode (`--format github-review`) from canonical analysis findings
+- Standardize analyze-pr output selection through a single formatter layer (`--format text|json|github-comment|github-review`) so new presentation paths replace superseded ad-hoc branches
 - Wire GitHub Actions PR transport to post/update one sticky Playbook summary comment using the canonical `--format github-comment` formatter output (marker: `<!-- playbook:analyze-pr-comment -->`)
+- Wire GitHub Actions PR transport to synchronize inline review diagnostics using canonical `--format github-review` output (marker: `<!-- playbook:analyze-pr-inline -->`) so resolved diagnostics disappear
 - Treat index generation as an explicit prerequisite in CI (`playbook index` producer before `analyze-pr` consumer) to avoid artifact-readiness drift
 - Treat PR diff base as an explicit CI contract (`--base origin/${{ github.base_ref }}` + `fetch-depth: 0`) instead of implicit environment inference
 

@@ -97,9 +97,9 @@ playbook ask "what modules are affected by this?" --repo-context --json
 - Uses trusted local git diff + `.playbook/repo-index.json`.
 - Reuses indexed impact/risk/docs/ownership intelligence instead of duplicating logic.
 - Reports changed files, affected modules, downstream impact, architecture boundaries touched, docs review suggestions, and merge guidance.
-- Keeps `--json` as the canonical analysis contract and applies a single formatter pipeline for `--format text|json|github-comment`.
-- Supports formatter exports, including `--format github-comment` for GitHub-ready PR review summaries without adding new analysis inference.
-- GitHub Actions transport posts that formatter output as one sticky Playbook PR comment (`<!-- playbook:analyze-pr-comment -->`) and updates it on reruns instead of creating duplicate comments.
+- Keeps `--json` as the canonical analysis contract and applies a single formatter pipeline for `--format text|json|github-comment|github-review`.
+- Supports formatter exports, including `--format github-comment` for sticky PR summaries and `--format github-review` for inline review diagnostics on specific files/lines without adding new analysis inference.
+- GitHub Actions transport posts the summary formatter output as one sticky Playbook PR comment (`<!-- playbook:analyze-pr-comment -->`) and synchronizes inline diagnostics (`<!-- playbook:analyze-pr-inline -->`) so new findings are added, unchanged findings are not duplicated, and resolved findings are removed.
 - Artifact contract: `analyze-pr` consumes `.playbook/repo-index.json`, so CI runs `playbook index` before PR analysis; creating `.playbook/` alone is insufficient.
 - Diff contract: CI should pass explicit base refs (for example `--base origin/${{ github.base_ref }}`) and use `fetch-depth: 0` checkout for deterministic PR diff analysis.
 
@@ -111,6 +111,7 @@ playbook analyze-pr --format text
 playbook analyze-pr --json
 playbook analyze-pr --base main --json
 playbook analyze-pr --format github-comment
+playbook analyze-pr --format github-review
 ```
 
 Pattern: `playbook analyze-pr` composes local diff context with indexed repository intelligence to produce deterministic pull request analysis.

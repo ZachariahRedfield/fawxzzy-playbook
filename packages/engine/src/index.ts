@@ -27,7 +27,7 @@ export { resolveDiffAskContext } from './ask/diffContext.js';
 export type { DiffAskContext } from './ask/diffContext.js';
 export { analyzePullRequest } from './pr/analyzePr.js';
 export type { AnalyzePullRequestResult } from './pr/analyzePr.js';
-export { formatAnalyzePrOutput, formatAnalyzePrText, formatAnalyzePrJson, formatAnalyzePrGithubComment } from './formatters/analyzePrFormatter.js';
+export { formatAnalyzePrOutput, formatAnalyzePrText, formatAnalyzePrJson, formatAnalyzePrGithubComment, formatAnalyzePrGithubReview } from './formatters/analyzePrFormatter.js';
 export type { AnalyzePrOutputFormat } from './formatters/analyzePrFormatter.js';
 
 export { explainTarget } from './explain/explainEngine.js';
