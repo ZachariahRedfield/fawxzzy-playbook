@@ -19,22 +19,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Setup pnpm via Corepack
+      - name: Read pnpm version from packageManager
         shell: bash
         run: |
-          PM="$(node -p \"require(process.env.GITHUB_WORKSPACE + '/package.json').packageManager\")"
+          PM=$(node -e "console.log(require(process.env.GITHUB_WORKSPACE + '/package.json').packageManager)")
           if [[ -z "$PM" || "$PM" != pnpm@* ]]; then
             echo "Invalid or missing packageManager in package.json (expected pnpm@...). Got: '$PM'"
             exit 1
           fi
-          corepack enable
-          corepack prepare "$PM" --activate
-          pnpm -v
+          PM_VERSION=${PM#pnpm@}
+          echo "PM_VERSION=$PM_VERSION" >> "$GITHUB_ENV"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

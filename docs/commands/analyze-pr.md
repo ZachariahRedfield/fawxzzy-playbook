@@ -26,6 +26,13 @@ It returns deterministic review/report data for automation, including changed fi
 
 GitHub Actions PR-comment integration should treat `analyze-pr --format github-comment` as the only markdown producer and only transport/post it. The repository workflow posts a single sticky Playbook comment marked with `<!-- playbook:analyze-pr-comment -->` and updates that comment on reruns to avoid duplicates.
 
+Shell integration notes for GitHub Actions transport:
+
+- Shell commands copied into GitHub Actions `run:` blocks must be rechecked for escaping; log-safe or JSON-escaped commands may fail in bash.
+- Prefer multiline `run: |` blocks for commands with nested quoting.
+- Prefer `node -e "console.log(...)"` over deeply nested `node -p` expressions when populating GitHub Actions env vars.
+- When reading `packageManager` from `package.json`, split version with `${PM#pnpm@}` before passing to `pnpm/action-setup`.
+
 ## Scope contract
 
 Pattern: `playbook analyze-pr` composes local diff context with indexed repository intelligence to produce deterministic pull request analysis.
