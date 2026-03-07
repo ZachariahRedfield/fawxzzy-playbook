@@ -2,7 +2,7 @@ import { analyzePullRequest, formatAnalyzePrOutput } from '@zachariahredfield/pl
 import { ExitCode } from '../lib/cliContract.js';
 
 type AnalyzePrOptions = {
-  format: 'text' | 'json' | 'github-comment';
+  format: 'text' | 'json' | 'github-comment' | 'github-review';
   quiet: boolean;
   baseRef?: string;
 };
@@ -15,7 +15,7 @@ Analyze current branch/worktree changes as deterministic PR intelligence using l
 Options:
   --base <ref>   Optional git base ref used for diff resolution
   --json         Print machine-readable JSON output
-  --format <type> Output format (text|json|github-comment)
+  --format <type> Output format (text|json|github-comment|github-review)
   --help         Show help`);
 };
 
@@ -26,11 +26,11 @@ const validateAnalyzePrFormat = (commandArgs: string[]): string | null => {
   }
 
   const value = commandArgs[formatIndex + 1];
-  if (!value || ['text', 'json', 'github-comment'].includes(value)) {
+  if (!value || ['text', 'json', 'github-comment', 'github-review'].includes(value)) {
     return null;
   }
 
-  return `Unsupported analyze-pr format "${value}". Use one of: text, json, github-comment.`;
+  return `Unsupported analyze-pr format "${value}". Use one of: text, json, github-comment, github-review.`;
 };
 
 export const runAnalyzePr = async (cwd: string, commandArgs: string[], options: AnalyzePrOptions): Promise<number> => {

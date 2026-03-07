@@ -3,6 +3,8 @@ import { readIndexedRepository, resolveIndexedModuleContext } from '../query/mod
 import { queryModuleOwners } from '../query/moduleOwners.js';
 import { queryRuleOwners } from '../query/ruleOwners.js';
 import { resolveDiffAskContext } from '../ask/diffContext.js';
+import { execFileSync } from 'node:child_process';
+import { getMergeBase } from '../git/base.js';
 
 type RiskLevel = 'low' | 'medium' | 'high';
 
@@ -63,10 +65,55 @@ export type AnalyzePullRequestResult = {
     owners: string[];
     area: string;
   }>;
+  findings: Array<{
+    ruleId: string;
+    severity: 'info' | 'warning' | 'error';
+    message: string;
+    recommendation?: string;
+    file?: string;
+    line?: number;
+  }>;
   reviewGuidance: string[];
   context: {
     sources: AnalyzePrContextSource[];
   };
+};
+
+const parseAddedLineFromPatch = (patch: string): number | undefined => {
+  const match = patch.match(/^@@\s+-\d+(?:,\d+)?\s+\+(\d+)(?:,\d+)?\s+@@/m);
+  if (!match) {
+    return undefined;
+  }
+
+  const line = Number(match[1]);
+  return Number.isFinite(line) && line > 0 ? line : undefined;
+};
+
+const resolveChangedLineMap = (projectRoot: string, baseRef: string, changedFiles: string[]): Map<string, number> => {
+  const lineMap = new Map<string, number>();
+  const baseSha = getMergeBase(projectRoot, baseRef, 'HEAD');
+  if (!baseSha) {
+    return lineMap;
+  }
+
+  for (const file of changedFiles) {
+    try {
+      const patch = execFileSync('git', ['diff', '--unified=0', `${baseSha}..HEAD`, '--', file], {
+        cwd: projectRoot,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
+
+      const addedLine = parseAddedLineFromPatch(patch);
+      if (addedLine) {
+        lineMap.set(file, addedLine);
+      }
+    } catch {
+      // ignore per-file diff parse failures to keep analysis deterministic.
+    }
+  }
+
+  return lineMap;
 };
 
 const uniqueSorted = (values: string[]): string[] => Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
@@ -226,6 +273,38 @@ export const analyzePullRequest = (projectRoot: string, options?: { baseRef?: st
     relatedRules,
     boundariesTouched
   });
+  const changedLineMap = resolveChangedLineMap(projectRoot, diffContext.baseRef, diffContext.changedFiles);
+
+  const findings: AnalyzePullRequestResult['findings'] = [];
+  for (const moduleRiskEntry of moduleRisk) {
+    if (moduleRiskEntry.level === 'low') {
+      continue;
+    }
+
+    const moduleFile = diffContext.changedFiles.find((file) => file.startsWith(`src/${moduleRiskEntry.module}/`));
+    const moduleLine = moduleFile ? changedLineMap.get(moduleFile) : undefined;
+    findings.push({
+      ruleId: 'playbook.pr.risk.module',
+      severity: moduleRiskEntry.level === 'high' ? 'error' : 'warning',
+      message: `Risk level for module "${moduleRiskEntry.module}" is ${moduleRiskEntry.level}.`,
+      recommendation: 'Review module risk signals and run `playbook doctor --json` before merge.',
+      ...(moduleFile ? { file: moduleFile } : {}),
+      ...(typeof moduleLine === 'number' ? { line: moduleLine } : {})
+    });
+  }
+
+  for (const ruleId of relatedRules) {
+    const firstChangedFile = diffContext.changedFiles[0];
+    const changedLine = firstChangedFile ? changedLineMap.get(firstChangedFile) : undefined;
+    findings.push({
+      ruleId,
+      severity: 'warning',
+      message: `Related governance rule requires review: ${ruleId}.`,
+      recommendation: 'Run `playbook verify --json` and resolve any findings before merge.',
+      ...(firstChangedFile ? { file: firstChangedFile } : {}),
+      ...(typeof changedLine === 'number' ? { line: changedLine } : {})
+    });
+  }
 
   return {
     schemaVersion: '1.0',
@@ -256,6 +335,7 @@ export const analyzePullRequest = (projectRoot: string, options?: { baseRef?: st
       owners: relatedRuleOwners
     },
     moduleOwners: affectedModuleOwners,
+    findings,
     reviewGuidance,
     context: {
       sources: [

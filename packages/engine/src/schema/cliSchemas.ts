@@ -347,6 +347,7 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
           'docs',
           'rules',
           'moduleOwners',
+          'findings',
           'reviewGuidance',
           'context'
         ],
@@ -452,6 +453,22 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
                 module: { type: 'string' },
                 owners: { type: 'array', items: { type: 'string' } },
                 area: { type: 'string' }
+              }
+            }
+          },
+          findings: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['ruleId', 'severity', 'message'],
+              properties: {
+                ruleId: { type: 'string' },
+                severity: { enum: ['info', 'warning', 'error'] },
+                message: { type: 'string' },
+                recommendation: { type: 'string' },
+                file: { type: 'string' },
+                line: { type: 'integer' }
               }
             }
           },

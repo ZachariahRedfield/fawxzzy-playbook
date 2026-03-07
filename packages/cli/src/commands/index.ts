@@ -40,7 +40,7 @@ const parseOptionValues = (allArgs: string[], name: string): string[] | undefine
 };
 
 
-const parseAnalyzePrFormat = (allArgs: string[], globalFormat: 'text' | 'json'): 'text' | 'json' | 'github-comment' => {
+const parseAnalyzePrFormat = (allArgs: string[], globalFormat: 'text' | 'json'): 'text' | 'json' | 'github-comment' | 'github-review' => {
   if (globalFormat === 'json') {
     return 'json';
   }
@@ -48,6 +48,10 @@ const parseAnalyzePrFormat = (allArgs: string[], globalFormat: 'text' | 'json'):
   const format = parseOptionValue(allArgs, '--format');
   if (format === 'github-comment') {
     return 'github-comment';
+  }
+
+  if (format === 'github-review') {
+    return 'github-review';
   }
 
   return format === 'json' ? 'json' : 'text';
