@@ -1,0 +1,100 @@
+name: analyze-pr-comment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  post-comment:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm via Corepack
+        shell: bash
+        run: |
+          PM="$(node -p \"require(process.env.GITHUB_WORKSPACE + '/package.json').packageManager\")"
+          if [[ -z "$PM" || "$PM" != pnpm@* ]]; then
+            echo "Invalid or missing packageManager in package.json (expected pnpm@...). Got: '$PM'"
+            exit 1
+          fi
+          corepack enable
+          corepack prepare "$PM" --activate
+          pnpm -v
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace packages
+        run: pnpm -r build
+
+      - name: Generate canonical GitHub comment markdown
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        run: |
+          mkdir -p .playbook
+          node packages/cli/dist/main.js analyze-pr --format github-comment > .playbook/analyze-pr-comment.md
+
+      - name: Post sticky Playbook PR comment
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@v7
+        env:
+          PLAYBOOK_COMMENT_MARKER: "<!-- playbook:analyze-pr-comment -->"
+          PLAYBOOK_COMMENT_FILE: ".playbook/analyze-pr-comment.md"
+        with:
+          script: |
+            const fs = require('node:fs');
+            const marker = process.env.PLAYBOOK_COMMENT_MARKER;
+            const commentPath = process.env.PLAYBOOK_COMMENT_FILE;
+            const formattedComment = fs.readFileSync(commentPath, 'utf8').trimEnd();
+            const body = `${marker}\n${formattedComment}`;
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+
+            const existing = comments.find((comment) =>
+              comment.body && comment.body.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+              core.info(`Updated Playbook PR comment: ${existing.id}`);
+            } else {
+              const created = await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+              core.info(`Created Playbook PR comment: ${created.data.id}`);
+            }
+
+      - name: Skip sticky comment for fork pull requests
+        if: github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          echo "Skipping analyze-pr sticky comment: pull_request originates from a fork and may not have pull-requests:write permission."

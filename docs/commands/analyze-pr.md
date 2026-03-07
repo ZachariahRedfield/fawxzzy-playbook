@@ -24,6 +24,8 @@ It returns deterministic review/report data for automation, including changed fi
 
 `--format <text|json|github-comment>` is a presentation/export selector over the same deterministic analysis contract. `--json` remains canonical analysis data; `github-comment` is deterministic markdown rendering for CI workflows.
 
+GitHub Actions PR-comment integration should treat `analyze-pr --format github-comment` as the only markdown producer and only transport/post it. The repository workflow posts a single sticky Playbook comment marked with `<!-- playbook:analyze-pr-comment -->` and updates that comment on reruns to avoid duplicates.
+
 ## Scope contract
 
 Pattern: `playbook analyze-pr` composes local diff context with indexed repository intelligence to produce deterministic pull request analysis.

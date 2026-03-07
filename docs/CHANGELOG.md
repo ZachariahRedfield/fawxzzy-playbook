@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added a dedicated GitHub Actions workflow (`.github/workflows/analyze-pr-comment.yml`) that runs on pull requests, generates canonical PR-summary markdown via `node packages/cli/dist/main.js analyze-pr --format github-comment`, and posts/updates a single sticky Playbook comment using marker `<!-- playbook:analyze-pr-comment -->` (transport-only, no duplicate formatter logic).
 - Added deterministic `playbook query test-hotspots` repository-intelligence output to detect test inefficiency candidates (including broad retrieval followed by narrow filtering) with stable hotspot contracts and safety classifications; MVP reports findings only and does not auto-refactor.
 - Added `playbook analyze-pr` as deterministic, local-first pull request intelligence that composes local git diff context with `.playbook/repo-index.json`, indexed impact/risk/docs/ownership intelligence, and structured review guidance output (`--json`).
 - Added `playbook analyze-pr --format github-comment` as a deterministic export formatter that converts existing analyze-pr JSON contracts into GitHub-ready PR review summary markdown for CI/automation posting, without adding new inference logic.
