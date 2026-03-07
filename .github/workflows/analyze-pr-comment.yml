@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Read pnpm version from packageManager
         shell: bash
@@ -52,7 +54,7 @@ jobs:
         shell: bash
         run: |
           node packages/cli/dist/main.js index --json
-          node packages/cli/dist/main.js analyze-pr --format github-comment > .playbook/analyze-pr-comment.md
+          node packages/cli/dist/main.js analyze-pr --base "origin/${{ github.base_ref }}" --format github-comment > .playbook/analyze-pr-comment.md
 
       - name: Post sticky Playbook PR comment
         if: github.event.pull_request.head.repo.full_name == github.repository

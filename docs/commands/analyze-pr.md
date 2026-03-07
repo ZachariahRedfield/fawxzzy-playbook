@@ -28,6 +28,8 @@ GitHub Actions PR-comment integration should treat `analyze-pr --format github-c
 
 Producer/consumer contract note: `playbook analyze-pr` requires `.playbook/repo-index.json` and must be preceded by `playbook index`; creating `.playbook/` alone does not satisfy the artifact prerequisite. CI should run artifact producers before consumers (index first, then analyze-pr/query/impact).
 
+CI diff-base contract note: in pull_request automation, pass an explicit base ref (for example `--base origin/${{ github.base_ref }}`) and ensure checkout uses full history (`fetch-depth: 0`) so diff-based analysis can resolve base/head deterministically.
+
 Shell integration notes for GitHub Actions transport:
 
 - Shell commands copied into GitHub Actions `run:` blocks must be rechecked for escaping; log-safe or JSON-escaped commands may fail in bash.

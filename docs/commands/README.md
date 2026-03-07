@@ -101,6 +101,7 @@ playbook ask "what modules are affected by this?" --repo-context --json
 - Supports formatter exports, including `--format github-comment` for GitHub-ready PR review summaries without adding new analysis inference.
 - GitHub Actions transport posts that formatter output as one sticky Playbook PR comment (`<!-- playbook:analyze-pr-comment -->`) and updates it on reruns instead of creating duplicate comments.
 - Artifact contract: `analyze-pr` consumes `.playbook/repo-index.json`, so CI runs `playbook index` before PR analysis; creating `.playbook/` alone is insufficient.
+- Diff contract: CI should pass explicit base refs (for example `--base origin/${{ github.base_ref }}`) and use `fetch-depth: 0` checkout for deterministic PR diff analysis.
 
 Examples:
 
