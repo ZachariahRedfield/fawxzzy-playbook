@@ -60,7 +60,7 @@ Current product-facing command/artifact surface:
 - `apply`
 - `playbook-demo` (via `playbook demo`)
 
-`index` is the next planned command and is not implemented yet.
+This document is runtime context only; roadmap planning belongs in `docs/PLAYBOOK_IMPROVEMENTS.md` and `docs/PLAYBOOK_PRODUCT_ROADMAP.md`.
 
 If docs disagree with implementation, treat code as source of truth and realign docs.
 

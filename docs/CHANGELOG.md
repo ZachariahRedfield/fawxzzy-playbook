@@ -4,6 +4,8 @@
 
 ### Added
 
+- Consolidated documentation planning architecture by standardizing `docs/PLAYBOOK_PRODUCT_ROADMAP.md` as the single strategic roadmap, refreshing `docs/PLAYBOOK_IMPROVEMENTS.md` as the idea backlog, adding `docs/archive/` for backlog rotation, and clarifying documentation responsibilities/process boundaries across workflow and index docs.
+
 - Added deterministic AI repository contract support via `playbook ai-contract` with `.playbook/ai-contract.json` as the canonical AI-operability artifact, including generated fallback behavior, schema support (`playbook schema ai-contract`), and command-level tests.
 
 - Standardized workspace command execution across Playbook by replacing pnpm workspace filters with deterministic directory targeting (`pnpm -C packages/<workspace>`), preventing automation and agent failures caused by incorrect workspace package name resolution.

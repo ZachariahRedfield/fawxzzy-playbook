@@ -69,6 +69,36 @@ Phase 3 — Governance Engine
 
 Confirm the proposed change aligns with the roadmap.
 
+Feature Planning Lifecycle
+
+Playbook development follows a structured idea lifecycle.
+
+Idea
+↓
+PLAYBOOK_IMPROVEMENTS.md
+↓
+PLAYBOOK_PRODUCT_ROADMAP.md
+↓
+Implementation
+↓
+Archive
+
+Guidelines:
+
+- Ideas go to the improvement backlog.
+- Only prioritized product work enters the roadmap.
+- Roadmap items represent committed direction.
+
+Pattern: Improvement Backlog Lifecycle
+Idea → Improvements → Roadmap → Archive
+
+Pattern: Single Strategic Roadmap
+The repository contains only one roadmap.
+
+Pattern: Documentation Responsibility Boundaries
+
+Failure Mode: Roadmap duplication across multiple documents.
+
 Roadmap Updates
 
 When features are implemented, the roadmap must be updated.

@@ -8,6 +8,13 @@ Reference:
 
 docs/PLAYBOOK_PRODUCT_ROADMAP.md
 
+
+Planning Boundary
+
+- `docs/PLAYBOOK_PRODUCT_ROADMAP.md` is the single strategic roadmap.
+- Idea-level planning belongs in `docs/PLAYBOOK_IMPROVEMENTS.md`.
+- This document defines update process only, not roadmap content.
+
 Steps
 
 1. Identify which roadmap phase the changes belong to.

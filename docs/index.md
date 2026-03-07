@@ -8,6 +8,7 @@
 - [Command Contract Overview](./commands/overview.md)
 - [Testing Guidelines](./TESTING_GUIDELINES.md)
 - [Product Roadmap](./PLAYBOOK_PRODUCT_ROADMAP.md)
+- [Improvement Backlog](./PLAYBOOK_IMPROVEMENTS.md)
 - [Demo and onboarding](./ONBOARDING_DEMO.md)
 
 ## Commands
@@ -37,3 +38,23 @@
 - [Contributing](./contributing.md)
 - [Development](./DEVELOPMENT.md)
 - [Playbook dev workflow](./PLAYBOOK_DEV_WORKFLOW.md)
+
+
+## Documentation Responsibilities
+
+`PLAYBOOK_PRODUCT_ROADMAP.md`  
+Strategic product direction and prioritized capabilities.
+
+`PLAYBOOK_IMPROVEMENTS.md`  
+Idea backlog and future opportunities.
+
+`ARCHITECTURE.md`  
+System design and architectural rules.
+
+`PLAYBOOK_DEV_WORKFLOW.md`  
+Development process and engineering workflow.
+
+`AI_AGENT_CONTEXT.md`  
+Runtime context for AI systems.
+
+This separation prevents duplication and keeps documentation focused.

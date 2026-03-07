@@ -128,6 +128,11 @@ Current implemented product-facing command/artifact set:
 
 Use `docs/PLAYBOOK_IMPROVEMENTS.md` as the staging area for emerging ideas, and keep this roadmap focused on prioritized product capabilities.
 
+Pattern: Single Strategic Roadmap
+
+Only one roadmap exists in the repository: `docs/PLAYBOOK_PRODUCT_ROADMAP.md`.
+All idea-level planning belongs in `docs/PLAYBOOK_IMPROVEMENTS.md`.
+
 ## Product Development Lifecycle
 
 Playbook features follow a structured lifecycle:

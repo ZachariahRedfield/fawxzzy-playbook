@@ -1,3 +1,11 @@
+# Scope Note
+
+This report is a historical documentation-cleanup artifact.
+It should not be used as roadmap or backlog planning input.
+Planning sources are:
+- `docs/PLAYBOOK_IMPROVEMENTS.md` for ideas
+- `docs/PLAYBOOK_PRODUCT_ROADMAP.md` for committed direction
+
 # Docs Merge Report
 
 - Mode: APPLY
