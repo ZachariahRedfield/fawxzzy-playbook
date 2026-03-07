@@ -67,6 +67,8 @@ describe('ask --repo-context', () => {
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(payload.repoContext.enabled).toBe(true);
     expect(payload.context.module.module.name).toBe('workouts');
+    expect(payload.context.sources).toContainEqual({ type: 'module', name: 'workouts' });
+    expect(payload.context.sources).toContainEqual({ type: 'ai-contract', path: 'generated-ai-contract-fallback' });
 
     logSpy.mockRestore();
   });
@@ -98,6 +100,8 @@ describe('ask --repo-context', () => {
       }
     });
     expect(String(payload.question)).toBe('what modules exist?');
+    expect(payload.context.sources).toContainEqual({ type: 'repo-index', path: '.playbook/repo-index.json' });
+    expect(payload.context.sources).toContainEqual({ type: 'ai-contract', path: 'generated-ai-contract-fallback' });
 
     logSpy.mockRestore();
   });

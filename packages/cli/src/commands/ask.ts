@@ -37,7 +37,67 @@ type AskResult = {
     modules: string[];
     module?: unknown;
     diff?: unknown;
+    sources: ContextSource[];
   };
+};
+
+type ContextSource = {
+  type: 'repo-index' | 'architecture-metadata' | 'rule-registry' | 'module' | 'diff' | 'docs' | 'ai-contract';
+  path?: string;
+  name?: string;
+  files?: string[];
+};
+
+type AskContextSnapshot = AskResult['context'];
+
+const REPO_INDEX_PATH = '.playbook/repo-index.json' as const;
+const AI_CONTRACT_PATH = '.playbook/ai-contract.json' as const;
+
+const toUniqueSortedStrings = (values: unknown): string[] => {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  const unique = new Set<string>();
+  for (const value of values) {
+    if (typeof value === 'string' && value.length > 0) {
+      unique.add(value);
+    }
+  }
+
+  return Array.from(unique).sort((left, right) => left.localeCompare(right));
+};
+
+const buildContextSources = (context: AskContextSnapshot, repoContextSources: string[], moduleName?: string): ContextSource[] => {
+  const sources: ContextSource[] = [
+    { type: 'repo-index', path: REPO_INDEX_PATH },
+    { type: 'architecture-metadata', path: REPO_INDEX_PATH },
+    { type: 'rule-registry', path: REPO_INDEX_PATH }
+  ];
+
+  if (repoContextSources.includes(AI_CONTRACT_PATH) || repoContextSources.includes('generated-ai-contract-fallback')) {
+    sources.push({
+      type: 'ai-contract',
+      path: repoContextSources.includes(AI_CONTRACT_PATH) ? AI_CONTRACT_PATH : 'generated-ai-contract-fallback'
+    });
+  }
+
+  if (typeof moduleName === 'string' && moduleName.length > 0) {
+    sources.push({ type: 'module', name: moduleName });
+  }
+
+  if (context.diff && typeof context.diff === 'object' && !Array.isArray(context.diff)) {
+    const diffRecord = context.diff as { changedFiles?: unknown; docs?: unknown };
+    const changedFiles = toUniqueSortedStrings(diffRecord.changedFiles);
+    sources.push({ type: 'diff', files: changedFiles });
+
+    const docs = toUniqueSortedStrings(diffRecord.docs);
+    for (const docsPath of docs) {
+      sources.push({ type: 'docs', path: docsPath });
+    }
+  }
+
+  return sources;
 };
 
 type ParsedAskInput = {
@@ -147,6 +207,11 @@ export const runAsk = async (cwd: string, commandArgs: string[], options: AskOpt
     const modeInstruction = getResponseModeInstruction(mode);
     const answerForMode = formatAnswerForMode(answer.answer, answer.reason, mode);
 
+    const resultContext: AskResult['context'] = {
+      ...answer.context,
+      sources: buildContextSources(answer.context, repoContext.sources, options.module)
+    };
+
     const result: AskResult = {
       command: 'ask',
       question: answer.question,
@@ -165,7 +230,7 @@ export const runAsk = async (cwd: string, commandArgs: string[], options: AskOpt
           baseRef: options.base
         }
       },
-      context: answer.context
+      context: resultContext
     };
 
     if (options.format === 'json') {

@@ -35,6 +35,8 @@ Playbook detected modular-monolith architecture with feature boundaries under sr
 
 ## JSON output contract
 
+`playbook ask --json` returns the existing answer payload and includes deterministic context provenance metadata under `context.sources`.
+
 ```json
 {
   "command": "ask",
@@ -44,10 +46,26 @@ Playbook detected modular-monolith architecture with feature boundaries under sr
   "context": {
     "architecture": "modular-monolith",
     "framework": "nextjs",
-    "modules": ["users", "workouts"]
+    "modules": ["users", "workouts"],
+    "sources": [
+      { "type": "repo-index", "path": ".playbook/repo-index.json" },
+      { "type": "architecture-metadata", "path": ".playbook/repo-index.json" },
+      { "type": "rule-registry", "path": ".playbook/repo-index.json" },
+      { "type": "module", "name": "workouts" },
+      { "type": "diff", "files": ["src/workouts/service.ts", "src/workouts/api.ts"] },
+      { "type": "docs", "path": "docs/ARCHITECTURE.md" }
+    ]
   }
 }
 ```
+
+Pattern: Ask Context Provenance — Playbook ask should expose deterministic metadata describing which repository intelligence sources informed an answer.
+
+Rule: Provenance metadata includes only source descriptors, not raw repository content.
+
+Pattern: Auditable AI Reasoning — governance tools should expose evidence sources so automation can validate reasoning.
+
+Failure Mode: Opaque AI reasoning prevents CI and agent integrations from trusting governance outputs.
 
 ## Notes
 

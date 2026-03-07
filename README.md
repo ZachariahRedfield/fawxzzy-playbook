@@ -247,6 +247,7 @@ Use `--diff-context` to answer branch/working-tree questions using trusted local
 - Produces deterministic changed-file, affected-module, impact, docs, and risk context.
 - Never silently broadens into full-repo inference when diff context is unavailable.
 - Optional `--base <ref>` narrows diff comparison against an explicit base (for example `main`).
+- In `--json` mode, ask includes deterministic provenance metadata in `context.sources` so agents/CI can audit which indexed intelligence sources informed an answer (without exposing raw file contents).
 
 ```bash
 playbook index

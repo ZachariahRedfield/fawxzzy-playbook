@@ -83,7 +83,12 @@ describe('runAsk', () => {
       context: {
         architecture: 'modular-monolith',
         framework: 'nextjs',
-        modules: ['users', 'workouts']
+        modules: ['users', 'workouts'],
+        sources: [
+          { type: 'repo-index', path: '.playbook/repo-index.json' },
+          { type: 'architecture-metadata', path: '.playbook/repo-index.json' },
+          { type: 'rule-registry', path: '.playbook/repo-index.json' }
+        ]
       }
     });
 
@@ -106,6 +111,7 @@ describe('runAsk', () => {
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(payload.context.module.module.name).toBe('workouts');
     expect(payload.context.module.impact.dependencies).toEqual(['users']);
+    expect(payload.context.sources).toContainEqual({ type: 'module', name: 'workouts' });
 
     logSpy.mockRestore();
   });

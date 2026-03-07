@@ -69,6 +69,7 @@ describe('ask --diff-context', () => {
     expect(payload.answer).toContain('Affected modules: workouts');
     expect(payload.scope.diffContext.enabled).toBe(true);
     expect(payload.context.diff.kind).toBe('playbook-diff-context');
+    expect(payload.context.sources).toContainEqual({ type: 'diff', files: ['src/workouts/index.ts'] });
 
     logSpy.mockRestore();
   });

@@ -117,7 +117,7 @@ Pattern: Change review workflows become much more trustworthy when blast radius 
 
 Failure Mode: Diff-aware reasoning becomes misleading when the tool silently expands from “changed files” into full-repo inference without telling the user.
 
-In JSON mode, ask keeps the existing answer payload and adds `repoContext` metadata with `enabled` and `sources` fields so callers can audit provenance.
+In JSON mode, ask keeps the existing answer payload and includes deterministic provenance metadata in `context.sources` (for example `repo-index`, `module`, `diff`, `docs`, `rule-registry`, and `ai-contract`) plus `repoContext` hydration metadata. Provenance descriptors include only source metadata (paths/names/files), never raw repository file content.
 
 ## AI Response Modes for `playbook ask`
 
