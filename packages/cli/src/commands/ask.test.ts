@@ -73,6 +73,13 @@ describe('runAsk', () => {
         enabled: false,
         sources: []
       },
+      scope: {
+        module: undefined,
+        diffContext: {
+          enabled: false,
+          baseRef: undefined
+        }
+      },
       context: {
         architecture: 'modular-monolith',
         framework: 'nextjs',

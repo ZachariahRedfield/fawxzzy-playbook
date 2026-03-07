@@ -23,6 +23,8 @@ export { queryRepositoryIndex, SUPPORTED_QUERY_FIELDS } from './query/repoQuery.
 export type { RepositoryQueryField, RepositoryQueryResult } from './query/repoQuery.js';
 export { answerRepositoryQuestion } from './ask/askEngine.js';
 export type { AskEngineResult } from './ask/askEngine.js';
+export { resolveDiffAskContext } from './ask/diffContext.js';
+export type { DiffAskContext } from './ask/diffContext.js';
 
 export { explainTarget } from './explain/explainEngine.js';
 export type { ExplainTargetResult, RuleExplanation, ModuleExplanation, ArchitectureExplanation, UnknownExplanation } from './explain/explainEngine.js';

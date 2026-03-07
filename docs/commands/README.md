@@ -88,6 +88,35 @@ playbook ask "how does this module work?" --module workouts --repo-context
 playbook ask "what modules are affected by this?" --repo-context --json
 ```
 
+## Change-scoped ask (`playbook ask --diff-context`)
+
+`playbook ask` supports `--diff-context` to narrow repository reasoning to the active local change set.
+
+- Uses deterministic local git diff + `.playbook/repo-index.json` intelligence mapping.
+- Hydrates ask context with changed files, affected modules, impact/dependents, changed docs, and indexed risk signals.
+- Does **not** silently broaden to full-repo reasoning when diff context cannot be resolved.
+- `--module` and `--diff-context` are intentionally incompatible for deterministic scope selection.
+
+Examples:
+
+```bash
+playbook index
+playbook ask "what modules are affected by this change?" --diff-context
+playbook ask "what should I verify before merge?" --diff-context --mode concise
+playbook ask "summarize the architectural risk of this diff" --diff-context --json
+playbook ask "what modules are affected?" --diff-context --base main
+```
+
+Pattern: `playbook ask --diff-context` narrows repository reasoning to the active change set using trusted local diff + index intelligence.
+
+Rule: Change-scoped ask must derive context from Playbook-managed intelligence and explicit diff inputs, not broad ad-hoc repository inference.
+
+Pattern: Module-scoped and diff-scoped reasoning should share the same underlying repository intelligence layer.
+
+Pattern: Change review workflows become much more trustworthy when blast radius is derived from indexed structure and actual changed files together.
+
+Failure Mode: Diff-aware reasoning becomes misleading when the tool silently expands from “changed files” into full-repo inference without telling the user.
+
 In JSON mode, ask keeps the existing answer payload and adds `repoContext` metadata with `enabled` and `sources` fields so callers can audit provenance.
 
 ## AI Response Modes for `playbook ask`

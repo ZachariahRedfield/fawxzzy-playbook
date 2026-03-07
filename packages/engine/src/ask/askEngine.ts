@@ -1,6 +1,7 @@
 import { queryRepositoryIndex } from '../query/repoQuery.js';
 import type { RepositoryModule } from '../indexer/repoIndexer.js';
 import { buildModuleAskContext, resolveIndexedModuleContext, type IndexedModuleContext } from '../query/moduleIntelligence.js';
+import { resolveDiffAskContext, type DiffAskContext } from './diffContext.js';
 
 
 const toModuleNames = (modules: string[] | RepositoryModule[]): string[] => {
@@ -45,11 +46,14 @@ export type AskEngineResult = {
     framework: string;
     modules: string[];
     module?: IndexedModuleContext;
+    diff?: DiffAskContext;
   };
 };
 
 type AskEngineOptions = {
   module?: string;
+  diffContext?: boolean;
+  baseRef?: string;
 };
 
 const normalizeQuestion = (question: string): string => extractUserQuestion(question).trim().toLowerCase();
@@ -82,9 +86,75 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
   const userQuestion = extractUserQuestion(question);
   const normalizedQuestion = normalizeQuestion(userQuestion);
   const context = gatherContext(projectRoot);
+  if (options?.module && options.diffContext) {
+    throw new Error('playbook ask: --module and --diff-context cannot be used together. Choose one deterministic scope.');
+  }
+
   const moduleContext = options?.module
     ? resolveIndexedModuleContext(projectRoot, options.module, { unknownModulePrefix: 'playbook ask --module' })
     : undefined;
+  const diffContext = options?.diffContext ? resolveDiffAskContext(projectRoot, { baseRef: options.baseRef }) : undefined;
+
+  if (diffContext && includesAny(normalizedQuestion, ['module', 'modules', 'affected'])) {
+    return {
+      question: userQuestion,
+      answer:
+        diffContext.affectedModules.length > 0
+          ? `Affected modules: ${diffContext.affectedModules.join(', ')}`
+          : 'Affected modules: none (changed files are outside indexed module roots)',
+      reason:
+        'Derived from playbook-diff-context by mapping git changed files to indexed modules in .playbook/repo-index.json.',
+      context: {
+        architecture: context.architecture,
+        framework: context.framework,
+        modules: context.modules,
+        diff: diffContext
+      }
+    };
+  }
+
+  if (diffContext && includesAny(normalizedQuestion, ['risk', 'risky'])) {
+    const riskyModules = diffContext.risk.moduleRisk.map((entry) => `${entry.module}(${entry.level})`);
+
+    return {
+      question: userQuestion,
+      answer: `Diff risk level: ${diffContext.risk.highestLevel}. ${riskyModules.length > 0 ? `Module risk: ${riskyModules.join(', ')}` : 'No indexed modules were affected.'}`,
+      reason:
+        'Derived from change-scoped module risk signals by combining git diff files with indexed module risk intelligence.',
+      context: {
+        architecture: context.architecture,
+        framework: context.framework,
+        modules: context.modules,
+        diff: diffContext
+      }
+    };
+  }
+
+  if (diffContext && includesAny(normalizedQuestion, ['verify', 'review', 'merge', 'ship'])) {
+    const impactedDependents = Array.from(new Set(diffContext.impact.flatMap((entry) => entry.dependents))).sort((a, b) =>
+      a.localeCompare(b)
+    );
+    const checks = [
+      `changed files: ${diffContext.changedFiles.length}`,
+      `affected modules: ${diffContext.affectedModules.length > 0 ? diffContext.affectedModules.join(', ') : 'none'}`,
+      `impacted dependents: ${impactedDependents.length > 0 ? impactedDependents.join(', ') : 'none'}`,
+      `docs touched: ${diffContext.docs.length > 0 ? diffContext.docs.join(', ') : 'none'}`,
+      `risk level: ${diffContext.risk.highestLevel}`
+    ];
+
+    return {
+      question: userQuestion,
+      answer: `Verify checklist (${diffContext.baseRef}): ${checks.join('; ')}`,
+      reason:
+        'Derived from playbook-diff-context using git changed files plus indexed module impact/risk metadata without full-repo fallback.',
+      context: {
+        architecture: context.architecture,
+        framework: context.framework,
+        modules: context.modules,
+        diff: diffContext
+      }
+    };
+  }
 
   if (moduleContext && includesAny(normalizedQuestion, ['how', 'work', 'works', 'module'])) {
     const moduleSummary = buildModuleAskContext(moduleContext).split('\n').slice(0, 5).join('; ');
@@ -98,7 +168,8 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         architecture: context.architecture,
         framework: context.framework,
         modules: context.modules,
-        module: moduleContext
+        module: moduleContext,
+        diff: diffContext
       }
     };
   }
@@ -127,7 +198,8 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         architecture: context.architecture,
         framework: context.framework,
         modules: context.modules,
-        module: moduleContext
+        module: moduleContext,
+        diff: diffContext
       }
     };
   }
@@ -141,7 +213,8 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         architecture: context.architecture,
         framework: context.framework,
         modules: context.modules,
-        module: moduleContext
+        module: moduleContext,
+        diff: diffContext
       }
     };
   }
@@ -168,7 +241,8 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
       architecture: context.architecture,
       framework: context.framework,
       modules: context.modules,
-      module: moduleContext
+      module: moduleContext,
+      diff: diffContext
     }
   };
 };

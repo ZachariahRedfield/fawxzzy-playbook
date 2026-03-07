@@ -9,6 +9,8 @@ type AskOptions = {
   mode?: string;
   repoContext?: boolean;
   module?: string;
+  diffContext?: boolean;
+  base?: string;
 };
 
 type AskResult = {
@@ -22,11 +24,19 @@ type AskResult = {
     enabled: boolean;
     sources: string[];
   };
+  scope: {
+    module?: string;
+    diffContext: {
+      enabled: boolean;
+      baseRef?: string;
+    };
+  };
   context: {
     architecture: string;
     framework: string;
     modules: string[];
     module?: unknown;
+    diff?: unknown;
   };
 };
 
@@ -45,7 +55,7 @@ const parseAskInput = (args: string[]): ParsedAskInput => {
       return { help: true };
     }
 
-    if (arg === '--mode' || arg === '--module') {
+    if (arg === '--mode' || arg === '--module' || arg === '--base') {
       index += 1;
       continue;
     }
@@ -94,6 +104,9 @@ Options:
                              .playbook/repo-index.json and .playbook/ai-contract.json)
   --module <name>            Scope ask reasoning to indexed module intelligence from
                              .playbook/repo-index.json
+  --diff-context             Scope ask reasoning to changed files mapped through
+                             .playbook/repo-index.json (requires git diff + index)
+  --base <ref>               Optional git base ref used with --diff-context
   --help                     Show help`);
 };
 
@@ -112,13 +125,25 @@ export const runAsk = async (cwd: string, commandArgs: string[], options: AskOpt
   }
 
   try {
+    if (options.module && options.diffContext) {
+      throw new Error('playbook ask: --module and --diff-context cannot be used together. Choose one deterministic scope.');
+    }
+
     const mode = parseResponseMode(options.mode);
     const repoContext = loadAskRepoContext({ cwd, enabled: options.repoContext ?? false });
     const moduleContextPrefix = options.module ? `Scoped module context: ${options.module}` : '';
+    const diffContextPrefix = options.diffContext
+      ? `Diff context enabled${options.base ? ` (base: ${options.base})` : ''}`
+      : '';
+    const scopesPrefix = [moduleContextPrefix, diffContextPrefix].filter((value) => value.length > 0).join('\n');
     const enrichedQuestion = repoContext.enabled
-      ? `${moduleContextPrefix}${moduleContextPrefix.length > 0 ? '\n' : ''}${repoContext.promptContext}\n\nUser question: ${questionArg}`
+      ? `${scopesPrefix}${scopesPrefix.length > 0 ? '\n' : ''}${repoContext.promptContext}\n\nUser question: ${questionArg}`
       : questionArg;
-    const answer = answerRepositoryQuestion(cwd, enrichedQuestion, { module: options.module });
+    const answer = answerRepositoryQuestion(cwd, enrichedQuestion, {
+      module: options.module,
+      diffContext: options.diffContext,
+      baseRef: options.base
+    });
     const modeInstruction = getResponseModeInstruction(mode);
     const answerForMode = formatAnswerForMode(answer.answer, answer.reason, mode);
 
@@ -132,6 +157,13 @@ export const runAsk = async (cwd: string, commandArgs: string[], options: AskOpt
       repoContext: {
         enabled: repoContext.enabled,
         sources: repoContext.sources
+      },
+      scope: {
+        module: options.module,
+        diffContext: {
+          enabled: options.diffContext ?? false,
+          baseRef: options.base
+        }
       },
       context: answer.context
     };

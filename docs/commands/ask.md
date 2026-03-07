@@ -8,6 +8,9 @@ Answer repository questions using machine-readable repository intelligence.
 - `playbook ask "what architecture does this repo use?"`
 - `playbook ask "what modules exist?"`
 - `playbook ask "where should a new feature live?" --json`
+- `playbook ask "what modules are affected by this change?" --diff-context`
+- `playbook ask "what should I verify before merge?" --diff-context --mode concise`
+- `playbook ask "summarize the architectural risk of this diff" --diff-context --json`
 
 ## Behavior
 
@@ -18,6 +21,8 @@ Answer repository questions using machine-readable repository intelligence.
 3. Produce deterministic answers from architecture/module/framework/rule-registry signals.
 
 `playbook ask` reads intelligence from `.playbook/repo-index.json` through the query engine and does **not** scan your repository directly.
+
+`--diff-context` narrows reasoning to the active change set by combining git diff file discovery with indexed Playbook module intelligence. It fails deterministically when index/diff inputs are missing and does not silently broaden to full-repo inference.
 
 ## Example text output
 
