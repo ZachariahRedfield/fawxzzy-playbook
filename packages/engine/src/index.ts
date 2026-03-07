@@ -32,3 +32,5 @@ export type { CliSchemaCommand, JsonSchema } from './schema/cliSchemas.js';
 
 export { queryDependencies } from './query/dependencies.js';
 export type { DependenciesQueryResult } from './query/dependencies.js';
+export { queryImpact } from './query/impact.js';
+export type { ImpactQueryResult } from './query/impact.js';

@@ -19,7 +19,9 @@ declare module "@zachariahredfield/playbook-engine" {
 
   export const queryRepositoryIndex: (...args: any[]) => any;
   export const queryDependencies: (...args: any[]) => any;
+  export const queryImpact: (...args: any[]) => any;
   export type DependenciesQueryResult = any;
+  export type ImpactQueryResult = any;
   export type RepositoryModule = any;
   export const answerRepositoryQuestion: (...args: any[]) => any;
   export const explainTarget: (...args: any[]) => any;

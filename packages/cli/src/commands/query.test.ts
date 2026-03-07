@@ -87,6 +87,75 @@ describe('runQuery', () => {
     logSpy.mockRestore();
   });
 
+
+  it('prints impact query JSON output', async () => {
+    const repo = createRepo('playbook-cli-query-impact');
+    writeRepoIndex(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['impact', 'auth'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload).toEqual({
+      schemaVersion: '1.0',
+      command: 'query',
+      type: 'impact',
+      module: 'auth',
+      affectedModules: ['workouts']
+    });
+
+    logSpy.mockRestore();
+  });
+
+  it('prints impact query text output', async () => {
+    const repo = createRepo('playbook-cli-query-impact-text');
+    writeRepoIndex(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['impact', 'auth'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(logSpy.mock.calls.map((call) => String(call[0]))).toEqual([
+      'Impact Analysis',
+      '───────────────',
+      '',
+      'Changing module: auth',
+      '',
+      'Affected modules:',
+      '',
+      'workouts'
+    ]);
+
+    logSpy.mockRestore();
+  });
+
+  it('fails impact query for unknown module', async () => {
+    const repo = createRepo('playbook-cli-query-impact-missing');
+    writeRepoIndex(repo);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['impact', 'missing'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    expect(errorSpy).toHaveBeenCalledWith('playbook query impact: unknown module "missing".');
+
+    errorSpy.mockRestore();
+  });
+
+  it('fails impact query when module argument is missing', async () => {
+    const repo = createRepo('playbook-cli-query-impact-args');
+    writeRepoIndex(repo);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['impact'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    expect(errorSpy).toHaveBeenCalledWith('playbook query impact: missing required <module> argument');
+
+    errorSpy.mockRestore();
+  });
+
   it('fails dependency query for unknown module', async () => {
     const repo = createRepo('playbook-cli-query-dependencies-missing');
     writeRepoIndex(repo);

@@ -10,6 +10,7 @@ Current product-facing surface (see authoritative index: [../commands/README.md]
 - `verify`
 - `rules`
 - `dependencies`
+- `impact`
 - `schema`
 - `doctor`
 - `diagram`
@@ -89,6 +90,7 @@ Supported fields:
 - `database`
 - `rules`
 - `dependencies`
+- `impact`
 
 JSON output includes:
 
@@ -104,8 +106,16 @@ playbook query modules
 playbook query dependencies
 playbook query dependencies workouts
 playbook query dependencies workouts --json
+playbook query impact workouts
 ```
 
+### Impact Analysis
+
+```bash
+playbook query impact workouts
+```
+
+This command returns all modules that depend on the specified module (including transitive dependents) to help estimate change blast radius.
 
 ## `playbook deps [module] [--json] [--quiet]`
 

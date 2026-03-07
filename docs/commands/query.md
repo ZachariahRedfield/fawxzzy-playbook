@@ -12,6 +12,7 @@ Query structured repository intelligence from `.playbook/repo-index.json`.
 - `playbook query database`
 - `playbook query rules`
 - `playbook query dependencies workouts --json`
+- `playbook query impact workouts`
 
 ## Behavior
 
@@ -32,8 +33,11 @@ Supported fields:
 - `database`
 - `rules`
 - `dependencies`
+- `impact`
 
 For `dependencies`, the command can return either the full module dependency graph (`playbook query dependencies`) or one module's direct dependencies (`playbook query dependencies <module>`).
+
+For `impact`, the command returns modules that depend on a target module, including transitive dependents (`playbook query impact <module>`).
 
 `playbook query` never modifies repository files and never reruns repository analysis.
 
@@ -44,6 +48,7 @@ playbook index
 playbook query modules
 playbook query dependencies
 playbook query dependencies workouts --json
+playbook query impact workouts
 ```
 
 ## JSON contracts
@@ -70,5 +75,18 @@ Dependency query:
   "type": "dependencies",
   "module": "workouts",
   "dependencies": ["users"]
+}
+```
+
+
+Impact query:
+
+```json
+{
+  "schemaVersion": "1.0",
+  "command": "query",
+  "type": "impact",
+  "module": "workouts",
+  "affectedModules": ["analytics", "users"]
 }
 ```

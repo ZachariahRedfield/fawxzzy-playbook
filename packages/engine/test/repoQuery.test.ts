@@ -4,6 +4,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { queryRepositoryIndex } from '../src/query/repoQuery.js';
 import { queryDependencies } from '../src/query/dependencies.js';
+import { queryImpact } from '../src/query/impact.js';
 
 const createRepo = (name: string): string => fs.mkdtempSync(path.join(os.tmpdir(), `${name}-`));
 
@@ -89,6 +90,49 @@ describe('queryRepositoryIndex', () => {
     });
   });
 
+
+  it('returns impact query payloads including transitive dependents', () => {
+    const repo = createRepo('playbook-repo-query-impact');
+    writeRepoIndex(repo, {
+      schemaVersion: '1.0',
+      framework: 'node',
+      language: 'typescript',
+      architecture: 'modular-monolith',
+      modules: [
+        { name: 'auth', dependencies: [] },
+        { name: 'db', dependencies: [] },
+        { name: 'workouts', dependencies: ['auth', 'db'] },
+        { name: 'analytics', dependencies: ['workouts'] }
+      ],
+      database: 'none',
+      rules: []
+    });
+
+    expect(queryImpact(repo, 'workouts')).toEqual({
+      schemaVersion: '1.0',
+      command: 'query',
+      type: 'impact',
+      module: 'workouts',
+      affectedModules: ['analytics']
+    });
+
+    expect(queryImpact(repo, 'db')).toEqual({
+      schemaVersion: '1.0',
+      command: 'query',
+      type: 'impact',
+      module: 'db',
+      affectedModules: ['workouts', 'analytics']
+    });
+
+    expect(queryImpact(repo, 'analytics')).toEqual({
+      schemaVersion: '1.0',
+      command: 'query',
+      type: 'impact',
+      module: 'analytics',
+      affectedModules: []
+    });
+  });
+
   it('throws deterministic errors for unsupported fields', () => {
     const repo = createRepo('playbook-repo-query-unsupported-field');
     writeRepoIndex(repo, {
@@ -119,6 +163,7 @@ describe('queryRepositoryIndex', () => {
     });
 
     expect(() => queryDependencies(repo, 'worker')).toThrow('playbook query dependencies: unknown module "worker".');
+    expect(() => queryImpact(repo, 'worker')).toThrow('playbook query impact: unknown module "worker".');
   });
 
   it('throws deterministic errors when index file is missing', () => {

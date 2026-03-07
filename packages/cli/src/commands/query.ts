@@ -1,8 +1,10 @@
 import {
   queryDependencies,
+  queryImpact,
   queryRepositoryIndex,
   SUPPORTED_QUERY_FIELDS,
   type DependenciesQueryResult,
+  type ImpactQueryResult,
   type RepositoryModule,
   type RepositoryQueryField
 } from '@zachariahredfield/playbook-engine';
@@ -70,6 +72,25 @@ const printDependenciesText = (payload: DependenciesQueryResult): void => {
   }
 };
 
+const printImpactText = (payload: ImpactQueryResult): void => {
+  console.log('Impact Analysis');
+  console.log('───────────────');
+  console.log('');
+  console.log(`Changing module: ${payload.module}`);
+  console.log('');
+  console.log('Affected modules:');
+  console.log('');
+
+  if (payload.affectedModules.length === 0) {
+    console.log('none');
+    return;
+  }
+
+  for (const moduleName of payload.affectedModules) {
+    console.log(moduleName);
+  }
+};
+
 export const runQuery = async (cwd: string, commandArgs: string[], options: QueryOptions): Promise<number> => {
   const fieldArg = firstPositionalArg(commandArgs);
   if (!fieldArg) {
@@ -117,6 +138,69 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     }
   }
 
+  if (fieldArg === 'impact') {
+    const moduleArg = commandArgs.find((arg, index) => index > commandArgs.indexOf(fieldArg) && !arg.startsWith('-'));
+
+    if (!moduleArg) {
+      const message = 'playbook query impact: missing required <module> argument';
+      if (options.format === 'json') {
+        console.log(
+          JSON.stringify(
+            {
+              schemaVersion: '1.0',
+              command: 'query',
+              type: 'impact',
+              module: null,
+              error: message
+            },
+            null,
+            2
+          )
+        );
+      } else {
+        console.error(message);
+      }
+
+      return ExitCode.Failure;
+    }
+
+    try {
+      const payload = queryImpact(cwd, moduleArg);
+      if (options.format === 'json') {
+        console.log(JSON.stringify(payload, null, 2));
+        return ExitCode.Success;
+      }
+
+      if (!options.quiet) {
+        printImpactText(payload);
+      }
+
+      return ExitCode.Success;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      if (options.format === 'json') {
+        console.log(
+          JSON.stringify(
+            {
+              schemaVersion: '1.0',
+              command: 'query',
+              type: 'impact',
+              module: moduleArg,
+              error: message
+            },
+            null,
+            2
+          )
+        );
+      } else {
+        console.error(message);
+      }
+
+      return ExitCode.Failure;
+    }
+  }
+
   try {
     const query = queryRepositoryIndex(cwd, fieldArg);
     const result: QueryResult = {
@@ -145,7 +229,7 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
             command: 'query',
             field: fieldArg,
             error: message,
-            supportedFields: [...SUPPORTED_QUERY_FIELDS, 'dependencies']
+            supportedFields: [...SUPPORTED_QUERY_FIELDS, 'dependencies', 'impact']
           },
           null,
           2
