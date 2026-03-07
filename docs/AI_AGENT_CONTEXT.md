@@ -9,7 +9,7 @@ When changing package layout or cross-package dependencies:
 3. Review `Dependencies` to avoid introducing unintended couplings.
 4. Regenerate diagrams after architecture updates and commit the updated markdown.
 
-This keeps architecture reasoning explicit and reproducible for future agents.
+This keeps architecture reasoning explicit and reproducible for agents working in this repository.
 
 ## Release & Distribution
 
@@ -34,7 +34,6 @@ This keeps architecture reasoning explicit and reproducible for future agents.
 - WHAT: Do a manual first publish, then automate via a tag-triggered GitHub workflow.
 - WHY: Validates package metadata and distribution behavior once before CI automation takes ownership.
 
-
 ## Product state anchoring
 
 Rule: **Product State Must Be Anchored**.
@@ -44,7 +43,6 @@ Pattern: **AI Anchor Drift**.
 Whenever command/workflow state changes, update:
 
 - `README.md`
-- `docs/PLAYBOOK_PRODUCT_ROADMAP.md`
 - command reference docs
 - demo docs/contracts
 - `docs/CHANGELOG.md`
@@ -60,10 +58,7 @@ Current product-facing command/artifact surface:
 - `apply`
 - `playbook-demo` (via `playbook demo`)
 
-This document is runtime context only; roadmap planning belongs in `docs/PLAYBOOK_IMPROVEMENTS.md` and `docs/PLAYBOOK_PRODUCT_ROADMAP.md`.
-
 If docs disagree with implementation, treat code as source of truth and realign docs.
-
 
 ## Internal CI command rule
 

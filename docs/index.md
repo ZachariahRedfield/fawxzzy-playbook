@@ -7,8 +7,6 @@
 - [CLI Reference](./REFERENCE/cli.md)
 - [Command Contract Overview](./commands/overview.md)
 - [Testing Guidelines](./TESTING_GUIDELINES.md)
-- [Product Roadmap](./PLAYBOOK_PRODUCT_ROADMAP.md)
-- [Improvement Backlog](./PLAYBOOK_IMPROVEMENTS.md)
 - [Demo and onboarding](./ONBOARDING_DEMO.md)
 
 ## Commands
@@ -39,22 +37,10 @@
 - [Development](./DEVELOPMENT.md)
 - [Playbook dev workflow](./PLAYBOOK_DEV_WORKFLOW.md)
 
+## Ownership boundaries
 
-## Documentation Responsibilities
+- Product status ownership: [PLAYBOOK_PRODUCT_ROADMAP.md](./PLAYBOOK_PRODUCT_ROADMAP.md)
+- Improvement intake ownership: [PLAYBOOK_IMPROVEMENTS.md](./PLAYBOOK_IMPROVEMENTS.md)
+- AI runtime context ownership: [AI_AGENT_CONTEXT.md](./AI_AGENT_CONTEXT.md)
 
-`PLAYBOOK_PRODUCT_ROADMAP.md`  
-Strategic product direction and prioritized capabilities.
-
-`PLAYBOOK_IMPROVEMENTS.md`  
-Idea backlog and future opportunities.
-
-`ARCHITECTURE.md`  
-System design and architectural rules.
-
-`PLAYBOOK_DEV_WORKFLOW.md`  
-Development process and engineering workflow.
-
-`AI_AGENT_CONTEXT.md`  
-Runtime context for AI systems.
-
-This separation prevents duplication and keeps documentation focused.
+Use these owner docs directly instead of duplicating their content in this index.
