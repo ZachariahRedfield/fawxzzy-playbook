@@ -4,6 +4,8 @@
 
 ### Added
 
+- WHAT: Hardened the security workflow checkout strategy by setting `actions/checkout@v4` to `fetch-depth: 0` before gitleaks and documented CI diff-scanner history guarantees in `docs/SECURITY_PRINCIPLES.md`. WHY: Prevents shallow-history PR scan failures like `fatal: ambiguous argument "<sha>^..<sha>"` while keeping secret scanning deterministic.
+
 - WHAT: Added an automated Security Program baseline across roadmap/principles/CI/runtime guardrails with repo-boundary validation, remediation plan policy checks, secret-redacted apply errors, security regression tests, and a dedicated `security.yml` pipeline for audit, secret scanning, SBOM, signing, provenance, and policy gating. WHY: Makes Playbook security continuous and deterministic across runtime and release workflows rather than manual spot checks.
 
 - Docs: captured deterministic engineering reasoning loop insight and interface/runtime governance pattern across `docs/PLAYBOOK_IMPROVEMENTS.md` and `docs/PLAYBOOK_PRODUCT_ROADMAP.md`.

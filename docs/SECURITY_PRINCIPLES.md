@@ -44,3 +44,14 @@ Every remediation plan must include deterministic links to:
 When a security property cannot be verified, Playbook must fail closed or warn loudly.
 
 Playbook must not silently proceed when boundary, provenance, or policy checks are inconclusive.
+
+
+## CI Diff Scanner History Guarantees
+
+Rule: diff-based CI scanners must not rely on default `actions/checkout` depth; set `fetch-depth: 0` for deterministic PR history access.
+
+Failure Mode: `fatal: ambiguous argument '<sha>^..<sha>'` in CI usually means the parent/base commit was not fetched locally, not that the repository is corrupt.
+
+Pattern: security workflows that scan commit ranges should standardize checkout first, scanner second.
+
+Note: gitleaks partial-scan/no-leaks output does not mean the job passed; git-history resolution errors still fail the action.
