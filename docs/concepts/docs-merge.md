@@ -7,7 +7,7 @@
 - Scan `docs/**/*.md` and detect stale/redundant content patterns.
 - Identify repeated headings across files.
 - Identify exact duplicate blocks (trimmed text match).
-- Produce a deterministic report at `docs/REPORT_DOCS_MERGE.md`.
+- Produce a deterministic report at `docs/archive/REPORT_DOCS_MERGE_2026.md` (historical) and maintain active docs workflow guidance in `docs/commands/docs.md`.
 - Apply **SAFE** edits by default (links/stubs, no destructive deletes).
 
 ## Usage
