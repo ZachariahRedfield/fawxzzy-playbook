@@ -110,12 +110,12 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        echo "+ node scripts/validate-roadmap-contract.mjs --ci"
-        node scripts/validate-roadmap-contract.mjs --ci
+        echo "+ node scripts/validate-roadmap-contract.mjs --ci --enforce-pr-feature-id"
+        node scripts/validate-roadmap-contract.mjs --ci --enforce-pr-feature-id
 
     - name: Run docs audit (governance drift gate)
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        echo "+ node packages/cli/dist/main.js docs audit --json"
-        node packages/cli/dist/main.js docs audit --json
+        echo "+ node packages/cli/dist/main.js docs audit --ci --json"
+        node packages/cli/dist/main.js docs audit --ci --json

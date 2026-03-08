@@ -14,4 +14,5 @@
 - [ ] `pnpm -r build`
 - [ ] `pnpm test`
 - [ ] `node scripts/validate-roadmap-contract.mjs`
-- [ ] `node packages/cli/dist/main.js docs audit --json`
+- [ ] `node scripts/validate-roadmap-contract.mjs --ci --enforce-pr-feature-id` (PR metadata gate in CI)
+- [ ] `node packages/cli/dist/main.js docs audit --ci --json`

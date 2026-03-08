@@ -414,11 +414,11 @@ Playbook includes an official composite action that supports deterministic CI au
 
 `verify -> plan -> review -> apply -> verify`
 
-For repository CI validation, the canonical contract gate is now `playbook verify --json` (preceded by `pnpm -r build` and `pnpm test`).
+For repository CI validation, the canonical contract gates are `playbook verify --json`, roadmap contract validation, and `playbook docs audit --ci --json` (preceded by `pnpm -r build` and `pnpm test`).
 
-Rule: CI should enforce product correctness, not automation maintenance.
+Rule: CI should enforce deterministic product/governance correctness and roadmap-contract alignment.
 
-Failure Mode: If CI mixes product validation with maintenance tasks, pipelines become slow and fragile.
+Failure Mode: If delivery workflow rules (roadmap linkage and docs governance) are documented but not enforced in CI, roadmap drift accelerates.
 
 The action runs from checked-out repository source (it installs with the workspace lockfile, builds the CLI, and invokes `node packages/cli/dist/main.js`). It does **not** require `npm install -g` or a published npm package.
 
@@ -432,11 +432,10 @@ The action lives at `./.github/action.yml` in this repository and accepts:
 
 ### Optional maintenance workflow
 
-Automation maintenance checks (managed docs regeneration/validation and docs audit) can run outside the primary CI gate in a scheduled or manually triggered workflow:
+Automation maintenance checks (managed docs regeneration/validation) can run outside the primary CI gate in a scheduled or manually triggered workflow:
 
 - `pnpm agents:update`
 - `pnpm agents:check`
-- `node packages/cli/dist/main.js docs audit --json`
 
 See `.github/workflows/maintenance.yml`.
 
