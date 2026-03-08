@@ -1,26 +1,14 @@
-# Playbook Overview
+# Overview (superseded)
 
-Playbook is a governance tool for software repositories that are increasingly changed by both humans and AI coding agents.
+This document is preserved only as a compatibility pointer for older links and historical references.
 
-Its purpose is simple: keep engineering standards enforceable, visible, and automated.
+## Use these canonical docs instead
 
-## Philosophy: AI-Aware Governance
+- [../README.md](../README.md)
+- [./index.md](./index.md)
+- [./PLAYBOOK_PRODUCT_ROADMAP.md](./PLAYBOOK_PRODUCT_ROADMAP.md)
+- [./PLAYBOOK_BUSINESS_STRATEGY.md](./PLAYBOOK_BUSINESS_STRATEGY.md)
 
-Playbook treats governance as code. Teams define architecture and documentation expectations in machine-readable rules, then enforce those rules through local workflows and CI.
+## Historical archived copy
 
-This keeps governance deterministic and auditable instead of relying on informal review habits.
-
-## Why Structured Rules Matter for Agents
-
-AI agents can ship code quickly, but speed increases risk when repository constraints are implicit. Without explicit rules, teams experience documentation drift, architectural erosion, and inconsistent implementation decisions.
-
-Playbook gives repositories structured guardrails so agent-assisted changes stay aligned with engineering intent.
-## Product positioning
-
-Playbook is an AI-operable development tool:
-
-- human-usable in local CLI workflows
-- machine-readable through deterministic JSON contracts
-- CI-enforceable with stable exit codes and policy checks
-- agent-compatible through explicit command and rule surfaces
-
+- [docs/archive/OVERVIEW_2026.md](./archive/OVERVIEW_2026.md)

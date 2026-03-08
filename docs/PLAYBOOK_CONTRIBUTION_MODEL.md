@@ -107,7 +107,7 @@ export interface PlaybookRule {
 }
 
 <!-- docs-merge:duplicate-block -->
-> See also canonical block: [docs/PLAYBOOK_AGENT_GUIDE.md:172](PLAYBOOK_AGENT_GUIDE.md#block-172).
+> See also canonical block: [docs/ARCHITECTURE.md](ARCHITECTURE.md).
 
 Rules should be:
 
@@ -166,7 +166,7 @@ Documentation is a core part of Playbook.
 Important docs include:
 
 docs/PLAYBOOK_PRODUCT_ROADMAP.md
-docs/PLAYBOOK_SYSTEM_ARCHITECTURE.md
+docs/ARCHITECTURE.md
 docs/PLAYBOOK_CONTRIBUTION_MODEL.md
 
 Contributors may improve:
@@ -280,15 +280,11 @@ low false-positive rate
 
 Rules that enforce organization-specific policy should instead be implemented as plugins.
 
-Plugin Ecosystem (Future)
+Plugin Ecosystem (Historical Concept)
 
-Playbook will eventually support plugins.
+This section is retained as historical context. Refer to canonical command surfaces in `docs/commands/README.md` for supported capabilities.
 
-Example:
-
-playbook plugins install company-security-rules
-
-Plugins may provide:
+Historical plugin concepts included:
 
 custom governance rules
 
