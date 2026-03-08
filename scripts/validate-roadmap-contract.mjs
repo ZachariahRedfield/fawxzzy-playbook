@@ -4,6 +4,7 @@ import path from 'node:path';
 
 const args = new Set(process.argv.slice(2));
 const isCi = args.has('--ci');
+const enforcePrFeatureId = args.has('--enforce-pr-feature-id');
 const repoRoot = process.cwd();
 const roadmapPath = path.join(repoRoot, 'docs', 'roadmap', 'ROADMAP.json');
 
@@ -75,7 +76,7 @@ if (isCi && process.env.GITHUB_EVENT_PATH && fs.existsSync(process.env.GITHUB_EV
   try {
     const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
     const pr = event.pull_request;
-    if (pr) {
+    if (pr && enforcePrFeatureId) {
       const text = `${pr.title ?? ''}\n${pr.body ?? ''}`;
       const matched = [...featureIds].some((id) => text.includes(id));
       if (!matched) {

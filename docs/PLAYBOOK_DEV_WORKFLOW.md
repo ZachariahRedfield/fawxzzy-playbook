@@ -41,6 +41,12 @@ pnpm agents:check
 node scripts/validate-roadmap-contract.mjs
 ```
 
+For pull request metadata validation in CI contexts, use:
+
+```bash
+node scripts/validate-roadmap-contract.mjs --ci --enforce-pr-feature-id
+```
+
 For documentation/governance changes, also run:
 
 ```bash
