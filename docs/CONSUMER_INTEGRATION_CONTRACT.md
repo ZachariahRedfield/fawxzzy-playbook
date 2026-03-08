@@ -139,6 +139,77 @@ Interpretation:
 - `playbook.config.json` captures repository-specific policy/configuration.
 - `docs/` and `src/` remain consumer-owned repository domains.
 
+## 8) Phased downstream consumer rollout (reusable)
+
+Use this phased sequence for real downstream repositories so adoption remains deterministic and low risk.
+
+### Phase 1 — bootstrap / read-only intelligence
+
+- install Playbook in the consumer repository
+- run read-only repository intelligence commands first (`context`, `ai-context`, `index`, `query`, `explain`)
+- confirm operators can inspect architecture and rule surfaces before running mutation workflows
+
+### Phase 2 — verify-only governance
+
+- run `verify` only on active branches to establish governance baseline and findings quality
+- treat findings and docs alignment as onboarding output; do not run `apply` yet
+- confirm baseline safety and trust in deterministic findings/contracts
+
+### Phase 3 — plan/apply pilot on low-risk branches
+
+- enable `plan` and `apply` for tightly scoped, low-risk maintenance branches
+- require human review of plan tasks before apply execution
+- keep repository-specific implementation details local; only promote reusable rule/pattern improvements upstream
+
+### Phase 4 — analyze-pr / CI rollout
+
+- add `analyze-pr` for deterministic PR intelligence
+- wire `verify` and selected intelligence commands into CI for repeatable policy checks
+- promote tested reusable governance improvements upstream, while keeping consumer-specific ops/playbooks local
+
+## 9) Consumer artifact handling and display snapshots
+
+Artifact handling model:
+
+- Normal consumer runtime artifacts stay under `.playbook/` and are local/private-first by default.
+- Product-facing display artifacts are curated committed snapshots under `.playbook/demo-artifacts/`.
+- The display set should be intentionally selected and regenerated from real command runs, not hand-written.
+
+Recommended display set for consumer repositories (modeled after `playbook-demo`):
+
+- `.playbook/demo-artifacts/index.json`
+- `.playbook/demo-artifacts/rules.json`
+- `.playbook/demo-artifacts/explain-architecture.json`
+- `.playbook/demo-artifacts/explain-module.json`
+- `.playbook/demo-artifacts/explain-rule.json`
+- `.playbook/demo-artifacts/verify-before.json`
+- `.playbook/demo-artifacts/plan.json`
+- `.playbook/demo-artifacts/apply.json`
+- `.playbook/demo-artifacts/verify-after.json`
+- `.playbook/demo-artifacts/doctor.txt`
+- `.playbook/demo-artifacts/docs/ARCHITECTURE_DIAGRAMS.md`
+- `.playbook/demo-scenarios.md`
+
+## 10) Deterministic consumer pilot trigger (Fawxzzy Fitness first pilot)
+
+Reusable trigger contract for downstream pilot activation:
+
+1. `docs/roadmap/ROADMAP.json` shows `PB-V04-PLAN-APPLY-001` status as `implemented-hardening` or `implemented`.
+2. `docs/roadmap/ROADMAP.json` shows `PB-V04-ANALYZEPR-001` status as `implemented-hardening` or `implemented`.
+3. The consumer repository passes `npx playbook doctor --ai`.
+
+When all trigger conditions are true, operator/assistant guidance must explicitly state:
+
+"It is time to start testing Playbook on Fawxzzy Fitness."
+
+This trigger is written so Fawxzzy Fitness is the first pilot example while keeping reusable adoption policy upstream.
+
+## 11) Standing assistant instruction snippet for future sessions
+
+Use this snippet in downstream rollout chats:
+
+> Before giving rollout guidance, check `docs/roadmap/ROADMAP.json` for roadmap contract status, check the Fawxzzy Fitness consumer pilot trigger conditions, and explicitly notify the user when the trigger is met by saying: "It is time to start testing Playbook on Fawxzzy Fitness."
+
 ## Verification Answers
 
 ### What happens when Playbook is installed in another repository?
