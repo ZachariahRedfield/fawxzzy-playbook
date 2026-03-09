@@ -62,6 +62,7 @@ CI contract stance:
 - `playbook verify --json` is the canonical repository validation gate in CI.
 - CI should enforce product correctness, not automation maintenance.
 - Maintenance automation (for example `agents:update`, `agents:check`, docs audit) should run in dedicated scheduled/on-demand maintenance workflows.
+- Cross-repo demo refresh automation should run as PR-based scheduled/on-demand maintenance workflows (not inside the main correctness CI gate).
 
 Failure Mode: If CI mixes product validation with maintenance tasks, pipelines become slow and fragile.
 
@@ -1183,3 +1184,21 @@ Future enhancement:
 
 - Added machine-readable security contracts to map runtime guards to deterministic enforcement tests.
 - Added contract-driven security verification stage (`pnpm test:security`) for CI regression protection.
+
+
+## Feature: PB-V1-DEMO-REFRESH-001 — PR-based demo repository refresh automation
+
+Goal: keep committed demo artifacts/docs in `ZachariahRedfield/playbook-demo` synchronized using the branch-accurate local Playbook CLI build without polluting correctness CI.
+
+Implementation surfaces:
+- `scripts/demo-refresh.mjs`
+- `.github/workflows/demo-refresh.yml`
+- `.github/workflows/demo-integration.yml` (dry-run integration surface)
+- `docs/integration/PLAYBOOK_DEMO_COMPANION_CHANGES.md`
+
+Contract:
+- clone `playbook-demo`
+- inject `PLAYBOOK_CLI_PATH` to force local CLI usage
+- allowlist committed refresh outputs (`.playbook/demo-artifacts/**`, `.playbook/repo-index.json`, `docs/ARCHITECTURE_DIAGRAMS.md`)
+- fail on non-allowlisted mutations
+- open/update PRs only (no direct push to `main`)

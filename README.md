@@ -341,6 +341,7 @@ See [`playbook-demo`](https://github.com/ZachariahRedfield/playbook-demo), also 
 - Rule: Demo documentation should summarize generated artifacts, not replace them as the source of truth.
 - Rule: `explain <module>` examples in docs/demo must reference a module that is guaranteed to exist in `.playbook/repo-index.json`.
 - Pattern: Add a single demo refresh script to regenerate index/explain/rules/verify/plan/apply/diagram/doctor outputs deterministically.
+- Pattern: Cross-repo demo artifact refresh automation should run in dedicated maintenance workflows and open PRs against `ZachariahRedfield/playbook-demo` instead of mutating `main` directly.
 
 
 ## Canonical remediation workflow
@@ -460,6 +461,22 @@ Automation maintenance checks (managed docs regeneration/validation) can run out
 - `pnpm agents:check`
 
 See `.github/workflows/maintenance.yml`.
+
+### Demo refresh maintenance workflow
+
+Cross-repo `playbook-demo` artifact/doc refresh automation is isolated from the main correctness CI path and runs through dedicated maintenance workflows:
+
+- dry-run/integration: `.github/workflows/demo-integration.yml`
+- PR-based refresh orchestration: `.github/workflows/demo-refresh.yml`
+
+`demo-refresh` uses local branch-built CLI bits (`packages/cli/dist/main.js`) and runs `scripts/demo-refresh.mjs`, which:
+
+- clones `ZachariahRedfield/playbook-demo`
+- injects `PLAYBOOK_CLI_PATH`
+- enforces an allowlist of committed generated surfaces
+- opens/updates a PR (never direct push to `main`) when `PLAYBOOK_DEMO_GH_TOKEN` is configured.
+
+Companion assumptions for demo-side script support are documented in `docs/integration/PLAYBOOK_DEMO_COMPANION_CHANGES.md`.
 
 ### Verify on pull requests
 

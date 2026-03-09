@@ -23,16 +23,5 @@ jobs:
           working-directory: "."
           install-args: "--frozen-lockfile"
 
-      - name: Best-effort playbook-demo integration check
-        shell: bash
-        run: |
-          set -u
-          if ! git clone --depth 1 https://github.com/ZachariahRedfield/playbook-demo.git /tmp/playbook-demo; then
-            echo "::warning::Unable to clone ZachariahRedfield/playbook-demo (network/proxy restricted). Skipping demo integration check."
-            exit 0
-          fi
-
-          cd /tmp/playbook-demo
-          if ! npx --yes @zachariahredfield/playbook analyze --ci; then
-            echo "::warning::Demo integration analyze check failed. This workflow is informational only."
-          fi
+      - name: Demo refresh dry-run integration check
+        run: node scripts/demo-refresh.mjs --dry-run --feature-id PB-V1-DEMO-REFRESH-001

@@ -4,6 +4,9 @@
 
 ### WHAT
 
+- Added PR-based `playbook-demo` refresh automation via `scripts/demo-refresh.mjs` and `.github/workflows/demo-refresh.yml`, with allowlisted artifact staging and `PLAYBOOK_CLI_PATH` injection.
+- Normalized `.github/workflows/demo-integration.yml` to a dry-run integration check that reuses the new refresh orchestrator.
+- Added companion integration expectations in `docs/integration/PLAYBOOK_DEMO_COMPANION_CHANGES.md` and roadmap anchoring for `PB-V1-DEMO-REFRESH-001`.
 - Installed pnpm via `pnpm/action-setup@v4` (without unsupported cache inputs) and added manual pnpm store caching via `actions/cache@v4`.
 - Removed legacy `.eslintignore` and rely on flat-config `ignores` in `eslint.config.cjs`.
 - Added `pnpm.supportedArchitectures` in the root `package.json` to lock Linux x64 glibc Rollup optional native packages deterministically.

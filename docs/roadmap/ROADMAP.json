@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "updatedAt": "2026-03-07",
+  "updatedAt": "2026-03-09",
   "features": [
     {
       "feature_id": "PB-V03-INDEX-001",
@@ -281,6 +281,37 @@
         "node packages/cli/dist/main.js analyze-pr --json"
       ],
       "status": "planned"
+    },
+    {
+      "feature_id": "PB-V1-DEMO-REFRESH-001",
+      "version": "v1.0",
+      "title": "PR-based playbook-demo refresh automation",
+      "goal": "Refresh committed playbook-demo artifacts/docs with branch-accurate local CLI builds through dedicated maintenance workflows and PR-based delivery.",
+      "commands": [],
+      "contracts": [
+        "docs/integration/PLAYBOOK_DEMO_COMPANION_CHANGES.md",
+        "docs/PLAYBOOK_PRODUCT_ROADMAP.md"
+      ],
+      "tests": [
+        "scripts/demo-validate.mjs",
+        "scripts/demo-refresh.mjs"
+      ],
+      "docs": [
+        "README.md",
+        "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
+        "CHANGELOG.md"
+      ],
+      "dependencies": [
+        "PB-V1-DELIVERY-SYSTEM-001"
+      ],
+      "verification_commands": [
+        "node scripts/demo-validate.mjs",
+        "node scripts/demo-refresh.mjs --dry-run --feature-id PB-V1-DEMO-REFRESH-001"
+      ],
+      "status": "in-progress",
+      "package_ownership": [
+        "@fawxzzy/playbook"
+      ]
     }
   ]
 }

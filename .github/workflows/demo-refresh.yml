@@ -1,0 +1,77 @@
+name: demo-refresh
+
+on:
+  workflow_dispatch:
+    inputs:
+      push_changes:
+        description: "Push branch + open/update PR in playbook-demo"
+        required: false
+        default: "true"
+      feature_id:
+        description: "Roadmap feature id for commit/PR metadata"
+        required: false
+        default: "PB-V1-DEMO-REFRESH-001"
+      base_branch:
+        description: "Base branch in playbook-demo"
+        required: false
+        default: "main"
+  schedule:
+    - cron: '0 7 * * 1'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - 'scripts/demo-*.mjs'
+      - '.github/workflows/demo-*.yml'
+      - 'README.md'
+      - 'docs/PLAYBOOK_PRODUCT_ROADMAP.md'
+      - 'docs/roadmap/ROADMAP.json'
+      - 'CHANGELOG.md'
+
+concurrency:
+  group: demo-refresh-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  demo-refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace
+        run: pnpm -r build
+
+      - name: Refresh demo artifacts (dry-run)
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.push_changes != 'true' }}
+        run: node scripts/demo-refresh.mjs --dry-run --feature-id "${{ github.event.inputs.feature_id || 'PB-V1-DEMO-REFRESH-001' }}"
+
+      - name: Refresh demo artifacts and open PR
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.push_changes == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.PLAYBOOK_DEMO_GH_TOKEN }}
+        run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::warning::PLAYBOOK_DEMO_GH_TOKEN is not configured; running dry-run only."
+            node scripts/demo-refresh.mjs --dry-run --feature-id "${{ github.event.inputs.feature_id || 'PB-V1-DEMO-REFRESH-001' }}"
+            exit 0
+          fi
+
+          node scripts/demo-refresh.mjs \
+            --push \
+            --base "${{ github.event.inputs.base_branch || 'main' }}" \
+            --feature-id "${{ github.event.inputs.feature_id || 'PB-V1-DEMO-REFRESH-001' }}"
