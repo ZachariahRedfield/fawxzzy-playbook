@@ -124,6 +124,14 @@ export const commandMetadata: CommandMetadata[] = [
     machineReadable: true
   },
   {
+    name: 'contracts',
+    description: 'Emit deterministic contract registry for schemas, artifacts, and roadmap status',
+    category: 'Repository tools',
+    productFacing: true,
+    example: 'playbook contracts --json',
+    machineReadable: true
+  },
+  {
     name: 'index',
     description: 'Generate machine-readable repository intelligence index',
     category: 'Repository intelligence',

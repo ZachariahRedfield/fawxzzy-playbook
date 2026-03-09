@@ -26,6 +26,7 @@ declare module "@zachariahredfield/playbook-engine" {
   export const summarizeRepositoryGraph: (...args: any[]) => any;
   export const REPOSITORY_GRAPH_RELATIVE_PATH: '.playbook/repo-graph.json';
   export const loadAiContract: (...args: any[]) => any;
+  export const buildContractRegistry: (...args: any[]) => any;
 
   export const queryRepositoryIndex: (...args: any[]) => any;
   export const queryDependencies: (...args: any[]) => any;

@@ -16,7 +16,7 @@ function normalizeLineEndings(text: string): string {
 type CommandContract = {
   file: string;
   args: readonly string[];
-  schemaCommand: 'rules' | 'explain' | 'index' | 'graph' | 'verify' | 'plan' | 'context' | 'ai-context' | 'ai-contract' | 'docs' | 'doctor' | 'analyze-pr';
+  schemaCommand: 'rules' | 'explain' | 'index' | 'graph' | 'verify' | 'plan' | 'context' | 'ai-context' | 'ai-contract' | 'docs' | 'doctor' | 'analyze-pr' | 'contracts';
 };
 
 const commandContracts: readonly CommandContract[] = [
@@ -33,6 +33,7 @@ const commandContracts: readonly CommandContract[] = [
   { file: 'docs-audit.snapshot.json', args: ['docs', 'audit', '--json'], schemaCommand: 'docs' },
   { file: 'doctor.snapshot.json', args: ['doctor', '--json'], schemaCommand: 'doctor' },
   { file: 'analyze-pr.snapshot.json', args: ['analyze-pr', '--json'], schemaCommand: 'analyze-pr' },
+  { file: 'contracts.snapshot.json', args: ['contracts', '--json'], schemaCommand: 'contracts' },
 ] as const;
 
 function createContractFixtureRepo(): string {
