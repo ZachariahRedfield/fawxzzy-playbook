@@ -25,6 +25,7 @@ Do not hand-edit entries inside the managed markers.
 | `context` | Print deterministic CLI and architecture context for tools and agents | Current (implemented) | `playbook context --json` |
 | `ai-context` | Print deterministic AI bootstrap context for Playbook-aware agents | Current (implemented) | `playbook ai-context --json` |
 | `ai-contract` | Print deterministic AI repository contract for Playbook-aware agents | Current (implemented) | `playbook ai-contract --json` |
+| `contracts` | Emit deterministic contract registry for schemas, artifacts, and roadmap status | Current (implemented) | `playbook contracts --json` |
 | `index` | Generate machine-readable repository intelligence index | Current (implemented) | `playbook index --json` |
 | `graph` | Summarize machine-readable repository knowledge graph from .playbook/repo-graph.json | Current (implemented) | `playbook graph --json` |
 | `query` | Query machine-readable repository intelligence from .playbook/repo-index.json | Current (implemented) | `playbook query modules --json` |

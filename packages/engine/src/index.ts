@@ -76,4 +76,7 @@ export type {
 export { runDocsAudit } from './docs/audit.js';
 export type { DocsAuditResult, DocsAuditFinding, DocsAuditStatus, DocsAuditLevel } from './docs/audit.js';
 
+export { buildContractRegistry } from './contracts/contractRegistry.js';
+export type { ContractRegistryPayload } from './contracts/contractRegistry.js';
+
 export { validateRepoBoundary, validateRemediationPlan, redactSecretsForLogs } from './security/guards.js';

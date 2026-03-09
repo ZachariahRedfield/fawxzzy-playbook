@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "1.0",
+  "command": "contracts",
+  "cliSchemas": {
+    "draft": "2020-12",
+    "schemaCommand": "playbook schema --json",
+    "commands": [
+      "rules",
+      "explain",
+      "index",
+      "graph",
+      "verify",
+      "plan",
+      "context",
+      "ai-context",
+      "ai-contract",
+      "doctor",
+      "analyze-pr",
+      "query",
+      "docs",
+      "contracts"
+    ]
+  },
+  "artifacts": {
+    "runtimeDefaults": [
+      {
+        "path": ".playbook/ai-contract.json",
+        "producer": "ai-contract"
+      },
+      {
+        "path": ".playbook/contracts-registry.json",
+        "producer": "contracts"
+      },
+      {
+        "path": ".playbook/repo-graph.json",
+        "producer": "index"
+      },
+      {
+        "path": ".playbook/repo-index.json",
+        "producer": "index"
+      }
+    ],
+    "contracts": [
+      {
+        "path": "docs/contracts/ARTIFACT_EVOLUTION_POLICY.md",
+        "available": false
+      },
+      {
+        "path": "docs/contracts/COMMAND_CONTRACTS_V1.md",
+        "available": false
+      }
+    ]
+  },
+  "roadmap": {
+    "available": false,
+    "path": "docs/roadmap/ROADMAP.json",
+    "schemaVersion": null,
+    "updatedAt": null,
+    "featureStatuses": []
+  }
+}

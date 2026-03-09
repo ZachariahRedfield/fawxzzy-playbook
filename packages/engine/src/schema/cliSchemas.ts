@@ -13,7 +13,8 @@ export type CliSchemaCommand =
   | 'doctor'
   | 'analyze-pr'
   | 'query'
-  | 'docs';
+  | 'docs'
+  | 'contracts';
 
 export type JsonSchema = {
   [key: string]: unknown;
@@ -676,6 +677,82 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
       }
     }
   },
+
+  contracts: {
+    $schema: JSON_SCHEMA_DRAFT,
+    title: 'PlaybookContractsOutput',
+    type: 'object',
+    additionalProperties: false,
+    required: ['schemaVersion', 'command', 'cliSchemas', 'artifacts', 'roadmap'],
+    properties: {
+      schemaVersion: { const: '1.0' },
+      command: { const: 'contracts' },
+      cliSchemas: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['draft', 'schemaCommand', 'commands'],
+        properties: {
+          draft: { const: '2020-12' },
+          schemaCommand: { const: 'playbook schema --json' },
+          commands: { type: 'array', minItems: 5, items: { type: 'string' } }
+        }
+      },
+      artifacts: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['runtimeDefaults', 'contracts'],
+        properties: {
+          runtimeDefaults: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['path', 'producer'],
+              properties: {
+                path: { type: 'string' },
+                producer: { type: 'string' }
+              }
+            }
+          },
+          contracts: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['path', 'available'],
+              properties: {
+                path: { type: 'string' },
+                available: { type: 'boolean' }
+              }
+            }
+          }
+        }
+      },
+      roadmap: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['available', 'path', 'schemaVersion', 'updatedAt', 'featureStatuses'],
+        properties: {
+          available: { type: 'boolean' },
+          path: { const: 'docs/roadmap/ROADMAP.json' },
+          schemaVersion: { type: ['string', 'null'] },
+          updatedAt: { type: ['string', 'null'] },
+          featureStatuses: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['featureId', 'status'],
+              properties: {
+                featureId: { type: 'string' },
+                status: { type: 'string' }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   query: {
     $schema: JSON_SCHEMA_DRAFT,
     title: 'PlaybookQueryOutput',
@@ -998,6 +1075,7 @@ export const getCliSchemas = (): Record<CliSchemaCommand, JsonSchema> => ({
   doctor: cliSchemas.doctor,
   'analyze-pr': cliSchemas['analyze-pr'],
   docs: cliSchemas.docs,
+  contracts: cliSchemas.contracts,
   query: cliSchemas.query
 });
 
