@@ -39,3 +39,20 @@ The repository CI workflow enforces the second mode through the reusable `./.git
 Rule: roadmap entries represent planned intent; command live availability is determined by implemented CLI help/contracts and command truth artifacts (`docs/contracts/command-truth.json`).
 
 Planned CLI mirror command surface: `playbook roadmap verify` (backed by the same roadmap-contract validator).
+
+## Knowledge lifecycle direction (internal-first)
+
+Roadmap sequencing for repository knowledge follows a deterministic internal-first lifecycle:
+
+`observation/extraction -> canonicalization -> deterministic comparison -> bucketing/compaction -> promotion -> retirement`
+
+- Observation artifacts are evidence, not reusable guidance.
+- Compaction is the bridge between extraction and promotion.
+- Promotion requires stronger trust thresholds than raw observation.
+- Retirement/deprecation is required to prevent stale or duplicative knowledge drift.
+- Public knowledge-management command expansion is intentionally deferred until lifecycle and trust contracts are stable.
+
+Rule: Treat extracted knowledge as evidence first, reusable knowledge second.
+Rule: Promotion must only happen after canonicalization, deterministic comparison, and compaction.
+Failure Mode: Unbounded pattern accumulation degrades determinism, retrieval quality, and operator trust.
+

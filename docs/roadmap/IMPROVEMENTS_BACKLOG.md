@@ -47,6 +47,24 @@ These backlog candidates align to roadmap track `PB-V08-KNOWLEDGE-COMPACTION-SPE
 
 ---
 
+## Staging candidates: Knowledge lifecycle hardening (internal-first)
+
+These candidates establish lifecycle gates before any broad knowledge-management command expansion.
+
+- Define evidence-state contracts that explicitly distinguish observed evidence from compacted knowledge candidates.
+- Add deterministic comparison fixtures proving stable candidate matching against existing compacted artifacts.
+- Add promotion trust-threshold checklist contracts for reusable pattern/rule/contract elevation.
+- Add retirement policies for supersede/deprecate/merge/remove actions on stale or duplicative artifacts.
+- Add lifecycle audit checks that fail when observations are promoted without canonicalization+comparison+compaction evidence.
+
+Pattern: Internal-first knowledge lifecycle before public command expansion.
+Pattern: Compaction is the trust-preserving bridge between extraction and promotion.
+Rule: Promotion must only happen after canonicalization, deterministic comparison, and compaction.
+Failure Mode: Promoting raw observations directly into reusable guidance causes duplication and semantic drift.
+Failure Mode: Unbounded pattern accumulation turns deterministic intelligence into low-trust memory sprawl.
+
+---
+
 ## Architectural Insight: Deterministic Engineering Reasoning Loop
 
 Playbook commands already form a reusable deterministic reasoning loop for engineering workflows.
@@ -182,62 +200,36 @@ Automatically detect implemented improvements and archive them.
 
 ---
 
-## Future Capability: Repository Memory System
+## Future Capability Direction: Deterministic Knowledge Lifecycle Runtime
 
-### Motivation
+### Positioning
 
-Playbook is evolving toward an AI development operating system where repository intelligence, deterministic remediation, and durable engineering memory work together.
+Playbook should evolve as a deterministic engineering intelligence runtime, not as an unbounded repository memory store.
 
-Important engineering knowledge is often lost across chat threads, PR comments, and one-off investigations. A repository memory system would preserve this knowledge as deterministic artifacts that can be queried, audited, and promoted through normal governance workflows.
+Knowledge growth must be lifecycle-gated:
 
-### Memory artifact direction
+`observation/extraction -> canonicalization -> deterministic comparison -> bucketing/compaction -> promotion -> retirement`
 
-Potential structured memory layer:
+### Internal-first sequencing
 
-```text
-.playbook/memory/
-  decisions.json
-  patterns.json
-  failure-modes.json
-  open-questions.json
-```
+Near-term work should prioritize internal lifecycle contracts/artifacts over new public command families:
 
-The intent is to preserve architecture decisions, patterns, failure modes, unresolved questions, module notes, and investigation outcomes as long-lived repository intelligence.
+- extraction/observation pipelines that preserve evidence provenance
+- canonicalization pipelines that normalize candidates into stable comparable shape
+- deterministic comparison against compacted artifacts
+- compaction/bucketing outcomes (`discard|attach|merge|new candidate`)
+- gated promotion into reusable patterns/rules/contracts
+- retirement policies for superseded/stale duplicative knowledge
 
-### Conversation-to-knowledge workflow
+### Public surface stance (explicit)
 
-Playbook should support promoting important conversations into durable artifacts instead of leaving them in ephemeral chat history.
+Potential `playbook knowledge *` commands remain directional concepts only and are intentionally deferred until lifecycle/trust contracts are stable and validated in deterministic workflows.
 
-Potential promotion targets:
+- Rule: Treat extracted knowledge as evidence first, reusable knowledge second.
+- Rule: Promotion requires stronger trust thresholds than observation and must be lifecycle-gated.
+- Pattern: Compaction is the bridge between extraction and promotion.
+- Failure Mode: Uncontrolled knowledge accumulation degrades determinism, retrieval quality, and operator trust.
 
-- structured repository memory entries
-- documentation candidates
-- improvement backlog entries
-- roadmap candidates when prioritized
-
-### Potential future command surface (concept only)
-
-- `playbook memory capture`
-- `playbook memory query`
-- `playbook memory promote`
-- `playbook memory prune`
-
-These command names are directional only and should be treated as backlog concepts, not implemented surface.
-
-### AI workflow + future conversation surface alignment
-
-A future Playbook conversational interface (for example, Playbook Chat) should act as a front-end to deterministic Playbook artifacts and commands rather than bypassing repository intelligence contracts.
-
-This keeps conversational UX grounded in the same deterministic governance/runtime model used by CLI and CI workflows.
-
-- Pattern: Conversation-to-Knowledge Pipeline
-  - Important engineering discussions should be promotable into structured repository memory and documentation artifacts.
-- Pattern: Durable Engineering Memory
-  - Repositories should preserve architectural rationale, decisions, and failure modes as structured artifacts rather than ephemeral conversations.
-- Pattern: Repository Memory Layer
-  - Playbook may introduce structured memory artifacts to capture decisions, patterns, and investigations across repository evolution.
-- Failure Mode: Chat Without Memory
-  - Conversational interfaces become shallow if decisions and investigations are not preserved as structured repository knowledge.
 
 
 ## Implemented recently: artifact hygiene and storage governance

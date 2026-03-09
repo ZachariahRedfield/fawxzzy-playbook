@@ -66,23 +66,55 @@ CI contract stance:
 
 Failure Mode: If CI mixes product validation with maintenance tasks, pipelines become slow and fragile.
 
-3️⃣ Knowledge Capture
+3️⃣ Knowledge Lifecycle (Internal-First)
 
-Every meaningful engineering change must produce knowledge.
+Every meaningful engineering change should produce evidence, but evidence is not automatically reusable knowledge.
 
-Example pipeline:
+Playbook must enforce a deterministic knowledge lifecycle:
 
-Code change
+Observation / Extraction
       ↓
-Playbook Notes
+Canonicalization
       ↓
-Proposed Doctrine
+Deterministic Comparison
       ↓
-Promoted Engineering Knowledge
+Bucketing / Compaction
+      ↓
+Promotion
+      ↓
+Retirement
+
+Lifecycle stage intent:
+
+- **Observation / Extraction**
+  - capture raw findings from repository/runtime analysis
+  - treat outputs as evidence-oriented signals, not reusable guidance
+- **Canonicalization**
+  - normalize wording/shape into stable, comparable candidates
+  - remove unstable tokens and incidental phrasing
+- **Deterministic Comparison**
+  - compare canonical candidates against existing compacted knowledge with stable rules
+  - reject ad-hoc/manual semantic matching paths
+- **Bucketing / Compaction**
+  - classify candidate outcome deterministically (`discard`, `attach`, `merge`, `new candidate`)
+  - act as the trust-preserving bridge between extraction and promotion
+- **Promotion**
+  - elevate only validated compacted knowledge into reusable patterns/rules/contracts
+  - require stricter trust thresholds than raw observation
+- **Retirement**
+  - deprecate, supersede, merge away, or remove stale/duplicative knowledge artifacts under explicit policy
+  - prevent knowledge drift and duplication over time
 
 Why this matters
 
-Knowledge capture is governance, not documentation theater. It prevents drift between intent and implementation, enables parallel exploration without losing decision integrity, and turns chat history into structured, reusable engineering knowledge.
+Playbook is a deterministic engineering intelligence runtime, not an unbounded memory accumulator. Uncontrolled pattern accumulation degrades determinism, retrieval quality, and operator trust.
+
+Rule: Treat extracted knowledge as evidence first, reusable knowledge second.
+Rule: Promotion must only happen after canonicalization, deterministic comparison, and compaction.
+Pattern: Internal-first knowledge lifecycle before public command expansion.
+Pattern: Compaction is the trust-preserving bridge between extraction and promotion.
+Failure Mode: Unbounded pattern accumulation turns deterministic intelligence into low-trust memory sprawl.
+Failure Mode: Promoting observations directly into reusable guidance without lifecycle gates causes duplication and semantic drift.
 
 4️⃣ Developer Experience Over Features
 
@@ -194,6 +226,7 @@ Conservative non-goals for this track:
 - no broad autonomous mutation behavior
 - no replacement of `verify -> plan -> apply -> verify`
 - no new broad command family in this pass
+- no public `playbook knowledge *` command-family expansion until lifecycle and trust contracts are stable
 - roadmap intent must not be presented as live command availability
 
 ## Product Development Lifecycle

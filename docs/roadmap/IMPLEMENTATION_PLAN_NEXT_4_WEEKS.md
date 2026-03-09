@@ -10,6 +10,7 @@ This plan operationalizes the existing roadmap and execution-system baseline for
 4. **`verify` decision**: `verify` is the deterministic gate kernel for governance + roadmap/docs/contracts checks through explicit profiles.
 5. **Product model unification**: governance and repository intelligence are one system: intelligence artifacts feed governance decisions and remediation.
 6. **Failure Intelligence**: every accepted high-severity failure must map to prevention targets (rule/test/doc/check) before closure.
+7. **Knowledge lifecycle gating**: repository knowledge evolution is internal-first and must follow `observation/extraction -> canonicalization -> deterministic comparison -> bucketing/compaction -> promotion -> retirement`; no broad public `playbook knowledge *` surface in this horizon.
 
 ## 2) Baseline Consistency Check (Execution-Critical)
 
@@ -253,12 +254,32 @@ A failure cannot be marked closed until prevention-target mapping is complete an
 ### Self-analysis usage
 Playbook must run graph-powered `analyze-pr` and `query impact/risk` against its own repo in CI smoke paths to prevent architecture-intelligence regressions.
 
-## 9) 4-Week Sprint Sequence
+## 9) Knowledge Lifecycle Sequencing (Internal-First)
+
+This 4-week window treats deterministic knowledge lifecycle contracts as architecture guardrails, not optional enhancements.
+
+### Stage definitions
+- **Observed evidence**: raw extraction outputs from runtime/repository analysis.
+- **Compacted candidates**: canonicalized + deterministically compared outputs that survive bucketing.
+- **Promoted reusable knowledge**: patterns/rules/contracts elevated only after trust-threshold checks.
+- **Retired knowledge**: superseded/deprecated/merged/removed artifacts under explicit lifecycle policy.
+
+### Architectural risk statement
+Uncontrolled accumulation of patterns/candidates without compaction and retirement turns deterministic intelligence into low-trust memory sprawl, degrading determinism, retrieval quality, and operator trust.
+
+### Sequencing constraints
+1. Promotion is blocked unless canonicalization, deterministic comparison, and compaction evidence exists.
+2. Compaction is the trust-preserving bridge between extraction and promotion.
+3. Retirement policy implementation is required to prevent stale or duplicative artifact growth.
+4. Public command-surface expansion for knowledge management is deferred until lifecycle/trust contracts are stable.
+
+## 10) 4-Week Sprint Sequence
 
 ### Week 0 (pre-sprint stabilization)
 - freeze command ownership decisions.
 - publish this plan + PR template Roadmap-ID requirements.
 - add `roadmap verify` wrapper command skeleton.
+- add knowledge lifecycle contract notes to roadmap/docs surfaces (observation -> canonicalization -> comparison -> compaction -> promotion -> retirement).
 
 **Exit criteria**: baseline docs aligned; CI enforces roadmap ID.
 
@@ -286,7 +307,7 @@ Playbook must run graph-powered `analyze-pr` and `query impact/risk` against its
 
 **Exit criteria**: failure codification loop executable in PR flow; graph v2 internal model powering at least one impact/risk path.
 
-## 10) First 5 Foundational PRs
+## 11) First 5 Foundational PRs
 
 1. **PR: Engine command registry + thin CLI routing scaffold**
    - feature_id: `PB-V05-PACKAGE-BOUNDARIES-001`
@@ -328,7 +349,7 @@ Playbook must run graph-powered `analyze-pr` and `query impact/risk` against its
    - risk: medium.
    - order reason: locks in process before failure-intelligence/graph expansion.
 
-## 11) Example Artifacts
+## 12) Example Artifacts
 
 ### A) Roadmap JSON entry update (example)
 ```json
@@ -431,7 +452,7 @@ export interface ScmContextProvider {
 }
 ```
 
-## 12) Codex-Ready Implementation Prompts
+## 13) Codex-Ready Implementation Prompts
 
 ### Cluster 1: Package boundaries + command registry
 **Objective**
