@@ -33,7 +33,7 @@ const commandContracts: readonly CommandContract[] = [
   { file: 'docs-audit.snapshot.json', args: ['docs', 'audit', '--json'], schemaCommand: 'docs' },
   { file: 'doctor.snapshot.json', args: ['doctor', '--json'], schemaCommand: 'doctor' },
   { file: 'analyze-pr.snapshot.json', args: ['analyze-pr', '--json'], schemaCommand: 'analyze-pr' },
-  { file: 'contracts.snapshot.json', args: ['contracts', '--json'], schemaCommand: 'contracts' },
+  { file: 'contracts.snapshot.json', args: ['contracts', '--json'], schemaCommand: 'contracts' }
 ] as const;
 
 function createContractFixtureRepo(): string {
@@ -77,11 +77,21 @@ function normalizeContractPayload(value: unknown, fixtureRepo: string): unknown 
   return value;
 }
 
-function runCliJsonContract(args: readonly string[], fixtureRepo: string): unknown {
+function runCli(args: readonly string[], fixtureRepo: string): { stdout: string; stderr: string; status: number | null } {
   const result = spawnSync(process.execPath, [cliEntry, ...args], {
     cwd: fixtureRepo,
     encoding: 'utf8'
   });
+
+  return {
+    stdout: result.stdout,
+    stderr: result.stderr,
+    status: result.status
+  };
+}
+
+function runCliJsonContract(args: readonly string[], fixtureRepo: string): unknown {
+  const result = runCli(args, fixtureRepo);
 
   const stdout = result.stdout.trim();
   expect(stdout, `Command emitted no stdout for: ${args.join(' ')}\n${result.stderr}`).not.toBe('');
@@ -213,6 +223,33 @@ describe('CLI JSON contract snapshots', () => {
         const expectedJson = fs.readFileSync(snapshotPath, 'utf8');
         expect(normalizeLineEndings(actualJson)).toBe(normalizeLineEndings(expectedJson));
       }
+    } finally {
+      fs.rmSync(fixtureRepo, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('contracts command artifact behavior', () => {
+  it('supports --json, --out, and --json --out behavior', () => {
+    const fixtureRepo = createContractFixtureRepo();
+
+    try {
+      const defaultOutPath = path.join(fixtureRepo, '.playbook', 'contracts-registry.json');
+      const customOutPath = path.join(fixtureRepo, '.playbook', 'custom-contracts.json');
+
+      const jsonOnly = runCli(['contracts', '--json'], fixtureRepo);
+      expect(jsonOnly.status).toBe(0);
+      expect(jsonOnly.stdout).toContain('"command": "contracts"');
+      expect(fs.existsSync(defaultOutPath)).toBe(false);
+
+      const outOnly = runCli(['contracts', '--out', '.playbook/custom-contracts.json'], fixtureRepo);
+      expect(outOnly.status).toBe(0);
+      expect(fs.existsSync(customOutPath)).toBe(true);
+
+      const jsonAndOut = runCli(['contracts', '--json', '--out', '.playbook/contracts-registry.json'], fixtureRepo);
+      expect(jsonAndOut.status).toBe(0);
+      expect(jsonAndOut.stdout).toContain('"command": "contracts"');
+      expect(fs.existsSync(defaultOutPath)).toBe(true);
     } finally {
       fs.rmSync(fixtureRepo, { recursive: true, force: true });
     }

@@ -9,6 +9,7 @@ This document defines the v1 deterministic contract set for mandatory commands:
 - `plan`
 - `apply`
 - `analyze-pr`
+- `contracts`
 
 ## Envelope contract
 
@@ -30,6 +31,7 @@ For JSON outputs, commands must emit deterministic objects with:
 | `plan` | Derives remediation status only from `verify` failures (not warnings). |
 | `apply` | Enforces repository boundary checks and refuses unsafe or out-of-plan task execution. |
 | `analyze-pr` | Produces deterministic text/json/github-comment/github-review contracts from the same diff model. |
+| `contracts` | Emits a deterministic registry surface for schema targets, runtime artifacts, and tracked roadmap statuses with structured availability semantics. |
 
 ## CI enforcement hooks
 

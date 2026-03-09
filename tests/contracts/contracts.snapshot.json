@@ -5,20 +5,20 @@
     "draft": "2020-12",
     "schemaCommand": "playbook schema --json",
     "commands": [
-      "rules",
-      "explain",
-      "index",
-      "graph",
-      "verify",
-      "plan",
-      "context",
       "ai-context",
       "ai-contract",
-      "doctor",
       "analyze-pr",
-      "query",
+      "context",
+      "contracts",
       "docs",
-      "contracts"
+      "doctor",
+      "explain",
+      "graph",
+      "index",
+      "plan",
+      "query",
+      "rules",
+      "verify"
     ]
   },
   "artifacts": {
@@ -43,19 +43,27 @@
     "contracts": [
       {
         "path": "docs/contracts/ARTIFACT_EVOLUTION_POLICY.md",
-        "available": false
+        "availability": {
+          "available": false,
+          "reason": "missing"
+        }
       },
       {
         "path": "docs/contracts/COMMAND_CONTRACTS_V1.md",
-        "available": false
+        "availability": {
+          "available": false,
+          "reason": "missing"
+        }
       }
     ]
   },
   "roadmap": {
-    "available": false,
     "path": "docs/roadmap/ROADMAP.json",
+    "availability": {
+      "available": false,
+      "reason": "missing"
+    },
     "schemaVersion": null,
-    "updatedAt": null,
-    "featureStatuses": []
+    "trackedFeatures": []
   }
 }

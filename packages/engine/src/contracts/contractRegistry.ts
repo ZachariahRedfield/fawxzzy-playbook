@@ -1,6 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+type AvailabilityReason = 'missing' | 'not_applicable' | 'parse_error' | 'not_initialized';
+
+type AvailabilityState =
+  | { available: true }
+  | {
+      available: false;
+      reason: AvailabilityReason;
+    };
+
 type CliSchemasRegistry = {
   draft: '2020-12';
   schemaCommand: 'playbook schema --json';
@@ -14,7 +23,7 @@ type RuntimeDefaultArtifact = {
 
 type ContractArtifact = {
   path: string;
-  available: boolean;
+  availability: AvailabilityState;
 };
 
 type RoadmapFeatureStatus = {
@@ -23,11 +32,10 @@ type RoadmapFeatureStatus = {
 };
 
 type RoadmapRegistry = {
-  available: boolean;
   path: 'docs/roadmap/ROADMAP.json';
+  availability: AvailabilityState;
   schemaVersion: string | null;
-  updatedAt: string | null;
-  featureStatuses: RoadmapFeatureStatus[];
+  trackedFeatures: RoadmapFeatureStatus[];
 };
 
 export type ContractRegistryPayload = {
@@ -48,50 +56,53 @@ type RoadmapFeatureRecord = {
 
 type RoadmapFileRecord = {
   schemaVersion?: unknown;
-  updatedAt?: unknown;
   features?: unknown;
 };
 
 const ROADMAP_RELATIVE_PATH = 'docs/roadmap/ROADMAP.json' as const;
 
 const cliSchemaCommands = [
-  'rules',
-  'explain',
-  'index',
-  'graph',
-  'verify',
-  'plan',
-  'context',
   'ai-context',
   'ai-contract',
-  'doctor',
   'analyze-pr',
-  'query',
+  'context',
+  'contracts',
   'docs',
-  'contracts'
+  'doctor',
+  'explain',
+  'graph',
+  'index',
+  'plan',
+  'query',
+  'rules',
+  'verify'
 ] as const;
 
 const runtimeDefaults: RuntimeDefaultArtifact[] = [
-  { path: '.playbook/repo-index.json', producer: 'index' },
-  { path: '.playbook/repo-graph.json', producer: 'index' },
   { path: '.playbook/ai-contract.json', producer: 'ai-contract' },
-  { path: '.playbook/contracts-registry.json', producer: 'contracts' }
+  { path: '.playbook/contracts-registry.json', producer: 'contracts' },
+  { path: '.playbook/repo-graph.json', producer: 'index' },
+  { path: '.playbook/repo-index.json', producer: 'index' }
 ];
 
-const contractArtifacts = ['docs/contracts/COMMAND_CONTRACTS_V1.md', 'docs/contracts/ARTIFACT_EVOLUTION_POLICY.md'] as const;
-const trackedRoadmapFeatures = ['PB-V04-PLAN-APPLY-001', 'PB-V04-ANALYZEPR-001', 'PB-V1-DELIVERY-SYSTEM-001'] as const;
+const contractArtifacts = ['docs/contracts/ARTIFACT_EVOLUTION_POLICY.md', 'docs/contracts/COMMAND_CONTRACTS_V1.md'] as const;
+const trackedRoadmapFeatures = ['PB-V04-ANALYZEPR-001', 'PB-V04-PLAN-APPLY-001', 'PB-V1-DELIVERY-SYSTEM-001'] as const;
 
 const isRoadmapFeatureRecord = (value: unknown): value is RoadmapFeatureRecord => typeof value === 'object' && value !== null;
 
+const getAvailabilityForPath = (absolutePath: string): AvailabilityState =>
+  fs.existsSync(absolutePath) ? { available: true } : { available: false, reason: 'missing' };
+
 const buildRoadmapRegistry = (cwd: string): RoadmapRegistry => {
   const roadmapPath = path.join(cwd, ROADMAP_RELATIVE_PATH);
-  if (!fs.existsSync(roadmapPath)) {
+  const availability = getAvailabilityForPath(roadmapPath);
+
+  if (!availability.available) {
     return {
-      available: false,
       path: ROADMAP_RELATIVE_PATH,
+      availability,
       schemaVersion: null,
-      updatedAt: null,
-      featureStatuses: []
+      trackedFeatures: []
     };
   }
 
@@ -99,7 +110,7 @@ const buildRoadmapRegistry = (cwd: string): RoadmapRegistry => {
     const parsed = JSON.parse(fs.readFileSync(roadmapPath, 'utf8')) as RoadmapFileRecord;
     const featureList = Array.isArray(parsed.features) ? parsed.features : [];
 
-    const featureStatuses = featureList
+    const trackedFeatures = featureList
       .filter(isRoadmapFeatureRecord)
       .map((feature) => {
         const rawFeatureId = typeof feature.feature_id === 'string' ? feature.feature_id : null;
@@ -121,19 +132,17 @@ const buildRoadmapRegistry = (cwd: string): RoadmapRegistry => {
       .sort((left, right) => left.featureId.localeCompare(right.featureId));
 
     return {
-      available: true,
       path: ROADMAP_RELATIVE_PATH,
+      availability: { available: true },
       schemaVersion: typeof parsed.schemaVersion === 'string' ? parsed.schemaVersion : null,
-      updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : null,
-      featureStatuses
+      trackedFeatures
     };
   } catch {
     return {
-      available: false,
       path: ROADMAP_RELATIVE_PATH,
+      availability: { available: false, reason: 'parse_error' },
       schemaVersion: null,
-      updatedAt: null,
-      featureStatuses: []
+      trackedFeatures: []
     };
   }
 };
@@ -147,13 +156,11 @@ export const buildContractRegistry = (cwd: string): ContractRegistryPayload => (
     commands: [...cliSchemaCommands]
   },
   artifacts: {
-    runtimeDefaults: [...runtimeDefaults].sort((left, right) => left.path.localeCompare(right.path)),
-    contracts: [...contractArtifacts]
-      .sort((left, right) => left.localeCompare(right))
-      .map((contractPath) => ({
-        path: contractPath,
-        available: fs.existsSync(path.join(cwd, contractPath))
-      }))
+    runtimeDefaults: [...runtimeDefaults],
+    contracts: [...contractArtifacts].sort((left, right) => left.localeCompare(right)).map((contractPath) => ({
+      path: contractPath,
+      availability: getAvailabilityForPath(path.join(cwd, contractPath))
+    }))
   },
   roadmap: buildRoadmapRegistry(cwd)
 });

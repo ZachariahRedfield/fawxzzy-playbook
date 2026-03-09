@@ -719,10 +719,30 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
             items: {
               type: 'object',
               additionalProperties: false,
-              required: ['path', 'available'],
+              required: ['path', 'availability'],
               properties: {
                 path: { type: 'string' },
-                available: { type: 'boolean' }
+                availability: {
+                  oneOf: [
+                    {
+                      type: 'object',
+                      additionalProperties: false,
+                      required: ['available'],
+                      properties: {
+                        available: { const: true }
+                      }
+                    },
+                    {
+                      type: 'object',
+                      additionalProperties: false,
+                      required: ['available', 'reason'],
+                      properties: {
+                        available: { const: false },
+                        reason: { enum: ['missing', 'not_applicable', 'parse_error', 'not_initialized'] }
+                      }
+                    }
+                  ]
+                }
               }
             }
           }
@@ -731,13 +751,32 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
       roadmap: {
         type: 'object',
         additionalProperties: false,
-        required: ['available', 'path', 'schemaVersion', 'updatedAt', 'featureStatuses'],
+        required: ['path', 'availability', 'schemaVersion', 'trackedFeatures'],
         properties: {
-          available: { type: 'boolean' },
           path: { const: 'docs/roadmap/ROADMAP.json' },
+          availability: {
+            oneOf: [
+              {
+                type: 'object',
+                additionalProperties: false,
+                required: ['available'],
+                properties: {
+                  available: { const: true }
+                }
+              },
+              {
+                type: 'object',
+                additionalProperties: false,
+                required: ['available', 'reason'],
+                properties: {
+                  available: { const: false },
+                  reason: { enum: ['missing', 'not_applicable', 'parse_error', 'not_initialized'] }
+                }
+              }
+            ]
+          },
           schemaVersion: { type: ['string', 'null'] },
-          updatedAt: { type: ['string', 'null'] },
-          featureStatuses: {
+          trackedFeatures: {
             type: 'array',
             items: {
               type: 'object',

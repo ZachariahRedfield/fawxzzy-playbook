@@ -23,9 +23,12 @@ export const runContracts = async (cwd: string, options: ContractsOptions): Prom
   const outputPath = options.out ?? DEFAULT_OUTPUT_PATH;
   const absoluteOutputPath = path.resolve(cwd, outputPath);
   const outputJson = `${JSON.stringify(payload, null, 2)}\n`;
+  const shouldWriteArtifact = options.out !== undefined || options.format !== 'json';
 
-  fs.mkdirSync(path.dirname(absoluteOutputPath), { recursive: true });
-  fs.writeFileSync(absoluteOutputPath, outputJson, 'utf8');
+  if (shouldWriteArtifact) {
+    fs.mkdirSync(path.dirname(absoluteOutputPath), { recursive: true });
+    fs.writeFileSync(absoluteOutputPath, outputJson, 'utf8');
+  }
 
   if (options.format === 'json') {
     console.log(outputJson.trimEnd());
@@ -33,7 +36,13 @@ export const runContracts = async (cwd: string, options: ContractsOptions): Prom
   }
 
   if (!options.quiet) {
-    printText(outputPath);
+    if (shouldWriteArtifact) {
+      printText(outputPath);
+    } else {
+      console.log('Playbook Contracts Registry');
+      console.log('');
+      console.log('Use --json --out <path> to write the contract registry artifact.');
+    }
   }
 
   return ExitCode.Success;
