@@ -1,6 +1,15 @@
 export type Severity = 'WARN' | 'RECOMMEND' | 'INFO';
 
 export { runArchitectureAudit } from './audit/architecture.js';
+export { decideKnowledgeCompaction } from './knowledge/compaction/compaction-engine.js';
+export { canonicalizeCanonicalKey, canonicalizeKnowledgeRecord, canonicalizeKnowledgeShape } from './knowledge/compaction/canonicalize.js';
+export { compareCanonicalKnowledge } from './knowledge/compaction/compare.js';
+export type {
+  CandidateCompactionInput,
+  CanonicalKnowledgeRecord,
+  CompactionDecision,
+  CompactionDecisionType
+} from './knowledge/compaction/compaction-types.js';
 export type {
   ArchitectureAuditCheck,
   ArchitectureAuditCheckContext,
