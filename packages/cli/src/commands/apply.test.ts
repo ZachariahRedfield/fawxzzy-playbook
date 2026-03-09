@@ -21,6 +21,16 @@ const createPlanPayload = () => ({
   tasks: [{ id: 'task-from-file', ruleId: 'plugin.failure', file: 'docs/PLUGIN.md', action: 'create plugin doc', autoFix: true }]
 });
 
+const encodeUtf16Be = (value: string): Buffer => {
+  const utf16le = Buffer.from(value, 'utf16le');
+  for (let i = 0; i < utf16le.length; i += 2) {
+    const lowByte = utf16le[i];
+    utf16le[i] = utf16le[i + 1] ?? 0;
+    utf16le[i + 1] = lowByte;
+  }
+  return utf16le;
+};
+
 describe('runApply', () => {
   beforeEach(() => {
     generatePlanContract.mockReset();
@@ -130,6 +140,26 @@ describe('runApply', () => {
     const planPath = path.join(tmpRoot, 'plan.json');
 
     fs.writeFileSync(planPath, Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(JSON.stringify(createPlanPayload()), 'utf16le')]));
+
+    parsePlanArtifact.mockReturnValue({ tasks: [{ id: 'task-from-file', ruleId: 'plugin.failure', file: 'docs/PLUGIN.md', action: 'create plugin doc', autoFix: true }] });
+    loadVerifyRules.mockResolvedValue([]);
+    applyExecutionPlan.mockResolvedValue({ results: [], summary: { applied: 0, skipped: 0, unsupported: 0, failed: 0 } });
+
+    await runApply(tmpRoot, { format: 'json', ci: false, quiet: false, fromPlan: 'plan.json' });
+
+    expect(applyExecutionPlan).toHaveBeenCalledWith(
+      tmpRoot,
+      [{ id: 'task-from-file', ruleId: 'plugin.failure', file: 'docs/PLUGIN.md', action: 'create plugin doc', autoFix: true }],
+      { dryRun: false, handlers: {} }
+    );
+  });
+
+  it('loads UTF-16BE BOM plan payload from --from-plan input', async () => {
+    const { runApply } = await import('./apply.js');
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-apply-utf16be-bom-'));
+    const planPath = path.join(tmpRoot, 'plan.json');
+
+    fs.writeFileSync(planPath, Buffer.concat([Buffer.from([0xfe, 0xff]), encodeUtf16Be(JSON.stringify(createPlanPayload()))]));
 
     parsePlanArtifact.mockReturnValue({ tasks: [{ id: 'task-from-file', ruleId: 'plugin.failure', file: 'docs/PLUGIN.md', action: 'create plugin doc', autoFix: true }] });
     loadVerifyRules.mockResolvedValue([]);
