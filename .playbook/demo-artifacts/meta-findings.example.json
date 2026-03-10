@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "playbook-meta-findings",
+  "createdAt": "2026-01-01T01:00:00.000Z",
+  "findings": [
+    {
+      "findingId": "meta-finding:promotion_latency",
+      "type": "promotion_latency",
+      "title": "Promotion latency",
+      "summary": "Average time from cycle creation to promote decision remains above one day.",
+      "severity": "medium",
+      "value": 26.5,
+      "threshold": 24,
+      "trend": "degrading",
+      "artifactRefs": [
+        "promotion-decision:decision-batch:2026-01-01T00-00-00.000Z@abc1234"
+      ],
+      "recommendation": "Tighten promotion-review queue SLA for high-confidence candidates."
+    }
+  ],
+  "proposals": [
+    {
+      "proposalId": "meta-proposal:promotion_latency",
+      "findingId": "meta-finding:promotion_latency",
+      "createdAt": "2026-01-01T01:00:00.000Z",
+      "kind": "playbook-meta-improvement-proposal",
+      "status": "draft",
+      "title": "Improve promotion latency",
+      "summary": "Tighten promotion-review queue SLA for high-confidence candidates.",
+      "actions": [
+        "review meta finding evidence",
+        "define deterministic remediation experiment",
+        "submit proposal through normal doctrine governance path"
+      ],
+      "guardrail": "meta-proposals-cannot-mutate-doctrine",
+      "artifactRefs": [
+        "promotion-decision:decision-batch:2026-01-01T00-00-00.000Z@abc1234"
+      ]
+    }
+  ]
+}

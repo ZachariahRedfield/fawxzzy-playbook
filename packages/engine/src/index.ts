@@ -184,3 +184,12 @@ export type { PatternTopologySignature, PatternEquivalenceClass, PatternVariant,
 export { buildStateSpaceSnapshot } from './stateSpace/buildStateSpaceSnapshot.js';
 export type { BuildStateSpaceSnapshotInput } from './stateSpace/buildStateSpaceSnapshot.js';
 export type { StateSpaceSnapshot, BlochAxesV1, BlochVector, GateEvent } from './schema/stateSpace.js';
+
+
+export { analyzePlaybookArtifacts } from './meta/analyzePlaybookArtifacts.js';
+export { buildMetaFindings, buildMetaPatterns } from './meta/buildMetaFindings.js';
+export type { MetaAnalysisInput } from './meta/buildMetaFindings.js';
+export { buildMetaTelemetry } from './meta/buildMetaTelemetry.js';
+export type { AnalyzePlaybookArtifactsInput, AnalyzePlaybookArtifactsResult } from './meta/analyzePlaybookArtifacts.js';
+export type { MetaFindingType, MetaFindingSeverity, MetaFinding, MetaFindingsArtifact, MetaImprovementProposal } from './schema/metaFinding.js';
+export type { MetaPattern, MetaPatternsArtifact, MetaTelemetryArtifact } from './schema/metaPattern.js';
