@@ -491,6 +491,43 @@
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine"
       ]
+    },
+    {
+      "feature_id": "PB-V08-TOROIDAL-FLOW-001",
+      "version": "v0.8",
+      "title": "Toroidal Flow architecture overlay and RunCycle contract",
+      "goal": "Formalize Playbook as a deterministic closed-loop architecture overlay with shared RunCycle contracts while preserving current runtime behavior.",
+      "commands": [],
+      "contracts": [
+        "docs/architecture/TOROIDAL_FLOW.md",
+        "docs/architecture/KNOWLEDGE_COMPACTION_PHASE.md",
+        "docs/roadmap/ROADMAP.json"
+      ],
+      "tests": [
+        "scripts/validate-roadmap-contract.mjs"
+      ],
+      "docs": [
+        "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
+        "docs/ARCHITECTURE.md",
+        "docs/architecture/TOROIDAL_FLOW.md"
+      ],
+      "dependencies": [
+        "PB-V08-KNOWLEDGE-COMPACTION-SPEC-001",
+        "PB-V08-PATTERN-CARD-STORAGE-001"
+      ],
+      "verification_commands": [
+        "pnpm -r build",
+        "pnpm agents:update",
+        "pnpm agents:check",
+        "node packages/cli/dist/main.js docs audit --json",
+        "node scripts/validate-roadmap-contract.mjs --ci"
+      ],
+      "status": "planned",
+      "package_ownership": [
+        "@fawxzzy/playbook",
+        "@zachariahredfield/playbook-core",
+        "@zachariahredfield/playbook-engine"
+      ]
     }
   ]
 }

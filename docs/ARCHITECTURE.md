@@ -2,6 +2,8 @@
 
 This document describes **current-state architecture**. Future-state initiatives live in [PLAYBOOK_PRODUCT_ROADMAP.md](./PLAYBOOK_PRODUCT_ROADMAP.md).
 
+Toroidal Flow is documented as an additive architecture overlay in [docs/architecture/TOROIDAL_FLOW.md](./architecture/TOROIDAL_FLOW.md). It preserves current command/runtime contracts and frames how execution and intelligence-return phases form a closed loop.
+
 ## System layering
 
 Playbook is organized as a layered monorepo:
@@ -95,6 +97,8 @@ Playbook governance execution follows a staged flow:
 `fix` remains available as a convenience command for direct local remediation flows, but the canonical machine-safe execution path is `plan -> apply`.
 
 `plan` and `apply` are the machine-safe planning/execution path for remediation.
+
+In the Toroidal Flow overlay, this execution flow is the **forward execution arc** and `apply` is treated as a midpoint for full-cycle architecture framing rather than a terminal endpoint.
 
 ## Deterministic task and output contracts
 

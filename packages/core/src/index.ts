@@ -10,6 +10,8 @@ export type {
   CompactionDecision,
   CompactionDecisionType
 } from './knowledge/compaction/compaction-types.js';
+export type { RunCycle, RunCycleMetrics, RunCyclePhaseOutputs } from './knowledge/run-cycle.js';
+export { createEmptyRunCycle } from './knowledge/run-cycle.js';
 export type {
   ArchitectureAuditCheck,
   ArchitectureAuditCheckContext,

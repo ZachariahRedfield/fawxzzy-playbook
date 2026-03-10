@@ -116,6 +116,14 @@ Pattern: Compaction is the trust-preserving bridge between extraction and promot
 Failure Mode: Unbounded pattern accumulation turns deterministic intelligence into low-trust memory sprawl.
 Failure Mode: Promoting observations directly into reusable guidance without lifecycle gates causes duplication and semantic drift.
 
+Toroidal Flow framing (additive overlay):
+
+- Treat the lifecycle as a deterministic closed loop: `observe -> verify -> plan -> apply -> extract -> canonicalize -> compact -> promote -> retire`.
+- Preserve current runtime command ladders; this is an architecture model overlay, not a command rename.
+- Treat `apply` as midpoint in full-cycle architecture framing.
+- Allow only promoted knowledge to re-enter future context assembly; raw extracted findings are evidence, not reusable context.
+- Keep promotion/retirement optional and governance-gated, not mandatory on every cycle.
+
 Implementation foundation (internal):
 
 - Introduced internal knowledge artifact model representing `candidate -> compacted -> promoted -> retired` lifecycle states.
@@ -190,6 +198,8 @@ All idea-level planning belongs in `docs/roadmap/IMPROVEMENTS_BACKLOG.md`.
 Machine-readable roadmap commitments are maintained in `docs/roadmap/ROADMAP.json`. CI validates this contract and enforces feature ID references for pull requests in CI contexts.
 
 Roadmap entries describe implementation intent and may include planned command families that are not yet discoverable in current CLI help. Treat `playbook --help` and implemented command contracts as the source of truth for live command availability.
+
+Toroidal Flow initiative (`PB-V08-TOROIDAL-FLOW-001`) is roadmap-scoped architecture framing that overlays current behavior. It does not introduce runtime behavior changes in this pass.
 
 ## Product Truth Packaging and Narrative Sync
 

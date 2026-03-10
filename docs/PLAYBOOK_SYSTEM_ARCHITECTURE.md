@@ -8,6 +8,7 @@ This document is preserved only as a compatibility pointer; current architecture
 - [./commands/README.md](./commands/README.md)
 - [./contracts/COMMAND_CONTRACTS_V1.md](./contracts/COMMAND_CONTRACTS_V1.md)
 - [./architecture/V1_BOUNDARY_REFACTOR_PLAN.md](./architecture/V1_BOUNDARY_REFACTOR_PLAN.md)
+- [./architecture/TOROIDAL_FLOW.md](./architecture/TOROIDAL_FLOW.md)
 
 ## Historical archived copy
 

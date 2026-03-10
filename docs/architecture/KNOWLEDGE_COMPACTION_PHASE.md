@@ -173,3 +173,20 @@ Non-goals in this pass:
 - no automatic rule promotion without review
 
 Future option (explicitly secondary): a maintenance-oriented `playbook compact` command may be introduced later once contracts, review UX, and promotion governance are hardened.
+
+
+## Toroidal Flow alignment (additive framing)
+
+Compaction is the return-intelligence bridge in the Toroidal Flow architecture model (`observe -> verify -> plan -> apply -> extract -> canonicalize -> compact -> promote -> retire`).
+
+Alignment constraints:
+
+- `apply` is midpoint for full-cycle architecture framing, not terminal endpoint.
+- Raw extracted findings are evidence inputs and must not directly mutate reusable context.
+- `nextContextDelta` is derived only from approved/promoted knowledge outputs, never from unpromoted extraction artifacts.
+- Promotion and retirement remain optional, governance-gated outcomes rather than mandatory outputs of every cycle.
+
+Rule: Nothing may re-enter planning/context unless it has passed `extract -> canonicalize -> compact -> promote`.
+Pattern: Every Playbook run is a deterministic closed-loop cycle, not a terminal command.
+Failure Mode: Open-loop apply causes knowledge loss, drift, duplicate patterns, and memory-heap behavior.
+Failure Mode: Forced promotion on every cycle produces noisy memory mutation instead of governed intelligence.
