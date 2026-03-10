@@ -1,10 +1,11 @@
+import type { ContractProposal } from '../schema/contractProposal.js';
 import type { CandidatePatternPreviewArtifact, GraphGroupArtifact, GraphSnapshot } from '../schema/graphMemory.js';
+import type { MetaFinding, MetaFindingsArtifact } from '../schema/metaFinding.js';
+import type { MetaPattern, MetaPatternsArtifact } from '../schema/metaPattern.js';
 import type { PatternCardCollectionArtifact } from '../schema/patternCard.js';
+import type { PatternCardDraftArtifact } from '../schema/patternCardDraft.js';
 import type { PromotionDecisionArtifact } from '../schema/promotionDecision.js';
 import type { RunCycle } from '../schema/runCycle.js';
-import type { ContractProposal } from '../schema/contractProposal.js';
-import type { MetaFinding, MetaFindingsArtifact, MetaImprovementProposal } from '../schema/metaFinding.js';
-import type { MetaPattern, MetaPatternsArtifact } from '../schema/metaPattern.js';
 
 export type MetaAnalysisInput = {
   runCycles: RunCycle[];
@@ -12,8 +13,10 @@ export type MetaAnalysisInput = {
   groups: GraphGroupArtifact[];
   candidatePatterns: CandidatePatternPreviewArtifact[];
   patternCards: PatternCardCollectionArtifact[];
+  draftPatternCards: PatternCardDraftArtifact[];
   promotionDecisions: PromotionDecisionArtifact[];
   contractHistory: ContractProposal[];
+  contractVersions: Record<string, unknown>[];
   createdAt?: string;
 };
 
@@ -25,22 +28,27 @@ const toFinding = (finding: Omit<MetaFinding, 'findingId'>): MetaFinding => ({
   ...finding
 });
 
-const buildImprovementProposal = (finding: MetaFinding, createdAt: string): MetaImprovementProposal => ({
-  proposalId: `meta-proposal:${finding.type}`,
-  findingId: finding.findingId,
-  createdAt,
-  kind: 'playbook-meta-improvement-proposal',
-  status: 'draft',
-  title: `Improve ${finding.type.replaceAll('_', ' ')}`,
-  summary: finding.recommendation,
-  actions: [
-    'review meta finding evidence',
-    'define deterministic remediation experiment',
-    'submit proposal through normal doctrine governance path'
-  ],
-  guardrail: 'meta-proposals-cannot-mutate-doctrine',
-  artifactRefs: finding.artifactRefs
-});
+const computeTopologyStats = (input: MetaAnalysisInput): { totalTopologies: number; duplicateTopologies: number; duplicationRate: number } => {
+  const topologyCounts = new Map<string, number>();
+
+  for (const artifact of input.patternCards) {
+    for (const card of artifact.cards) {
+      const topologyKey = JSON.stringify({
+        stageCount: card.topology?.stageCount ?? 0,
+        dependencyStructure: [...(card.topology?.dependencyStructure ?? [])].sort()
+      });
+      topologyCounts.set(topologyKey, (topologyCounts.get(topologyKey) ?? 0) + 1);
+    }
+  }
+
+  const counts = [...topologyCounts.values()];
+  const duplicateTopologies = counts.filter((count) => count > 1).length;
+  return {
+    totalTopologies: topologyCounts.size,
+    duplicateTopologies,
+    duplicationRate: round4(safeDiv(counts.filter((count) => count > 1).reduce((sum, count) => sum + count, 0), counts.reduce((sum, count) => sum + count, 0)))
+  };
+};
 
 export const buildMetaPatterns = (input: MetaAnalysisInput): MetaPatternsArtifact => {
   const patterns = new Map<string, MetaPattern>();
@@ -79,7 +87,6 @@ export const buildMetaPatterns = (input: MetaAnalysisInput): MetaPatternsArtifac
 export const buildMetaFindings = (input: MetaAnalysisInput): MetaFindingsArtifact => {
   const createdAt = input.createdAt ?? new Date().toISOString();
   const allDecisions = input.promotionDecisions.flatMap((batch) => batch.decisions);
-  const rejectCount = allDecisions.filter((decision) => decision.decisionType === 'reject').length;
   const promoteDecisions = allDecisions.filter((decision) => decision.decisionType === 'promote');
 
   const cycleById = new Map(input.runCycles.map((cycle) => [cycle.runCycleId, cycle]));
@@ -94,28 +101,20 @@ export const buildMetaFindings = (input: MetaAnalysisInput): MetaFindingsArtifac
     })
     .filter((value): value is number => value !== undefined && Number.isFinite(value) && value >= 0);
 
-  const avgPromotionLatency = round4(
-    safeDiv(
-      promotionLatencyHours.reduce((sum, value) => sum + value, 0),
-      promotionLatencyHours.length
-    )
-  );
+  const avgPromotionLatency = round4(safeDiv(promotionLatencyHours.reduce((sum, value) => sum + value, 0), promotionLatencyHours.length));
+  const topologyStats = computeTopologyStats(input);
 
-  const metaPatterns = buildMetaPatterns(input);
-  const reusedPatterns = metaPatterns.patterns.filter((pattern) => pattern.occurrences > 1).length;
-  const patternReuseRate = round4(safeDiv(reusedPatterns, metaPatterns.patterns.length));
+  const draftCards = input.draftPatternCards.flatMap((artifact) => artifact.drafts);
+  const promotedCards = input.patternCards.flatMap((artifact) => artifact.cards);
+  const draftBacklogPressure = round4(safeDiv(draftCards.length, draftCards.length + promotedCards.length));
 
-  const driftCycleCount = input.runCycles.filter((cycle) => cycle.metrics.driftScore > 0.2).length;
-  const contractDriftRate = round4(safeDiv(driftCycleCount, input.runCycles.length));
+  const contractMutations = input.contractHistory.length;
+  const mutationFrequency = round4(safeDiv(contractMutations + input.contractVersions.length, input.runCycles.length || 1));
 
   const entropyValues = [...input.runCycles]
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .map((cycle) => cycle.metrics.entropyBudget);
   const entropyTrend = entropyValues.length < 2 ? 0 : round4(entropyValues[entropyValues.length - 1] - entropyValues[0]);
-
-  const candidateTitles = input.candidatePatterns.flatMap((artifact) => artifact.candidates.map((candidate) => candidate.title.trim().toLowerCase()));
-  const duplicateCandidateCount = candidateTitles.length - new Set(candidateTitles).size;
-  const duplicationRate = round4(safeDiv(duplicateCandidateCount, candidateTitles.length));
 
   const findings: MetaFinding[] = [
     toFinding({
@@ -125,76 +124,86 @@ export const buildMetaFindings = (input: MetaAnalysisInput): MetaFindingsArtifac
       severity: avgPromotionLatency > 48 ? 'high' : avgPromotionLatency > 24 ? 'medium' : 'low',
       value: avgPromotionLatency,
       threshold: 24,
-      trend: 'stable',
+      trend: avgPromotionLatency > 24 ? 'degrading' : 'stable',
       artifactRefs: input.promotionDecisions.map((batch) => `promotion-decision:${batch.batchId}`),
-      recommendation: 'Keep promotion review queues short and close decisions within one daily cycle when possible.'
+      recommendation: 'Keep promotion review queues short and close decisions within one daily cycle when possible.',
+      supportingMetrics: {
+        promotedDecisionCount: promoteDecisions.length,
+        cycleCount: input.runCycles.length
+      }
     }),
     toFinding({
-      type: 'rejection_rate',
-      title: 'Promotion rejection rate',
-      summary: 'Ratio of rejected promotion decisions to all decisions.',
-      severity: rejectCount > 0 ? 'medium' : 'low',
-      value: round4(safeDiv(rejectCount, allDecisions.length)),
-      threshold: 0.25,
-      trend: 'stable',
-      artifactRefs: input.promotionDecisions.map((batch) => `promotion-decision:${batch.batchId}`),
-      recommendation: 'Inspect repeated rejection causes and convert them into clearer readiness heuristics.'
-    }),
-    toFinding({
-      type: 'pattern_reuse',
-      title: 'Pattern reuse',
-      summary: 'Share of canonical patterns observed multiple times.',
-      severity: patternReuseRate < 0.2 ? 'medium' : 'low',
-      value: patternReuseRate,
+      type: 'duplicate_pattern_topology',
+      title: 'Duplicate pattern topology',
+      summary: 'Repeated topology shapes across draft and promoted pattern cards.',
+      severity: topologyStats.duplicationRate > 0.4 ? 'high' : topologyStats.duplicationRate > 0.2 ? 'medium' : 'low',
+      value: topologyStats.duplicationRate,
       threshold: 0.2,
-      trend: patternReuseRate >= 0.2 ? 'improving' : 'degrading',
-      artifactRefs: metaPatterns.patterns.flatMap((pattern) => pattern.sourceArtifactRefs),
-      recommendation: 'Raise candidate synthesis quality to produce reusable canonical patterns across cycles.'
+      trend: topologyStats.duplicationRate > 0.2 ? 'degrading' : 'stable',
+      artifactRefs: [
+        ...input.patternCards.map((artifact) => `pattern-cards:${artifact.artifactId}`),
+        ...input.draftPatternCards.map((artifact) => `pattern-card-drafts:${artifact.artifactId}`)
+      ],
+      recommendation: 'Consolidate duplicate topology variants before promotion review to reduce maintenance overhead.',
+      supportingMetrics: {
+        duplicateTopologies: topologyStats.duplicateTopologies,
+        totalTopologies: topologyStats.totalTopologies
+      }
     }),
     toFinding({
-      type: 'contract_drift',
-      title: 'Contract drift pressure',
-      summary: 'Rate of run cycles with elevated drift score.',
-      severity: contractDriftRate > 0.35 ? 'high' : contractDriftRate > 0.15 ? 'medium' : 'low',
-      value: contractDriftRate,
-      threshold: 0.15,
-      trend: contractDriftRate > 0.15 ? 'degrading' : 'stable',
-      artifactRefs: input.runCycles.map((cycle) => `run-cycle:${cycle.runCycleId}`),
-      recommendation: 'Prioritize doctrine review when drift score remains above baseline for consecutive cycles.'
+      type: 'draft_backlog_pressure',
+      title: 'Draft backlog pressure',
+      summary: 'Share of draft cards compared with all observed cards.',
+      severity: draftBacklogPressure > 0.65 ? 'high' : draftBacklogPressure > 0.45 ? 'medium' : 'low',
+      value: draftBacklogPressure,
+      threshold: 0.45,
+      trend: draftBacklogPressure > 0.45 ? 'degrading' : 'stable',
+      artifactRefs: input.draftPatternCards.map((artifact) => `pattern-card-drafts:${artifact.artifactId}`),
+      recommendation: 'Prioritize draft triage and promotion-readiness checks to prevent review queue saturation.',
+      supportingMetrics: {
+        draftCardCount: draftCards.length,
+        promotedCardCount: promotedCards.length
+      }
+    }),
+    toFinding({
+      type: 'contract_mutation_frequency',
+      title: 'Contract mutation frequency',
+      summary: 'Rate of contract mutations and version events per run cycle.',
+      severity: mutationFrequency > 1.5 ? 'high' : mutationFrequency > 0.75 ? 'medium' : 'low',
+      value: mutationFrequency,
+      threshold: 0.75,
+      trend: mutationFrequency > 0.75 ? 'degrading' : 'stable',
+      artifactRefs: [
+        ...input.contractHistory.map((proposal) => `contract-proposal:${proposal.proposalId}`),
+        ...input.contractVersions.map((version, index) => `contract-version:${String(version['contractId'] ?? index)}`)
+      ],
+      recommendation: 'Batch related contract changes and validate stability windows before introducing more mutations.',
+      supportingMetrics: {
+        contractMutations,
+        contractVersionCount: input.contractVersions.length
+      }
     }),
     toFinding({
       type: 'entropy_trend',
-      title: 'Entropy budget trend',
+      title: 'Entropy trend',
       summary: 'Delta of entropy budget across chronological run cycles.',
       severity: entropyTrend > 0.1 ? 'high' : entropyTrend > 0.03 ? 'medium' : 'low',
       value: entropyTrend,
       threshold: 0,
       trend: entropyTrend > 0 ? 'degrading' : entropyTrend < 0 ? 'improving' : 'stable',
       artifactRefs: input.runCycles.map((cycle) => `run-cycle:${cycle.runCycleId}`),
-      recommendation: 'Increase deterministic compaction and reuse when entropy budget trends upward.'
-    }),
-    toFinding({
-      type: 'duplication',
-      title: 'Candidate duplication',
-      summary: 'Fraction of candidate patterns that repeat by normalized title.',
-      severity: duplicationRate > 0.2 ? 'high' : duplicationRate > 0.1 ? 'medium' : 'low',
-      value: duplicationRate,
-      threshold: 0.1,
-      trend: duplicationRate > 0.1 ? 'degrading' : 'stable',
-      artifactRefs: input.candidatePatterns.map((artifact) => `candidate-patterns:${artifact.artifactId}`),
-      recommendation: 'Merge structurally equivalent candidates earlier to reduce review overhead.'
+      recommendation: 'Increase deterministic compaction and reuse when entropy budget trends upward.',
+      supportingMetrics: {
+        firstEntropy: entropyValues[0] ?? 0,
+        latestEntropy: entropyValues[entropyValues.length - 1] ?? 0
+      }
     })
   ];
-
-  const proposals = findings
-    .filter((finding) => finding.severity !== 'low')
-    .map((finding) => buildImprovementProposal(finding, createdAt));
 
   return {
     schemaVersion: '1.0',
     kind: 'playbook-meta-findings',
     createdAt,
-    findings,
-    proposals
+    findings
   };
 };

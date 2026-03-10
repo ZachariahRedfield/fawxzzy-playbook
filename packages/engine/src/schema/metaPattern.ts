@@ -34,11 +34,10 @@ export type MetaTelemetryArtifact = {
   };
   rates: {
     promotionLatencyAvgHours: number;
-    rejectionRate: number;
-    patternReuseRate: number;
-    contractDriftRate: number;
+    duplicatePatternTopologyRate: number;
+    draftBacklogPressure: number;
+    contractMutationFrequency: number;
     entropyTrendSlope: number;
-    duplicationRate: number;
   };
   artifactRefs: string[];
 };

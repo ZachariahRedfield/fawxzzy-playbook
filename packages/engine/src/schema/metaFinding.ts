@@ -2,11 +2,10 @@ export const META_FINDING_SCHEMA_VERSION = '1.0' as const;
 
 export const META_FINDING_TYPES = [
   'promotion_latency',
-  'rejection_rate',
-  'pattern_reuse',
-  'contract_drift',
-  'entropy_trend',
-  'duplication'
+  'duplicate_pattern_topology',
+  'draft_backlog_pressure',
+  'contract_mutation_frequency',
+  'entropy_trend'
 ] as const;
 
 export type MetaFindingType = (typeof META_FINDING_TYPES)[number];
@@ -24,19 +23,7 @@ export type MetaFinding = {
   trend?: 'improving' | 'stable' | 'degrading';
   artifactRefs: string[];
   recommendation: string;
-};
-
-export type MetaImprovementProposal = {
-  proposalId: string;
-  findingId: string;
-  createdAt: string;
-  kind: 'playbook-meta-improvement-proposal';
-  status: 'draft';
-  title: string;
-  summary: string;
-  actions: string[];
-  guardrail: 'meta-proposals-cannot-mutate-doctrine';
-  artifactRefs: string[];
+  supportingMetrics: Record<string, number>;
 };
 
 export type MetaFindingsArtifact = {
@@ -44,5 +31,4 @@ export type MetaFindingsArtifact = {
   kind: 'playbook-meta-findings';
   createdAt: string;
   findings: MetaFinding[];
-  proposals: MetaImprovementProposal[];
 };
