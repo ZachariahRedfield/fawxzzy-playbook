@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "playbook-meta-telemetry",
+  "telemetryId": "meta-telemetry:2026-01-01T00:00:00.000Z",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "window": {
+    "runCycleCount": 2,
+    "firstRunCycleId": "2025-01-01T00-00-00.000Z@abc1234",
+    "lastRunCycleId": "2026-03-10T20-12-55.452Z@7f1bed1"
+  },
+  "promotionLatency": 0,
+  "duplicationRate": 0,
+  "unresolvedDraftAge": 182.5,
+  "supersedeRate": 0,
+  "entropyTrend": 0.64,
+  "contractMutationFrequency": 0.5,
+  "canonicalCoreSize": 1,
+  "provisionalFrontierSize": 8
+}

@@ -1,58 +1,50 @@
-# Meta-Playbook Introspection
+# Meta-Playbook
 
 ## Purpose
 
-Meta-Playbook lets Playbook analyze its own artifact stream to produce system-level findings and improvement proposals.
+Meta-Playbook is a deterministic proposal engine that analyzes Playbook artifacts and emits process-improvement recommendations.
 
-The meta layer is observational and advisory only.
+Meta-Playbook is proposal-driven, not self-editing.
 
-## Artifact scope
+```mermaid
+flowchart LR
+  A[playbook artifacts] --> B[meta findings]
+  B --> C[meta proposals]
+  C --> D[governed review]
+```
 
-Meta analysis reads the deterministic lifecycle artifacts:
+## Allowed outputs
 
-- run cycles
-- graph snapshots
-- graph groups
-- candidate patterns
-- promoted pattern cards
-- promotion decisions
-- contract history
+Meta-Playbook may emit only:
 
-Meta artifacts are emitted under:
+- findings
+- telemetry
+- proposals
 
-- `.playbook/meta/meta-findings.json`
-- `.playbook/meta/meta-patterns.json`
-- `.playbook/meta/meta-telemetry.json`
-- `.playbook/meta/proposals/*.json`
+It must not auto-mutate contracts, pattern cards, thresholds, or schemas.
 
-## System findings
+## Governance route
 
-Current findings cover:
+Any self-improvement must flow through normal governance and versioning workflows.
+Meta artifacts are input to review, not direct doctrine mutation.
 
-- promotion latency
-- rejection rate
-- pattern reuse
-- contract drift
-- entropy trends
-- duplication
+## Homeostasis budgets
 
-These findings must reference source artifacts so reviewers can inspect the evidence path deterministically.
+Meta telemetry tracks policy budgets for governed review:
 
-## Doctrine safety boundary
+- canonical core size
+- max unresolved draft age
+- max contract mutations per cycle
+- duplication threshold
+- entropy budget trend
+
+## Rule / Pattern / Failure Mode
 
 Rule:
 Meta-Playbook may observe and propose improvements but cannot mutate doctrine automatically.
 
 Pattern:
-Self-analysis allows reasoning systems to optimize their own learning process.
+Proposal-driven self-observation improves process quality without violating deterministic governance replayability.
 
 Failure Mode:
-Without introspection the system accumulates knowledge but never improves its reasoning behavior.
-
-## Governance behavior
-
-Meta findings may create improvement proposals under `.playbook/meta/proposals/`.
-
-Those proposals are drafts and must flow through normal review and governance commands before any doctrine change can occur.
-
-The meta layer never writes to pattern-card artifacts or contract artifacts directly.
+If meta-analysis directly edits doctrine, governance becomes brittle and non-replayable.

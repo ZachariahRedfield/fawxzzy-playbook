@@ -183,13 +183,23 @@ export type { PatternTopologySignature, PatternEquivalenceClass, PatternVariant,
 
 export { buildStateSpaceSnapshot } from './stateSpace/buildStateSpaceSnapshot.js';
 export type { BuildStateSpaceSnapshotInput } from './stateSpace/buildStateSpaceSnapshot.js';
-export type { StateSpaceSnapshot, BlochAxesV1, BlochVector, GateEvent } from './schema/stateSpace.js';
+export type {
+  StateSpaceSnapshot,
+  BlochAxesV1,
+  BlochVector,
+  GateEvent,
+  BlochProjectionMetadata,
+  BlochTelemetry
+} from './schema/stateSpaceSnapshot.js';
 
 
 export { analyzePlaybookArtifacts } from './meta/analyzePlaybookArtifacts.js';
-export { buildMetaFindings, buildMetaPatterns } from './meta/buildMetaFindings.js';
+export { buildMetaFindings } from './meta/buildMetaFindings.js';
 export type { MetaAnalysisInput } from './meta/buildMetaFindings.js';
 export { buildMetaTelemetry } from './meta/buildMetaTelemetry.js';
+export { buildMetaProposals } from './meta/buildMetaProposals.js';
 export type { AnalyzePlaybookArtifactsInput, AnalyzePlaybookArtifactsResult } from './meta/analyzePlaybookArtifacts.js';
-export type { MetaFindingType, MetaFindingSeverity, MetaFinding, MetaFindingsArtifact, MetaImprovementProposal } from './schema/metaFinding.js';
-export type { MetaPattern, MetaPatternsArtifact, MetaTelemetryArtifact } from './schema/metaPattern.js';
+export type { MetaFindingType, MetaFinding, MetaFindingsArtifact } from './schema/metaFinding.js';
+export type { MetaProposal, MetaProposalsArtifact } from './schema/metaProposal.js';
+export type { MetaTelemetryArtifact } from './schema/metaTelemetry.js';
+export type { Evidence, Zettel, Edge, Pattern, Decision } from './schema/evidence.js';

@@ -41,6 +41,16 @@ RunCycle(n)
 
 RunCycle artifacts capture evidence expansion and compression signals. They should be used to connect working-memory zettels to stabilized patterns and promoted contracts over time.
 
+Lifecycle pyramid alignment:
+
+`artifacts -> zettels -> groups -> draft patterns -> promoted patterns -> contracts`
+
+Trust-ladder invariants:
+
+- volume decreases as trust increases
+- mutation frequency decreases as trust increases
+- review requirements increase as trust increases
+
 ## State-space analogy alignment
 
 For geometric reasoning, treat each RunCycle as a bounded state-space step:
@@ -116,7 +126,15 @@ Example:
     "compactionGain": 0.15,
     "reuseRate": 0.3,
     "driftScore": 0.1,
-    "entropyBudget": 0.4
+    "entropyBudget": 0.4,
+    "artifactToZettelRatio": 0.5,
+    "zettelToPatternRatio": 0.25,
+    "draftToPromotedRatio": 0.4,
+    "promotedToContractRatio": 0.5,
+    "canonicalCoreSize": 42,
+    "provisionalFrontierSize": 240,
+    "unresolvedDraftAge": 14,
+    "doctrineDrift": 0.08
   }
 }
 ```
@@ -126,7 +144,7 @@ Example:
 - `forwardArc`: refs to forward intelligence artifacts (`ai-context`, `ai-contract`, `index`, `graph`).
 - `returnArc`: refs to return/remediation artifacts (`verify`, `plan`, `apply`, post-`verify`).
 - `zettelkasten`: refs to `.playbook/zettelkasten/zettels.jsonl` and `.playbook/zettelkasten/links.jsonl`.
-- `metrics`: must include `loopClosureRate`, `promotionYield`, `compactionGain`, `reuseRate`, `driftScore`, and `entropyBudget`.
+- `metrics`: must include `loopClosureRate`, `promotionYield`, `compactionGain`, `reuseRate`, `driftScore`, `entropyBudget`, `artifactToZettelRatio`, `zettelToPatternRatio`, `draftToPromotedRatio`, `promotedToContractRatio`, `canonicalCoreSize`, `provisionalFrontierSize`, `unresolvedDraftAge`, and `doctrineDrift`.
 - `graphMemory` (optional): refs to graph snapshot, deterministic groups, candidate contraction previews, synthesized pattern-card drafts, promotion review queue artifacts, explicit promotion decisions, and promoted pattern-card artifacts.
 - `functorTransforms` (optional): refs to functor registry and deterministic structure-preserving transform output artifacts.
 - `stateSpace` (optional): refs to internal state-space projection artifacts (for example `bloch-v1`).
@@ -250,3 +268,28 @@ Knowledge becomes executable when mapped across domains through structure-preser
 
 Failure Mode:
 Transforms that break structural invariants produce invalid doctrine.
+
+## Meta-Playbook integration
+
+Rule:
+RunCycle may produce meta findings, telemetry, and proposals as append-only artifacts only.
+
+Pattern:
+Deterministic run snapshots feed proposal-driven process improvement while keeping doctrine mutation gated.
+
+Failure Mode:
+If RunCycle writes doctrine mutations directly during meta-analysis, deterministic governance is bypassed.
+
+Meta output paths:
+- `.playbook/meta/findings/<timestamp>@<shortsha>.json`
+- `.playbook/meta/telemetry/<timestamp>@<shortsha>.json`
+- `.playbook/meta/proposals/<timestamp>@<shortsha>.json`
+
+Rule:
+Meta-analysis outputs are append-only findings/telemetry/proposals and must not mutate doctrine.
+
+Pattern:
+Self-observation artifacts inform governance review while contracts and thresholds remain human-governed.
+
+Failure Mode:
+Automatic doctrine mutation from meta-analysis bypasses versioned governance and breaks deterministic replay.

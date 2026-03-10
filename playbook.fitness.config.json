@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "pilot": {
+    "name": "fawxzzy-fitness-bounded-pilot",
+    "repository": "Fawxzzy Fitness",
+    "reasoningLoop": ["observe", "represent", "relate", "compress", "decide"],
+    "artifactRoots": [
+      ".playbook/run-cycles/",
+      ".playbook/zettels/",
+      ".playbook/graph/",
+      ".playbook/groups/",
+      ".playbook/pattern-cards/drafts/",
+      ".playbook/promotion/",
+      ".playbook/meta/"
+    ],
+    "zettelExtractionTargets": [
+      "component structure",
+      "API routes",
+      "database models",
+      "UI layout patterns",
+      "workout progression logic"
+    ]
+  },
+  "advisoryMode": {
+    "enabled": true,
+    "automaticContractMutation": false,
+    "automaticCodeEdits": false,
+    "ciEnforcement": false
+  },
+  "metaPlaybook": {
+    "enabled": true,
+    "findings": ["duplication", "architecture drift", "pattern reuse"]
+  },
+  "documentationUpdates": {
+    "rule": "Pilot deployments of the reasoning engine must operate in advisory mode.",
+    "pattern": "Real repositories provide the feedback loop needed to validate reasoning engines.",
+    "failureMode": "Allowing automated system mutation before governance stability."
+  }
+}

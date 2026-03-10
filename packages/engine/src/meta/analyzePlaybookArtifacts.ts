@@ -1,14 +1,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 
 import type { ContractProposal } from '../schema/contractProposal.js';
 import type { CandidatePatternPreviewArtifact, GraphGroupArtifact, GraphSnapshot } from '../schema/graphMemory.js';
-import type { MetaFindingsArtifact, MetaImprovementProposal } from '../schema/metaFinding.js';
-import type { MetaPatternsArtifact, MetaTelemetryArtifact } from '../schema/metaPattern.js';
+import type { MetaFindingsArtifact } from '../schema/metaFinding.js';
+import type { MetaProposalsArtifact } from '../schema/metaProposal.js';
+import type { MetaTelemetryArtifact } from '../schema/metaTelemetry.js';
 import type { PatternCardCollectionArtifact } from '../schema/patternCard.js';
+import type { PatternCardDraftArtifact } from '../schema/patternCardDraft.js';
 import type { PromotionDecisionArtifact } from '../schema/promotionDecision.js';
 import type { RunCycle } from '../schema/runCycle.js';
-import { buildMetaFindings, buildMetaPatterns } from './buildMetaFindings.js';
+import { buildMetaFindings } from './buildMetaFindings.js';
+import { buildMetaProposals } from './buildMetaProposals.js';
 import { buildMetaTelemetry } from './buildMetaTelemetry.js';
 
 const sortAsc = (values: string[]): string[] => [...values].sort((a, b) => a.localeCompare(b));
@@ -47,18 +51,16 @@ const writeArtifact = (filePath: string, payload: unknown): void => {
   fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
 };
 
-const writeProposals = (directory: string, proposals: MetaImprovementProposal[]): string[] => {
-  ensureDir(directory);
+const toStamp = (createdAt: string): string => createdAt.replace(/[-:.]/g, '').replace('T', 'T').replace('Z', 'Z');
 
-  const proposalPaths = proposals
-    .sort((a, b) => a.proposalId.localeCompare(b.proposalId))
-    .map((proposal) => {
-      const proposalPath = path.join(directory, `${proposal.proposalId.replaceAll(':', '__')}.json`);
-      writeArtifact(proposalPath, proposal);
-      return proposalPath;
-    });
-
-  return proposalPaths;
+const resolveShortSha = (repoRoot: string, runCycles: RunCycle[]): string => {
+  const cycleSha = runCycles.find((cycle) => cycle.repository.git?.shortSha)?.repository.git?.shortSha;
+  if (cycleSha) return cycleSha;
+  try {
+    return execSync('git rev-parse --short HEAD', { cwd: repoRoot, encoding: 'utf8' }).trim() || 'nogit';
+  } catch {
+    return 'nogit';
+  }
 };
 
 export type AnalyzePlaybookArtifactsInput = {
@@ -69,12 +71,11 @@ export type AnalyzePlaybookArtifactsInput = {
 export type AnalyzePlaybookArtifactsResult = {
   metaDir: string;
   findingsPath: string;
-  patternsPath: string;
   telemetryPath: string;
-  proposalPaths: string[];
+  proposalsPath: string;
   findings: MetaFindingsArtifact;
-  patterns: MetaPatternsArtifact;
   telemetry: MetaTelemetryArtifact;
+  proposals: MetaProposalsArtifact;
 };
 
 export const analyzePlaybookArtifacts = (input: AnalyzePlaybookArtifactsInput): AnalyzePlaybookArtifactsResult => {
@@ -108,6 +109,11 @@ export const analyzePlaybookArtifacts = (input: AnalyzePlaybookArtifactsInput): 
     path.join(demoDir, 'promoted-pattern-card.example.json')
   ]);
 
+  const draftPatternCards = readMany<PatternCardDraftArtifact>([
+    ...collectJsonFiles(path.join(playbookDir, 'pattern-cards', 'drafts')),
+    path.join(demoDir, 'pattern-card-drafts.example.json')
+  ]);
+
   const promotionDecisions = readMany<PromotionDecisionArtifact>([
     ...collectJsonFiles(path.join(playbookDir, 'promotion', 'decisions')),
     path.join(demoDir, 'promotion-decisions.example.json')
@@ -118,42 +124,50 @@ export const analyzePlaybookArtifacts = (input: AnalyzePlaybookArtifactsInput): 
     path.join(demoDir, 'contract-proposal.example.json')
   ]);
 
+  const contractVersions = readMany<Record<string, unknown>>([...collectJsonFiles(path.join(playbookDir, 'contracts', 'versions'))]);
+
   const analysisInput = {
     runCycles,
     graphSnapshots,
     groups,
     candidatePatterns,
     patternCards,
+    draftPatternCards,
     promotionDecisions,
     contractHistory,
+    contractVersions,
     createdAt
   };
 
   const findings = buildMetaFindings(analysisInput);
-  const patterns = buildMetaPatterns(analysisInput);
   const telemetry = buildMetaTelemetry(analysisInput);
+  const proposals = buildMetaProposals(findings.findings, createdAt);
 
   const metaDir = path.join(playbookDir, 'meta');
-  const proposalDir = path.join(metaDir, 'proposals');
+  const findingsDir = path.join(metaDir, 'findings');
+  const proposalsDir = path.join(metaDir, 'proposals');
+  const telemetryDir = path.join(metaDir, 'telemetry');
   ensureDir(metaDir);
+  ensureDir(findingsDir);
+  ensureDir(proposalsDir);
+  ensureDir(telemetryDir);
 
-  const findingsPath = path.join(metaDir, 'meta-findings.json');
-  const patternsPath = path.join(metaDir, 'meta-patterns.json');
-  const telemetryPath = path.join(metaDir, 'meta-telemetry.json');
+  const artifactStamp = `${toStamp(createdAt)}@${resolveShortSha(root, runCycles)}`;
+  const findingsPath = path.join(findingsDir, `${artifactStamp}.json`);
+  const telemetryPath = path.join(telemetryDir, `${artifactStamp}.json`);
+  const proposalsPath = path.join(proposalsDir, `${artifactStamp}.json`);
 
   writeArtifact(findingsPath, findings);
-  writeArtifact(patternsPath, patterns);
   writeArtifact(telemetryPath, telemetry);
-  const proposalPaths = writeProposals(proposalDir, findings.proposals);
+  writeArtifact(proposalsPath, proposals);
 
   return {
     metaDir,
     findingsPath,
-    patternsPath,
     telemetryPath,
-    proposalPaths,
+    proposalsPath,
     findings,
-    patterns,
-    telemetry
+    telemetry,
+    proposals
   };
 };
