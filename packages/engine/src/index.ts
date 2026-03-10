@@ -47,10 +47,13 @@ export { getCliSchemas, getCliSchema, isCliSchemaCommand, CLI_SCHEMA_COMMANDS } 
 export type { CliSchemaCommand, JsonSchema } from './schema/cliSchemas.js';
 export { VERTEX_KIND, EDGE_KIND } from './schema/graphMemory.js';
 export { buildGraphSnapshot } from './graph/buildGraphSnapshot.js';
+export { groupDeterministicMemory } from './graph/groupDeterministicMemory.js';
+export type { GroupDeterministicMemoryInput } from './graph/groupDeterministicMemory.js';
 export type { BuildGraphSnapshotInput } from './graph/buildGraphSnapshot.js';
 export { materializeDeterministicEdges, countOrphanVertices } from './graph/deterministicEdges.js';
+export { checkVertexCompatibility, GROUP_BOUNDARY_FLAGS } from './graph/compatibilityGuards.js';
 export type { EdgeSeed } from './graph/deterministicEdges.js';
-export type { VertexKind, EdgeKind, GraphVertexStatus, GraphVertex, GraphEdge, RelationVertex, GraphSnapshotMetrics, GraphSnapshot } from './schema/graphMemory.js';
+export type { VertexKind, EdgeKind, GraphVertexStatus, GraphVertex, GraphEdge, RelationVertex, GraphSnapshotMetrics, GraphSnapshot, GroupingReason, GroupCompatibilityStatus, GroupBoundaryFlag, GraphGroup, GraphGroupingMetrics, GraphGroupArtifact, CandidatePatternPreview, CandidatePatternPreviewArtifact } from './schema/graphMemory.js';
 
 export { queryDependencies } from './query/dependencies.js';
 export type { DependenciesQueryResult } from './query/dependencies.js';
@@ -104,7 +107,8 @@ export {
   buildPatternCardsFromBuckets,
   readPatternCards,
   writePatternCards,
-  toExistingPatternTargets
+  toExistingPatternTargets,
+  buildCandidatePatterns
 } from './compaction/index.js';
 export type {
   CompactionCandidate,

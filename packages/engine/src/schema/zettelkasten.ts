@@ -6,6 +6,15 @@ export const ZETTEL_LINK_RELATION = ['supports', 'contradicts', 'refines', 'depe
 
 export type ZettelLinkRelation = (typeof ZETTEL_LINK_RELATION)[number];
 
+
+export type ZettelGroupCompatibilityStatus = 'compatible' | 'rejected';
+
+export type ZettelBoundaryFlag =
+  | 'cross_contract_conflict'
+  | 'invariant_conflict'
+  | 'mechanism_conflict'
+  | 'subject_domain_conflict';
+
 export type ZettelEvidenceRef = {
   path: string;
   pointer?: string;
@@ -20,6 +29,15 @@ export type Zettel = {
   body: string;
   tags?: string[];
   evidence?: ZettelEvidenceRef[];
+  canonicalKey?: string;
+  subject?: string;
+  summary?: string;
+  mechanism?: string;
+  invariant?: string;
+  subjectDomain?: string;
+  allowCrossDomainMerge?: boolean;
+  contractRefs?: string[];
+  artifactRefs?: string[];
 };
 
 export type ZettelLink = {

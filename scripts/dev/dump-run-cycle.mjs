@@ -10,8 +10,12 @@ const playbookDir = path.join(repoRoot, '.playbook');
 const runCyclesDir = path.join(playbookDir, 'run-cycles');
 const zettelkastenDir = path.join(playbookDir, 'zettelkasten');
 const graphSnapshotsDir = path.join(playbookDir, 'graph', 'snapshots');
+const graphGroupsDir = path.join(playbookDir, 'graph', 'groups');
+const candidatePatternsDir = path.join(playbookDir, 'compaction', 'candidate-patterns');
 
 const shouldEmitGraph = !process.argv.includes('--no-graph');
+const shouldEmitGroups = shouldEmitGraph && !process.argv.includes('--no-groups');
+const shouldEmitCandidatePatterns = shouldEmitGroups && !process.argv.includes('--no-candidate-patterns');
 
 const jsonArtifacts = {
   aiContext: '.playbook/ai-context.json',
@@ -69,9 +73,9 @@ const runCycleId = `${timestamp}@${shortSha}`;
 
 await mkdir(runCyclesDir, { recursive: true });
 await mkdir(zettelkastenDir, { recursive: true });
-if (shouldEmitGraph) {
-  await mkdir(graphSnapshotsDir, { recursive: true });
-}
+if (shouldEmitGraph) await mkdir(graphSnapshotsDir, { recursive: true });
+if (shouldEmitGroups) await mkdir(graphGroupsDir, { recursive: true });
+if (shouldEmitCandidatePatterns) await mkdir(candidatePatternsDir, { recursive: true });
 
 const forwardArc = {
   aiContext: await resolveRef(jsonArtifacts.aiContext),
@@ -98,13 +102,16 @@ const exampleZettel = {
   createdAt: now.toISOString(),
   title: 'RunCycle seed observation',
   subject: 'run-cycle seed observation',
+  canonicalKey: 'zettel:run-cycle-seed-observation',
   kind: 'observation',
   body: 'Initial zettel scaffold for RunCycle capture.',
-  evidence: [
-    {
-      path: evidencePath
-    }
-  ],
+  summary: 'RunCycle scaffold zettel for deterministic graph grouping preview.',
+  subjectDomain: 'run-cycle',
+  mechanism: 'deterministic-linkage',
+  invariant: 'preserve-lineage',
+  contractRefs: ['contract:run-cycle-artifact'],
+  artifactRefs: [evidencePath],
+  evidence: [{ path: evidencePath }],
   tags: ['run-cycle', 'scaffold']
 };
 
@@ -122,6 +129,8 @@ const zettelRefs = {
   }
 };
 
+const graphMemoryRefs = {};
+
 const runCycle = {
   schemaVersion: '1.0',
   kind: 'playbook-run-cycle',
@@ -137,6 +146,7 @@ const runCycle = {
   forwardArc,
   returnArc,
   zettelkasten: zettelRefs,
+  graphMemory: graphMemoryRefs,
   metrics: {
     loopClosureRate: 0,
     promotionYield: 0,
@@ -157,14 +167,36 @@ console.log(`wrote ${linksRelative}`);
 
 if (shouldEmitGraph) {
   const { buildGraphSnapshot } = await import(path.join(repoRoot, 'packages/engine/dist/graph/buildGraphSnapshot.js'));
-  const graphSnapshot = buildGraphSnapshot({
-    projectRoot: repoRoot,
-    runCycle,
-    createdAt: now.toISOString()
-  });
+  const graphSnapshot = buildGraphSnapshot({ projectRoot: repoRoot, runCycle, createdAt: now.toISOString() });
 
   const graphSnapshotRelative = `.playbook/graph/snapshots/${runCycleId}.json`;
   const graphSnapshotPath = path.join(repoRoot, graphSnapshotRelative);
   await writeFile(graphSnapshotPath, `${JSON.stringify(graphSnapshot, null, 2)}\n`, 'utf8');
+  graphMemoryRefs.snapshot = { path: graphSnapshotRelative, digest: await digestFile(graphSnapshotPath) };
   console.log(`wrote ${graphSnapshotRelative}`);
+
+  if (shouldEmitGroups) {
+    const { groupDeterministicMemory } = await import(path.join(repoRoot, 'packages/engine/dist/graph/groupDeterministicMemory.js'));
+    const groupsArtifact = groupDeterministicMemory({ snapshot: graphSnapshot, createdAt: now.toISOString() });
+
+    const groupsRelative = `.playbook/graph/groups/${runCycleId}.json`;
+    const groupsPath = path.join(repoRoot, groupsRelative);
+    await writeFile(groupsPath, `${JSON.stringify(groupsArtifact, null, 2)}\n`, 'utf8');
+    graphMemoryRefs.groups = { path: groupsRelative, digest: await digestFile(groupsPath) };
+    console.log(`wrote ${groupsRelative}`);
+
+    if (shouldEmitCandidatePatterns) {
+      const { buildCandidatePatterns } = await import(path.join(repoRoot, 'packages/engine/dist/compaction/buildCandidatePatterns.js'));
+      const candidatePatternsArtifact = buildCandidatePatterns({ snapshot: graphSnapshot, groupsArtifact, createdAt: now.toISOString() });
+
+      const candidatesRelative = `.playbook/compaction/candidate-patterns/${runCycleId}.json`;
+      const candidatesPath = path.join(repoRoot, candidatesRelative);
+      await writeFile(candidatesPath, `${JSON.stringify(candidatePatternsArtifact, null, 2)}\n`, 'utf8');
+      graphMemoryRefs.candidatePatterns = { path: candidatesRelative, digest: await digestFile(candidatesPath) };
+      console.log(`wrote ${candidatesRelative}`);
+    }
+  }
+
+  await writeFile(runCyclePath, `${JSON.stringify(runCycle, null, 2)}\n`, 'utf8');
+  console.log(`updated ${runCycleRelative}`);
 }

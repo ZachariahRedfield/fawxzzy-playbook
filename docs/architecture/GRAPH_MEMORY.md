@@ -81,6 +81,7 @@ raw artifacts
 -> zettels
 -> graph edges
 -> deterministic groups
+-> candidate contraction preview
 -> pattern cards
 -> contracts
 ```
@@ -98,10 +99,30 @@ hot graph -> warm graph -> cold graph
 ## Rule / Pattern / Failure Mode
 
 Rule:
-Durable memory is not a bag of notes; it is a typed graph with preserved lineage and controlled contraction.
+Grouping is allowed only when connectivity and boundary compatibility both hold.
 
 Pattern:
-Memory compression in Playbook should happen through deterministic graph contraction from many evidence nodes into fewer stable attractor nodes.
+Deterministic grouping is the bridge between linked memory and compressed reusable knowledge.
 
 Failure Mode:
-If every zettel becomes a permanent vertex and nothing contracts, the graph becomes infinite in intake but useless in working memory.
+Over-merging connected but incompatible zettels creates false patterns and doctrine drift.
+
+## Runtime artifacts
+
+Deterministic grouping and contraction preview artifacts are emitted per run cycle:
+
+- `.playbook/graph/groups/<timestamp>@<shortsha>.json`
+- `.playbook/compaction/candidate-patterns/<timestamp>@<shortsha>.json`
+
+Grouping metrics include:
+
+- `componentCount`
+- `singletonComponentCount`
+- `largestComponentSize`
+- `avgComponentSize`
+- `groupableZettelCount`
+- `candidatePatternCount`
+- `contractionRatio`
+- `orphanRate`
+- `boundaryConflictCount`
+- `crossContractConflictCount`

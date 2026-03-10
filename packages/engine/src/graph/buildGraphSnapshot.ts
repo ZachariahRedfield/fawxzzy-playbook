@@ -166,6 +166,15 @@ export const buildGraphSnapshot = ({ projectRoot, runCycle, createdAt }: BuildGr
     const canonicalKey = zettel.canonicalKey ?? `zettel:${normalizeSubject(zettel.title ?? zettelId)}`;
     const evidenceCount = (zettel.evidence?.length ?? 0) + (zettel.evidenceRef ? 1 : 0);
 
+    const contractIds = new Set<string>([
+      ...(zettel.contractId ? [zettel.contractId] : []),
+      ...(zettel.appliesToContractId ? [zettel.appliesToContractId] : []),
+      ...(zettel.violatesContractId ? [zettel.violatesContractId] : []),
+      ...(zettel.contractRefs ?? []),
+      ...((zettel.links ?? []).map((link) => link.targetContractId).filter((value): value is string => Boolean(value)))
+    ]);
+
+
     const zettelVertex = addVertex(
       toVertex({
         id: zettelId,
@@ -179,6 +188,16 @@ export const buildGraphSnapshot = ({ projectRoot, runCycle, createdAt }: BuildGr
         metadata: {
           title: zettel.title,
           subject: zettel.subject,
+          summary: typeof zettel.metadata?.summary === 'string' ? zettel.metadata.summary : undefined,
+          mechanism: typeof zettel.metadata?.mechanism === 'string' ? zettel.metadata.mechanism : undefined,
+          invariant: typeof zettel.metadata?.invariant === 'string' ? zettel.metadata.invariant : undefined,
+          subjectDomain: typeof zettel.metadata?.subjectDomain === 'string' ? zettel.metadata.subjectDomain : undefined,
+          allowCrossDomainMerge: zettel.metadata?.allowCrossDomainMerge === true,
+          contractRefs: [...contractIds],
+          artifactRefs: [
+            ...(sourceArtifactPath ? [sourceArtifactPath] : []),
+            ...((zettel.evidence ?? []).map((entry) => entry.path).filter((entry): entry is string => Boolean(entry)))
+          ],
           ...(zettel.metadata ?? {})
         }
       })
@@ -249,14 +268,6 @@ export const buildGraphSnapshot = ({ projectRoot, runCycle, createdAt }: BuildGr
         ]
       });
     }
-
-    const contractIds = new Set<string>([
-      ...(zettel.contractId ? [zettel.contractId] : []),
-      ...(zettel.appliesToContractId ? [zettel.appliesToContractId] : []),
-      ...(zettel.violatesContractId ? [zettel.violatesContractId] : []),
-      ...(zettel.contractRefs ?? []),
-      ...((zettel.links ?? []).map((link) => link.targetContractId).filter((value): value is string => Boolean(value)))
-    ]);
 
     for (const contractId of contractIds) {
       const contractVertex = contractVertexById.get(contractId) ??

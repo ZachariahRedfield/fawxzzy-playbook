@@ -11,6 +11,7 @@ import { buildCompactionBucketArtifact, COMPACTION_BUCKET_ARTIFACT_RELATIVE_PATH
 import { COMPACTION_CANDIDATE_ARTIFACT_RELATIVE_PATH, buildCompactionCandidateArtifact, writeCompactionCandidateArtifact } from './writeCandidateArtifact.js';
 import { readPatternCards, toExistingPatternTargets, writePatternCards } from './patternCardStore.js';
 import { COMPACTION_REVIEW_DRAFT_RELATIVE_PATH, writeCompactionReviewDraftArtifact } from './reviewDraftWriter.js';
+import { buildCandidatePatterns } from './buildCandidatePatterns.js';
 
 export const generateCompactionCandidateArtifact = (input: { repoRoot: string; index?: RepositoryIndex; graph?: RepositoryGraph }) => {
   const candidates = extractCompactionCandidates(input);
@@ -70,3 +71,6 @@ export { buildPatternCardsFromBuckets } from './patternCardFromBucket.js';
 export { readPatternCards, writePatternCards, toExistingPatternTargets, PATTERN_CARD_DIRECTORY_RELATIVE_PATH } from './patternCardStore.js';
 export { COMPACTION_REVIEW_DRAFT_RELATIVE_PATH, writeCompactionReviewDraftArtifact } from './reviewDraftWriter.js';
 export type { PatternCard, PatternCardReviewDraftArtifact, PatternCardReviewDraftEntry } from './patternCardTypes.js';
+
+export { buildCandidatePatterns } from './buildCandidatePatterns.js';
+export type { BuildCandidatePatternsInput } from './buildCandidatePatterns.js';

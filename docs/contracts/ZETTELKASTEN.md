@@ -19,6 +19,8 @@ Committed examples may be stored under `.playbook/demo-artifacts/` as static sna
 Graph-memory runtime snapshots are emitted to:
 
 - `.playbook/graph/snapshots/<timestamp>@<shortsha>.json`
+- `.playbook/graph/groups/<timestamp>@<shortsha>.json`
+- `.playbook/compaction/candidate-patterns/<timestamp>@<shortsha>.json`
 
 ## Zettel minimum shape
 
@@ -117,10 +119,10 @@ Stochastic clustering (for example Louvain/Leiden) is exploratory/offline only a
 ## Rule / Pattern / Failure Mode
 
 Rule:
-Only evidence-backed deterministic edges may enter the production graph.
+Grouping is allowed only when connectivity and boundary compatibility both hold.
 
 Pattern:
-The first operational memory layer is not compaction but linkage.
+Deterministic grouping is the bridge between linked memory and compressed reusable knowledge.
 
 Failure Mode:
-A note system without typed edges cannot support reliable contraction, promotion, or reuse.
+Over-merging connected but incompatible zettels creates false patterns and doctrine drift.

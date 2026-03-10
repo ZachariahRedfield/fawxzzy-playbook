@@ -27,6 +27,12 @@ export type RunCycleStateSpaceRefs = {
   bloch?: RunCycleArtifactRef;
 };
 
+export type RunCycleGraphMemoryRefs = {
+  snapshot?: RunCycleArtifactRef;
+  groups?: RunCycleArtifactRef;
+  candidatePatterns?: RunCycleArtifactRef;
+};
+
 export type RunCycleMetrics = {
   loopClosureRate: number;
   promotionYield: number;
@@ -51,6 +57,7 @@ export type RunCycle = {
   forwardArc: RunCycleForwardArc;
   returnArc: RunCycleReturnArc;
   zettelkasten: RunCycleZettelkastenRefs;
+  graphMemory?: RunCycleGraphMemoryRefs;
   stateSpace?: RunCycleStateSpaceRefs;
   metrics: RunCycleMetrics;
 };

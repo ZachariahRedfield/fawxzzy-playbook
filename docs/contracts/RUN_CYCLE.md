@@ -81,6 +81,11 @@ Example:
     "zettels": { "path": ".playbook/zettelkasten/zettels.jsonl", "digest": "sha256:..." },
     "links": { "path": ".playbook/zettelkasten/links.jsonl", "digest": "sha256:..." }
   },
+  "graphMemory": {
+    "snapshot": { "path": ".playbook/graph/snapshots/<timestamp>@<shortsha>.json", "digest": "sha256:..." },
+    "groups": { "path": ".playbook/graph/groups/<timestamp>@<shortsha>.json", "digest": "sha256:..." },
+    "candidatePatterns": { "path": ".playbook/compaction/candidate-patterns/<timestamp>@<shortsha>.json", "digest": "sha256:..." }
+  },
   "stateSpace": {
     "projection": "bloch-v1",
     "bloch": { "path": ".playbook/state-space/<runCycleId>.json", "digest": "sha256:..." }
@@ -102,6 +107,7 @@ Example:
 - `returnArc`: refs to return/remediation artifacts (`verify`, `plan`, `apply`, post-`verify`).
 - `zettelkasten`: refs to `.playbook/zettelkasten/zettels.jsonl` and `.playbook/zettelkasten/links.jsonl`.
 - `metrics`: must include `loopClosureRate`, `promotionYield`, `compactionGain`, `reuseRate`, `driftScore`, and `entropyBudget`.
+- `graphMemory` (optional): refs to graph snapshot, deterministic groups, and candidate contraction preview artifacts.
 - `stateSpace` (optional): refs to internal state-space projection artifacts (for example `bloch-v1`).
 
 Each ref is nullable. Producers should populate refs only when source artifacts exist.
@@ -163,10 +169,10 @@ Snapshot metrics include:
 - `contractCount`
 
 Rule:
-Only evidence-backed deterministic edges may enter the production graph.
+Grouping is allowed only when connectivity and boundary compatibility both hold.
 
 Pattern:
-The first operational memory layer is not compaction but linkage.
+Deterministic grouping is the bridge between linked memory and compressed reusable knowledge.
 
 Failure Mode:
-A note system without typed edges cannot support reliable contraction, promotion, or reuse.
+Over-merging connected but incompatible zettels creates false patterns and doctrine drift.

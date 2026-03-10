@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "playbook-graph-groups",
+  "artifactId": "groups:2025-01-01T00-00-00.000Z@abc1234:abcd1234ef56",
+  "snapshotId": "graph:2025-01-01T00-00-00.000Z@abc1234:1234abcd5678ef90",
+  "cycleId": "2025-01-01T00-00-00.000Z@abc1234",
+  "createdAt": "2025-01-01T00:00:01.000Z",
+  "groups": [
+    {
+      "groupId": "group:2025-01-01T00-00-00.000Z@abc1234:aaaabbbbcccc",
+      "originCycleId": "2025-01-01T00-00-00.000Z@abc1234",
+      "memberVertexIds": ["zettel:a", "zettel:b"],
+      "memberZettelIds": ["zettel:a", "zettel:b"],
+      "groupingReasons": ["exact_canonical_key", "shared_contract_ref"],
+      "compatibilityStatus": "compatible",
+      "boundaryFlags": [],
+      "sharedCanonicalKey": "zettel:run-cycle-seed-observation",
+      "sharedContractRefs": ["contract:run-cycle-artifact"],
+      "evidenceCount": 4,
+      "confidence": 0.83
+    }
+  ],
+  "metrics": {
+    "componentCount": 1,
+    "singletonComponentCount": 0,
+    "largestComponentSize": 2,
+    "avgComponentSize": 2,
+    "groupableZettelCount": 2,
+    "candidatePatternCount": 1,
+    "contractionRatio": 0.5,
+    "orphanRate": 0,
+    "boundaryConflictCount": 0,
+    "crossContractConflictCount": 0
+  }
+}
