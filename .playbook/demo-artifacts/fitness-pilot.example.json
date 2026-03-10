@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "playbook-fitness-pilot",
+  "pilotId": "fitness-pilot-cycle-0001",
+  "repository": {
+    "name": "Fawxzzy Fitness",
+    "root": ".",
+    "configPath": "playbook.fitness.config.json"
+  },
+  "mode": "advisory",
+  "reasoningLoop": ["observe", "represent", "relate", "compress", "decide"],
+  "artifactRoots": {
+    "runCycles": ".playbook/run-cycles/fitness-pilot-cycle-0001.json",
+    "zettels": ".playbook/zettels/fitness-pilot-cycle-0001.json",
+    "graph": ".playbook/graph/fitness-pilot-cycle-0001.json",
+    "groups": ".playbook/groups/fitness-pilot-cycle-0001.json",
+    "patternDrafts": ".playbook/pattern-cards/drafts/fitness-pilot-cycle-0001.json",
+    "promotion": ".playbook/promotion/fitness-pilot-cycle-0001.json",
+    "meta": ".playbook/meta/fitness-pilot-cycle-0001.json"
+  },
+  "advisoryGuards": {
+    "automaticContractMutation": false,
+    "automaticCodeEdits": false,
+    "ciEnforcement": false
+  },
+  "zettelExtraction": {
+    "sources": [
+      "component structure",
+      "API routes",
+      "database models",
+      "UI layout patterns",
+      "workout progression logic"
+    ],
+    "evidenceExamples": [
+      "file:src/components/WorkoutCard.tsx#sha256:7f06a6f24fd13aaa",
+      "file:src/app/api/workouts/route.ts#sha256:1c3358f0d15f8d4e",
+      "file:src/server/db/schema.ts#sha256:2f3ef31a83cd9e10"
+    ]
+  },
+  "patternDrafts": [
+    {
+      "title": "Pattern Draft: Workout route + model pairing",
+      "mechanism": "API route handlers consistently map request payloads to workout model contracts.",
+      "invariant": "Each route references an explicit workout/domain model before persistence.",
+      "evidenceRefs": [
+        "file:src/app/api/workouts/route.ts#sha256:1c3358f0d15f8d4e",
+        "file:src/server/db/schema.ts#sha256:2f3ef31a83cd9e10"
+      ]
+    }
+  ],
+  "promotionReviewQueue": {
+    "status": "queued",
+    "advisoryOnly": true,
+    "queuedPatternIds": ["draft.3f6a6ec33c6c"]
+  },
+  "metaFindings": {
+    "duplication": "Repeated workout card layout and API response transforms suggest extractable shared contracts.",
+    "architectureDrift": "Any API logic outside api route folders is flagged as drift evidence.",
+    "patternReuse": "Draft patterns are tracked for reuse only after explicit human promotion decisions."
+  },
+  "documentationUpdates": {
+    "rule": "Pilot deployments of the reasoning engine must operate in advisory mode.",
+    "pattern": "Real repositories provide the feedback loop needed to validate reasoning engines.",
+    "failureMode": "Allowing automated system mutation before governance stability."
+  }
+}
