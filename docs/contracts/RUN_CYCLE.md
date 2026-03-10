@@ -111,6 +111,31 @@ Each ref is nullable. Producers should populate refs only when source artifacts 
 - `originCycleId` in zettels should match this artifact's `runCycleId` (or a referenced prior cycle for carried evidence).
 - `promotionYield`, `reuseRate`, and `compactionGain` are cycle-level indicators that consolidation is working.
 
+
+## Graph-memory structure layer
+
+RunCycle is the cycle anchor vertex for Playbook graph-memory snapshots.
+
+Long-term structure is modeled as a typed graph:
+
+- RunCycle and artifacts become lineage-preserving vertices
+- zettels become evidence vertices linked through typed edges
+- deterministic grouping produces stable pattern-card candidates
+- pattern cards may promote to contracts through explicit `PROMOTES_TO` lineage
+
+Graph-memory scope separation:
+
+- simple graph: pairwise typed edges (`from -> to`)
+- hypergraph-style: relation vertices for multi-party evidence/events
+- production grouping: deterministic and replayable
+- exploratory clustering: offline diagnostics only, not promotion-critical
+
+Contraction requirements:
+
+- accumulation is not compression
+- contraction must preserve lineage back to evidence artifacts
+- contracts are hard attractors and must remain traceable to cycle evidence
+
 ## Runtime artifact policy
 
 RunCycle and Zettelkasten outputs are runtime artifacts and must remain under `.playbook/`.

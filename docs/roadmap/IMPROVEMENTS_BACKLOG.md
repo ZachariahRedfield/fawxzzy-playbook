@@ -273,3 +273,24 @@ Scope notes:
 Rule: Use quantum/state-space language only when it clarifies deterministic system behavior.
 Pattern: State can often be modeled more clearly as geometry than as raw event logs.
 Failure Mode: Overextending the Bloch-sphere analogy turns a useful state-space model into pseudo-physics.
+
+---
+
+## Backlog candidate: graph-memory deterministic convergence runtime
+
+Add graph-memory follow-ups to formalize deterministic memory structure and compaction:
+
+- deterministic edge builder for RunCycle/artifact/zettel/pattern/contract lineage edges
+- deterministic contraction pass from evidence vertices to stable attractor vertices
+- WCC-based formal grouping for production-safe connected-component convergence
+- offline Louvain/Leiden exploratory clustering only (diagnostic, non-critical path)
+- graph telemetry and entropy budget enforcement across hot/warm/cold memory tiers
+
+Rule:
+Durable memory is not a bag of notes; it is a typed graph with preserved lineage and controlled contraction.
+
+Pattern:
+Memory compression in Playbook should happen through deterministic graph contraction from many evidence nodes into fewer stable attractor nodes.
+
+Failure Mode:
+If every zettel becomes a permanent vertex and nothing contracts, the graph becomes infinite in intake but useless in working memory.

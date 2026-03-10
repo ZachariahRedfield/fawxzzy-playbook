@@ -1,0 +1,239 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "playbook-graph-memory-snapshot-demo",
+  "snapshotType": "committed-example",
+  "snapshotId": "graph-memory-demo-2026-03-10",
+  "cycleId": "2026-03-10T09-00-00.000Z@demo42a",
+  "vertices": [
+    {
+      "id": "cycle.2026-03-10T09-00-00.000Z@demo42a",
+      "kind": "RunCycle",
+      "status": "working",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "canonicalKey": "run-cycle:2026-03-10T09-00-00.000Z@demo42a",
+      "evidenceCount": 1,
+      "entropyCost": 0.02,
+      "metadata": {
+        "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    },
+    {
+      "id": "artifact.verify.demo42a",
+      "kind": "Artifact",
+      "status": "working",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "sourceArtifactPath": ".playbook/verify.json",
+      "canonicalKey": "artifact:verify:demo42a",
+      "evidenceCount": 2,
+      "entropyCost": 0.15,
+      "metadata": {
+        "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    {
+      "id": "artifact.plan.demo42a",
+      "kind": "Artifact",
+      "status": "working",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "sourceArtifactPath": ".playbook/plan.json",
+      "canonicalKey": "artifact:plan:demo42a",
+      "evidenceCount": 1,
+      "entropyCost": 0.11,
+      "metadata": {
+        "digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+      }
+    },
+    {
+      "id": "zettel.verify.pb014",
+      "kind": "Zettel",
+      "status": "converging",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "sourceArtifactPath": ".playbook/zettelkasten/zettels.jsonl",
+      "canonicalKey": "zettel:verify:pb014",
+      "evidenceCount": 3,
+      "entropyCost": 0.22,
+      "metadata": {
+        "digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+      }
+    },
+    {
+      "id": "zettel.plan.pb014",
+      "kind": "Zettel",
+      "status": "converging",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "sourceArtifactPath": ".playbook/zettelkasten/zettels.jsonl",
+      "canonicalKey": "zettel:plan:pb014",
+      "evidenceCount": 2,
+      "entropyCost": 0.19,
+      "metadata": {
+        "digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+      }
+    },
+    {
+      "id": "pattern.docs-memory-contraction",
+      "kind": "PatternCard",
+      "status": "contracted",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "canonicalKey": "pattern:docs-memory-contraction",
+      "evidenceCount": 5,
+      "entropyCost": 0.08,
+      "metadata": {
+        "digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "attractorType": "soft"
+      }
+    },
+    {
+      "id": "contract.docs-memory-lineage",
+      "kind": "Contract",
+      "status": "promoted",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "canonicalKey": "contract:docs-memory-lineage",
+      "evidenceCount": 5,
+      "entropyCost": 0.03,
+      "metadata": {
+        "digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "attractorType": "hard"
+      }
+    },
+    {
+      "id": "subject.docs-governance",
+      "kind": "Subject",
+      "status": "converging",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "canonicalKey": "subject:docs-governance",
+      "evidenceCount": 2,
+      "entropyCost": 0.07,
+      "metadata": {}
+    },
+    {
+      "id": "decision.promote-lineage-rule",
+      "kind": "Decision",
+      "status": "promoted",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "canonicalKey": "decision:promote-lineage-rule",
+      "evidenceCount": 1,
+      "entropyCost": 0.04,
+      "metadata": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "kind": "PRODUCED",
+      "from": "cycle.2026-03-10T09-00-00.000Z@demo42a",
+      "to": "artifact.verify.demo42a",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "evidenceRefs": [
+        "local:run-cycle:forward-arc:verify"
+      ]
+    },
+    {
+      "id": "e2",
+      "kind": "PRODUCED",
+      "from": "cycle.2026-03-10T09-00-00.000Z@demo42a",
+      "to": "artifact.plan.demo42a",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "evidenceRefs": [
+        "local:run-cycle:return-arc:plan"
+      ]
+    },
+    {
+      "id": "e3",
+      "kind": "DERIVES",
+      "from": "artifact.verify.demo42a",
+      "to": "zettel.verify.pb014",
+      "confidence": 0.94,
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "evidenceRefs": [
+        "local:verify:finding:PB014"
+      ]
+    },
+    {
+      "id": "e4",
+      "kind": "DERIVES",
+      "from": "artifact.plan.demo42a",
+      "to": "zettel.plan.pb014",
+      "confidence": 0.91,
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "evidenceRefs": [
+        "local:plan:task:PB014"
+      ]
+    },
+    {
+      "id": "e5",
+      "kind": "SIMILAR_TO",
+      "from": "zettel.verify.pb014",
+      "to": "zettel.plan.pb014",
+      "weight": 0.83,
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "evidenceRefs": [
+        "local:similarity:cosine:0.83"
+      ]
+    },
+    {
+      "id": "e6",
+      "kind": "MEMBER_OF",
+      "from": "zettel.verify.pb014",
+      "to": "pattern.docs-memory-contraction",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "evidenceRefs": [
+        "local:compaction:bucket:docs-memory-contraction"
+      ]
+    },
+    {
+      "id": "e7",
+      "kind": "MEMBER_OF",
+      "from": "zettel.plan.pb014",
+      "to": "pattern.docs-memory-contraction",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "evidenceRefs": [
+        "local:compaction:bucket:docs-memory-contraction"
+      ]
+    },
+    {
+      "id": "e8",
+      "kind": "PROMOTES_TO",
+      "from": "pattern.docs-memory-contraction",
+      "to": "contract.docs-memory-lineage",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "evidenceRefs": [
+        "local:promotion:decision:promote-lineage-rule"
+      ]
+    },
+    {
+      "id": "e9",
+      "kind": "APPLIES_TO",
+      "from": "contract.docs-memory-lineage",
+      "to": "subject.docs-governance",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "evidenceRefs": [
+        "local:contract:scope:docs-governance"
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "id": "r1",
+      "relationKind": "SUPPORTS",
+      "participantIds": [
+        "artifact.verify.demo42a",
+        "artifact.plan.demo42a",
+        "decision.promote-lineage-rule",
+        "contract.docs-memory-lineage"
+      ],
+      "evidenceRefs": [
+        "local:joint-evidence:promotion-bundle:v1"
+      ],
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a"
+    }
+  ],
+  "metrics": {
+    "vertexCount": 9,
+    "edgeCount": 9,
+    "relationVertexCount": 1,
+    "componentCount": 1,
+    "contractedVertexCount": 1,
+    "promotedContractCount": 1,
+    "entropyCostTotal": 0.91
+  }
+}

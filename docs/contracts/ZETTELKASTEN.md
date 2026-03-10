@@ -77,6 +77,39 @@ Zettelkasten evidence quality directly affects state-space coherence:
 
 Use this bridge with `docs/architecture/BLOCH_SPHERE_STATE_SPACE.md` and `docs/contracts/STATE_SPACE.md` for deterministic diagnostics framing.
 
+
+## Graph-memory structure alignment
+
+Zettelkasten is the evidence layer feeding Playbook graph-memory structure.
+
+- zettels are evidence-bearing vertices
+- typed links are graph edges with deterministic relation kinds
+- relation vertices can represent hyperedge-style multi-entity evidence/events
+
+Long-term memory structure path:
+
+```text
+raw artifacts
+-> zettels
+-> graph edges
+-> deterministic groups
+-> pattern cards
+-> contracts
+```
+
+Temperature path:
+
+```text
+hot graph -> warm graph -> cold graph
+```
+
+- hot = current cycle working set
+- warm = unresolved/converging memory
+- cold = promoted doctrine/contracts
+
+Deterministic grouping should be favored in the critical path.
+Stochastic clustering (for example Louvain/Leiden) is exploratory/offline only and must not determine production promotion gates.
+
 ## Rule / Pattern / Failure Mode
 
 Rule:
