@@ -139,6 +139,7 @@ export type CandidatePatternPreview = {
   originCycleId: string;
   sourceGroupId: string;
   memberZettelIds: string[];
+  normalizedSubject?: string;
   title: string;
   canonicalKey: string;
   summary: string;

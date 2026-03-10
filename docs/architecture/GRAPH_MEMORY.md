@@ -82,6 +82,8 @@ raw artifacts
 -> graph edges
 -> deterministic groups
 -> candidate contraction preview
+-> pattern-card drafts
+-> promotion review queue
 -> pattern cards
 -> contracts
 ```
@@ -113,6 +115,8 @@ Deterministic grouping and contraction preview artifacts are emitted per run cyc
 
 - `.playbook/graph/groups/<timestamp>@<shortsha>.json`
 - `.playbook/compaction/candidate-patterns/<timestamp>@<shortsha>.json`
+- `.playbook/pattern-cards/drafts/<timestamp>@<shortsha>.json`
+- `.playbook/promotion/review-queue/<timestamp>@<shortsha>.json`
 
 Grouping metrics include:
 
@@ -126,3 +130,13 @@ Grouping metrics include:
 - `orphanRate`
 - `boundaryConflictCount`
 - `crossContractConflictCount`
+
+
+Rule:
+No compressed candidate becomes durable doctrine until it survives deterministic readiness scoring and review.
+
+Pattern:
+Pattern-card drafts are the bridge between graph contraction and trusted doctrine.
+
+Failure Mode:
+Jumping directly from candidate grouping to promotion creates non-reviewable doctrine drift.

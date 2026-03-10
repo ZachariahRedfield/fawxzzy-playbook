@@ -31,6 +31,8 @@ export type RunCycleGraphMemoryRefs = {
   snapshot?: RunCycleArtifactRef;
   groups?: RunCycleArtifactRef;
   candidatePatterns?: RunCycleArtifactRef;
+  draftPatternCards?: RunCycleArtifactRef;
+  promotionReviewQueue?: RunCycleArtifactRef;
 };
 
 export type RunCycleMetrics = {

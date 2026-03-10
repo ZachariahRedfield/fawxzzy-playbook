@@ -74,3 +74,6 @@ export type { PatternCard, PatternCardReviewDraftArtifact, PatternCardReviewDraf
 
 export { buildCandidatePatterns } from './buildCandidatePatterns.js';
 export type { BuildCandidatePatternsInput } from './buildCandidatePatterns.js';
+
+export { synthesizePatternCardDrafts } from './synthesizePatternCardDrafts.js';
+export type { SynthesizePatternCardDraftsInput } from './synthesizePatternCardDrafts.js';

@@ -99,6 +99,8 @@ raw artifacts
 -> zettels
 -> graph edges
 -> deterministic groups
+-> pattern-card drafts
+-> promotion review queue
 -> pattern cards
 -> contracts
 ```
@@ -126,3 +128,13 @@ Deterministic grouping is the bridge between linked memory and compressed reusab
 
 Failure Mode:
 Over-merging connected but incompatible zettels creates false patterns and doctrine drift.
+
+
+Rule:
+No compressed candidate becomes durable doctrine until it survives deterministic readiness scoring and review.
+
+Pattern:
+Pattern-card drafts are the bridge between graph contraction and trusted doctrine.
+
+Failure Mode:
+Jumping directly from candidate grouping to promotion creates non-reviewable doctrine drift.

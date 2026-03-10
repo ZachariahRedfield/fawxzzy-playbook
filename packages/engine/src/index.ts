@@ -54,6 +54,8 @@ export { materializeDeterministicEdges, countOrphanVertices } from './graph/dete
 export { checkVertexCompatibility, GROUP_BOUNDARY_FLAGS } from './graph/compatibilityGuards.js';
 export type { EdgeSeed } from './graph/deterministicEdges.js';
 export type { VertexKind, EdgeKind, GraphVertexStatus, GraphVertex, GraphEdge, RelationVertex, GraphSnapshotMetrics, GraphSnapshot, GroupingReason, GroupCompatibilityStatus, GroupBoundaryFlag, GraphGroup, GraphGroupingMetrics, GraphGroupArtifact, CandidatePatternPreview, CandidatePatternPreviewArtifact } from './schema/graphMemory.js';
+export type { PatternCardDraftStatus, PatternCardDraftRecurrence, PatternCardDraft, PatternCardDraftArtifact } from './schema/patternCardDraft.js';
+export type { PromotionReadinessBucket, PromotionReadiness, PromotionReviewQueueItem, PromotionReviewQueue } from './schema/promotion.js';
 
 export { queryDependencies } from './query/dependencies.js';
 export type { DependenciesQueryResult } from './query/dependencies.js';
@@ -108,7 +110,8 @@ export {
   readPatternCards,
   writePatternCards,
   toExistingPatternTargets,
-  buildCandidatePatterns
+  buildCandidatePatterns,
+  synthesizePatternCardDrafts
 } from './compaction/index.js';
 export type {
   CompactionCandidate,
@@ -127,5 +130,10 @@ export type {
   RelationKind,
   PatternCard,
   PatternCardReviewDraftArtifact,
-  PatternCardReviewDraftEntry
+  PatternCardReviewDraftEntry,
+  SynthesizePatternCardDraftsInput
 } from './compaction/index.js';
+
+export { scorePromotionReadiness } from './promotion/scorePromotionReadiness.js';
+export { buildPromotionReviewQueue } from './promotion/buildPromotionReviewQueue.js';
+export type { BuildPromotionReviewQueueInput } from './promotion/buildPromotionReviewQueue.js';

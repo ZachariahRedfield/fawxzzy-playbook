@@ -84,7 +84,9 @@ Example:
   "graphMemory": {
     "snapshot": { "path": ".playbook/graph/snapshots/<timestamp>@<shortsha>.json", "digest": "sha256:..." },
     "groups": { "path": ".playbook/graph/groups/<timestamp>@<shortsha>.json", "digest": "sha256:..." },
-    "candidatePatterns": { "path": ".playbook/compaction/candidate-patterns/<timestamp>@<shortsha>.json", "digest": "sha256:..." }
+    "candidatePatterns": { "path": ".playbook/compaction/candidate-patterns/<timestamp>@<shortsha>.json", "digest": "sha256:..." },
+    "draftPatternCards": { "path": ".playbook/pattern-cards/drafts/<timestamp>@<shortsha>.json", "digest": "sha256:..." },
+    "promotionReviewQueue": { "path": ".playbook/promotion/review-queue/<timestamp>@<shortsha>.json", "digest": "sha256:..." }
   },
   "stateSpace": {
     "projection": "bloch-v1",
@@ -107,7 +109,7 @@ Example:
 - `returnArc`: refs to return/remediation artifacts (`verify`, `plan`, `apply`, post-`verify`).
 - `zettelkasten`: refs to `.playbook/zettelkasten/zettels.jsonl` and `.playbook/zettelkasten/links.jsonl`.
 - `metrics`: must include `loopClosureRate`, `promotionYield`, `compactionGain`, `reuseRate`, `driftScore`, and `entropyBudget`.
-- `graphMemory` (optional): refs to graph snapshot, deterministic groups, and candidate contraction preview artifacts.
+- `graphMemory` (optional): refs to graph snapshot, deterministic groups, candidate contraction previews, synthesized pattern-card drafts, and promotion review queue artifacts.
 - `stateSpace` (optional): refs to internal state-space projection artifacts (for example `bloch-v1`).
 
 Each ref is nullable. Producers should populate refs only when source artifacts exist.
@@ -176,3 +178,15 @@ Deterministic grouping is the bridge between linked memory and compressed reusab
 
 Failure Mode:
 Over-merging connected but incompatible zettels creates false patterns and doctrine drift.
+
+
+## Rule / Pattern / Failure Mode
+
+Rule:
+No compressed candidate becomes durable doctrine until it survives deterministic readiness scoring and review.
+
+Pattern:
+Pattern-card drafts are the bridge between graph contraction and trusted doctrine.
+
+Failure Mode:
+Jumping directly from candidate grouping to promotion creates non-reviewable doctrine drift.

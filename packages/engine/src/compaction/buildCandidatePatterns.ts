@@ -47,6 +47,7 @@ export const buildCandidatePatterns = ({ snapshot, groupsArtifact, createdAt }: 
         .filter((entry): entry is GraphVertex => Boolean(entry));
 
       const canonicalKey = group.sharedCanonicalKey ?? mostFrequent(members.map((member) => member.canonicalKey ?? '').filter(Boolean)) ?? group.groupId;
+      const normalizedSubject = normalize(mostFrequent(members.map((member) => (typeof member.metadata.subject === 'string' ? member.metadata.subject : '')).filter(Boolean)) ?? canonicalKey);
       const summary = mostFrequent(members.map((member) => (typeof member.metadata.summary === 'string' ? member.metadata.summary : '')).filter(Boolean)) ??
         `Deterministic contraction preview for ${group.memberZettelIds.length} linked zettels.`;
       const mechanism = mostFrequent(members.map((member) => (typeof member.metadata.mechanism === 'string' ? member.metadata.mechanism : '')).filter(Boolean));
@@ -82,6 +83,7 @@ export const buildCandidatePatterns = ({ snapshot, groupsArtifact, createdAt }: 
         originCycleId: snapshot.cycleId,
         sourceGroupId: group.groupId,
         memberZettelIds: [...group.memberZettelIds].sort((left, right) => left.localeCompare(right)),
+        normalizedSubject,
         title: buildTitle(canonicalKey, members),
         canonicalKey,
         summary,

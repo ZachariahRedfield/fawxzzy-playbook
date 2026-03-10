@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "playbook-pattern-card-drafts",
+  "artifactId": "pattern-card-drafts:2025-01-01T00-00-00.000Z@abc1234:deadbeef1234",
+  "cycleId": "2025-01-01T00-00-00.000Z@abc1234",
+  "snapshotId": "graph:2025-01-01T00-00-00.000Z@abc1234:1234abcd5678ef90",
+  "sourceCandidateArtifactId": "candidate-patterns:2025-01-01T00-00-00.000Z@abc1234:deadbeef1234",
+  "createdAt": "2025-01-01T00:00:03.000Z",
+  "drafts": [
+    {
+      "patternId": "pattern-draft:3366a5f52af4ecbc",
+      "originCycleId": "2025-01-01T00-00-00.000Z@abc1234",
+      "sourceGroupId": "group:2025-01-01T00-00-00.000Z@abc1234:aaaabbbbcccc",
+      "sourceZettelIds": ["zettel:a", "zettel:b"],
+      "sourceArtifactPaths": [".playbook/zettelkasten/zettels.jsonl"],
+      "canonicalKey": "zettel:run-cycle-seed-observation",
+      "title": "Pattern Draft: Run Cycle Seed Observation",
+      "summary": "Deterministic contraction preview for run-cycle memory linkage.",
+      "mechanism": "deterministic-linkage",
+      "invariant": "preserve-lineage",
+      "evidenceRefs": ["source:.playbook/zettelkasten/zettels.jsonl"],
+      "linkedContractRefs": ["contract:run-cycle-artifact"],
+      "recurrence": {
+        "cycleCount": 1,
+        "latestCycleId": "2025-01-01T00-00-00.000Z@abc1234",
+        "sourceCycleIds": ["2025-01-01T00-00-00.000Z@abc1234"]
+      },
+      "conflictFlags": [],
+      "boundaryFlags": [],
+      "draftStatus": "review"
+    }
+  ],
+  "metrics": {
+    "draftCount": 1,
+    "conflictFlagCount": 0,
+    "boundaryFlagCount": 0
+  }
+}

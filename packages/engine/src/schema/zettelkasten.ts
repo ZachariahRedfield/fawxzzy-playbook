@@ -24,6 +24,7 @@ export type ZettelEvidenceRef = {
 export type Zettel = {
   id: string;
   createdAt: string;
+  originCycleId?: string;
   title: string;
   kind: ZettelKind;
   body: string;

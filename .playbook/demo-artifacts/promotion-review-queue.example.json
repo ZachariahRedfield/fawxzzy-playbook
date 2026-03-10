@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "playbook-promotion-review-queue",
+  "queueId": "promotion-review-queue:2025-01-01T00-00-00.000Z@abc1234:deadbeef1234",
+  "originCycleId": "2025-01-01T00-00-00.000Z@abc1234",
+  "createdAt": "2025-01-01T00:00:04.000Z",
+  "items": [
+    {
+      "patternId": "pattern-draft:3366a5f52af4ecbc",
+      "canonicalKey": "zettel:run-cycle-seed-observation",
+      "title": "Pattern Draft: Run Cycle Seed Observation",
+      "sourceGroupId": "group:2025-01-01T00-00-00.000Z@abc1234:aaaabbbbcccc",
+      "draftStatus": "review",
+      "readiness": {
+        "patternId": "pattern-draft:3366a5f52af4ecbc",
+        "promotionScore": 42.2,
+        "readinessBucket": "hold",
+        "evidenceCount": 1,
+        "evidenceDiversity": 1,
+        "crossCycleRecurrence": 1,
+        "reuseRate": 0.5,
+        "compactionGain": 0.5,
+        "entropyReductionEstimate": 0.34,
+        "contradictionPenalty": 0,
+        "boundaryPenalty": 0,
+        "contractConflictPenalty": 0,
+        "scoringReasons": [
+          "evidence_count:1",
+          "evidence_diversity:1",
+          "cross_cycle_recurrence:1",
+          "reuse_rate:0.5",
+          "compaction_gain:0.5",
+          "entropy_reduction_estimate:0.34",
+          "contradiction_penalty:0",
+          "boundary_penalty:0",
+          "contract_conflict_penalty:0",
+          "bucket:hold"
+        ]
+      }
+    }
+  ],
+  "metrics": {
+    "draftCount": 1,
+    "holdCount": 1,
+    "reviewCount": 0,
+    "readyCount": 0,
+    "averagePromotionScore": 42.2,
+    "contradictionFlagCount": 0,
+    "boundaryFlagCount": 0
+  }
+}

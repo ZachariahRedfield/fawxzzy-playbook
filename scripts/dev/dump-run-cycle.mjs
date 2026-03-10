@@ -12,10 +12,14 @@ const zettelkastenDir = path.join(playbookDir, 'zettelkasten');
 const graphSnapshotsDir = path.join(playbookDir, 'graph', 'snapshots');
 const graphGroupsDir = path.join(playbookDir, 'graph', 'groups');
 const candidatePatternsDir = path.join(playbookDir, 'compaction', 'candidate-patterns');
+const patternCardDraftsDir = path.join(playbookDir, 'pattern-cards', 'drafts');
+const promotionQueueDir = path.join(playbookDir, 'promotion', 'review-queue');
 
 const shouldEmitGraph = !process.argv.includes('--no-graph');
 const shouldEmitGroups = shouldEmitGraph && !process.argv.includes('--no-groups');
 const shouldEmitCandidatePatterns = shouldEmitGroups && !process.argv.includes('--no-candidate-patterns');
+const shouldEmitPatternCardDrafts = shouldEmitCandidatePatterns && !process.argv.includes('--no-pattern-card-drafts');
+const shouldEmitPromotionQueue = shouldEmitPatternCardDrafts && !process.argv.includes('--no-promotion-review-queue');
 
 const jsonArtifacts = {
   aiContext: '.playbook/ai-context.json',
@@ -76,6 +80,8 @@ await mkdir(zettelkastenDir, { recursive: true });
 if (shouldEmitGraph) await mkdir(graphSnapshotsDir, { recursive: true });
 if (shouldEmitGroups) await mkdir(graphGroupsDir, { recursive: true });
 if (shouldEmitCandidatePatterns) await mkdir(candidatePatternsDir, { recursive: true });
+if (shouldEmitPatternCardDrafts) await mkdir(patternCardDraftsDir, { recursive: true });
+if (shouldEmitPromotionQueue) await mkdir(promotionQueueDir, { recursive: true });
 
 const forwardArc = {
   aiContext: await resolveRef(jsonArtifacts.aiContext),
@@ -97,25 +103,46 @@ const zettelsPath = path.join(repoRoot, zettelsRelative);
 const linksPath = path.join(repoRoot, linksRelative);
 
 const evidencePath = returnArc.verify?.path ?? forwardArc.repoIndex?.path ?? '.playbook/repo-index.json';
-const exampleZettel = {
-  id: `zettel:${runCycleId}:example`,
-  createdAt: now.toISOString(),
-  title: 'RunCycle seed observation',
-  subject: 'run-cycle seed observation',
-  canonicalKey: 'zettel:run-cycle-seed-observation',
-  kind: 'observation',
-  body: 'Initial zettel scaffold for RunCycle capture.',
-  summary: 'RunCycle scaffold zettel for deterministic graph grouping preview.',
-  subjectDomain: 'run-cycle',
-  mechanism: 'deterministic-linkage',
-  invariant: 'preserve-lineage',
-  contractRefs: ['contract:run-cycle-artifact'],
-  artifactRefs: [evidencePath],
-  evidence: [{ path: evidencePath }],
-  tags: ['run-cycle', 'scaffold']
-};
+const exampleZettels = [
+  {
+    id: `zettel:${runCycleId}:example-a`,
+    createdAt: now.toISOString(),
+    originCycleId: runCycleId,
+    title: 'RunCycle seed observation',
+    subject: 'run-cycle seed observation',
+    canonicalKey: 'zettel:run-cycle-seed-observation',
+    kind: 'observation',
+    body: 'Initial zettel scaffold for RunCycle capture.',
+    summary: 'RunCycle scaffold zettel for deterministic graph grouping preview.',
+    subjectDomain: 'run-cycle',
+    mechanism: 'deterministic-linkage',
+    invariant: 'preserve-lineage',
+    contractRefs: ['contract:run-cycle-artifact'],
+    artifactRefs: [evidencePath],
+    evidence: [{ path: evidencePath }],
+    tags: ['run-cycle', 'scaffold']
+  },
+  {
+    id: `zettel:${runCycleId}:example-b`,
+    createdAt: now.toISOString(),
+    originCycleId: runCycleId,
+    title: 'RunCycle linkage refinement',
+    subject: 'run-cycle seed observation',
+    canonicalKey: 'zettel:run-cycle-seed-observation',
+    kind: 'pattern',
+    body: 'Second zettel to force deterministic candidate synthesis.',
+    summary: 'Companion evidence for deterministic contraction preview.',
+    subjectDomain: 'run-cycle',
+    mechanism: 'deterministic-linkage',
+    invariant: 'preserve-lineage',
+    contractRefs: ['contract:run-cycle-artifact'],
+    artifactRefs: [evidencePath],
+    evidence: [{ path: evidencePath }],
+    tags: ['run-cycle', 'scaffold']
+  }
+];
 
-await writeFile(zettelsPath, `${JSON.stringify(exampleZettel)}\n`, 'utf8');
+await writeFile(zettelsPath, `${exampleZettels.map((entry) => JSON.stringify(entry)).join('\n')}\n`, 'utf8');
 await writeFile(linksPath, '', 'utf8');
 
 const zettelRefs = {
@@ -194,6 +221,28 @@ if (shouldEmitGraph) {
       await writeFile(candidatesPath, `${JSON.stringify(candidatePatternsArtifact, null, 2)}\n`, 'utf8');
       graphMemoryRefs.candidatePatterns = { path: candidatesRelative, digest: await digestFile(candidatesPath) };
       console.log(`wrote ${candidatesRelative}`);
+
+      if (shouldEmitPatternCardDrafts) {
+        const { synthesizePatternCardDrafts } = await import(path.join(repoRoot, 'packages/engine/dist/compaction/synthesizePatternCardDrafts.js'));
+        const draftArtifact = synthesizePatternCardDrafts({ snapshot: graphSnapshot, candidateArtifact: candidatePatternsArtifact, createdAt: now.toISOString() });
+
+        const draftRelative = `.playbook/pattern-cards/drafts/${runCycleId}.json`;
+        const draftPath = path.join(repoRoot, draftRelative);
+        await writeFile(draftPath, `${JSON.stringify(draftArtifact, null, 2)}\n`, 'utf8');
+        graphMemoryRefs.draftPatternCards = { path: draftRelative, digest: await digestFile(draftPath) };
+        console.log(`wrote ${draftRelative}`);
+
+        if (shouldEmitPromotionQueue) {
+          const { buildPromotionReviewQueue } = await import(path.join(repoRoot, 'packages/engine/dist/promotion/buildPromotionReviewQueue.js'));
+          const reviewQueue = buildPromotionReviewQueue({ draftArtifact, createdAt: now.toISOString() });
+
+          const promotionQueueRelative = `.playbook/promotion/review-queue/${runCycleId}.json`;
+          const promotionQueuePath = path.join(repoRoot, promotionQueueRelative);
+          await writeFile(promotionQueuePath, `${JSON.stringify(reviewQueue, null, 2)}\n`, 'utf8');
+          graphMemoryRefs.promotionReviewQueue = { path: promotionQueueRelative, digest: await digestFile(promotionQueuePath) };
+          console.log(`wrote ${promotionQueueRelative}`);
+        }
+      }
     }
   }
 
