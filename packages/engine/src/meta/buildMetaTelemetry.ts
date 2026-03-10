@@ -6,8 +6,6 @@ const safeDiv = (num: number, denom: number): number => (denom <= 0 ? 0 : num / 
 
 export const buildMetaTelemetry = (input: MetaAnalysisInput): MetaTelemetryArtifact => {
   const allDecisions = input.promotionDecisions.flatMap((batch) => batch.decisions);
-  const promotedCount = allDecisions.filter((decision) => decision.decisionType === 'promote').length;
-  const rejectCount = allDecisions.filter((decision) => decision.decisionType === 'reject').length;
 
   const avgLatencyHours = (() => {
     const cycleById = new Map(input.runCycles.map((cycle) => [cycle.runCycleId, cycle]));
@@ -24,20 +22,23 @@ export const buildMetaTelemetry = (input: MetaAnalysisInput): MetaTelemetryArtif
     return round4(safeDiv(latencies.reduce((sum, value) => sum + value, 0), latencies.length));
   })();
 
-  const patternCards = input.patternCards.flatMap((artifact) => artifact.cards);
-  const canonicalKeys = patternCards.map((card) => card.canonicalKey);
-  const uniqueCanonicalKeys = new Set(canonicalKeys);
-  const patternReuseRate = round4(safeDiv(canonicalKeys.length - uniqueCanonicalKeys.size, canonicalKeys.length));
+  const draftCards = input.draftPatternCards.flatMap((artifact) => artifact.drafts).length;
+  const promotedCards = input.patternCards.flatMap((artifact) => artifact.cards).length;
 
-  const driftCycles = input.runCycles.filter((cycle) => cycle.metrics.driftScore > 0.2).length;
+  const topologyValues = input.patternCards.flatMap((artifact) =>
+    artifact.cards.map((card) =>
+      JSON.stringify({
+        stageCount: card.topology?.stageCount ?? 0,
+        dependencyStructure: [...(card.topology?.dependencyStructure ?? [])].sort()
+      })
+    )
+  );
+
   const entropyTrendSlope = (() => {
     if (input.runCycles.length < 2) return 0;
     const sorted = [...input.runCycles].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     return round4(sorted[sorted.length - 1].metrics.entropyBudget - sorted[0].metrics.entropyBudget);
   })();
-
-  const candidateTitles = input.candidatePatterns.flatMap((artifact) => artifact.candidates.map((candidate) => candidate.title.toLowerCase().trim()));
-  const duplicationRate = round4(safeDiv(candidateTitles.length - new Set(candidateTitles).size, candidateTitles.length));
 
   return {
     schemaVersion: '1.0',
@@ -50,20 +51,19 @@ export const buildMetaTelemetry = (input: MetaAnalysisInput): MetaTelemetryArtif
       candidatePatterns: input.candidatePatterns.length,
       patternCards: input.patternCards.length,
       promotionDecisions: input.promotionDecisions.length,
-      contractEvents: input.contractHistory.length
+      contractEvents: input.contractHistory.length + input.contractVersions.length
     },
     rates: {
       promotionLatencyAvgHours: avgLatencyHours,
-      rejectionRate: round4(safeDiv(rejectCount, allDecisions.length)),
-      patternReuseRate,
-      contractDriftRate: round4(safeDiv(driftCycles, input.runCycles.length)),
-      entropyTrendSlope,
-      duplicationRate
+      duplicatePatternTopologyRate: round4(safeDiv(topologyValues.length - new Set(topologyValues).size, topologyValues.length)),
+      draftBacklogPressure: round4(safeDiv(draftCards, draftCards + promotedCards)),
+      contractMutationFrequency: round4(safeDiv(input.contractHistory.length + input.contractVersions.length, input.runCycles.length)),
+      entropyTrendSlope
     },
     artifactRefs: [
       ...input.runCycles.map((cycle) => `run-cycle:${cycle.runCycleId}`),
       ...input.promotionDecisions.map((batch) => `promotion-decision:${batch.batchId}`),
-      `promoted-patterns:${promotedCount}`
+      ...input.contractHistory.map((proposal) => `contract-proposal:${proposal.proposalId}`)
     ]
   };
 };

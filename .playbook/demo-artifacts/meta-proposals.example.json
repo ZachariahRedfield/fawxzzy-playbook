@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "playbook-meta-proposals",
+  "createdAt": "2026-01-01T01:00:00.000Z",
+  "proposals": [
+    {
+      "proposalId": "meta-proposal:promotion_latency",
+      "sourceFindingId": "meta-finding:promotion_latency",
+      "createdAt": "2026-01-01T01:00:00.000Z",
+      "kind": "playbook-meta-improvement-proposal",
+      "status": "draft",
+      "title": "Improve promotion latency",
+      "summary": "Tighten promotion-review queue SLA for high-confidence candidates.",
+      "actions": [
+        "review source finding and evidence artifacts",
+        "design deterministic remediation experiment with success criteria",
+        "submit through doctrine governance commands without automatic mutation"
+      ],
+      "mutationPolicy": "proposal-only",
+      "guardrail": "meta-proposals-cannot-mutate-doctrine",
+      "evidenceArtifactRefs": [
+        "promotion-decision:decision-batch:2026-01-01T00-00-00.000Z@abc1234"
+      ],
+      "supportingMetrics": {
+        "promotedDecisionCount": 3,
+        "cycleCount": 2
+      }
+    }
+  ]
+}
