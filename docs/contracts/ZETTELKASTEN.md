@@ -16,6 +16,10 @@ Runtime output paths:
 
 Committed examples may be stored under `.playbook/demo-artifacts/` as static snapshots.
 
+Graph-memory runtime snapshots are emitted to:
+
+- `.playbook/graph/snapshots/<timestamp>@<shortsha>.json`
+
 ## Zettel minimum shape
 
 Each zettel record should include:
@@ -113,10 +117,10 @@ Stochastic clustering (for example Louvain/Leiden) is exploratory/offline only a
 ## Rule / Pattern / Failure Mode
 
 Rule:
-Zettels may accumulate temporarily, but only stabilized patterns and promoted contracts count as durable memory.
+Only evidence-backed deterministic edges may enter the production graph.
 
 Pattern:
-Playbook learns through spiral cycles: each RunCycle expands evidence, then compresses it inward into reusable attractors.
+The first operational memory layer is not compaction but linkage.
 
 Failure Mode:
-A zettelkasten that does not converge becomes a note heap; a compactor that over-merges destroys distinctions and causes doctrine drift.
+A note system without typed edges cannot support reliable contraction, promotion, or reuse.

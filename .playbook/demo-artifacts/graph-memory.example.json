@@ -1,239 +1,196 @@
 {
-  "schemaVersion": "1.0",
-  "kind": "playbook-graph-memory-snapshot-demo",
-  "snapshotType": "committed-example",
-  "snapshotId": "graph-memory-demo-2026-03-10",
+  "snapshotId": "graph:2026-03-10T09-00-00.000Z@demo42a:9f0f7f067d5d6f34",
   "cycleId": "2026-03-10T09-00-00.000Z@demo42a",
+  "createdAt": "2026-03-10T09:00:00.000Z",
   "vertices": [
     {
-      "id": "cycle.2026-03-10T09-00-00.000Z@demo42a",
-      "kind": "RunCycle",
+      "id": "artifact:playbook-verify-json",
+      "kind": "Artifact",
       "status": "working",
       "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
-      "canonicalKey": "run-cycle:2026-03-10T09-00-00.000Z@demo42a",
+      "sourceArtifactPath": ".playbook/verify.json",
+      "canonicalKey": "artifact:.playbook/verify.json",
       "evidenceCount": 1,
-      "entropyCost": 0.02,
+      "entropyCost": 0,
       "metadata": {
         "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
       }
     },
     {
-      "id": "artifact.verify.demo42a",
+      "id": "artifact:playbook-zettelkasten-zettels-jsonl",
       "kind": "Artifact",
       "status": "working",
       "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
-      "sourceArtifactPath": ".playbook/verify.json",
-      "canonicalKey": "artifact:verify:demo42a",
-      "evidenceCount": 2,
-      "entropyCost": 0.15,
+      "sourceArtifactPath": ".playbook/zettelkasten/zettels.jsonl",
+      "canonicalKey": "artifact:.playbook/zettelkasten/zettels.jsonl",
+      "evidenceCount": 1,
+      "entropyCost": 0,
       "metadata": {
         "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
       }
     },
     {
-      "id": "artifact.plan.demo42a",
-      "kind": "Artifact",
-      "status": "working",
-      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
-      "sourceArtifactPath": ".playbook/plan.json",
-      "canonicalKey": "artifact:plan:demo42a",
-      "evidenceCount": 1,
-      "entropyCost": 0.11,
-      "metadata": {
-        "digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
-      }
-    },
-    {
-      "id": "zettel.verify.pb014",
-      "kind": "Zettel",
-      "status": "converging",
-      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
-      "sourceArtifactPath": ".playbook/zettelkasten/zettels.jsonl",
-      "canonicalKey": "zettel:verify:pb014",
-      "evidenceCount": 3,
-      "entropyCost": 0.22,
-      "metadata": {
-        "digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
-      }
-    },
-    {
-      "id": "zettel.plan.pb014",
-      "kind": "Zettel",
-      "status": "converging",
-      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
-      "sourceArtifactPath": ".playbook/zettelkasten/zettels.jsonl",
-      "canonicalKey": "zettel:plan:pb014",
-      "evidenceCount": 2,
-      "entropyCost": 0.19,
-      "metadata": {
-        "digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
-      }
-    },
-    {
-      "id": "pattern.docs-memory-contraction",
-      "kind": "PatternCard",
-      "status": "contracted",
-      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
-      "canonicalKey": "pattern:docs-memory-contraction",
-      "evidenceCount": 5,
-      "entropyCost": 0.08,
-      "metadata": {
-        "digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
-        "attractorType": "soft"
-      }
-    },
-    {
-      "id": "contract.docs-memory-lineage",
+      "id": "contract.run-cycle-converges-before-promotion",
       "kind": "Contract",
       "status": "promoted",
       "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
-      "canonicalKey": "contract:docs-memory-lineage",
-      "evidenceCount": 5,
-      "entropyCost": 0.03,
+      "canonicalKey": "contract:run-cycle-converges-before-promotion",
+      "evidenceCount": 1,
+      "entropyCost": 0,
+      "metadata": {}
+    },
+    {
+      "id": "pattern.run-cycle-memory-consolidation",
+      "kind": "PatternCard",
+      "status": "contracted",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "canonicalKey": "pattern:run-cycle-memory-consolidation",
+      "evidenceCount": 3,
+      "entropyCost": 0,
+      "metadata": {}
+    },
+    {
+      "id": "cycle:2026-03-10T09-00-00.000Z@demo42a",
+      "kind": "RunCycle",
+      "status": "working",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
+      "sourceArtifactPath": ".playbook/run-cycles/2026-03-10T09-00-00.000Z@demo42a.json",
+      "canonicalKey": "run-cycle:2026-03-10T09-00-00.000Z@demo42a",
+      "evidenceCount": 1,
+      "entropyCost": 0,
       "metadata": {
-        "digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
-        "attractorType": "hard"
+        "createdAt": "2026-03-10T09:00:00.000Z"
       }
     },
     {
-      "id": "subject.docs-governance",
-      "kind": "Subject",
+      "id": "ztt.observe.verify-drift.0001",
+      "kind": "Zettel",
       "status": "converging",
       "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
-      "canonicalKey": "subject:docs-governance",
-      "evidenceCount": 2,
-      "entropyCost": 0.07,
-      "metadata": {}
+      "sourceArtifactPath": ".playbook/zettelkasten/zettels.jsonl",
+      "canonicalKey": "zettel:verify-drift",
+      "evidenceCount": 1,
+      "entropyCost": 0,
+      "metadata": {
+        "subject": "verify drift"
+      }
     },
     {
-      "id": "decision.promote-lineage-rule",
-      "kind": "Decision",
-      "status": "promoted",
+      "id": "ztt.plan.remediation-step.0002",
+      "kind": "Zettel",
+      "status": "converging",
       "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
-      "canonicalKey": "decision:promote-lineage-rule",
+      "sourceArtifactPath": ".playbook/zettelkasten/zettels.jsonl",
+      "canonicalKey": "zettel:verify-drift",
       "evidenceCount": 1,
-      "entropyCost": 0.04,
-      "metadata": {}
+      "entropyCost": 0,
+      "metadata": {
+        "subject": "verify drift"
+      }
     }
   ],
   "edges": [
     {
-      "id": "e1",
+      "id": "edge:010f7ccaad7cc164",
       "kind": "PRODUCED",
-      "from": "cycle.2026-03-10T09-00-00.000Z@demo42a",
-      "to": "artifact.verify.demo42a",
+      "from": "cycle:2026-03-10T09-00-00.000Z@demo42a",
+      "to": "artifact:playbook-verify-json",
       "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
       "evidenceRefs": [
-        "local:run-cycle:forward-arc:verify"
+        "path:.playbook/verify.json#sha256:1111111111111111111111111111111111111111111111111111111111111111"
       ]
     },
     {
-      "id": "e2",
+      "id": "edge:1f2f3f4f5f6f7f8f",
       "kind": "PRODUCED",
-      "from": "cycle.2026-03-10T09-00-00.000Z@demo42a",
-      "to": "artifact.plan.demo42a",
+      "from": "cycle:2026-03-10T09-00-00.000Z@demo42a",
+      "to": "ztt.observe.verify-drift.0001",
       "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
       "evidenceRefs": [
-        "local:run-cycle:return-arc:plan"
+        "source:.playbook/zettelkasten/zettels.jsonl"
       ]
     },
     {
-      "id": "e3",
-      "kind": "DERIVES",
-      "from": "artifact.verify.demo42a",
-      "to": "zettel.verify.pb014",
-      "confidence": 0.94,
+      "id": "edge:2f3f4f5f6f7f8f9f",
+      "kind": "PRODUCED",
+      "from": "cycle:2026-03-10T09-00-00.000Z@demo42a",
+      "to": "ztt.plan.remediation-step.0002",
       "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
       "evidenceRefs": [
-        "local:verify:finding:PB014"
+        "source:.playbook/zettelkasten/zettels.jsonl"
       ]
     },
     {
-      "id": "e4",
-      "kind": "DERIVES",
-      "from": "artifact.plan.demo42a",
-      "to": "zettel.plan.pb014",
-      "confidence": 0.91,
+      "id": "edge:3534dbf0f6f6f6f6",
+      "kind": "CITES",
+      "from": "ztt.observe.verify-drift.0001",
+      "to": "artifact:playbook-verify-json",
       "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
       "evidenceRefs": [
-        "local:plan:task:PB014"
+        "evidence:.playbook/verify.json"
       ]
     },
     {
-      "id": "e5",
-      "kind": "SIMILAR_TO",
-      "from": "zettel.verify.pb014",
-      "to": "zettel.plan.pb014",
-      "weight": 0.83,
+      "id": "edge:4f5f6f7f8f9f0f1f",
+      "kind": "SUPPORTS",
+      "from": "ztt.observe.verify-drift.0001",
+      "to": "pattern.run-cycle-memory-consolidation",
       "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
       "evidenceRefs": [
-        "local:similarity:cosine:0.83"
+        "link:promotedPatternId",
+        "source:.playbook/zettelkasten/zettels.jsonl"
       ]
     },
     {
-      "id": "e6",
+      "id": "edge:5f6f7f8f9f0f1f2f",
       "kind": "MEMBER_OF",
-      "from": "zettel.verify.pb014",
-      "to": "pattern.docs-memory-contraction",
+      "from": "ztt.plan.remediation-step.0002",
+      "to": "pattern.run-cycle-memory-consolidation",
       "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
       "evidenceRefs": [
-        "local:compaction:bucket:docs-memory-contraction"
+        "group:exact-pattern-id",
+        "source:.playbook/zettelkasten/zettels.jsonl"
       ]
     },
     {
-      "id": "e7",
-      "kind": "MEMBER_OF",
-      "from": "zettel.plan.pb014",
-      "to": "pattern.docs-memory-contraction",
-      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
-      "evidenceRefs": [
-        "local:compaction:bucket:docs-memory-contraction"
-      ]
-    },
-    {
-      "id": "e8",
+      "id": "edge:6f7f8f9f0f1f2f3f",
       "kind": "PROMOTES_TO",
-      "from": "pattern.docs-memory-contraction",
-      "to": "contract.docs-memory-lineage",
+      "from": "pattern.run-cycle-memory-consolidation",
+      "to": "contract.run-cycle-converges-before-promotion",
       "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
       "evidenceRefs": [
-        "local:promotion:decision:promote-lineage-rule"
+        "promotion:promoted-from-pattern-id"
       ]
     },
     {
-      "id": "e9",
+      "id": "edge:7f8f9f0f1f2f3f4f",
       "kind": "APPLIES_TO",
-      "from": "contract.docs-memory-lineage",
-      "to": "subject.docs-governance",
+      "from": "ztt.plan.remediation-step.0002",
+      "to": "contract.run-cycle-converges-before-promotion",
       "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
       "evidenceRefs": [
-        "local:contract:scope:docs-governance"
+        "link:contract-ref",
+        "source:.playbook/zettelkasten/zettels.jsonl"
       ]
-    }
-  ],
-  "relations": [
+    },
     {
-      "id": "r1",
-      "relationKind": "SUPPORTS",
-      "participantIds": [
-        "artifact.verify.demo42a",
-        "artifact.plan.demo42a",
-        "decision.promote-lineage-rule",
-        "contract.docs-memory-lineage"
-      ],
+      "id": "edge:8f9f0f1f2f3f4f5f",
+      "kind": "SIMILAR_TO",
+      "from": "ztt.observe.verify-drift.0001",
+      "to": "ztt.plan.remediation-step.0002",
+      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a",
       "evidenceRefs": [
-        "local:joint-evidence:promotion-bundle:v1"
-      ],
-      "originCycleId": "2026-03-10T09-00-00.000Z@demo42a"
+        "similarity:canonicalKey:zettel:verify-drift"
+      ]
     }
   ],
   "metrics": {
-    "vertexCount": 9,
+    "vertexCount": 7,
     "edgeCount": 9,
-    "relationVertexCount": 1,
-    "componentCount": 1,
-    "contractedVertexCount": 1,
-    "promotedContractCount": 1,
-    "entropyCostTotal": 0.91
+    "orphanVertexCount": 1,
+    "zettelCount": 2,
+    "linkedZettelCount": 2,
+    "patternCardCount": 1,
+    "contractCount": 1
   }
 }

@@ -46,6 +46,10 @@ export type { AiContract, LoadedAiContract, AiContractSource } from './ai/aiCont
 export { getCliSchemas, getCliSchema, isCliSchemaCommand, CLI_SCHEMA_COMMANDS } from './schema/cliSchemas.js';
 export type { CliSchemaCommand, JsonSchema } from './schema/cliSchemas.js';
 export { VERTEX_KIND, EDGE_KIND } from './schema/graphMemory.js';
+export { buildGraphSnapshot } from './graph/buildGraphSnapshot.js';
+export type { BuildGraphSnapshotInput } from './graph/buildGraphSnapshot.js';
+export { materializeDeterministicEdges, countOrphanVertices } from './graph/deterministicEdges.js';
+export type { EdgeSeed } from './graph/deterministicEdges.js';
 export type { VertexKind, EdgeKind, GraphVertexStatus, GraphVertex, GraphEdge, RelationVertex, GraphSnapshotMetrics, GraphSnapshot } from './schema/graphMemory.js';
 
 export { queryDependencies } from './query/dependencies.js';

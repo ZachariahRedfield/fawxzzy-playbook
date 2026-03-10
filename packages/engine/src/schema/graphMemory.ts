@@ -66,16 +66,17 @@ export type RelationVertex = {
 export type GraphSnapshotMetrics = {
   vertexCount: number;
   edgeCount: number;
-  relationVertexCount: number;
-  componentCount: number;
-  contractedVertexCount: number;
-  promotedContractCount: number;
-  entropyCostTotal: number;
+  orphanVertexCount: number;
+  zettelCount: number;
+  linkedZettelCount: number;
+  patternCardCount: number;
+  contractCount: number;
 };
 
 export type GraphSnapshot = {
   snapshotId: string;
   cycleId: string;
+  createdAt: string;
   vertices: GraphVertex[];
   edges: GraphEdge[];
   relations?: RelationVertex[];

@@ -9,6 +9,9 @@ const repoRoot = process.cwd();
 const playbookDir = path.join(repoRoot, '.playbook');
 const runCyclesDir = path.join(playbookDir, 'run-cycles');
 const zettelkastenDir = path.join(playbookDir, 'zettelkasten');
+const graphSnapshotsDir = path.join(playbookDir, 'graph', 'snapshots');
+
+const shouldEmitGraph = !process.argv.includes('--no-graph');
 
 const jsonArtifacts = {
   aiContext: '.playbook/ai-context.json',
@@ -66,6 +69,9 @@ const runCycleId = `${timestamp}@${shortSha}`;
 
 await mkdir(runCyclesDir, { recursive: true });
 await mkdir(zettelkastenDir, { recursive: true });
+if (shouldEmitGraph) {
+  await mkdir(graphSnapshotsDir, { recursive: true });
+}
 
 const forwardArc = {
   aiContext: await resolveRef(jsonArtifacts.aiContext),
@@ -91,6 +97,7 @@ const exampleZettel = {
   id: `zettel:${runCycleId}:example`,
   createdAt: now.toISOString(),
   title: 'RunCycle seed observation',
+  subject: 'run-cycle seed observation',
   kind: 'observation',
   body: 'Initial zettel scaffold for RunCycle capture.',
   evidence: [
@@ -147,3 +154,17 @@ await writeFile(runCyclePath, `${JSON.stringify(runCycle, null, 2)}\n`, 'utf8');
 console.log(`wrote ${runCycleRelative}`);
 console.log(`wrote ${zettelsRelative}`);
 console.log(`wrote ${linksRelative}`);
+
+if (shouldEmitGraph) {
+  const { buildGraphSnapshot } = await import(path.join(repoRoot, 'packages/engine/dist/graph/buildGraphSnapshot.js'));
+  const graphSnapshot = buildGraphSnapshot({
+    projectRoot: repoRoot,
+    runCycle,
+    createdAt: now.toISOString()
+  });
+
+  const graphSnapshotRelative = `.playbook/graph/snapshots/${runCycleId}.json`;
+  const graphSnapshotPath = path.join(repoRoot, graphSnapshotRelative);
+  await writeFile(graphSnapshotPath, `${JSON.stringify(graphSnapshot, null, 2)}\n`, 'utf8');
+  console.log(`wrote ${graphSnapshotRelative}`);
+}

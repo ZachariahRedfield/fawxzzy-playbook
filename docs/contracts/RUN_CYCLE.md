@@ -7,6 +7,7 @@ It is intended to anchor:
 - forward discovery (`ai-context`/`ai-contract`/`index`/`graph`)
 - return remediation (`verify`/`plan`/`apply`/post-`verify`)
 - zettelkasten extraction (`zettels.jsonl` and `links.jsonl`)
+- deterministic graph snapshot linkage (`.playbook/graph/snapshots/<timestamp>@<shortsha>.json`)
 - cycle-based memory consolidation (`compact` and `promote` outcomes)
 
 ## RunCycle memory semantics
@@ -141,3 +142,31 @@ Contraction requirements:
 RunCycle and Zettelkasten outputs are runtime artifacts and must remain under `.playbook/`.
 
 For repository history, commit only curated/static examples (for example under `.playbook/demo-artifacts/`) and avoid committing volatile run-by-run snapshots.
+
+
+## Graph snapshot artifact (runtime)
+
+Runtime graph-memory snapshots capture typed edges produced from RunCycle + zettelkasten evidence.
+
+Path:
+
+- `.playbook/graph/snapshots/<timestamp>@<shortsha>.json`
+
+Snapshot metrics include:
+
+- `vertexCount`
+- `edgeCount`
+- `orphanVertexCount`
+- `zettelCount`
+- `linkedZettelCount`
+- `patternCardCount`
+- `contractCount`
+
+Rule:
+Only evidence-backed deterministic edges may enter the production graph.
+
+Pattern:
+The first operational memory layer is not compaction but linkage.
+
+Failure Mode:
+A note system without typed edges cannot support reliable contraction, promotion, or reuse.
