@@ -1,4 +1,4 @@
-﻿# Playbook Command Status Index
+# Playbook Command Status Index
 
 This is the authoritative command-state snapshot for Playbook product docs.
 
@@ -61,11 +61,7 @@ Optional convenience alias:
 pnpm pilot "$TARGET_REPO_PATH"
 ```
 
-<<<<<<< HEAD
 `playbook pilot` deterministically executes `context -> index -> query modules -> verify -> plan`, writes machine-readable artifacts directly (`.playbook/findings.json`, `.playbook/plan.json`, `.playbook/pilot-summary.json`), and records one top-level runtime cycle with child phases.
-=======
-Pilot deterministically executes `context -> index -> query modules -> verify -> plan`, writes `.playbook/findings.json` and `.playbook/plan.json` directly, and emits `.playbook/pilot-summary.json` with compact onboarding telemetry.
->>>>>>> e7e6212fdfca535a8bea181c1e417bbc752efb88
 
 Minimal external onboarding contract:
 

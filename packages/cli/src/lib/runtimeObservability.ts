@@ -19,17 +19,9 @@ type RuntimeCycleContext = {
   playbookVersion: string;
 };
 
-type PathCategory =
-  | 'vcs-internal'
-  | 'build-cache'
-  | 'generated-report'
-  | 'binary-asset'
-  | 'oversized-source'
-  | 'temporary-file'
-  | 'user-source'
-  | 'unknown';
-
 type ReadStatus = 'found' | 'missing' | 'malformed';
+type RecommendationSafetyLevel = 'safe-default' | 'likely-safe' | 'review-first';
+type RecommendationImpactLevel = 'low' | 'medium' | 'high';
 
 type CoverageArtifact = {
   schemaVersion: '1.0';
@@ -69,17 +61,12 @@ type CoverageArtifact = {
       total_files_seen: number;
       sampled_file_hashes: Array<{ path: string; sha256: string }>;
       max_scan_bytes: number;
-<<<<<<< HEAD
       expensive_paths: Array<{ path: string; size_bytes: number }>;
       path_class_counts: Record<ScanPathClass, number>;
       pruned_directories: Array<{ path: string; path_class: ScanPathClass; reason: string }>;
       low_value_path_samples: Array<{ path: string; path_class: ScanPathClass; handling: ScanHandling; reason: string }>;
       ignore_candidate_paths: string[];
       expensive_path_classes: Array<{ path_class: ScanPathClass; total_size_bytes: number; file_count: number }>;
-=======
-      expensive_paths: Array<{ path: string; size_bytes: number; category: PathCategory }>;
-      expensive_path_category_counts: Record<PathCategory, number>;
->>>>>>> e7e6212fdfca535a8bea181c1e417bbc752efb88
     };
     dependency_scan: {
       unresolved_relative_imports: number;
@@ -109,18 +96,42 @@ type TelemetryArtifact = {
   module_extraction_phase_count: number;
   verify_rule_phase_count: number;
   fallback_usage_counts: Record<string, number>;
-  ignore_classification_counts: Record<PathCategory, number>;
-  expensive_path_category_counts: Record<PathCategory, number>;
+  ignore_classification_counts: Record<ScanPathClass, number>;
   parser_failure_counts: Record<string, number>;
-<<<<<<< HEAD
   expensive_paths: Array<{ path: string; size_bytes: number }>;
   expensive_path_classes: Array<{ path_class: ScanPathClass; total_size_bytes: number; file_count: number }>;
   low_value_path_count: number;
-=======
-  expensive_paths: Array<{ path: string; size_bytes: number; category: PathCategory }>;
->>>>>>> e7e6212fdfca535a8bea181c1e417bbc752efb88
+  recommendation_count: number;
   warnings_count: number;
   failures_count: number;
+};
+
+type IgnoreRecommendation = {
+  path: string;
+  rank: number;
+  class: ScanPathClass;
+  rationale: string;
+  confidence: number;
+  expected_scan_impact: {
+    estimated_files_reduced: number;
+    estimated_bytes_reduced: number;
+    impact_level: RecommendationImpactLevel;
+  };
+  safety_level: RecommendationSafetyLevel;
+};
+
+type IgnoreRecommendationArtifact = {
+  schemaVersion: '1.0';
+  cycle_id: string;
+  generated_at: string;
+  recommendation_model: 'deterministic-v1';
+  ranking_factors: string[];
+  recommendations: IgnoreRecommendation[];
+  summary: {
+    total_recommendations: number;
+    safety_level_counts: Record<RecommendationSafetyLevel, number>;
+    class_counts: Record<ScanPathClass, number>;
+  };
 };
 
 type HistoryCommandStats = {
@@ -161,7 +172,18 @@ const readJsonFile = <T>(target: string): T | undefined => {
   }
 };
 
-<<<<<<< HEAD
+const trackRead = (target: string): ReadStatus => {
+  if (!fs.existsSync(target)) {
+    return 'missing';
+  }
+  try {
+    JSON.parse(fs.readFileSync(target, 'utf8'));
+    return 'found';
+  } catch {
+    return 'malformed';
+  }
+};
+
 const toPosix = (value: string): string => value.split(path.sep).join(path.posix.sep);
 
 const getPathSegments = (relativePath: string): string[] => toPosix(relativePath).split('/').filter(Boolean);
@@ -228,22 +250,6 @@ const shouldPruneDirectory = (relativeDirPath: string, pathClass: ScanPathClass)
   }
 
   return { prune: false, reason: '' };
-=======
-const classifyPath = (relativePath: string): PathCategory => {
-  const normalized = relativePath.toLowerCase();
-  if (normalized.startsWith('.git/')) return 'vcs-internal';
-  if (normalized.startsWith('.next/cache/') || normalized.startsWith('node_modules/') || normalized.includes('/.cache/')) return 'build-cache';
-  if (normalized.startsWith('playwright-report/') || normalized.startsWith('coverage/') || normalized.endsWith('.lcov')) return 'generated-report';
-  if (normalized.includes('/tmp/') || normalized.includes('/temp/') || normalized.startsWith('tmp/') || normalized.startsWith('temp/') || normalized.endsWith('.tmp') || normalized.includes('tmp_file')) {
-    return 'temporary-file';
-  }
-  return 'user-source';
-};
-
-const shouldIgnoreDirectory = (relativeDirPath: string): boolean => {
-  const normalized = relativeDirPath.split(path.sep).join(path.posix.sep);
-  return normalized === '.git' || normalized === 'node_modules';
->>>>>>> e7e6212fdfca535a8bea181c1e417bbc752efb88
 };
 
 const isLikelyBinary = (absolutePath: string): boolean => {
@@ -321,7 +327,6 @@ const listRepoFiles = (repoRoot: string): RepoInventory => {
 
 const hashContent = (value: Buffer | string): string => crypto.createHash('sha256').update(value).digest('hex');
 
-<<<<<<< HEAD
 const emptyPathClassCounts = (): Record<ScanPathClass, number> => ({
   'vcs-internal': 0,
   'build-cache': 0,
@@ -393,29 +398,6 @@ const toIgnoreCandidate = (relativePath: string, pathClass: ScanPathClass, isDir
   }
 
   return undefined;
-=======
-const createCategoryCounter = (): Record<PathCategory, number> => ({
-  'vcs-internal': 0,
-  'build-cache': 0,
-  'generated-report': 0,
-  'binary-asset': 0,
-  'oversized-source': 0,
-  'temporary-file': 0,
-  'user-source': 0,
-  unknown: 0
-});
-
-const trackRead = (target: string): ReadStatus => {
-  if (!fs.existsSync(target)) {
-    return 'missing';
-  }
-  try {
-    JSON.parse(fs.readFileSync(target, 'utf8'));
-    return 'found';
-  } catch {
-    return 'malformed';
-  }
->>>>>>> e7e6212fdfca535a8bea181c1e417bbc752efb88
 };
 
 const collectCoverage = (repoRoot: string, cycleId: string): CoverageArtifact => {
@@ -426,6 +408,7 @@ const collectCoverage = (repoRoot: string, cycleId: string): CoverageArtifact =>
 
   let scannedFiles = 0;
   let eligibleFiles = 0;
+  let skippedFiles = 0;
   let oversizedFiles = 0;
   let unsupportedFiles = 0;
   let binaryFiles = 0;
@@ -433,7 +416,6 @@ const collectCoverage = (repoRoot: string, cycleId: string): CoverageArtifact =>
   let unresolvedImports = 0;
   let ignoredFiles = 0;
 
-<<<<<<< HEAD
   const expensivePaths: Array<{ path: string; size_bytes: number }> = [];
   const pathClassCounts = emptyPathClassCounts();
   const lowValuePathSamples: Array<{ path: string; path_class: ScanPathClass; handling: ScanHandling; reason: string }> = [];
@@ -452,16 +434,6 @@ const collectCoverage = (repoRoot: string, cycleId: string): CoverageArtifact =>
     currentClassStats.total_size_bytes += stat.size;
     currentClassStats.file_count += 1;
     expensiveClassStats.set(pathClass, currentClassStats);
-=======
-  const expensivePaths: Array<{ path: string; size_bytes: number; category: PathCategory }> = [];
-  const expensivePathCategoryCounts = createCategoryCounter();
-
-  for (const absolutePath of files) {
-    const relativePath = posixRelative(repoRoot, absolutePath);
-    const ext = path.extname(absolutePath).toLowerCase();
-    const stat = fs.statSync(absolutePath);
-    let category = classifyPath(relativePath);
->>>>>>> e7e6212fdfca535a8bea181c1e417bbc752efb88
 
     if (absolutePath.includes(`${path.sep}.playbook${path.sep}runtime${path.sep}`)) {
       ignoredFiles += 1;
@@ -481,55 +453,32 @@ const collectCoverage = (repoRoot: string, cycleId: string): CoverageArtifact =>
 
     if (isLikelyBinary(absolutePath)) {
       binaryFiles += 1;
-<<<<<<< HEAD
       if (pathClass !== 'binary-asset') {
         pathClassCounts[pathClass] = Math.max(0, pathClassCounts[pathClass] - 1);
       }
       pathClassCounts['binary-asset'] += 1;
       pushLowValueSample(lowValuePathSamples, { path: relativePath, path_class: 'binary-asset', handling: 'binary', reason: 'contains-nul-byte' });
-=======
-      category = 'binary-asset';
-      expensivePathCategoryCounts[category] += 1;
-      expensivePaths.push({ path: relativePath, size_bytes: stat.size, category });
->>>>>>> e7e6212fdfca535a8bea181c1e417bbc752efb88
       continue;
     }
 
     if (!analyzableExtensions.has(ext)) {
       unsupportedFiles += 1;
-<<<<<<< HEAD
       pushLowValueSample(lowValuePathSamples, { path: relativePath, path_class: pathClass, handling: 'unsupported', reason: 'unsupported-extension' });
-=======
-      expensivePathCategoryCounts[category] += 1;
-      expensivePaths.push({ path: relativePath, size_bytes: stat.size, category });
->>>>>>> e7e6212fdfca535a8bea181c1e417bbc752efb88
       continue;
     }
 
     eligibleFiles += 1;
 
     if (stat.size > DEFAULT_MAX_SCAN_BYTES) {
-<<<<<<< HEAD
       skippedFiles += 1;
       pushLowValueSample(lowValuePathSamples, { path: relativePath, path_class: pathClass, handling: 'skipped', reason: 'oversized-file' });
-=======
-      oversizedFiles += 1;
-      category = 'oversized-source';
-      expensivePathCategoryCounts[category] += 1;
-      expensivePaths.push({ path: relativePath, size_bytes: stat.size, category });
->>>>>>> e7e6212fdfca535a8bea181c1e417bbc752efb88
       continue;
     }
 
     try {
       const content = fs.readFileSync(absolutePath, 'utf8');
       scannedFiles += 1;
-<<<<<<< HEAD
       pushLowValueSample(lowValuePathSamples, { path: relativePath, path_class: pathClass, handling: 'scanned', reason: 'analyzable-source-file' });
-=======
-      expensivePathCategoryCounts[category] += 1;
-      expensivePaths.push({ path: relativePath, size_bytes: stat.size, category });
->>>>>>> e7e6212fdfca535a8bea181c1e417bbc752efb88
       const importRe = /from\s+['\"]([^'\"]+)['\"]|import\(['\"]([^'\"]+)['\"]\)|import\s+['\"]([^'\"]+)['\"]/g;
       for (const match of content.matchAll(importRe)) {
         const specifier = match[1] ?? match[2] ?? match[3];
@@ -539,8 +488,6 @@ const collectCoverage = (repoRoot: string, cycleId: string): CoverageArtifact =>
       }
     } catch {
       parseFailures += 1;
-      expensivePathCategoryCounts[category] += 1;
-      expensivePaths.push({ path: relativePath, size_bytes: stat.size, category });
     }
   }
 
@@ -560,16 +507,8 @@ const collectCoverage = (repoRoot: string, cycleId: string): CoverageArtifact =>
   if (unsupportedFiles > 0) unknownAreas.push('unsupported-file-types');
   if (oversizedFiles > 0) unknownAreas.push('oversized-files');
   if (unresolvedImports > 0) unknownAreas.push('unresolved-imports');
-<<<<<<< HEAD
   if (parseFailures > 0) unknownAreas.push('parse-failures');
   if (ignoredFiles > 0 || inventory.prunedDirectories.length > 0) unknownAreas.push('classified-low-value-paths');
-=======
-  if (binaryFiles > 0) unknownAreas.push('binary-assets');
-  if (parseFailures > 0) unknownAreas.push('parse-failed-files');
-  if (expensivePathCategoryCounts['vcs-internal'] > 0) unknownAreas.push('vcs-internal-paths');
-  if (expensivePathCategoryCounts['generated-report'] > 0) unknownAreas.push('generated-reports');
-  if (expensivePathCategoryCounts['temporary-file'] > 0) unknownAreas.push('temporary-files');
->>>>>>> e7e6212fdfca535a8bea181c1e417bbc752efb88
 
   const coverageConfidence: 'high' | 'medium' | 'low' = repoVisibilityScore >= 0.9 ? 'high' : repoVisibilityScore >= 0.6 ? 'medium' : 'low';
   const sampledFileHashes = files
@@ -635,15 +574,11 @@ const collectCoverage = (repoRoot: string, cycleId: string): CoverageArtifact =>
         sampled_file_hashes: sampledFileHashes,
         max_scan_bytes: DEFAULT_MAX_SCAN_BYTES,
         expensive_paths: expensivePaths.sort((a, b) => b.size_bytes - a.size_bytes).slice(0, 5),
-<<<<<<< HEAD
         path_class_counts: pathClassCounts,
         pruned_directories: inventory.prunedDirectories,
         low_value_path_samples: lowValuePathSamples,
         ignore_candidate_paths: Array.from(ignoreCandidatePaths).sort((a, b) => a.localeCompare(b)),
         expensive_path_classes: expensivePathClasses
-=======
-        expensive_path_category_counts: expensivePathCategoryCounts
->>>>>>> e7e6212fdfca535a8bea181c1e417bbc752efb88
       },
       dependency_scan: {
         unresolved_relative_imports: unresolvedImports
@@ -657,7 +592,200 @@ const collectCoverage = (repoRoot: string, cycleId: string): CoverageArtifact =>
   };
 };
 
-const enrichPilotSummaryWithRuntimeSignals = (repoRoot: string, coverage: CoverageArtifact): void => {
+const isPathWithinCandidate = (pathValue: string, candidate: string): boolean => {
+  const normalizedPath = toPosix(pathValue);
+  const normalizedCandidate = toPosix(candidate);
+  if (normalizedCandidate.endsWith('/')) {
+    const prefix = normalizedCandidate.slice(0, -1);
+    return normalizedPath === prefix || normalizedPath.startsWith(normalizedCandidate);
+  }
+  return normalizedPath === normalizedCandidate;
+};
+
+const classifyCandidate = (candidate: string, coverage: CoverageArtifact): ScanPathClass => {
+  const normalized = candidate.toLowerCase();
+  if (normalized === '.git/' || normalized.startsWith('.git/')) return 'vcs-internal';
+  if (normalized === '.next/cache/' || normalized.includes('node_modules/') || normalized.endsWith('/node_modules/')) return 'build-cache';
+  if (normalized.includes('playwright-report/') || normalized.includes('allure-report/') || normalized.includes('coverage/') || normalized.includes('reports/')) {
+    return 'generated-report';
+  }
+  if (normalized.includes('/tmp/') || normalized.startsWith('tmp/') || normalized.startsWith('temp/') || normalized.includes('tmp_') || normalized.endsWith('.tmp') || normalized.endsWith('~')) {
+    return 'temporary-file';
+  }
+
+  const sampleMatch = coverage.observations.file_inventory.low_value_path_samples.find((sample) => isPathWithinCandidate(sample.path, candidate));
+  return sampleMatch?.path_class ?? 'unknown';
+};
+
+const classifySafetyLevel = (candidate: string, pathClass: ScanPathClass): RecommendationSafetyLevel => {
+  const normalized = candidate.toLowerCase();
+  if (normalized === '.git/' || normalized === 'node_modules/' || normalized === '.next/cache/' || normalized === 'playwright-report/') {
+    return 'safe-default';
+  }
+  if (pathClass === 'vcs-internal' || pathClass === 'build-cache' || pathClass === 'generated-report') {
+    return 'likely-safe';
+  }
+  if (pathClass === 'temporary-file') {
+    return normalized.endsWith('/') ? 'likely-safe' : 'review-first';
+  }
+  return 'review-first';
+};
+
+const classifyImpactLevel = (bytes: number, files: number): RecommendationImpactLevel => {
+  if (bytes >= 5_000_000 || files >= 200) return 'high';
+  if (bytes >= 500_000 || files >= 25) return 'medium';
+  return 'low';
+};
+
+const collectHistoricalCoverage = (runtimeRoot: string, currentCycleId: string): CoverageArtifact[] => {
+  const cyclesRoot = path.join(runtimeRoot, 'cycles');
+  if (!fs.existsSync(cyclesRoot)) {
+    return [];
+  }
+
+  const cycleIds = fs
+    .readdirSync(cyclesRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && entry.name !== currentCycleId)
+    .map((entry) => entry.name)
+    .sort((a, b) => b.localeCompare(a))
+    .slice(0, 30);
+
+  const coverages: CoverageArtifact[] = [];
+  for (const cycleId of cycleIds) {
+    const coveragePath = path.join(cyclesRoot, cycleId, 'coverage.json');
+    const coverage = readJsonFile<CoverageArtifact>(coveragePath);
+    if (coverage?.schemaVersion === '1.0') {
+      coverages.push(coverage);
+    }
+  }
+
+  return coverages;
+};
+
+const buildIgnoreRecommendations = (runtimeRoot: string, coverage: CoverageArtifact): IgnoreRecommendationArtifact => {
+  const history = collectHistoricalCoverage(runtimeRoot, coverage.cycle_id);
+  const candidates = coverage.observations.file_inventory.ignore_candidate_paths;
+
+  const safetyCounts: Record<RecommendationSafetyLevel, number> = {
+    'safe-default': 0,
+    'likely-safe': 0,
+    'review-first': 0
+  };
+  const classCounts = emptyPathClassCounts();
+
+  const scored = candidates.map((candidate) => {
+    const pathClass = classifyCandidate(candidate, coverage);
+    const safetyLevel = classifySafetyLevel(candidate, pathClass);
+    const matchedCurrentExpensive = coverage.observations.file_inventory.expensive_paths.filter((entry) => isPathWithinCandidate(entry.path, candidate));
+    const estimatedBytes = matchedCurrentExpensive.reduce((sum, entry) => sum + entry.size_bytes, 0);
+    const estimatedFiles = matchedCurrentExpensive.length;
+    const repeatedCandidateCycles = history.filter((entry) => Array.isArray(entry.observations?.file_inventory?.ignore_candidate_paths) && entry.observations.file_inventory.ignore_candidate_paths.includes(candidate)).length;
+    const repeatedExpensiveCycles = history.filter((entry) => Array.isArray(entry.observations?.file_inventory?.expensive_paths) && entry.observations.file_inventory.expensive_paths.some((pathEntry) => isPathWithinCandidate(pathEntry.path, candidate))).length;
+
+    // Deterministic ranking weights; no learning/stateful tuning.
+    const classWeight: Record<ScanPathClass, number> = {
+      'vcs-internal': 90,
+      'build-cache': 80,
+      'generated-report': 70,
+      'temporary-file': 45,
+      'binary-asset': 20,
+      unknown: 25
+    };
+    const safetyWeight: Record<RecommendationSafetyLevel, number> = {
+      'safe-default': 45,
+      'likely-safe': 25,
+      'review-first': 5
+    };
+
+    const byteWeight = Math.min(30, Math.floor(Math.log10(estimatedBytes + 1) * 8));
+    const fileWeight = Math.min(20, estimatedFiles * 2);
+    const repeatCandidateWeight = Math.min(20, repeatedCandidateCycles * 5);
+    const repeatExpensiveWeight = Math.min(20, repeatedExpensiveCycles * 4);
+    const nonSourceWeight = pathClass === 'unknown' ? 0 : pathClass === 'temporary-file' ? 4 : 10;
+    const ambiguousPenalty = candidate.endsWith('/') ? 0 : 10;
+    const score = classWeight[pathClass] + safetyWeight[safetyLevel] + byteWeight + fileWeight + repeatCandidateWeight + repeatExpensiveWeight + nonSourceWeight - ambiguousPenalty;
+
+    const baseConfidence: Record<RecommendationSafetyLevel, number> = {
+      'safe-default': 0.95,
+      'likely-safe': 0.82,
+      'review-first': 0.62
+    };
+
+    const confidence = Number(
+      Math.max(
+        0.4,
+        Math.min(
+          0.99,
+          baseConfidence[safetyLevel] +
+            Math.min(0.09, repeatedCandidateCycles * 0.03) +
+            (estimatedBytes >= 5_000_000 ? 0.03 : estimatedBytes >= 500_000 ? 0.02 : 0) -
+            (pathClass === 'unknown' ? 0.1 : 0)
+        )
+      ).toFixed(2)
+    );
+
+    return {
+      path: candidate,
+      class: pathClass,
+      safety_level: safetyLevel,
+      confidence,
+      expected_scan_impact: {
+        estimated_files_reduced: estimatedFiles,
+        estimated_bytes_reduced: estimatedBytes,
+        impact_level: classifyImpactLevel(estimatedBytes, estimatedFiles)
+      },
+      rationale: `class=${pathClass}; safety=${safetyLevel}; current_cost=${estimatedFiles} files/${estimatedBytes} bytes; candidate_repeats=${repeatedCandidateCycles}; expensive_repeats=${repeatedExpensiveCycles}`,
+      score
+    };
+  });
+
+  scored.sort((left, right) => {
+    const scoreDiff = right.score - left.score;
+    if (scoreDiff !== 0) {
+      return scoreDiff;
+    }
+    return left.path.localeCompare(right.path);
+  });
+
+  const recommendations: IgnoreRecommendation[] = scored.slice(0, 25).map((entry, index) => ({
+    path: entry.path,
+    rank: index + 1,
+    class: entry.class,
+    rationale: entry.rationale,
+    confidence: entry.confidence,
+    expected_scan_impact: entry.expected_scan_impact,
+    safety_level: entry.safety_level
+  }));
+
+  for (const entry of recommendations) {
+    safetyCounts[entry.safety_level] += 1;
+    classCounts[entry.class] += 1;
+  }
+
+  return {
+    schemaVersion: '1.0',
+    cycle_id: coverage.cycle_id,
+    generated_at: new Date().toISOString(),
+    recommendation_model: 'deterministic-v1',
+    ranking_factors: [
+      'path-class-priority',
+      'safe-family-detection',
+      'current-cycle-expensive-byte-share',
+      'current-cycle-expensive-file-count',
+      'repeated-candidate-occurrence-across-cycles',
+      'repeated-expensive-path-occurrence-across-cycles',
+      'non-source-path-bias'
+    ],
+    recommendations,
+    summary: {
+      total_recommendations: recommendations.length,
+      safety_level_counts: safetyCounts,
+      class_counts: classCounts
+    }
+  };
+};
+
+const enrichPilotSummaryWithRuntimeSignals = (repoRoot: string, coverage: CoverageArtifact, recommendations: IgnoreRecommendationArtifact): void => {
   const pilotSummaryPath = path.join(repoRoot, '.playbook', 'pilot-summary.json');
   if (!fs.existsSync(pilotSummaryPath)) {
     return;
@@ -672,6 +800,14 @@ const enrichPilotSummaryWithRuntimeSignals = (repoRoot: string, coverage: Covera
     ...parsed,
     scanWasteCandidates: coverage.observations.file_inventory.ignore_candidate_paths.slice(0, 10),
     topExpensivePathClasses: coverage.observations.file_inventory.expensive_path_classes,
+    topIgnoreRecommendations: recommendations.recommendations.slice(0, 5).map((entry) => ({
+      path: entry.path,
+      class: entry.class,
+      rationale: entry.rationale,
+      expected_scan_impact: entry.expected_scan_impact,
+      safety_level: entry.safety_level,
+      confidence: entry.confidence
+    })),
     lowValuePathHandling: {
       ignored_files: coverage.ignored_files,
       pruned_directories: coverage.observations.file_inventory.pruned_directories.length
@@ -788,6 +924,7 @@ export const endRuntimeCycle = (context: RuntimeCycleContext, input: { exitCode:
   const runtimeRoot = path.join(context.repoRoot, RUNTIME_ROOT_RELATIVE);
 
   const coverage = collectCoverage(context.repoRoot, context.cycleId);
+  const ignoreRecommendations = buildIgnoreRecommendations(runtimeRoot, coverage);
 
   const allCommands = [context.triggerCommand, ...context.childCommands];
   const commandCalls = allCommands.reduce<Record<string, number>>((acc, command) => {
@@ -807,19 +944,22 @@ export const endRuntimeCycle = (context: RuntimeCycleContext, input: { exitCode:
 
   const internalPhaseCounts = {
     coverage_collection: 1,
+    ignore_recommendation_ranking: 1,
     dependency_scan: 1,
     history_update: 3,
     cycle_manifest_write: 1
   };
 
   const artifactWrites = {
-    total: 6,
+    total: 8,
     by_artifact: {
       'runtime/current/coverage': 1,
       'runtime/current/telemetry': 1,
+      'runtime/current/ignore-recommendations': 1,
       'runtime/cycle/manifest': 1,
       'runtime/cycle/coverage': 1,
       'runtime/cycle/telemetry': 1,
+      'runtime/cycle/ignore-recommendations': 1,
       'runtime/history-rollups': 1
     }
   };
@@ -844,14 +984,14 @@ export const endRuntimeCycle = (context: RuntimeCycleContext, input: { exitCode:
       coverage_denominator_defaulted: coverage.eligible_files === 0 ? 1 : 0,
       total_files_denominator_defaulted: coverage.total_files_seen === 0 ? 1 : 0
     },
-    ignore_classification_counts: coverage.observations.file_inventory.expensive_path_category_counts,
-    expensive_path_category_counts: coverage.observations.file_inventory.expensive_path_category_counts,
+    ignore_classification_counts: coverage.observations.file_inventory.path_class_counts,
     parser_failure_counts: {
       coverage_parse_failures: coverage.parse_failures
     },
     expensive_paths: coverage.observations.file_inventory.expensive_paths,
     expensive_path_classes: coverage.observations.file_inventory.expensive_path_classes,
     low_value_path_count: coverage.ignored_files + coverage.observations.file_inventory.pruned_directories.length,
+    recommendation_count: ignoreRecommendations.recommendations.length,
     warnings_count: coverage.unknown_areas.length,
     failures_count: status === 'failure' ? 1 : 0
   };
@@ -872,20 +1012,23 @@ export const endRuntimeCycle = (context: RuntimeCycleContext, input: { exitCode:
     artifact_paths_written: [
       '.playbook/runtime/current/coverage.json',
       '.playbook/runtime/current/telemetry.json',
+      '.playbook/runtime/current/ignore-recommendations.json',
       `.playbook/runtime/cycles/${context.cycleId}/manifest.json`
     ]
   };
 
   writeJsonFile(path.join(runtimeRoot, 'current', 'coverage.json'), coverage);
   writeJsonFile(path.join(runtimeRoot, 'current', 'telemetry.json'), telemetry);
+  writeJsonFile(path.join(runtimeRoot, 'current', 'ignore-recommendations.json'), ignoreRecommendations);
 
   const cycleDir = path.join(runtimeRoot, 'cycles', context.cycleId);
   writeJsonFile(path.join(cycleDir, 'manifest.json'), cycleManifest);
   writeJsonFile(path.join(cycleDir, 'coverage.json'), coverage);
   writeJsonFile(path.join(cycleDir, 'telemetry.json'), telemetry);
+  writeJsonFile(path.join(cycleDir, 'ignore-recommendations.json'), ignoreRecommendations);
 
   if (context.triggerCommand === 'pilot') {
-    enrichPilotSummaryWithRuntimeSignals(context.repoRoot, coverage);
+    enrichPilotSummaryWithRuntimeSignals(context.repoRoot, coverage, ignoreRecommendations);
   }
 
   updateCommandHistory(runtimeRoot, context.triggerCommand, Number(input.durationMs.toFixed(2)), status, endedAt);

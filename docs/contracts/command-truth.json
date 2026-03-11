@@ -233,7 +233,6 @@
     },
     {
       "name": "pilot",
-<<<<<<< HEAD
       "category": "Core",
       "role": "bootstrap",
       "lifecycle": "canonical",
@@ -243,7 +242,9 @@
       "productFacing": true,
       "machineReadable": true,
       "example": "pnpm playbook pilot --repo \"./target-repo\" --json"
-=======
+    },
+    {
+      "name": "pilot",
       "category": "Repository tools",
       "role": "bootstrap",
       "lifecycle": "canonical",
@@ -253,7 +254,6 @@
       "productFacing": true,
       "machineReadable": true,
       "example": "pnpm playbook pilot --repo ../target-repo --json"
->>>>>>> e7e6212fdfca535a8bea181c1e417bbc752efb88
     },
     {
       "name": "plan",
@@ -366,6 +366,7 @@
     "explain",
     "graph",
     "index",
+    "pilot",
     "pilot",
     "plan",
     "query",

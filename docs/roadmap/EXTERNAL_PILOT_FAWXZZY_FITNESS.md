@@ -90,15 +90,6 @@ This command is the canonical execution contract for the pilot:
 
 ```bash
 pnpm playbook pilot --repo ../fawxzzy-fitness
-<<<<<<< HEAD
-=======
-```
-
-Optional convenience alias:
-
-```bash
-pnpm pilot ../fawxzzy-fitness
->>>>>>> e7e6212fdfca535a8bea181c1e417bbc752efb88
 ```
 
 Implementation note:
