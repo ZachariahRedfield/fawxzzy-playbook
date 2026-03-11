@@ -195,7 +195,7 @@ Using a second repo too early without bounded rollout turns a proving ground int
 
 ## External Pilot Integration — Fawxzzy Fitness
 
-Status: **In progress — first-class external targeting delivered (`--repo`) with deterministic target-repo artifacts and fixture coverage, and proven on an independent pilot repository. Next slice: generic external onboarding hardening.**
+Status: **In progress — first-class external targeting delivered (`--repo`) with deterministic target-repo artifacts and fixture coverage, and proven on two independent pilot repositories (FawxzzyFitness and Nat1-Games). Next hardening slice: deterministic machine-written JSON artifact output via `--out` for external runtime workflows.**
 
 This roadmap slice establishes the next operator-safe migration layer for running Playbook from this repository against the primary external pilot repository while preserving legacy pilot tooling until parity is proven.
 
@@ -209,7 +209,8 @@ Current slice establishes:
 - deterministic artifact generation in external repositories under `<target>/.playbook/`
 - coexistence-first pilot execution without legacy removal in the target repository
 - fixture-based coverage for external runtime behavior and positional parsing (`--repo <fixture> query modules --json`)
-- independent external pilot validation confirms runtime targeting works beyond the Playbook repository
+- independent external pilot validation confirms runtime targeting works beyond the Playbook repository (FawxzzyFitness and Nat1-Games)
+- next hardening slice delivers deterministic machine-written JSON artifact output for machine-consumed findings/plan flows (`--json --out`)
 - next hardening slice converts pilot success into a generic onboarding contract (optional `playbook.config.json`, optional `.playbookignore`, and Playbook-owned `.playbook/` runtime state)
 
 Reference plan:

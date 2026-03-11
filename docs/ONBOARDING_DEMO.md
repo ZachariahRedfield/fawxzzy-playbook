@@ -31,7 +31,7 @@ pnpm playbook query modules --json
 pnpm playbook explain architecture --json
 pnpm playbook ask "where should a new feature live?" --repo-context --json
 pnpm playbook verify --json
-pnpm playbook plan --json > .playbook/plan.json
+pnpm playbook plan --json --out .playbook/plan.json
 pnpm playbook apply --from-plan .playbook/plan.json
 pnpm playbook verify --json
 ```

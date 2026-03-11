@@ -19,7 +19,7 @@ describe('runDemo', () => {
     expect(output).toContain('pnpm playbook index --json');
     expect(output).toContain('pnpm playbook query modules --json');
     expect(output).toContain('pnpm playbook explain architecture --json');
-    expect(output).toContain('pnpm playbook plan --json > .playbook/plan.json');
+    expect(output).toContain('pnpm playbook plan --json --out .playbook/plan.json');
     expect(output).toContain('pnpm playbook apply --from-plan .playbook/plan.json');
     expect(output).toContain('pnpm playbook verify');
     expect(output).toContain('plan generates reviewed remediation tasks');
@@ -64,7 +64,7 @@ describe('runDemo', () => {
       'pnpm playbook query modules --json',
       'pnpm playbook explain architecture --json',
       'pnpm playbook verify',
-      'pnpm playbook plan --json > .playbook/plan.json',
+      'pnpm playbook plan --json --out .playbook/plan.json',
       'pnpm playbook apply --from-plan .playbook/plan.json',
       'pnpm playbook verify'
     ]);

@@ -21,10 +21,12 @@ import {
   type GraphNeighborhoodSummary
 } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
+import { emitJsonOutput } from '../lib/jsonArtifact.js';
 
 type QueryOptions = {
   format: 'text' | 'json';
   quiet: boolean;
+  outFile?: string;
 };
 
 type QueryResult = {
@@ -283,7 +285,7 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     try {
       const payload = queryDependencies(cwd, moduleArg);
       if (options.format === 'json') {
-        console.log(JSON.stringify(payload, null, 2));
+        emitJsonOutput({ cwd, command: 'query', payload, outFile: options.outFile });
         return ExitCode.Success;
       }
 
@@ -296,19 +298,13 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
       const message = error instanceof Error ? error.message : String(error);
 
       if (options.format === 'json') {
-        console.log(
-          JSON.stringify(
-            {
+        emitJsonOutput({ cwd, command: 'query', payload: {
               schemaVersion: '1.0',
               command: 'query',
               type: 'dependencies',
               module: moduleArg ?? null,
               error: message
-            },
-            null,
-            2
-          )
-        );
+            }, outFile: options.outFile });
       } else {
         console.error(message);
       }
@@ -323,19 +319,13 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     if (!moduleArg) {
       const message = 'playbook query impact: missing required <module> argument';
       if (options.format === 'json') {
-        console.log(
-          JSON.stringify(
-            {
+        emitJsonOutput({ cwd, command: 'query', payload: {
               schemaVersion: '1.0',
               command: 'query',
               query: 'impact',
               target: null,
               error: message
-            },
-            null,
-            2
-          )
-        );
+            }, outFile: options.outFile });
       } else {
         console.error(message);
       }
@@ -346,7 +336,7 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     try {
       const payload = queryImpact(cwd, moduleArg);
       if (options.format === 'json') {
-        console.log(JSON.stringify(payload, null, 2));
+        emitJsonOutput({ cwd, command: 'query', payload, outFile: options.outFile });
         return ExitCode.Success;
       }
 
@@ -359,19 +349,13 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
       const message = error instanceof Error ? error.message : String(error);
 
       if (options.format === 'json') {
-        console.log(
-          JSON.stringify(
-            {
+        emitJsonOutput({ cwd, command: 'query', payload: {
               schemaVersion: '1.0',
               command: 'query',
               query: 'impact',
               target: moduleArg,
               error: message
-            },
-            null,
-            2
-          )
-        );
+            }, outFile: options.outFile });
       } else {
         console.error(message);
       }
@@ -386,7 +370,7 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     try {
       const payload = queryDocsCoverage(cwd, moduleArg);
       if (options.format === 'json') {
-        console.log(JSON.stringify(payload, null, 2));
+        emitJsonOutput({ cwd, command: 'query', payload, outFile: options.outFile });
         return ExitCode.Success;
       }
 
@@ -399,19 +383,13 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
       const message = error instanceof Error ? error.message : String(error);
 
       if (options.format === 'json') {
-        console.log(
-          JSON.stringify(
-            {
+        emitJsonOutput({ cwd, command: 'query', payload: {
               schemaVersion: '1.0',
               command: 'query',
               type: 'docs-coverage',
               module: moduleArg ?? null,
               error: message
-            },
-            null,
-            2
-          )
-        );
+            }, outFile: options.outFile });
       } else {
         console.error(message);
       }
@@ -427,7 +405,7 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     try {
       const payload = queryRuleOwners(ruleIdArg);
       if (options.format === 'json') {
-        console.log(JSON.stringify(payload, null, 2));
+        emitJsonOutput({ cwd, command: 'query', payload, outFile: options.outFile });
         return ExitCode.Success;
       }
 
@@ -440,19 +418,13 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
       const message = error instanceof Error ? error.message : String(error);
 
       if (options.format === 'json') {
-        console.log(
-          JSON.stringify(
-            {
+        emitJsonOutput({ cwd, command: 'query', payload: {
               schemaVersion: '1.0',
               command: 'query',
               type: 'rule-owners',
               ruleId: ruleIdArg ?? null,
               error: message
-            },
-            null,
-            2
-          )
-        );
+            }, outFile: options.outFile });
       } else {
         console.error(message);
       }
@@ -468,7 +440,7 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     try {
       const payload = queryModuleOwners(cwd, moduleArg);
       if (options.format === 'json') {
-        console.log(JSON.stringify(payload, null, 2));
+        emitJsonOutput({ cwd, command: 'query', payload, outFile: options.outFile });
         return ExitCode.Success;
       }
 
@@ -481,19 +453,13 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
       const message = error instanceof Error ? error.message : String(error);
 
       if (options.format === 'json') {
-        console.log(
-          JSON.stringify(
-            {
+        emitJsonOutput({ cwd, command: 'query', payload: {
               schemaVersion: '1.0',
               command: 'query',
               type: 'module-owners',
               module: moduleArg ?? null,
               error: message
-            },
-            null,
-            2
-          )
-        );
+            }, outFile: options.outFile });
       } else {
         console.error(message);
       }
@@ -507,7 +473,7 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     try {
       const payload = queryTestHotspots(cwd);
       if (options.format === 'json') {
-        console.log(JSON.stringify(payload, null, 2));
+        emitJsonOutput({ cwd, command: 'query', payload, outFile: options.outFile });
         return ExitCode.Success;
       }
 
@@ -520,18 +486,12 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
       const message = error instanceof Error ? error.message : String(error);
 
       if (options.format === 'json') {
-        console.log(
-          JSON.stringify(
-            {
+        emitJsonOutput({ cwd, command: 'query', payload: {
               schemaVersion: '1.0',
               command: 'query',
               type: 'test-hotspots',
               error: message
-            },
-            null,
-            2
-          )
-        );
+            }, outFile: options.outFile });
       } else {
         console.error(message);
       }
@@ -546,19 +506,13 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     if (!moduleArg) {
       const message = 'playbook query risk: missing required <module> argument';
       if (options.format === 'json') {
-        console.log(
-          JSON.stringify(
-            {
+        emitJsonOutput({ cwd, command: 'query', payload: {
               schemaVersion: '1.0',
               command: 'query',
               type: 'risk',
               module: null,
               error: message
-            },
-            null,
-            2
-          )
-        );
+            }, outFile: options.outFile });
       } else {
         console.error(message);
       }
@@ -569,7 +523,7 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     try {
       const payload = queryRisk(cwd, moduleArg);
       if (options.format === 'json') {
-        console.log(JSON.stringify(payload, null, 2));
+        emitJsonOutput({ cwd, command: 'query', payload, outFile: options.outFile });
         return ExitCode.Success;
       }
 
@@ -582,19 +536,13 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
       const message = error instanceof Error ? error.message : String(error);
 
       if (options.format === 'json') {
-        console.log(
-          JSON.stringify(
-            {
+        emitJsonOutput({ cwd, command: 'query', payload: {
               schemaVersion: '1.0',
               command: 'query',
               type: 'risk',
               module: moduleArg,
               error: message
-            },
-            null,
-            2
-          )
-        );
+            }, outFile: options.outFile });
       } else {
         console.error(message);
       }
@@ -613,7 +561,7 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     };
 
     if (options.format === 'json') {
-      console.log(JSON.stringify(result, null, 2));
+      emitJsonOutput({ cwd, command: 'query', payload: result, outFile: options.outFile });
       return ExitCode.Success;
     }
 
@@ -626,18 +574,12 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     const message = error instanceof Error ? error.message : String(error);
 
     if (options.format === 'json') {
-      console.log(
-        JSON.stringify(
-          {
+      emitJsonOutput({ cwd, command: 'query', payload: {
             command: 'query',
             field: fieldArg,
             error: message,
             supportedFields: [...SUPPORTED_QUERY_FIELDS, 'dependencies', 'impact', 'risk', 'docs-coverage', 'rule-owners', 'module-owners', 'test-hotspots']
-          },
-          null,
-          2
-        )
-      );
+          }, outFile: options.outFile });
     } else {
       console.error(message);
     }

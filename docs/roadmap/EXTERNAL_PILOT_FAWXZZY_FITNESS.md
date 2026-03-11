@@ -92,8 +92,8 @@ These commands are the canonical execution contract for the pilot:
 pnpm playbook --repo ../fawxzzy-fitness context --json
 pnpm playbook --repo ../fawxzzy-fitness index --json
 pnpm playbook --repo ../fawxzzy-fitness query modules --json
-pnpm playbook --repo ../fawxzzy-fitness verify --json > ../fawxzzy-fitness/.playbook/findings.json
-pnpm playbook --repo ../fawxzzy-fitness plan --json > ../fawxzzy-fitness/.playbook/plan.json
+pnpm playbook --repo ../fawxzzy-fitness verify --json --out ../fawxzzy-fitness/.playbook/findings.json
+pnpm playbook --repo ../fawxzzy-fitness plan --json --out ../fawxzzy-fitness/.playbook/plan.json
 ```
 
 Implementation note:

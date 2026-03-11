@@ -4,6 +4,8 @@
 
 ### Added
 
+- WHAT: Added first-class deterministic JSON artifact emission via `--out` for JSON-producing commands (`verify`, `plan`, `index`, `query`) using shared UTF-8 writer semantics (parent-directory creation, deterministic newline boundaries, and explicit write failures), plus external `--repo` regression coverage. WHY: Prevents shell-redirection corruption from wrapper/banner leakage and encoding drift in machine-consumed artifacts.
+
 - WHAT: Added repo-owned PR metadata fallback (`.playbook/pr-metadata.json`) to roadmap feature-id enforcement and introduced optional PR metadata sync helper (`pnpm pr:sync-metadata`) with warn-only degradation on permission limits. WHY: Makes feature-id governance resilient when GitHub PR title/body cannot be edited by automation tokens while keeping PR metadata as preferred presentation.
 
 - WHAT: Aligned roadmap/docs governance for `PB-V08-KNOWLEDGE-COMPACTION-SPEC-001` to reflect the merged internal deterministic compaction foundations (canonicalization, deterministic bucketing, and deterministic review artifacts). WHY: Keeps roadmap truth, onboarding guidance, and command-state docs synchronized with implementation while explicitly preserving the internal-first boundary (no new public CLI command, promotion/storage still future work).

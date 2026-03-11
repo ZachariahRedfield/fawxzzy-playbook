@@ -53,8 +53,8 @@ TARGET_REPO_PATH="../my-repo"
 pnpm playbook --repo "$TARGET_REPO_PATH" context --json
 pnpm playbook --repo "$TARGET_REPO_PATH" index --json
 pnpm playbook --repo "$TARGET_REPO_PATH" query modules --json
-pnpm playbook --repo "$TARGET_REPO_PATH" verify --json
-pnpm playbook --repo "$TARGET_REPO_PATH" plan --json
+pnpm playbook --repo "$TARGET_REPO_PATH" verify --json --out "$TARGET_REPO_PATH/.playbook/findings.json"
+pnpm playbook --repo "$TARGET_REPO_PATH" plan --json --out "$TARGET_REPO_PATH/.playbook/plan.json"
 ```
 
 Minimal external onboarding contract:
@@ -253,9 +253,9 @@ Use the following intent model when deciding whether command outputs stay local,
 - `plan`
   - Default intent: **reviewed automation artifact** (for example `.playbook/plan.json`) used for deterministic remediation workflows and CI/agent handoff.
   - Safe capture examples:
-    - bash/zsh: `pnpm playbook plan --json > .playbook/plan.json`
-    - PowerShell: `pnpm playbook plan --json | Out-File -FilePath .playbook/plan.json -Encoding utf8`
-    - local Playbook repo path: `pnpm playbook plan --json | Out-File -FilePath .playbook/plan.json -Encoding utf8`
+    - bash/zsh: `pnpm playbook plan --json --out .playbook/plan.json`
+    - PowerShell: `pnpm playbook plan --json --out .playbook/plan.json`
+    - local Playbook repo path: `pnpm playbook plan --json --out .playbook/plan.json`
   - Commit guidance: typically ephemeral; commit only when a repository explicitly treats plan artifacts as stable review contracts.
 - `query` / `deps` / `ask` / `explain`
   - Default intent: **runtime reads and derived outputs** from `.playbook/repo-index.json`; results are usually ephemeral unless exported intentionally for docs/contracts.
@@ -270,6 +270,18 @@ Pattern: Demo Artifacts Are Snapshot Contracts, Not General Runtime State.
 Rule: Generated runtime artifacts should be gitignored unless intentionally committed as stable contracts/examples.
 Rule: Playbook remains local/private-first by default.
 Failure Mode: Recommitting regenerated artifacts on every run causes unnecessary repo-history growth and noisy diffs.
+
+Rule — Machine-Consumed Artifacts Need First-Class Output Paths
+If a CLI expects downstream commands to read generated JSON artifacts, those artifacts must be written by the CLI itself rather than relying on shell redirection.
+
+Pattern — Deterministic Artifact Emission
+Structured runtime artifacts should be emitted through explicit flags with controlled encoding, directory creation, and content boundaries.
+
+Failure Mode — Shell Redirection Artifact Corruption
+When JSON artifacts are captured through script wrappers and shell redirection, banner text or encoding differences can silently corrupt machine-readable files.
+
+Failure Mode — Human-Readable Wrapper Leakage
+Operator-friendly wrapper output is acceptable on stdout, but it must never leak into persisted JSON artifacts that are intended for later programmatic reads.
 
 `.playbookignore` support is available for repository intelligence scans (`pnpm playbook index` and related repository scans). The file uses `.gitignore`-style syntax and should be used to exclude high-churn directories (for example `node_modules`, `dist`, `build`, `coverage`, `.next`, and `.playbook/cache`).
 

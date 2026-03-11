@@ -1,5 +1,6 @@
 import { generatePlanContract } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
+import { emitJsonOutput } from '../lib/jsonArtifact.js';
 import { buildPlanRemediation, deriveVerifyFailureFacts } from '../lib/remediationContract.js';
 
 const renderTextPlan = (tasks: Array<{ ruleId: string; action: string }>): void => {
@@ -22,7 +23,7 @@ const renderTextPlan = (tasks: Array<{ ruleId: string; action: string }>): void 
 
 export const runPlan = async (
   cwd: string,
-  options: { format: 'text' | 'json'; ci: boolean; quiet: boolean }
+  options: { format: 'text' | 'json'; ci: boolean; quiet: boolean; outFile?: string }
 ): Promise<number> => {
   const plan = generatePlanContract(cwd);
   const failureFacts = deriveVerifyFailureFacts(plan.verify);
@@ -49,21 +50,17 @@ export const runPlan = async (
   }
 
   if (options.format === 'json') {
-    console.log(
-      JSON.stringify(
-        {
-          schemaVersion: '1.0',
-          command: 'plan',
-          ok: true,
-          exitCode: ExitCode.Success,
-          verify: plan.verify,
-          remediation,
-          tasks: plan.tasks
-        },
-        null,
-        2
-      )
-    );
+    const payload = {
+      schemaVersion: '1.0',
+      command: 'plan',
+      ok: true,
+      exitCode: ExitCode.Success,
+      verify: plan.verify,
+      remediation,
+      tasks: plan.tasks
+    };
+
+    emitJsonOutput({ cwd, command: 'plan', payload, outFile: options.outFile });
     return ExitCode.Success;
   }
 

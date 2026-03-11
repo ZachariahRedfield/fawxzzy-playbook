@@ -46,6 +46,7 @@ Global options:
   --ci                        CI mode (deterministic, quiet unless errors)
   --format <text|json>        Output format (default text)
   --json                      Alias for --format=json
+  --out <path>                Write JSON output artifact when used with --json (supported commands)
   --quiet                     Suppress success output in text mode
   --explain                   Show why findings matter and how to fix them (text mode)
   --policy                    Enable policy enforcement mode for verify

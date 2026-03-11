@@ -1,5 +1,6 @@
 import { formatHuman, loadConfig, verifyRepo } from '@zachariahredfield/playbook-engine';
-import { emitResult, ExitCode } from '../lib/cliContract.js';
+import { buildResult, emitResult, ExitCode } from '../lib/cliContract.js';
+import { emitJsonOutput } from '../lib/jsonArtifact.js';
 import { loadVerifyRules } from '../lib/loadVerifyRules.js';
 
 export type VerifyReport = {
@@ -38,7 +39,7 @@ export const collectVerifyReport = async (cwd: string): Promise<VerifyReport> =>
 
 export const runVerify = async (
   cwd: string,
-  options: { format: 'text' | 'json'; ci: boolean; quiet: boolean; explain: boolean; policy: boolean }
+  options: { format: 'text' | 'json'; ci: boolean; quiet: boolean; explain: boolean; policy: boolean; outFile?: string }
 ): Promise<number> => {
   const verifyRules = await loadVerifyRules(cwd);
   const report = await collectVerifyReport(cwd);
@@ -97,10 +98,7 @@ export const runVerify = async (
     return exitCode;
   }
 
-  emitResult({
-    format: options.format,
-    quiet: options.quiet,
-    explain: options.explain,
+  const resultPayload = {
     command: 'verify',
     ok,
     exitCode,
@@ -122,6 +120,18 @@ export const runVerify = async (
       .map((failure: VerifyFailure) => failure.fix)
       .filter((fix: string | undefined): fix is string => Boolean(fix)),
     policyViolations: inPolicyMode ? policyViolations : undefined
+  };
+
+  if (options.format === 'json' && options.outFile) {
+    emitJsonOutput({ cwd, command: 'verify', payload: buildResult(resultPayload), outFile: options.outFile });
+    return exitCode;
+  }
+
+  emitResult({
+    format: options.format,
+    quiet: options.quiet,
+    explain: options.explain,
+    ...resultPayload
   });
 
   return exitCode;

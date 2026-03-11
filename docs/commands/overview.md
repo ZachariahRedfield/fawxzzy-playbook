@@ -38,7 +38,7 @@ Canonical remediation flow is:
 
 Canonical automation-safe execution sequence:
 
-`verify -> plan --json > plan.json -> review plan.json -> apply --from-plan plan.json -> verify`
+`verify -> plan --json --out plan.json -> review plan.json -> apply --from-plan plan.json -> verify`
 
 Command roles:
 

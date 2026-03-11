@@ -2,10 +2,12 @@ import { buildModuleContextDigests, generateCompactionCandidateArtifact, generat
 import fs from 'node:fs';
 import path from 'node:path';
 import { ExitCode } from '../lib/cliContract.js';
+import { emitJsonOutput } from '../lib/jsonArtifact.js';
 
 type IndexOptions = {
   format: 'text' | 'json';
   quiet: boolean;
+  outFile?: string;
 };
 
 type IndexResult = {
@@ -52,7 +54,7 @@ export const runIndex = async (cwd: string, options: IndexOptions): Promise<numb
   const { result } = writeRepositoryIndex(cwd);
 
   if (options.format === 'json') {
-    console.log(JSON.stringify(result, null, 2));
+    emitJsonOutput({ cwd, command: 'index', payload: result, outFile: options.outFile });
     return ExitCode.Success;
   }
 

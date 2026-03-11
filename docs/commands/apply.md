@@ -45,7 +45,7 @@ Use `--from-plan` when you need automation-safe execution from a reviewed artifa
 
 Exact Task Selection pattern:
 
-1. `pnpm playbook plan --json > .playbook/plan.json`
+1. `pnpm playbook plan --json --out .playbook/plan.json`
 2. Review stable task ids in `.playbook/plan.json`
 3. Apply only reviewed ids with `pnpm playbook apply --from-plan .playbook/plan.json --task <stable-task-id>`
 4. Run `pnpm playbook verify` after apply to validate repository state

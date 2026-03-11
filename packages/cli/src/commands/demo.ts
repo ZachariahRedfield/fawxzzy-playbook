@@ -31,7 +31,7 @@ const DEMO_WORKFLOW: string[] = [
   'pnpm playbook query modules --json',
   'pnpm playbook explain architecture --json',
   'pnpm playbook verify',
-  'pnpm playbook plan --json > .playbook/plan.json',
+  'pnpm playbook plan --json --out .playbook/plan.json',
   'pnpm playbook apply --from-plan .playbook/plan.json',
   'pnpm playbook verify'
 ];

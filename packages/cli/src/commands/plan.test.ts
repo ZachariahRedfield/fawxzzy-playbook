@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ExitCode } from '../lib/cliContract.js';
 
@@ -163,4 +166,26 @@ describe('runPlan', () => {
 
     logSpy.mockRestore();
   });
+
+  it('writes deterministic json artifacts with --out', async () => {
+    const { runPlan } = await import('./plan.js');
+    const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-plan-out-'));
+    const outputPath = path.join(repoDir, '.playbook', 'plan.json');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    generatePlanContract.mockReturnValue({
+      verify: { ok: false, summary: { failures: 1, warnings: 0 }, failures: [], warnings: [] },
+      tasks: [{ id: 'task-3', ruleId: 'plugin.custom', file: null, action: 'fix plugin contract', autoFix: true }]
+    });
+
+    const exitCode = await runPlan(repoDir, { format: 'json', ci: false, quiet: false, outFile: outputPath });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const stdoutPayload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    const artifactPayload = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
+    expect(artifactPayload).toEqual(stdoutPayload);
+
+    logSpy.mockRestore();
+  });
+
 });

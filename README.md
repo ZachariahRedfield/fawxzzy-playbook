@@ -91,7 +91,7 @@ pnpm playbook query modules --json
 pnpm playbook explain architecture --json
 pnpm playbook ask "where should a new feature live?" --repo-context --json
 pnpm playbook verify --json
-pnpm playbook plan --json > .playbook/plan.json
+pnpm playbook plan --json --out .playbook/plan.json
 pnpm playbook apply --from-plan .playbook/plan.json
 pnpm playbook verify --json
 ```
@@ -101,14 +101,14 @@ pnpm playbook verify --json
 For local branch-accurate validation inside this repository, prefer:
 
 ```bash
-pnpm playbook plan --json > .playbook/plan.json
+pnpm playbook plan --json --out .playbook/plan.json
 pnpm playbook apply --from-plan .playbook/plan.json --json
 ```
 
 PowerShell-safe local equivalent:
 
 ```powershell
-pnpm playbook plan --json | Out-File -FilePath .playbook/plan.json -Encoding utf8
+pnpm playbook plan --json --out .playbook/plan.json
 pnpm playbook apply --from-plan .playbook/plan.json --json
 ```
 
@@ -129,8 +129,8 @@ TARGET_REPO_PATH="../my-repo"
 pnpm playbook --repo "$TARGET_REPO_PATH" context --json
 pnpm playbook --repo "$TARGET_REPO_PATH" index --json
 pnpm playbook --repo "$TARGET_REPO_PATH" query modules --json
-pnpm playbook --repo "$TARGET_REPO_PATH" verify --json
-pnpm playbook --repo "$TARGET_REPO_PATH" plan --json
+pnpm playbook --repo "$TARGET_REPO_PATH" verify --json --out "$TARGET_REPO_PATH/.playbook/findings.json"
+pnpm playbook --repo "$TARGET_REPO_PATH" plan --json --out "$TARGET_REPO_PATH/.playbook/plan.json"
 ```
 
 This keeps `pnpm playbook <command>` as the canonical invocation while letting operators target external repositories deterministically from a single working checkout.
@@ -156,9 +156,9 @@ pnpm playbook ai-context --json
 pnpm playbook index --json
 pnpm playbook verify --json
 # bash/zsh
-pnpm playbook plan --json > .playbook/plan.json
+pnpm playbook plan --json --out .playbook/plan.json
 # PowerShell-safe
-pnpm playbook plan --json | Out-File -FilePath .playbook/plan.json -Encoding utf8
+pnpm playbook plan --json --out .playbook/plan.json
 pnpm playbook apply --from-plan .playbook/plan.json
 pnpm playbook verify --json
 ```

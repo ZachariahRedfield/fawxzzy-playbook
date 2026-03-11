@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ExitCode } from '../lib/cliContract.js';
 import type { VerifyRule } from '../lib/loadVerifyRules.js';
@@ -87,6 +90,39 @@ describe('runVerify policy mode', () => {
       expect.objectContaining({ id: 'verify.rule.requireNotesOnChanges', level: 'error' }),
       expect.objectContaining({ id: 'verify.rule.notes.empty', level: 'info' })
     ]);
+
+    logSpy.mockRestore();
+  });
+
+  it('writes deterministic json artifacts with --out while keeping stdout JSON parseable', async () => {
+    const { runVerify } = await import('./verify.js');
+    const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-verify-out-'));
+    const outputPath = path.join(repoDir, '.playbook', 'findings.json');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    verifyRepo.mockReturnValue({
+      ok: false,
+      summary: { failures: 1, warnings: 0 },
+      failures: [{ id: 'requireNotesOnChanges', message: 'notes file not updated', fix: 'add notes' }],
+      warnings: []
+    });
+
+    const exitCode = await runVerify(repoDir, {
+      format: 'json',
+      ci: true,
+      quiet: true,
+      explain: false,
+      policy: false,
+      outFile: outputPath
+    });
+
+    expect(exitCode).toBe(ExitCode.PolicyFailure);
+    const stdoutPayload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    const artifactPayload = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
+    expect(artifactPayload).toEqual(stdoutPayload);
+
+    const contaminated = `pnpm header\n${fs.readFileSync(outputPath, 'utf8')}`;
+    expect(() => JSON.parse(contaminated)).toThrow();
 
     logSpy.mockRestore();
   });

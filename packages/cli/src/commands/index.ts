@@ -86,11 +86,18 @@ const commandRunners: Record<string, (context: CommandContext) => Promise<number
   },
   verify: async ({ cwd, commandArgs, ci, explain, format, quiet }) => {
     const { runVerify } = await import('./verify.js');
-    return runVerify(cwd, { ci, explain, format, quiet, policy: parseFlag(commandArgs, '--policy') });
+    return runVerify(cwd, {
+      ci,
+      explain,
+      format,
+      quiet,
+      policy: parseFlag(commandArgs, '--policy'),
+      outFile: parseOptionValue(commandArgs, '--out')
+    });
   },
-  plan: async ({ cwd, ci, format, quiet }) => {
+  plan: async ({ cwd, commandArgs, ci, format, quiet }) => {
     const { runPlan } = await import('./plan.js');
-    return runPlan(cwd, { ci, format, quiet });
+    return runPlan(cwd, { ci, format, quiet, outFile: parseOptionValue(commandArgs, '--out') });
   },
   apply: async ({ cwd, commandArgs, ci, format, quiet }) => {
     const { runApply } = await import('./apply.js');
@@ -190,9 +197,9 @@ const commandRunners: Record<string, (context: CommandContext) => Promise<number
     const { runRules } = await import('./rules.js');
     return runRules(cwd, { explain, format, quiet });
   },
-  index: async ({ cwd, format, quiet }) => {
+  index: async ({ cwd, commandArgs, format, quiet }) => {
     const { runIndex } = await import('./repoIndex.js');
-    return runIndex(cwd, { format, quiet });
+    return runIndex(cwd, { format, quiet, outFile: parseOptionValue(commandArgs, '--out') });
   },
   graph: async ({ cwd, format, quiet }) => {
     const { runGraph } = await import('./graph.js');
@@ -216,7 +223,7 @@ const commandRunners: Record<string, (context: CommandContext) => Promise<number
   },
   query: async ({ cwd, commandArgs, format, quiet }) => {
     const { runQuery } = await import('./query.js');
-    return runQuery(cwd, commandArgs, { format, quiet });
+    return runQuery(cwd, commandArgs, { format, quiet, outFile: parseOptionValue(commandArgs, '--out') });
   },
   session: async ({ cwd, commandArgs, format, quiet }) => {
     const { runSession } = await import('./session.js');
