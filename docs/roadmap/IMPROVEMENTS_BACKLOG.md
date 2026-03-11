@@ -22,6 +22,8 @@ Archive
 
 This structure prevents roadmap bloat while preserving engineering intelligence discovered during development.
 
+Related long-term architecture reference: `docs/architecture/PLAYBOOK_PLATFORM_ARCHITECTURE.md`.
+
 ---
 
 ## Staging candidates: Product truth packaging and narrative sync
@@ -32,6 +34,97 @@ These backlog candidates feed roadmap track `PB-V1-PRODUCT-TRUTH-PACKAGING-001` 
 - Add narrative drift checks that compare runtime/help/docs/demo/roadmap language for planned-vs-live consistency.
 - Add explicit `ask --repo-context` question-boundary examples (in-scope and unsupported) for deterministic operator expectations.
 - Add demo/onboarding synchronization checks so ladder guidance stays aligned with implemented contracts.
+
+---
+
+## Research synthesis summary (platform direction labels)
+
+- Pattern: Shared Core + Project-Local Intelligence
+- Pattern: Conversation-to-Knowledge Pipeline
+- Pattern: Verification as Trust Boundary
+- Pattern: Knowledge Compaction Pipeline
+- Rule: Repo-local facts stay local; only sanitized reusable patterns move upstream
+- Rule: Bounded capability routing beats one undifferentiated agent
+- Failure Mode: Chat Without Memory
+- Failure Mode: Distributed Policy Without a Control Plane
+- Failure Mode: Evidence-poor automation
+- Failure Mode: Best-effort downstream checks create false confidence
+
+These labels are long-term architecture/backlog framing only and do not modify the current 4-week execution plan.
+
+---
+
+## Platform direction: Repository Longitudinal State Model
+
+Backlog scope (directional, not current-sprint commitment):
+
+- Define deterministic repository identity + run lineage contract across repeated cycles.
+- Version longitudinal state schema for recurring findings, remediations, and outcomes.
+- Add lifecycle/retention classes so historical state remains bounded and auditable.
+- Add deterministic drift signals that compare current run state to longitudinal baseline.
+
+Rule: Longitudinal state must strengthen deterministic reasoning rather than creating unbounded memory sprawl.
+
+---
+
+## Platform direction: Knowledge Compaction and Promotion Pipeline
+
+Backlog scope:
+
+- Formalize conversation-to-knowledge promotion gates (`draft -> reviewed -> promoted`).
+- Encode deterministic compaction from repeated observations into reusable pattern candidates.
+- Require evidence provenance links on any promoted pattern/rule/contract artifact.
+- Add retirement/supersede semantics to prevent stale pattern accumulation.
+
+Pattern: Knowledge compaction is the bridge between repeated observations and trusted reusable guidance.
+
+---
+
+## Platform direction: Evidence Graph / Trust Model
+
+Backlog scope:
+
+- Define evidence graph contracts linking observation, remediation plans, execution traces, and verify outcomes.
+- Add trust-state fields that distinguish observed facts vs inferred guidance vs promoted reusable patterns.
+- Define fail-closed trust behavior when evidence is incomplete, contradictory, or stale.
+
+Rule: Verification remains the trust boundary for mutation and promotion actions.
+
+---
+
+## Platform direction: Control Plane / Approval Model
+
+Backlog scope:
+
+- Define approval-state contracts across CLI, CI, PR, and API execution surfaces.
+- Define explicit permission/mutation boundaries per actor and capability.
+- Add deterministic deny paths when required approvals or policy context are missing.
+
+Failure Mode: Distributed policy logic across tools without a shared control plane creates inconsistent governance outcomes.
+
+---
+
+## Platform direction: Multi-Repo Knowledge Transfer Model
+
+Backlog scope:
+
+- Define sanitization contracts for promoting reusable patterns across repositories.
+- Define scope/ownership metadata so reusable guidance can be consumed without leaking repo-local facts.
+- Add promotion review workflows for cross-repo reusable pattern candidates.
+
+Rule: Repo-local facts stay local; only sanitized reusable patterns move upstream.
+
+---
+
+## Platform direction: Capability / Model Routing Layer
+
+Backlog scope:
+
+- Define bounded capability routing contracts by task class and risk tier.
+- Route intelligence/remediation tasks to explicit capability lanes instead of one undifferentiated agent loop.
+- Add auditable routing decisions tied to policy/evidence requirements.
+
+Rule: Bounded capability routing beats one undifferentiated agent for deterministic governance.
 
 ---
 
