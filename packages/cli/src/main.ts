@@ -83,10 +83,13 @@ const run = async () => {
   }
 
   const playbookVersion = '0.1.1';
+  const childCommands =
+    command === 'pilot' ? ['context', 'index', 'query modules', 'verify', 'plan'] : [];
+
   const cycle = beginRuntimeCycle({
     repoRoot: targetCwd,
     triggerCommand: command,
-    childCommands: [],
+    childCommands,
     playbookVersion
   });
 

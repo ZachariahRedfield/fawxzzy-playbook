@@ -232,6 +232,18 @@
       "example": "pnpm playbook init"
     },
     {
+      "name": "pilot",
+      "category": "Repository tools",
+      "role": "bootstrap",
+      "lifecycle": "canonical",
+      "discoverability": "primary",
+      "onboardingPriority": 11,
+      "canonicalSequence": 11,
+      "productFacing": true,
+      "machineReadable": true,
+      "example": "pnpm playbook pilot --repo ../target-repo --json"
+    },
+    {
       "name": "plan",
       "category": "Core",
       "role": "remediation",
@@ -342,6 +354,7 @@
     "explain",
     "graph",
     "index",
+    "pilot",
     "plan",
     "query",
     "rules",
@@ -364,7 +377,8 @@
   "bootstrapLadder": [
     "ai-context",
     "ai-contract",
-    "context"
+    "context",
+    "pilot"
   ],
   "remediationLoop": [
     "verify",
