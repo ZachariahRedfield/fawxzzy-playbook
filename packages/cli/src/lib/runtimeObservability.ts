@@ -111,7 +111,7 @@ const readJsonFile = <T>(target: string): T | undefined => {
 
 const shouldIgnoreDirectory = (relativeDirPath: string): boolean => {
   const normalized = relativeDirPath.split(path.sep).join(path.posix.sep);
-  return normalized === '.git' || normalized === 'node_modules' || normalized.startsWith('.playbook/runtime');
+  return normalized === '.git' || normalized === 'node_modules';
 };
 
 const isLikelyBinary = (absolutePath: string): boolean => {
