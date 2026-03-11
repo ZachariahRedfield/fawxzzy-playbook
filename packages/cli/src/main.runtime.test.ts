@@ -203,4 +203,37 @@ describe('runtime observability artifacts', () => {
     );
     expect(coverage.observations.file_inventory.path_class_counts.unknown).toBeGreaterThan(0);
   });
+
+  it('honors explicit .playbookignore entries when collecting runtime coverage', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-runtime-ignore-'));
+    const targetRepo = path.join(tempRoot, 'consumer-repo');
+    fs.mkdirSync(path.join(targetRepo, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(targetRepo, 'package.json'), JSON.stringify({ name: 'consumer', version: '0.0.1' }, null, 2), 'utf8');
+    fs.writeFileSync(path.join(targetRepo, 'src', 'index.ts'), 'export const ok = true;\n', 'utf8');
+    fs.mkdirSync(path.join(targetRepo, 'playwright-report'), { recursive: true });
+    fs.writeFileSync(path.join(targetRepo, 'playwright-report', 'index.html'), '<html/>', 'utf8');
+    fs.writeFileSync(path.join(targetRepo, '.playbookignore'), 'playwright-report/\n', 'utf8');
+
+    const scriptPath = path.resolve(process.cwd(), '..', '..', 'scripts', 'run-playbook.mjs');
+    execFileSync('node', [scriptPath, '--repo', targetRepo, 'index', '--json'], {
+      cwd: process.cwd(),
+      encoding: 'utf8'
+    });
+
+    const coverage = JSON.parse(
+      fs.readFileSync(path.join(targetRepo, '.playbook', 'runtime', 'current', 'coverage.json'), 'utf8')
+    ) as {
+      observations: {
+        file_inventory: {
+          pruned_directories: Array<{ path: string; reason: string }>;
+          ignore_candidate_paths: string[];
+        };
+      };
+    };
+
+    expect(coverage.observations.file_inventory.pruned_directories).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: 'playwright-report', reason: 'playbookignore-rule' })])
+    );
+    expect(coverage.observations.file_inventory.ignore_candidate_paths).not.toContain('playwright-report/');
+  });
 });

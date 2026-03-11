@@ -76,7 +76,8 @@ describe('artifact hygiene diagnostics', () => {
 
     const ignore = fs.readFileSync(path.join(repo, '.playbookignore'), 'utf8');
     expect(ignore).toContain('node_modules');
-    expect(ignore).toContain('.playbook/cache');
+    expect(ignore).toContain('.git');
+    expect(ignore).not.toContain('.playbook/cache');
   });
 
 });

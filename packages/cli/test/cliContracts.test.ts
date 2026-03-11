@@ -16,7 +16,7 @@ function normalizeLineEndings(text: string): string {
 type CommandContract = {
   file: string;
   args: readonly string[];
-  schemaCommand: 'rules' | 'explain' | 'index' | 'graph' | 'verify' | 'plan' | 'context' | 'ai-context' | 'ai-contract' | 'docs' | 'doctor' | 'analyze-pr' | 'contracts';
+  schemaCommand: 'rules' | 'explain' | 'index' | 'graph' | 'verify' | 'plan' | 'context' | 'ai-context' | 'ai-contract' | 'docs' | 'doctor' | 'analyze-pr' | 'contracts' | 'ignore';
 };
 
 const commandContracts: readonly CommandContract[] = [
@@ -33,7 +33,8 @@ const commandContracts: readonly CommandContract[] = [
   { file: 'docs-audit.snapshot.json', args: ['docs', 'audit', '--json'], schemaCommand: 'docs' },
   { file: 'doctor.snapshot.json', args: ['doctor', '--json'], schemaCommand: 'doctor' },
   { file: 'analyze-pr.snapshot.json', args: ['analyze-pr', '--json'], schemaCommand: 'analyze-pr' },
-  { file: 'contracts.snapshot.json', args: ['contracts', '--json'], schemaCommand: 'contracts' }
+  { file: 'contracts.snapshot.json', args: ['contracts', '--json'], schemaCommand: 'contracts' },
+  { file: 'ignore-suggest.snapshot.json', args: ['ignore', 'suggest', '--json'], schemaCommand: 'ignore' }
 ] as const;
 
 function createContractFixtureRepo(): string {
@@ -52,6 +53,78 @@ function createContractFixtureRepo(): string {
         canonicalCommands: ['ai-context'],
         compatibilityCommands: ['analyze'],
         utilityCommands: ['demo']
+      },
+      null,
+      2
+    )
+  );
+  fs.mkdirSync(path.join(fixtureRepo, '.playbook', 'runtime', 'current'), { recursive: true });
+  fs.writeFileSync(
+    path.join(fixtureRepo, '.playbook', 'runtime', 'current', 'ignore-recommendations.json'),
+    JSON.stringify(
+      {
+        schemaVersion: '1.0',
+        cycle_id: 'fixture-cycle',
+        generated_at: '2026-03-11T00:00:00.000Z',
+        recommendation_model: 'deterministic-v1',
+        ranking_factors: ['fixture-rank'],
+        recommendations: [
+          {
+            path: '.git/',
+            rank: 1,
+            class: 'vcs-internal',
+            rationale: 'fixture safe default',
+            confidence: 0.99,
+            expected_scan_impact: {
+              estimated_files_reduced: 10,
+              estimated_bytes_reduced: 1024,
+              impact_level: 'low'
+            },
+            safety_level: 'safe-default'
+          },
+          {
+            path: 'playwright-report/',
+            rank: 2,
+            class: 'generated-report',
+            rationale: 'fixture safe default',
+            confidence: 0.97,
+            expected_scan_impact: {
+              estimated_files_reduced: 6,
+              estimated_bytes_reduced: 2048,
+              impact_level: 'low'
+            },
+            safety_level: 'safe-default'
+          },
+          {
+            path: 'tmp_file.txt',
+            rank: 3,
+            class: 'temporary-file',
+            rationale: 'fixture review-first',
+            confidence: 0.61,
+            expected_scan_impact: {
+              estimated_files_reduced: 1,
+              estimated_bytes_reduced: 64,
+              impact_level: 'low'
+            },
+            safety_level: 'review-first'
+          }
+        ],
+        summary: {
+          total_recommendations: 3,
+          safety_level_counts: {
+            'safe-default': 2,
+            'likely-safe': 0,
+            'review-first': 1
+          },
+          class_counts: {
+            'vcs-internal': 1,
+            'build-cache': 0,
+            'generated-report': 1,
+            'temporary-file': 1,
+            'binary-asset': 0,
+            unknown: 0
+          }
+        }
       },
       null,
       2

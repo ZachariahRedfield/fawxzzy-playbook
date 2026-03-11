@@ -4,6 +4,8 @@
 
 ### Added
 
+- WHAT: Added first-class `pnpm playbook ignore suggest` and `pnpm playbook ignore apply --safe-defaults` commands that read ranked runtime ignore recommendations, report coverage against `.playbookignore`, and write only missing safe-default entries into a deterministic managed block while preserving user-authored lines and leaving review-first entries unapplied. WHY: Converts ignore intelligence into a reviewable bootstrap/apply workflow without hiding relevant repository content or creating noisy non-idempotent ignore churn.
+
 - WHAT: Added first-class `pnpm playbook pilot --repo "<target-repo-path>"` orchestration that deterministically runs `context -> index -> query modules -> verify -> plan`, writes `.playbook/findings.json` and `.playbook/plan.json` directly, emits `.playbook/pilot-summary.json`, and records one top-level runtime cycle with child phases. WHY: Converts a repeated external multi-command baseline workflow into one canonical command to reduce operator drift and prevent helper scripts from becoming shadow product surface.
 
 - WHAT: Added first-class deterministic JSON artifact emission via `--out` for JSON-producing commands (`verify`, `plan`, `index`, `query`) using shared UTF-8 writer semantics (parent-directory creation, deterministic newline boundaries, and explicit write failures), plus external `--repo` regression coverage. WHY: Prevents shell-redirection corruption from wrapper/banner leakage and encoding drift in machine-consumed artifacts.

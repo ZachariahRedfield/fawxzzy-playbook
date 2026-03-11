@@ -201,6 +201,8 @@ Do not hand-edit entries inside the managed markers.
   - Example: `pnpm playbook ai-contract --json`
 - `pilot`: Run one-command external baseline analysis workflow for a target repository
   - Example: `pnpm playbook pilot --repo ../target-repo --json`
+- `ignore`: Suggest and safely apply ranked .playbookignore recommendations
+  - Example: `pnpm playbook ignore suggest --repo ../target-repo --json`
 - `contracts`: Emit deterministic contract registry for schemas, artifacts, and roadmap status
   - Example: `pnpm playbook contracts --json`
 
@@ -254,6 +256,7 @@ Do not hand-edit entries inside the managed markers.
 | `ai-context` | `pnpm playbook ai-context --json` |
 | `ai-contract` | `pnpm playbook ai-contract --json` |
 | `pilot` | `pnpm playbook pilot --repo ../target-repo --json` |
+| `ignore` | `pnpm playbook ignore suggest --repo ../target-repo --json` |
 | `contracts` | `pnpm playbook contracts --json` |
 | `index` | `pnpm playbook index --json` |
 | `graph` | `pnpm playbook graph --json` |

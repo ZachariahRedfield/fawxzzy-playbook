@@ -18,6 +18,27 @@ export type { RepositoryHealth, GovernanceStatusItem, ArtifactHygieneReport } fr
 
 export { generateRepositoryIndex } from './indexer/repoIndexer.js';
 export type { RepositoryIndex, RepositoryModule } from './indexer/repoIndexer.js';
+export {
+  parsePlaybookIgnore,
+  parsePlaybookIgnoreContent,
+  getDefaultPlaybookIgnoreSuggestions,
+  isPlaybookIgnored,
+  readIgnoreRecommendationArtifact,
+  suggestPlaybookIgnore,
+  applySafePlaybookIgnoreRecommendations,
+  PLAYBOOK_IGNORE_MANAGED_START,
+  PLAYBOOK_IGNORE_MANAGED_END
+} from './indexer/playbookIgnore.js';
+export type {
+  PlaybookIgnoreRule,
+  RecommendationSafetyLevel,
+  RecommendationImpactLevel,
+  IgnoreRecommendation,
+  IgnoreRecommendationArtifact,
+  PlaybookIgnoreSuggestion,
+  PlaybookIgnoreSuggestResult,
+  PlaybookIgnoreApplyResult
+} from './indexer/playbookIgnore.js';
 export { generateRepositoryGraph, readRepositoryGraph, summarizeRepositoryGraph, summarizeGraphNeighborhood, REPOSITORY_GRAPH_RELATIVE_PATH, REPOSITORY_GRAPH_SCHEMA_VERSION } from './graph/repoGraph.js';
 export { buildModuleContextDigests, writeModuleContextDigests, readModuleContextDigest, MODULE_CONTEXT_DIR_RELATIVE_PATH } from './context/moduleContext.js';
 export type { ModuleContextDigest } from './context/moduleContext.js';

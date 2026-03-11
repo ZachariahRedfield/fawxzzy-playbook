@@ -23,6 +23,7 @@
       "analyze",
       "pilot",
       "analyze-pr",
+      "ignore",
       "verify",
       "plan",
       "apply",

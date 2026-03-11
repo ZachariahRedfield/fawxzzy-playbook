@@ -19,6 +19,7 @@ describe('runSchema', () => {
     expect(payload).toHaveProperty('ai-context');
     expect(payload).toHaveProperty('ai-contract');
     expect(payload).toHaveProperty('query');
+    expect(payload).toHaveProperty('ignore');
 
     logSpy.mockRestore();
   });
@@ -97,6 +98,18 @@ describe('runSchema', () => {
     expect(exitCode).toBe(ExitCode.Success);
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
     expect(payload.title).toBe('PlaybookQueryOutput');
+
+    logSpy.mockRestore();
+  });
+
+  it('prints the ignore schema', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runSchema('/repo', ['ignore'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+    expect(payload.title).toBe('PlaybookIgnoreOutput');
 
     logSpy.mockRestore();
   });

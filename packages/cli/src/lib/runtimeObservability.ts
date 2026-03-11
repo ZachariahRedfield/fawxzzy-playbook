@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { isPlaybookIgnored, parsePlaybookIgnore } from '@zachariahredfield/playbook-engine';
 
 const ANALYZER_CONTRACT_VERSION = '1.0' as const;
 const RUNTIME_ROOT_RELATIVE = '.playbook/runtime' as const;
@@ -282,12 +283,15 @@ type RepoFileEntry = {
 
 type RepoInventory = {
   files: RepoFileEntry[];
+  explicitlyIgnoredFiles: RepoFileEntry[];
   prunedDirectories: Array<{ path: string; path_class: ScanPathClass; reason: string }>;
 };
 
 const listRepoFiles = (repoRoot: string): RepoInventory => {
   const files: RepoFileEntry[] = [];
+  const explicitlyIgnoredFiles: RepoFileEntry[] = [];
   const prunedDirectories: Array<{ path: string; path_class: ScanPathClass; reason: string }> = [];
+  const ignoreRules = parsePlaybookIgnore(repoRoot);
   const stack = [repoRoot];
 
   while (stack.length > 0) {
@@ -301,6 +305,10 @@ const listRepoFiles = (repoRoot: string): RepoInventory => {
       const relative = posixRelative(repoRoot, child);
       if (entry.isDirectory()) {
         const pathClass = classifyPath(relative, { isDirectory: true, isBinary: false });
+        if (isPlaybookIgnored(relative, ignoreRules)) {
+          prunedDirectories.push({ path: relative, path_class: pathClass, reason: 'playbookignore-rule' });
+          continue;
+        }
         const pruningDecision = shouldPruneDirectory(relative, pathClass);
         if (pruningDecision.prune) {
           prunedDirectories.push({ path: relative, path_class: pathClass, reason: pruningDecision.reason });
@@ -311,18 +319,25 @@ const listRepoFiles = (repoRoot: string): RepoInventory => {
       }
 
       if (entry.isFile()) {
-        files.push({
+        const fileEntry = {
           absolutePath: child,
           relativePath: relative,
           pathClass: classifyPath(relative, { isDirectory: false, isBinary: false })
-        });
+        };
+        if (isPlaybookIgnored(relative, ignoreRules)) {
+          explicitlyIgnoredFiles.push(fileEntry);
+          continue;
+        }
+
+        files.push(fileEntry);
       }
     }
   }
 
   files.sort((a, b) => a.absolutePath.localeCompare(b.absolutePath));
+  explicitlyIgnoredFiles.sort((a, b) => a.absolutePath.localeCompare(b.absolutePath));
   prunedDirectories.sort((a, b) => a.path.localeCompare(b.path));
-  return { files, prunedDirectories };
+  return { files, explicitlyIgnoredFiles, prunedDirectories };
 };
 
 const hashContent = (value: Buffer | string): string => crypto.createHash('sha256').update(value).digest('hex');
@@ -422,6 +437,17 @@ const collectCoverage = (repoRoot: string, cycleId: string): CoverageArtifact =>
   const ignoreCandidatePaths = new Set<string>();
   const expensiveClassStats = new Map<ScanPathClass, { total_size_bytes: number; file_count: number }>();
 
+  for (const ignoredFile of inventory.explicitlyIgnoredFiles) {
+    pathClassCounts[ignoredFile.pathClass] += 1;
+    ignoredFiles += 1;
+    pushLowValueSample(lowValuePathSamples, {
+      path: ignoredFile.relativePath,
+      path_class: ignoredFile.pathClass,
+      handling: 'ignored',
+      reason: 'playbookignore-rule'
+    });
+  }
+
   for (const file of files) {
     const absolutePath = file.absolutePath;
     const relativePath = file.relativePath;
@@ -496,11 +522,12 @@ const collectCoverage = (repoRoot: string, cycleId: string): CoverageArtifact =>
   const detectedModules = Array.isArray(repoIndex?.modules) ? repoIndex.modules.length : 0;
 
   const denominatorEligible = eligibleFiles === 0 ? 1 : eligibleFiles;
-  const denominatorTotal = files.length === 0 ? 1 : files.length;
+  const totalFilesSeen = files.length + inventory.explicitlyIgnoredFiles.length;
+  const denominatorTotal = totalFilesSeen === 0 ? 1 : totalFilesSeen;
   const blindSpotFiles = unsupportedFiles + binaryFiles + oversizedFiles + parseFailures + ignoredFiles;
 
   const eligibleScanCoverageScore = Number((scannedFiles / denominatorEligible).toFixed(4));
-  const repoVisibilityScore = Number(((files.length - blindSpotFiles) / denominatorTotal).toFixed(4));
+  const repoVisibilityScore = Number(((totalFilesSeen - blindSpotFiles) / denominatorTotal).toFixed(4));
   const blindSpotRatio = Number((blindSpotFiles / denominatorTotal).toFixed(4));
 
   const unknownAreas: string[] = [];
@@ -520,6 +547,9 @@ const collectCoverage = (repoRoot: string, cycleId: string): CoverageArtifact =>
     }));
   for (const entry of inventory.prunedDirectories) {
     pushLowValueSample(lowValuePathSamples, { path: entry.path, path_class: entry.path_class, handling: 'pruned', reason: entry.reason });
+    if (entry.reason === 'playbookignore-rule') {
+      continue;
+    }
     const ignoreCandidate = toIgnoreCandidate(entry.path, entry.path_class, true);
     if (ignoreCandidate) {
       ignoreCandidatePaths.add(ignoreCandidate);
@@ -539,7 +569,7 @@ const collectCoverage = (repoRoot: string, cycleId: string): CoverageArtifact =>
     schemaVersion: '1.0',
     cycle_id: cycleId,
     observed_at: observedAt,
-    total_files_seen: files.length,
+    total_files_seen: totalFilesSeen,
     eligible_files: eligibleFiles,
     scanned_files: scannedFiles,
     skipped_files: oversizedFiles,
@@ -563,14 +593,14 @@ const collectCoverage = (repoRoot: string, cycleId: string): CoverageArtifact =>
     score_components: {
       numerator_scanned_files: scannedFiles,
       denominator_eligible_files: denominatorEligible,
-      numerator_visible_files: files.length - blindSpotFiles,
+      numerator_visible_files: totalFilesSeen - blindSpotFiles,
       denominator_total_files_seen: denominatorTotal,
       numerator_blind_spot_files: blindSpotFiles,
       denominator_total_files_seen_for_blind_spot: denominatorTotal
     },
     observations: {
       file_inventory: {
-        total_files_seen: files.length,
+        total_files_seen: totalFilesSeen,
         sampled_file_hashes: sampledFileHashes,
         max_scan_bytes: DEFAULT_MAX_SCAN_BYTES,
         expensive_paths: expensivePaths.sort((a, b) => b.size_bytes - a.size_bytes).slice(0, 5),

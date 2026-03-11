@@ -33,6 +33,7 @@ Do not hand-edit entries inside the managed markers.
 | `ai-context` | Print deterministic AI bootstrap context for Playbook-aware agents | canonical | bootstrap | primary | 1 | Current (implemented) | `pnpm playbook ai-context --json` |
 | `ai-contract` | Print deterministic AI repository contract for Playbook-aware agents | canonical | bootstrap | primary | 2 | Current (implemented) | `pnpm playbook ai-contract --json` |
 | `pilot` | Run one-command external baseline analysis workflow for a target repository | canonical | bootstrap | primary | 11 | Current (implemented) | `pnpm playbook pilot --repo ../target-repo --json` |
+| `ignore` | Suggest and safely apply ranked .playbookignore recommendations | canonical | remediation | primary | 12 | Current (implemented) | `pnpm playbook ignore suggest --repo ../target-repo --json` |
 | `contracts` | Emit deterministic contract registry for schemas, artifacts, and roadmap status | utility | utility | secondary | — | Current (implemented) | `pnpm playbook contracts --json` |
 | `index` | Generate machine-readable repository intelligence index | canonical | repo-intelligence | primary | 4 | Current (implemented) | `pnpm playbook index --json` |
 | `graph` | Summarize machine-readable repository knowledge graph from .playbook/repo-graph.json | canonical | repo-intelligence | secondary | — | Current (implemented) | `pnpm playbook graph --json` |
@@ -306,7 +307,25 @@ Commands that consume prior runtime artifacts should treat those files as untrus
 Failure Mode â€” Hidden Optional Artifact Dependency Crash
 A secondary command like index can fail because of a hidden dependency on stale or corrupted `.playbook/*.json` artifacts produced by an earlier workflow step.
 
-`.playbookignore` support is available for repository intelligence scans (`pnpm playbook index` and related repository scans). The file uses `.gitignore`-style syntax and should be used to exclude high-churn directories (for example `node_modules`, `dist`, `build`, `coverage`, `.next`, and `.playbook/cache`).
+`.playbookignore` support is available for repository intelligence scans (`pnpm playbook index` and related repository scans). The file uses `.gitignore`-style syntax and should be used to exclude high-churn directories.
+
+Recommended bootstrap flow:
+
+```bash
+pnpm playbook pilot --repo "<target-repo>"
+pnpm playbook ignore suggest --repo "<target-repo>" --json
+pnpm playbook ignore apply --repo "<target-repo>" --safe-defaults
+```
+
+`ignore suggest` reports ranked recommendations, safety level, rationale, expected scan impact, and whether each entry is already covered. `ignore apply --safe-defaults` writes only `safe-default` entries into a deterministic managed block and leaves lower-confidence recommendations in review-only output.
+
+Rule - Apply Only Trusted Ignore Recommendations.
+
+Pattern - Recommendation Before Application, Safe Defaults Before Review.
+
+Failure Mode - Auto-Applying Ambiguous Ignores.
+
+Failure Mode - Non-Idempotent Ignore Management.
 
 
 ## Playbook artifact hygiene diagnostics (`doctor`)
@@ -342,4 +361,3 @@ Suggested remediation IDs:
 `pnpm playbook query impact <module>` converts indexed module/dependency data plus graph/digest context (`.playbook/repo-graph.json`, `.playbook/context/modules/*.json`) into deterministic module blast-radius analysis, including dependencies, reverse dependencies, docs/tests/rules, and risk signals when available.
 
 Rule: Module impact and module-scoped ask rely on Playbook-managed index artifacts, not ad-hoc rescans.
-

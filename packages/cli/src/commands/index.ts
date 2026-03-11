@@ -91,6 +91,10 @@ const commandRunners: Record<string, (context: CommandContext) => Promise<Comman
       repo: parseOptionValue(commandArgs, '--repo')
     });
   },
+  ignore: async ({ cwd, commandArgs, format, quiet }) => {
+    const { runIgnore } = await import('./ignore.js');
+    return runIgnore(cwd, commandArgs, { format, quiet });
+  },
   'analyze-pr': async ({ cwd, commandArgs, format, quiet }) => {
     const { runAnalyzePr } = await import('./analyzePr.js');
     return runAnalyzePr(cwd, commandArgs, {
@@ -252,6 +256,7 @@ const commandOrder = [
   'analyze',
   'pilot',
   'analyze-pr',
+  'ignore',
   'verify',
   'plan',
   'apply',

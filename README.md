@@ -58,16 +58,15 @@ Playbook classifies repository artifacts into deterministic storage classes:
 
 Use `.playbookignore` to control repository intelligence scan scope for `pnpm playbook index` and other repository scans. The syntax mirrors `.gitignore`.
 
-Recommended starter entries:
+Safe bootstrap flow:
 
 ```
-node_modules
-dist
-build
-coverage
-.next
-.playbook/cache
+pnpm playbook pilot --repo "<target-repo-path>" --json
+pnpm playbook ignore suggest --repo "<target-repo-path>" --json
+pnpm playbook ignore apply --repo "<target-repo-path>" --safe-defaults
 ```
+
+`ignore suggest` reads ranked runtime recommendations and reports which entries are already covered. `ignore apply --safe-defaults` writes only `safe-default` entries into a deterministic managed block and leaves `review-first` recommendations as manual review items.
 
 `pnpm playbook doctor` now includes a **Playbook Artifact Hygiene** section to detect artifact misuse and suggest deterministic fixes.
 
@@ -184,6 +183,21 @@ External onboarding contract (minimal):
 - `.playbook/` is runtime-generated Playbook state owned by Playbook commands for the target repo.
 - first-run warning guidance is actionable: add `playbook.config.json` when you want explicit policy/config, add `.playbookignore` when scan scope should be narrowed.
 
+Recommended follow-up after `pilot`:
+
+```bash
+pnpm playbook ignore suggest --repo "C:\Users\zjhre\dev\FawxzzyFitness" --json
+pnpm playbook ignore apply --repo "C:\Users\zjhre\dev\FawxzzyFitness" --safe-defaults
+```
+
+Rule - Apply Only Trusted Ignore Recommendations.
+
+Pattern - Recommendation Before Application, Safe Defaults Before Review.
+
+Failure Mode - Auto-Applying Ambiguous Ignores.
+
+Failure Mode - Non-Idempotent Ignore Management.
+
 ## Example Output
 
 `pnpm playbook verify` and `pnpm playbook plan` provide deterministic, reviewable output for both humans and AI agents. For complete walkthrough output, use the official demo repository:
@@ -219,6 +233,7 @@ pnpm playbook verify --json
 - `rules`
 - `docs`
 - `schema`
+- `ignore`
 - `context`
 - `ai-context`
 - `ai-contract`
@@ -656,4 +671,3 @@ A full local example is available at `.github/workflows/playbook-action-example.
 
 
 `pnpm test:security` runs security contract and regression tests.
-

@@ -14,7 +14,8 @@ export type CliSchemaCommand =
   | 'analyze-pr'
   | 'query'
   | 'docs'
-  | 'contracts';
+  | 'contracts'
+  | 'ignore';
 
 export type JsonSchema = {
   [key: string]: unknown;
@@ -811,6 +812,126 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
       }
     }
   },
+  ignore: {
+    $schema: JSON_SCHEMA_DRAFT,
+    title: 'PlaybookIgnoreOutput',
+    oneOf: [
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: [
+          'schemaVersion',
+          'command',
+          'recommendationSource',
+          'recommendations',
+          'safe_defaults',
+          'review_required',
+          'summary'
+        ],
+        properties: {
+          schemaVersion: { const: '1.0' },
+          command: { const: 'ignore suggest' },
+          repoRoot: { type: 'string' },
+          recommendationSource: { type: 'string' },
+          recommendations: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: [
+                'path',
+                'rank',
+                'class',
+                'rationale',
+                'confidence',
+                'expected_scan_impact',
+                'safety_level',
+                'already_covered',
+                'eligible_for_safe_apply'
+              ],
+              properties: {
+                path: { type: 'string' },
+                rank: { type: 'integer' },
+                class: { type: 'string' },
+                rationale: { type: 'string' },
+                confidence: { type: 'number' },
+                expected_scan_impact: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['estimated_files_reduced', 'estimated_bytes_reduced', 'impact_level'],
+                  properties: {
+                    estimated_files_reduced: { type: 'integer' },
+                    estimated_bytes_reduced: { type: 'integer' },
+                    impact_level: { enum: ['low', 'medium', 'high'] }
+                  }
+                },
+                safety_level: { enum: ['safe-default', 'likely-safe', 'review-first'] },
+                already_covered: { type: 'boolean' },
+                eligible_for_safe_apply: { type: 'boolean' }
+              }
+            }
+          },
+          safe_defaults: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          review_required: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          summary: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['total_recommendations', 'safe_default_count', 'review_required_count', 'already_covered_count'],
+            properties: {
+              total_recommendations: { type: 'integer' },
+              safe_default_count: { type: 'integer' },
+              review_required_count: { type: 'integer' },
+              already_covered_count: { type: 'integer' }
+            }
+          }
+        }
+      },
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: [
+          'schemaVersion',
+          'command',
+          'recommendationSource',
+          'targetFile',
+          'changed',
+          'created',
+          'applied_entries',
+          'retained_entries',
+          'already_covered_entries',
+          'deferred_entries',
+          'removed_entries',
+          'summary'
+        ],
+        properties: {
+          schemaVersion: { const: '1.0' },
+          command: { const: 'ignore apply' },
+          repoRoot: { type: 'string' },
+          recommendationSource: { type: 'string' },
+          targetFile: { const: '.playbookignore' },
+          changed: { type: 'boolean' },
+          created: { type: 'boolean' },
+          applied_entries: { type: 'array', items: { type: 'string' } },
+          retained_entries: { type: 'array', items: { type: 'string' } },
+          already_covered_entries: { type: 'array', items: { type: 'string' } },
+          deferred_entries: { type: 'array', items: { type: 'string' } },
+          removed_entries: { type: 'array', items: { type: 'string' } },
+          summary: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['applied_count', 'retained_count', 'already_covered_count', 'deferred_count', 'removed_count'],
+            properties: {
+              applied_count: { type: 'integer' },
+              retained_count: { type: 'integer' },
+              already_covered_count: { type: 'integer' },
+              deferred_count: { type: 'integer' },
+              removed_count: { type: 'integer' }
+            }
+          }
+        }
+      }
+    ]
+  },
   query: {
     $schema: JSON_SCHEMA_DRAFT,
     title: 'PlaybookQueryOutput',
@@ -1134,6 +1255,7 @@ export const getCliSchemas = (): Record<CliSchemaCommand, JsonSchema> => ({
   'analyze-pr': cliSchemas['analyze-pr'],
   docs: cliSchemas.docs,
   contracts: cliSchemas.contracts,
+  ignore: cliSchemas.ignore,
   query: cliSchemas.query
 });
 

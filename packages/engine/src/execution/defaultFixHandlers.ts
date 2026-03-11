@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { getDefaultPlaybookIgnoreSuggestions } from '../indexer/playbookIgnore.js';
+import { applySafePlaybookIgnoreRecommendations, getDefaultPlaybookIgnoreSuggestions } from '../indexer/playbookIgnore.js';
 import type { FixHandler } from './types.js';
 
 const PLAYBOOK_NOTES_STARTER = `# Playbook Notes
@@ -67,15 +67,39 @@ const fixNotesEmpty: FixHandler = async ({ repoRoot, dryRun }) => {
 };
 
 const fixPb012PlaybookIgnore: FixHandler = async ({ repoRoot, dryRun }) => {
-  const entries = getDefaultPlaybookIgnoreSuggestions();
-  const targetPath = path.join(repoRoot, '.playbookignore');
-  const changed = await upsertLineEntries(targetPath, entries, dryRun);
+  if (dryRun) {
+    return {
+      status: 'applied',
+      filesChanged: ['.playbookignore'],
+      summary: 'Would apply safe-default ranked ignore recommendations to .playbookignore.'
+    };
+  }
 
-  return {
-    status: changed ? 'applied' : 'skipped',
-    filesChanged: changed ? ['.playbookignore'] : [],
-    summary: changed ? 'Added missing .playbookignore entries.' : '.playbookignore already contained recommended entries.'
-  };
+  try {
+    const result = applySafePlaybookIgnoreRecommendations(repoRoot);
+
+    return {
+      status: result.changed ? 'applied' : 'skipped',
+      filesChanged: result.changed ? ['.playbookignore'] : [],
+      summary: result.changed
+        ? 'Applied safe-default ranked ignore recommendations to .playbookignore.'
+        : '.playbookignore already matched safe-default ranked ignore recommendations.'
+    };
+  } catch {
+    const targetPath = path.join(repoRoot, '.playbookignore');
+    const fallbackEntries = getDefaultPlaybookIgnoreSuggestions().filter((entry) =>
+      ['.git', '.next/cache', 'node_modules', 'playwright-report'].includes(entry)
+    );
+    const changed = await upsertLineEntries(targetPath, fallbackEntries, false);
+
+    return {
+      status: changed ? 'applied' : 'skipped',
+      filesChanged: changed ? ['.playbookignore'] : [],
+      summary: changed
+        ? 'Applied fallback safe-default .playbookignore entries because ranked recommendations were unavailable.'
+        : '.playbookignore already contained fallback safe-default entries.'
+    };
+  }
 };
 
 const fixPb013GitIgnore: FixHandler = async ({ repoRoot, dryRun }) => {

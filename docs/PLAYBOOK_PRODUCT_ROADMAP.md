@@ -212,7 +212,9 @@ Current slice establishes:
 - independent external pilot validation confirms runtime targeting works beyond the Playbook repository (FawxzzyFitness and Nat1-Games)
 - deterministic machine-written JSON artifact output for machine-consumed findings/plan flows (`--json --out`) and direct pilot-owned artifact writes (`.playbook/findings.json`, `.playbook/plan.json`)
 - deterministic invalid-artifact read guardrails for risk/query flows, including explicit corruption errors and CLI-owned regeneration guidance
-- next hardening slice converts pilot success into a generic onboarding contract (optional `playbook.config.json`, optional `.playbookignore`, and Playbook-owned `.playbook/` runtime state)
+- deterministic `.playbookignore` bootstrap/apply workflow via `pnpm playbook ignore suggest` and `pnpm playbook ignore apply --safe-defaults`
+- safe-default-only managed `.playbookignore` updates with review-only handling for lower-confidence recommendations
+- runtime coverage honors explicit `.playbookignore` rules so follow-up pilot/index cycles reflect tightened scan boundaries
 
 Reference plan:
 
@@ -686,7 +688,15 @@ Rule: Generated runtime artifacts should be gitignored unless intentionally comm
 Rule: Playbook remains local/private-first by default.
 Failure Mode: Recommitting regenerated artifacts on every run causes unnecessary repo-history growth and noisy diffs.
 
-Roadmap direction: introduce a scoped `.playbookignore` mechanism (future work) to exclude irrelevant/high-churn directories such as `node_modules`, `dist`, `coverage`, `.next`, build outputs, and non-source artifact folders from repository intelligence scans when appropriate.
+Delivered direction: `.playbookignore` is now bootstrapped from ranked runtime recommendations through `ignore suggest` and `ignore apply --safe-defaults`, with deterministic managed-block updates and review-first preservation for ambiguous entries.
+
+Rule - Apply Only Trusted Ignore Recommendations.
+
+Pattern - Recommendation Before Application, Safe Defaults Before Review.
+
+Failure Mode - Auto-Applying Ambiguous Ignores.
+
+Failure Mode - Non-Idempotent Ignore Management.
 
 
 ### Intentional upstream promotion workflow
@@ -1559,4 +1569,3 @@ Contract:
 - fail on non-allowlisted mutations
 - configure explicit git author identity and explicit token-based push auth in `--push` mode (`PLAYBOOK_GIT_AUTHOR_*`, `PLAYBOOK_DEMO_GH_TOKEN`/`GH_TOKEN`)
 - open/update PRs only (no direct push to `main`)
-

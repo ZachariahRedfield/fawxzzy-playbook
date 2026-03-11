@@ -227,6 +227,19 @@ export const commandMetadata: CommandMetadata[] = [
     exampleArgs: 'pilot --repo ../target-repo --json',
     machineReadable: true
   },
+  {
+    name: 'ignore',
+    description: 'Suggest and safely apply ranked .playbookignore recommendations',
+    category: 'Repository tools',
+    role: 'remediation',
+    lifecycle: 'canonical',
+    discoverability: 'primary',
+    onboardingPriority: 12,
+    canonicalSequence: 12,
+    productFacing: true,
+    exampleArgs: 'ignore suggest --repo ../target-repo --json',
+    machineReadable: true
+  },
 
   {
     name: 'contracts',

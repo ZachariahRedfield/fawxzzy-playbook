@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "command": "ignore suggest",
+  "recommendationSource": ".playbook/runtime/current/ignore-recommendations.json",
+  "recommendations": [],
+  "safe_defaults": [],
+  "review_required": [],
+  "summary": {
+    "total_recommendations": 0,
+    "safe_default_count": 0,
+    "review_required_count": 0,
+    "already_covered_count": 0
+  }
+}
