@@ -125,17 +125,24 @@ pnpm playbook demo
 Use `--repo <path>` to run Playbook from this monorepo against another local repository without changing directories:
 
 ```bash
-pnpm playbook --repo ../fawxzzy-fitness ai-context --json
-pnpm playbook --repo ../fawxzzy-fitness context --json
-pnpm playbook --repo ../fawxzzy-fitness index --json
-pnpm playbook --repo ../fawxzzy-fitness query modules --json
-pnpm playbook --repo ../fawxzzy-fitness verify --json > ../fawxzzy-fitness/.playbook/findings.json
-pnpm playbook --repo ../fawxzzy-fitness plan --json > ../fawxzzy-fitness/.playbook/plan.json
+TARGET_REPO_PATH="../my-repo"
+pnpm playbook --repo "$TARGET_REPO_PATH" context --json
+pnpm playbook --repo "$TARGET_REPO_PATH" index --json
+pnpm playbook --repo "$TARGET_REPO_PATH" query modules --json
+pnpm playbook --repo "$TARGET_REPO_PATH" verify --json
+pnpm playbook --repo "$TARGET_REPO_PATH" plan --json
 ```
 
 This keeps `pnpm playbook <command>` as the canonical invocation while letting operators target external repositories deterministically from a single working checkout.
 
 When `--repo` is set, runtime artifacts are written into the target repository under `.playbook/` (for example `repo-index.json`, `repo-graph.json`, `findings.json`, and `plan.json`).
+
+External onboarding contract (minimal):
+
+- `playbook.config.json` is optional; missing config is not a failure and Playbook runs with defaults.
+- `.playbookignore` is optional; add it to tune repository scan scope for large/high-churn paths.
+- `.playbook/` is runtime-generated Playbook state owned by Playbook commands for the target repo.
+- first-run warning guidance is actionable: add `playbook.config.json` when you want explicit policy/config, add `.playbookignore` when scan scope should be narrowed.
 
 ## Example Output
 

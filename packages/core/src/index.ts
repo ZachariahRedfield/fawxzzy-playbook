@@ -107,7 +107,7 @@ const matchesGlob = (file: string, pattern: string): boolean => {
 const matchesAny = (file: string, patterns: string[]): boolean => patterns.some((p) => matchesGlob(file, p));
 
 const parseConfig = (raw?: string): { config: PlaybookConfig; warning?: string } => {
-  if (!raw) return { config: defaultConfig, warning: 'playbook.config.json not found; using defaults.' };
+  if (!raw) return { config: defaultConfig, warning: 'playbook.config.json not found; using defaults (this is not an error). Add playbook.config.json for explicit settings and .playbookignore to tune scan scope.' };
   const parsed = JSON.parse(raw) as Partial<PlaybookConfig>;
   return {
     config: {
