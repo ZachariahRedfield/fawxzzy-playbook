@@ -204,13 +204,13 @@ Current slice establishes:
 - coexistence-first migration policy for external pilot rollout
 - legacy Playbook inventory framework (`KEEP_TEMPORARILY`, `REPLACE_WITH_NEW_PLAYBOOK`, `INVESTIGATE_USAGE`, `REMOVE_AFTER_PARITY`)
 - phased removal strategy (`Coexistence -> Capability Mapping -> Parity Validation -> Controlled Removal`)
-- pilot execution contract for canonical external-runbook commands using `pnpm playbook --repo <path> ...`
+- pilot execution contract upgraded to one-command baseline onboarding via `pnpm playbook pilot --repo <path>`
 - first-class external repository targeting via global `--repo <path>` on canonical command surface
 - deterministic artifact generation in external repositories under `<target>/.playbook/`
 - coexistence-first pilot execution without legacy removal in the target repository
 - fixture-based coverage for external runtime behavior and positional parsing (`--repo <fixture> query modules --json`)
 - independent external pilot validation confirms runtime targeting works beyond the Playbook repository (FawxzzyFitness and Nat1-Games)
-- deterministic machine-written JSON artifact output for machine-consumed findings/plan flows (`--json --out`)
+- deterministic pilot-owned machine-written JSON artifacts for machine-consumed findings/plan flows (`.playbook/findings.json` and `.playbook/plan.json`)
 - deterministic invalid-artifact read guardrails for risk/query flows, including explicit corruption errors and CLI-owned regeneration guidance
 - next hardening slice converts pilot success into a generic onboarding contract (optional `playbook.config.json`, optional `.playbookignore`, and Playbook-owned `.playbook/` runtime state)
 

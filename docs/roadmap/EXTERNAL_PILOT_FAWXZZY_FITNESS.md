@@ -86,14 +86,16 @@ Use the following deterministic categories while mapping every legacy surface:
 
 ## Pilot execution runbook (current command truth)
 
-These commands are the canonical execution contract for the pilot:
+This command is the canonical execution contract for the pilot:
 
 ```bash
-pnpm playbook --repo ../fawxzzy-fitness context --json
-pnpm playbook --repo ../fawxzzy-fitness index --json
-pnpm playbook --repo ../fawxzzy-fitness query modules --json
-pnpm playbook --repo ../fawxzzy-fitness verify --json --out ../fawxzzy-fitness/.playbook/findings.json
-pnpm playbook --repo ../fawxzzy-fitness plan --json --out ../fawxzzy-fitness/.playbook/plan.json
+pnpm playbook pilot --repo ../fawxzzy-fitness
+```
+
+Optional convenience alias:
+
+```bash
+pnpm pilot ../fawxzzy-fitness
 ```
 
 Implementation note:

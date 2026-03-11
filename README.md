@@ -144,21 +144,30 @@ For machine-consumed JSON artifacts, use CLI-owned output flags (for example `--
 Run the canonical external-repository analysis pipeline with one command:
 
 ```bash
+pnpm playbook pilot --repo "C:\Users\zjhre\dev\FawxzzyFitness"
+```
+
+Optional convenience alias:
+
+```bash
 pnpm pilot "C:\Users\zjhre\dev\FawxzzyFitness"
 ```
 
-The pilot runner executes `context -> index -> query modules -> verify -> plan` and writes deterministic artifacts into the target repository:
+The canonical pilot command executes `context -> index -> query modules -> verify -> plan` as one deterministic top-level cycle and writes machine-readable artifacts into the target repository:
 
 - `.playbook/repo-index.json`
 - `.playbook/repo-graph.json`
 - `.playbook/findings.json`
 - `.playbook/plan.json`
+- `.playbook/pilot-summary.json`
 
-Rule — External Repo Analysis Should Be One Command.
+Rule — Repeated Multi-Step Operator Flows Deserve a First-Class Command.
 
-Pattern — CLI Playbook Workflow Runner.
+Pattern — Orchestrated Baseline Analysis.
 
-Failure Mode — Operator Command Drift.
+Failure Mode — Manual Workflow Drift.
+
+Failure Mode — Helper Script Becomes Shadow Product Surface.
 
 External onboarding contract (minimal):
 

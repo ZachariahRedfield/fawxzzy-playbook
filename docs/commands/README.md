@@ -31,6 +31,7 @@ Do not hand-edit entries inside the managed markers.
 | `context` | Print deterministic CLI and architecture context for tools and agents | canonical | bootstrap | primary | 3 | Current (implemented) | `pnpm playbook context --json` |
 | `ai-context` | Print deterministic AI bootstrap context for Playbook-aware agents | canonical | bootstrap | primary | 1 | Current (implemented) | `pnpm playbook ai-context --json` |
 | `ai-contract` | Print deterministic AI repository contract for Playbook-aware agents | canonical | bootstrap | primary | 2 | Current (implemented) | `pnpm playbook ai-contract --json` |
+| `pilot` | Run one-command external baseline analysis workflow for a target repository | canonical | bootstrap | primary | 11 | Current (implemented) | `pnpm playbook pilot --repo ../target-repo --json` |
 | `contracts` | Emit deterministic contract registry for schemas, artifacts, and roadmap status | utility | utility | secondary | — | Current (implemented) | `pnpm playbook contracts --json` |
 | `index` | Generate machine-readable repository intelligence index | canonical | repo-intelligence | primary | 4 | Current (implemented) | `pnpm playbook index --json` |
 | `graph` | Summarize machine-readable repository knowledge graph from .playbook/repo-graph.json | canonical | repo-intelligence | secondary | — | Current (implemented) | `pnpm playbook graph --json` |
@@ -50,12 +51,16 @@ Canonical external runtime flow:
 
 ```bash
 TARGET_REPO_PATH="../my-repo"
-pnpm playbook --repo "$TARGET_REPO_PATH" context --json
-pnpm playbook --repo "$TARGET_REPO_PATH" index --json
-pnpm playbook --repo "$TARGET_REPO_PATH" query modules --json
-pnpm playbook --repo "$TARGET_REPO_PATH" verify --json --out "$TARGET_REPO_PATH/.playbook/findings.json"
-pnpm playbook --repo "$TARGET_REPO_PATH" plan --json --out "$TARGET_REPO_PATH/.playbook/plan.json"
+pnpm playbook pilot --repo "$TARGET_REPO_PATH"
 ```
+
+Optional convenience alias:
+
+```bash
+pnpm pilot "$TARGET_REPO_PATH"
+```
+
+Pilot deterministically executes `context -> index -> query modules -> verify -> plan`, writes `.playbook/findings.json` and `.playbook/plan.json` directly, and emits `.playbook/pilot-summary.json` with compact onboarding telemetry.
 
 Minimal external onboarding contract:
 

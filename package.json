@@ -34,7 +34,7 @@
     "test:security": "pnpm -r build && node --test test/contracts/security/**/*.test.mjs test/security/**/*.test.mjs",
     "validate:roadmap": "node scripts/validate-roadmap-contract.mjs",
     "pr:sync-metadata": "node scripts/sync-pr-metadata.mjs",
-    "pilot": "node scripts/run-external-pilot.mjs"
+    "pilot": "node scripts/run-pilot.mjs"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
