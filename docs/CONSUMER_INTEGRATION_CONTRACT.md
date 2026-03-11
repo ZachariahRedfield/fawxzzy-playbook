@@ -10,6 +10,11 @@ Playbook integration follows a **shared core + project-local Playbook state** mo
 - Runtime intelligence artifacts belong to each consumer repository.
 - Installing Playbook in another repository **does not create a fork**.
 
+Control-plane inheritance rule:
+
+- Consumer integrations inherit shared policy constraints from `docs/architecture/PLAYBOOK_CONTROL_PLANE_ARCHITECTURE.md`.
+- Local repositories still preserve project-local state ownership (`.playbook/*`) and explicit promotion/export decisions.
+
 ## 1) Integration Model
 
 ### Playbook Core (shared upstream)
@@ -141,7 +146,7 @@ Integration rules for application clients:
 
 - Browser clients should call validated server APIs/actions.
 - Browser clients should not execute arbitrary local CLI commands directly.
-- Deterministic governance and policy enforcement should remain server-side.
+- Deterministic governance and policy enforcement should remain server-side and route through shared control-plane checks.
 
 This direction enables safer product integrations (dashboards, control planes, internal platforms) without weakening governance boundaries.
 

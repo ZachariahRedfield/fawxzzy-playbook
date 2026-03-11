@@ -398,16 +398,14 @@ Failure Mode: Roadmap inflation from treating platform direction as near-term co
 
 ### Recommended sequencing for later platform layers
 
-1. knowledge persistence
-2. knowledge compaction / promotion
-3. repo longitudinal state
-4. session envelope + evidence model
-5. trust / evidence model hardening
-6. control plane
-7. execution orchestration hardening
-8. multi-repo transfer
-9. interface surfaces
-10. capability / model routing
+1. deterministic runtime hardening (`verify -> plan -> apply`, intelligence artifacts, and contract validation)
+2. session envelope + evidence model
+3. control plane (policy, approvals, mutation scopes, adapter boundaries, export rules)
+4. review and execution orchestration hardening
+5. knowledge persistence / compaction / longitudinal learning layers
+6. multi-repo transfer (explicit promotion only)
+7. interface surfaces
+8. capability / model routing
 
 This ordering is a dependency recommendation, not an active delivery commitment.
 
@@ -466,18 +464,19 @@ This ordering is a dependency recommendation, not an active delivery commitment.
 - **Partially defined**
   - approval/policy checkpoints around `apply` and future governance controls are documented as architecture direction.
 - **Future work**
-  - explicit control-plane policy objects, environment-aware approvals, and portable governance policy across runtime surfaces.
+  - establish the canonical control-plane architecture in `docs/architecture/PLAYBOOK_CONTROL_PLANE_ARCHITECTURE.md` with explicit actor classes, execution modes, mutation scope levels, approval requirements, adapter boundaries, and locality/export policies.
+  - require fail-closed policy enforcement when evidence, approvals, or verification state is incomplete/ambiguous.
 - **Execution window**
   - outside the current near-term execution window except for active delivery-system and remediation-hardening work already committed elsewhere.
 
-#### 6. Execution Orchestration
+#### 6. Review + Execution Orchestration
 
 - **Already exists today**
   - reviewed `verify -> plan -> apply -> verify` execution loops, CLI-first execution, and CI-safe remediation workflows are implemented.
 - **Partially defined**
-  - serialized plan execution, approval layers, autonomous maintenance modes, and automation-synthesis staging are defined as future operating models.
+  - serialized plan execution, approval layers, maintenance modes, and automation-synthesis staging are defined as future operating models.
 - **Future work**
-  - orchestration hardening across recurring workflows, maintenance runtimes, and policy-gated non-interactive execution.
+  - orchestration hardening across recurring workflows, maintenance runtimes, and policy-gated non-interactive execution that must route through shared control-plane checks.
 - **Execution window**
   - near-term work is limited to current remediation contract hardening; broader orchestration expansion is outside the 4-week plan.
 
@@ -965,11 +964,13 @@ Use a layered phase model so each phase compounds directly on the previous one:
    Machine-readable AI-operability contract and enforcement rules.
 9. **Phase 9 â€” Session + Evidence Layer**  
    Session envelope and evidence provenance contracts that bind actor context, command lineage, approvals, and deterministic artifact references.
-10. **Phase 10 â€” AI Execution Runtime**  
-   Agent orchestration that consumes repository intelligence + AI contract + session/evidence controls and obeys deterministic mutation workflow.
-11. **Phase 11 â€” Autonomous Maintenance (Policy-Gated)**  
+10. **Phase 10 â€” Control Plane Layer**  
+   First-class policy/approval/mutation-boundary architecture that gates all privileged execution after session evidence and before broader orchestration surfaces.
+11. **Phase 11 â€” Review + Execution Orchestration**  
+   Policy-gated orchestration that consumes repository intelligence + AI contracts + session/evidence + control-plane checks while preserving deterministic mutation workflow.
+12. **Phase 12 â€” Autonomous Maintenance (Policy-Gated)**  
    Recurring maintenance execution modes with approval and policy controls.
-12. **Phase 12 â€” Repository Learning Loop (Human-Reviewed)**  
+13. **Phase 13 â€” Repository Learning Loop (Human-Reviewed)**  
    Pattern detection and candidate improvements from repeated findings/remediations/query usage, including pattern mining from repeated findings, remediation clustering, candidate rule synthesis, invariant discovery, doctrine promotion candidates, memory compaction, and graph-informed learning artifacts. Outputs remain candidate knowledge artifacts until human review promotes them to enforced governance.
 
 Reasoning for reordering:

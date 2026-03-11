@@ -8,6 +8,8 @@ Automation Synthesis is intentionally positioned as a phased expansion built on 
 
 This track should align with the long-term platform layering in `docs/architecture/PLAYBOOK_PLATFORM_ARCHITECTURE.md`, especially session/evidence architecture, repository memory, evidence-linked trust, policy/control-plane approvals, and bounded orchestration.
 
+Control-plane architecture reference: `docs/architecture/PLAYBOOK_CONTROL_PLANE_ARCHITECTURE.md`.
+
 ## Problem statement
 
 Engineering teams repeatedly perform recurring operational and repository-maintenance work (triage loops, repetitive remediation flows, recurring CI hygiene, and runbook-based updates).
@@ -103,6 +105,8 @@ Security-first constraints should inherit Playbook's existing governance posture
 - strong separation between synthesis, verification, and production execution contexts
 
 Automation Synthesis must not bypass `verify -> plan -> apply` controls for repository mutations.
+
+Synthesis approval gates cannot bypass repository mutation policy, required approvals, or fail-closed enforcement defined by the control plane.
 
 ## Observability and rollback
 

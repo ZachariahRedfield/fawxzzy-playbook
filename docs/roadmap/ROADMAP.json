@@ -740,29 +740,33 @@
     {
       "feature_id": "PB-V09-CONTROL-PLANE-001",
       "version": "v0.9",
-      "title": "Policy and control plane",
-      "goal": "Define a portable policy/control-plane layer over deterministic remediation and governance once trust/evidence contracts are strong enough to schedule it.",
+      "title": "Control Plane architecture",
+      "goal": "Define first-class policy, approval, mutation-scope, adapter-boundary, and export/locality contracts after Session + Evidence and before orchestration/autonomy expansion.",
       "commands": [],
       "contracts": [
+        "docs/architecture/PLAYBOOK_CONTROL_PLANE_ARCHITECTURE.md",
+        "docs/architecture/PLAYBOOK_SESSION_EVIDENCE_ARCHITECTURE.md",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/ARCHITECTURE.md",
         "docs/roadmap/ROADMAP.json"
       ],
       "tests": [
         "scripts/validate-roadmap-contract.mjs"
       ],
       "docs": [
+        "docs/architecture/PLAYBOOK_CONTROL_PLANE_ARCHITECTURE.md",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/roadmap/README.md"
+        "docs/roadmap/IMPROVEMENTS_BACKLOG.md",
+        "docs/CONSUMER_INTEGRATION_CONTRACT.md",
+        "docs/AUTOMATION_SYNTHESIS_VISION.md"
       ],
       "dependencies": [
-        "PB-V09-TRUST-EVIDENCE-001"
+        "PB-V09-SESSION-EVIDENCE-001"
       ],
       "verification_commands": [
         "pnpm playbook docs audit --json",
         "node scripts/validate-roadmap-contract.mjs --ci"
       ],
-      "status": "backlog",
+      "status": "planned",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine",

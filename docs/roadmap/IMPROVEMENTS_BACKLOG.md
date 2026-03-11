@@ -115,7 +115,21 @@ Backlog scope:
 - Define approval-state contracts across CLI, CI, PR, and API execution surfaces.
 - Define explicit permission/mutation boundaries per actor and capability.
 - Add deterministic deny paths when required approvals or policy context are missing.
+- Add an explicit **approval policy model** with actor-aware escalation (`automatic -> human approval -> owner/security approval`).
+- Add a canonical **mutation-scope taxonomy** (`Level 0` through `Level 4`) for deterministic action classification.
+- Add deterministic **adapter policy boundaries** so integration-specific behavior cannot leak into core runtime policy semantics.
+- Add explicit **export/sync policy** contracts that keep repo-local facts local unless intentionally promoted/exported.
+- Add enforceable **fail-closed rules** for ambiguous policy, incomplete verification, missing approvals, or stale/contradictory evidence.
 
+Pattern: Policy Follows Evidence.
+Pattern: Control Plane Before Autonomy.
+Rule: Verification remains the trust boundary.
+Rule: Repo-local facts stay local unless intentionally promoted.
+Rule: Ambiguous policy or incomplete verification must fail closed.
+Failure Mode: Tool autonomy before policy boundaries.
+Failure Mode: Session evidence without enforcement.
+Failure Mode: Adapter-specific behavior leaking into core runtime.
+Failure Mode: Memory/export behavior implied without explicit opt-in.
 Failure Mode: Distributed policy logic across tools without a shared control plane creates inconsistent governance outcomes.
 
 ---

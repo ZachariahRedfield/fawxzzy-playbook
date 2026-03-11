@@ -108,6 +108,7 @@ This ordering is architecture direction and backlog sequencing guidance, not a c
 ## Cross-links
 
 - Product roadmap layering: `docs/PLAYBOOK_PRODUCT_ROADMAP.md`
+- Control-plane architecture: `docs/architecture/PLAYBOOK_CONTROL_PLANE_ARCHITECTURE.md`
 - Machine roadmap contract: `docs/roadmap/ROADMAP.json`
 - Backlog staging: `docs/roadmap/IMPROVEMENTS_BACKLOG.md`
 - Automation synthesis direction: `docs/AUTOMATION_SYNTHESIS_VISION.md`
