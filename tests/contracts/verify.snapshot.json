@@ -13,7 +13,7 @@
     {
       "id": "verify.warning.config-missing",
       "level": "warning",
-      "message": "playbook.config.json not found; using defaults."
+      "message": "playbook.config.json not found; using defaults (this is not an error). Add playbook.config.json for explicit settings and .playbookignore to tune scan scope."
     }
   ],
   "nextActions": []

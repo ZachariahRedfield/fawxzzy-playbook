@@ -138,7 +138,7 @@
       "category": "Testing",
       "severity": "warning",
       "id": "doctor.testing.verify.warning.config-missing",
-      "message": "playbook.config.json not found; using defaults."
+      "message": "playbook.config.json not found; using defaults (this is not an error). Add playbook.config.json for explicit settings and .playbookignore to tune scan scope."
     },
     {
       "category": "Architecture",

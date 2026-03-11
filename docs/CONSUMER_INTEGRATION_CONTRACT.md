@@ -135,9 +135,14 @@ repo/
 
 Interpretation:
 
-- `.playbook/` is project-local Playbook runtime intelligence.
-- `playbook.config.json` captures repository-specific policy/configuration.
+- `.playbook/` is project-local Playbook runtime intelligence generated/owned by Playbook runtime commands.
+- `playbook.config.json` is optional and captures repository-specific policy/configuration when explicit control is needed.
+- `.playbookignore` is optional and controls repository scan exclusions for high-churn or irrelevant paths.
 - `docs/` and `src/` remain consumer-owned repository domains.
+
+Graceful-adoption rule:
+
+- Missing `playbook.config.json` is not a failure; Playbook falls back to defaults and should guide operators toward optional next-step files.
 
 ## 8) Phased downstream consumer rollout (reusable)
 

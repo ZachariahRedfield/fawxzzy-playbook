@@ -46,15 +46,22 @@ Do not hand-edit entries inside the managed markers.
 - Use `pnpm playbook --repo <path> <command>` to execute against an external repository without changing directories.
 - External analysis writes deterministic runtime artifacts into the target repo’s `.playbook/` directory.
 
-Pilot runbook:
+Canonical external runtime flow:
 
 ```bash
-pnpm playbook --repo ../fawxzzy-fitness context --json
-pnpm playbook --repo ../fawxzzy-fitness index --json
-pnpm playbook --repo ../fawxzzy-fitness query modules --json
-pnpm playbook --repo ../fawxzzy-fitness verify --json > ../fawxzzy-fitness/.playbook/findings.json
-pnpm playbook --repo ../fawxzzy-fitness plan --json > ../fawxzzy-fitness/.playbook/plan.json
+TARGET_REPO_PATH="../my-repo"
+pnpm playbook --repo "$TARGET_REPO_PATH" context --json
+pnpm playbook --repo "$TARGET_REPO_PATH" index --json
+pnpm playbook --repo "$TARGET_REPO_PATH" query modules --json
+pnpm playbook --repo "$TARGET_REPO_PATH" verify --json
+pnpm playbook --repo "$TARGET_REPO_PATH" plan --json
 ```
+
+Minimal external onboarding contract:
+
+- `playbook.config.json` is optional and missing config must degrade gracefully to defaults.
+- `.playbookignore` is optional and should be added when scan scope needs tuning.
+- `.playbook/` is runtime-generated and owned by Playbook in the target repository.
 
 Rule — External Runtime Writes Belong to the Target Repo
 When a repo-intelligence CLI analyzes an external repository, all generated runtime artifacts must land in the target repo, not the tool repo.
