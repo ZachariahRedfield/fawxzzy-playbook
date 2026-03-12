@@ -85,7 +85,7 @@ const runtimeDefaults: RuntimeDefaultArtifact[] = [
   { path: '.playbook/repo-index.json', producer: 'index' }
 ];
 
-const contractArtifacts = ['docs/contracts/ARTIFACT_EVOLUTION_POLICY.md', 'docs/contracts/COMMAND_CONTRACTS_V1.md'] as const;
+const contractArtifacts = ['docs/contracts/ARTIFACT_EVOLUTION_POLICY.md', 'docs/contracts/COMMAND_CONTRACTS_V1.md', 'docs/contracts/MEMORY_KNOWLEDGE_ARTIFACTS.md'] as const;
 const trackedRoadmapFeatures = ['PB-V04-ANALYZEPR-001', 'PB-V04-PLAN-APPLY-001', 'PB-V1-DELIVERY-SYSTEM-001'] as const;
 
 const isRoadmapFeatureRecord = (value: unknown): value is RoadmapFeatureRecord => typeof value === 'object' && value !== null;

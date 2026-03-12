@@ -49,6 +49,7 @@
       "route",
       "session",
       "patterns",
+      "memory",
       "learn"
     ]
   }

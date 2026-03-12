@@ -16,7 +16,8 @@ export type CliSchemaCommand =
   | 'docs'
   | 'contracts'
   | 'ignore'
-  | 'learn';
+  | 'learn'
+  | 'memory';
 
 export type JsonSchema = {
   [key: string]: unknown;
@@ -1209,6 +1210,31 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
       }
     ]
   },
+  memory: {
+    $schema: JSON_SCHEMA_DRAFT,
+    title: 'PlaybookMemoryOutput',
+    oneOf: [
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: ['schemaVersion', 'command', 'error'],
+        properties: {
+          schemaVersion: { const: '1.0' },
+          command: { const: 'memory' },
+          error: { type: 'string' }
+        }
+      },
+      {
+        type: 'object',
+        additionalProperties: true,
+        required: ['schemaVersion', 'command'],
+        properties: {
+          schemaVersion: { const: '1.0' },
+          command: { enum: ['memory.promote', 'memory.prune'] }
+        }
+      }
+    ]
+  },
   'ai-context': {
     $schema: JSON_SCHEMA_DRAFT,
     title: 'PlaybookAiContextOutput',
@@ -1321,6 +1347,7 @@ export const getCliSchemas = (): Record<CliSchemaCommand, JsonSchema> => ({
   contracts: cliSchemas.contracts,
   ignore: cliSchemas.ignore,
   learn: cliSchemas.learn,
+  memory: cliSchemas.memory,
   query: cliSchemas.query
 });
 

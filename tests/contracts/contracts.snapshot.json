@@ -54,6 +54,13 @@
           "available": false,
           "reason": "missing"
         }
+      },
+      {
+        "path": "docs/contracts/MEMORY_KNOWLEDGE_ARTIFACTS.md",
+        "availability": {
+          "available": false,
+          "reason": "missing"
+        }
       }
     ]
   },

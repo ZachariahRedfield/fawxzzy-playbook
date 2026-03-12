@@ -54,6 +54,8 @@ export { resolveDiffAskContext } from './ask/diffContext.js';
 export type { DiffAskContext } from './ask/diffContext.js';
 export { generateKnowledgeCandidatesDraft } from './learn/draft.js';
 export type { LearnDraftResult, KnowledgeCandidate, KnowledgeCandidateEvidencePointer, KnowledgeCandidateDedupe } from './schema/knowledgeCandidate.js';
+export { promoteKnowledgeCandidate, pruneMemory, KNOWLEDGE_CANDIDATES_PATH } from './memory/index.js';
+export type { KnowledgeKind, PromotedKnowledge, PromoteKnowledgeResult, PruneMemoryResult, PromotedKnowledgeArtifact } from './memory/index.js';
 export { analyzePullRequest } from './pr/analyzePr.js';
 export type { AnalyzePullRequestResult } from './pr/analyzePr.js';
 export { formatAnalyzePrOutput, formatAnalyzePrText, formatAnalyzePrJson, formatAnalyzePrGithubComment, formatAnalyzePrGithubReview } from './formatters/analyzePrFormatter.js';

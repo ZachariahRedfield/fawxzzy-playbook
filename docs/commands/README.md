@@ -43,6 +43,7 @@ Do not hand-edit entries inside the managed markers.
 | `ask` | Answer repository questions from machine-readable intelligence context | canonical | repo-intelligence | primary | 7 | Current (implemented) | `pnpm playbook ask "where should a new feature live?" --repo-context --json` |
 | `explain` | Explain rules, modules, or architecture from repository intelligence | canonical | repo-intelligence | primary | 6 | Current (implemented) | `pnpm playbook explain architecture --json` |
 | `route` | Classify tasks into deterministic execution vs bounded model reasoning routes | canonical | repo-intelligence | primary | — | Current (implemented) | `pnpm playbook route "summarize current repo state" --json` |
+| `memory` | Promote reviewed candidates and prune semantic memory artifacts | canonical | governance | secondary | — | Current (implemented) | `pnpm playbook memory promote --from-candidate <id> --json` |
 | `learn` | Draft deterministic knowledge candidates from local diff and repository intelligence | utility | utility | secondary | — | Current (implemented) | `pnpm playbook learn draft --json --out .playbook/knowledge/candidates.json` |
 <!-- PLAYBOOK:DOCS_COMMAND_STATUS_END -->
 
@@ -151,12 +152,14 @@ Artifact intent:
 - `.playbook/knowledge/**` is runtime draft state and should stay gitignored by default.
 - Promote/commit knowledge artifacts only when intentionally reviewed for upstream inclusion.
 
-## Internal knowledge compaction status (no public command surface yet)
+## Memory promotion and pruning (`pnpm playbook memory`)
 
-- Compaction currently exists as internal deterministic engine behavior, not as a discoverable top-level CLI command.
-- The current internal slice includes canonicalization, deterministic bucketing (`discard | attach | merge | add`), and deterministic review artifacts layered on top of bucket decisions.
-- Review artifacts use canonical reason codes as the machine contract; human-readable rationale is derived deterministically from those codes.
-- Promotion workflows and long-lived pattern storage remain future roadmap work.
+`pnpm playbook memory` provides explicit promotion and pruning workflows for local semantic memory artifacts.
+
+- `memory promote --from-candidate <id>` promotes reviewed candidate memory into `.playbook/memory/knowledge/*` artifacts.
+- `memory prune` prunes stale candidates, superseded entries, and duplicate fingerprints.
+- Promotion preserves provenance and supersession links (`supersedes`, `supersededBy`).
+- Governance docs/rules updates remain manual and reviewed; promotion does not auto-rewrite doctrine.
 
 ## Repo-aware ask (`pnpm playbook ask --repo-context`)
 

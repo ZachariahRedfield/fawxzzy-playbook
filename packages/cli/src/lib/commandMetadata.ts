@@ -436,6 +436,20 @@ export const commandMetadata: CommandMetadata[] = [
     exampleArgs: 'session show --json',
     machineReadable: true
   },
+
+  {
+    name: 'memory',
+    description: 'Promote reviewed candidates and prune semantic memory artifacts',
+    category: 'Repository tools',
+    role: 'governance',
+    lifecycle: 'canonical',
+    discoverability: 'secondary',
+    onboardingPriority: null,
+    canonicalSequence: null,
+    productFacing: true,
+    exampleArgs: 'memory promote --from-candidate <id> --json',
+    machineReadable: true
+  },
   {
     name: 'learn',
     description: 'Draft deterministic knowledge candidates from local diff and repository intelligence',
