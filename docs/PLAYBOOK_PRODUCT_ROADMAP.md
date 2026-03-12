@@ -537,27 +537,30 @@ This ordering is a dependency recommendation, not an active delivery commitment.
 - **Execution window**
   - dependency-ordered after Automation Synthesis (Governed Knowledge Consumption) and before broader orchestration/interface expansion; outside the current near-term execution window unless explicitly promoted in roadmap status.
 
-#### 11. Review + Execution Orchestration
+#### 11. Governed Cross-Repo Pattern Promotion / Transfer
+
+- **Already exists today**
+  - external repository targeting and bounded pilot execution exist today through `--repo` and `playbook pilot --repo <path>`, while repo-local/private-first boundaries remain explicit.
+- **Partially defined**
+  - phased proof strategy (`self-host -> bounded pilot -> controlled cross-repo transfer`) is defined, but explicit transfer package, sanitization, compatibility-gating, and recall/demotion contracts were not centralized in one canonical architecture slice.
+- **Future work**
+  - formalize the canonical architecture in `docs/architecture/PLAYBOOK_GOVERNED_CROSS_REPO_PATTERN_PROMOTION_AND_TRANSFER.md`.
+  - require transfer to move only intentionally promoted, sanitized, provenance-preserving reusable pattern packages.
+  - require receiving repos to treat imports as candidate inputs pending local review/adoption, not auto-enforced governance.
+  - define explicit recall/demotion paths for bad transferred patterns and explicit upstream core promotion paths.
+- **Execution window**
+  - dependency-ordered after Outcome Feedback + Automation Runtime Learning and before broader interface/platform expansion; outside the current near-term execution window unless explicitly promoted in roadmap status.
+
+#### 12. Review + Execution Orchestration
 
 - **Already exists today**
   - reviewed `verify -> plan -> apply -> verify` execution loops, CLI-first execution, and CI-safe remediation workflows are implemented.
 - **Partially defined**
   - serialized plan execution, approval layers, maintenance modes, and automation-synthesis staging are defined as future operating models.
 - **Future work**
-  - broader orchestration hardening across recurring workflows and policy-gated non-interactive execution, dependency-ordered after PR review-loop trust hardening.
+  - broader orchestration hardening across recurring workflows and policy-gated non-interactive execution, dependency-ordered after governed synthesis, outcome feedback, and governed cross-repo transfer contracts.
 - **Execution window**
   - near-term work is limited to current remediation contract hardening; broader orchestration expansion is outside the 4-week plan.
-
-#### 12. Multi-Repo Knowledge Transfer
-
-- **Already exists today**
-  - external repository targeting and bounded pilot execution exist today through `--repo` and `playbook pilot --repo <path>`.
-- **Partially defined**
-  - phased proof strategy (`self-host -> bounded pilot -> controlled cross-repo transfer`) is defined, and promotion boundaries between local observations and upstream product learnings are documented.
-- **Future work**
-  - transfer of validated reusable knowledge across repositories without collapsing local context boundaries or trust guarantees.
-- **Execution window**
-  - outside the current near-term execution window beyond current external pilot/runtime hardening.
 
 #### 13. Interface Surfaces
 
@@ -906,11 +909,13 @@ Failure Mode - Auto-Applying Ambiguous Ignores.
 Failure Mode - Non-Idempotent Ignore Management.
 
 
-### Intentional upstream promotion workflow
+### Governed promotion and transfer workflow
 
 - repository-specific observations stay local to the consuming repo
-- reusable patterns, generalized rules, and product gaps are promoted upstream intentionally
-- downstream usage informs Playbook through explicit docs/roadmap/rule promotion workflows, not hidden mutation
+- reusable patterns move beyond one repository only through explicit governed promotion/transfer paths
+- transferred reusable patterns must be sanitized, provenance-preserving, and compatibility-scoped
+- receiving repositories treat imported patterns as candidate inputs until local review/adoption
+- downstream usage informs Playbook through explicit docs/roadmap/rule/template promotion workflows, not hidden mutation
 
 ### Extension model preference
 
@@ -1033,9 +1038,11 @@ Use a layered phase model so each phase compounds directly on the previous one:
    Future controlled synthesis that consumes only governed/promoted, inspectable, provenance-linked knowledge artifacts after knowledge query/inspection surfaces are in place. This phase explicitly excludes raw chat memory, unreviewed candidate knowledge, and undocumented inference as automation-grade input.
 15. **Phase 15 â€” Outcome Feedback + Automation Runtime Learning (Human-Reviewed)**  
    Governed feedback loops that convert verified runtime outcomes, rollback/deactivation events, and later regressions into provenance-linked repo-local candidate learning artifacts (confidence, template suitability, trigger quality, rollback heuristics, stale-knowledge flags, and trend updates). Outputs remain candidate artifacts until explicit human-reviewed promotion/demotion/supersession.
-16. **Phase 16 â€” Autonomous Maintenance (Policy-Gated)**  
-   Recurring maintenance execution modes with approval and policy controls, layered after governed synthesis and outcome-feedback contracts.
-17. **Phase 17 â€” Repository Learning Loop Expansion (Human-Reviewed)**  
+16. **Phase 16 â€” Governed Cross-Repo Pattern Promotion / Transfer**  
+   Controlled compounding of reusable engineering knowledge across repositories through explicit, provenance-preserving, sanitization-verified, compatibility-gated transfer packages. Imported patterns are candidate inputs until locally reviewed; no hidden telemetry or automatic global sync.
+17. **Phase 17 â€” Autonomous Maintenance (Policy-Gated)**  
+   Recurring maintenance execution modes with approval and policy controls, layered after governed synthesis, outcome-feedback, and governed cross-repo transfer contracts.
+18. **Phase 18 â€” Repository Learning Loop Expansion (Human-Reviewed)**  
    Broader pattern detection and candidate improvements from repeated findings/remediations/query usage, including advanced clustering, graph-informed learning artifacts, and higher-order synthesis inputs. Outputs remain candidate knowledge artifacts until human review promotes them to enforced governance.
 
 Reasoning for reordering:

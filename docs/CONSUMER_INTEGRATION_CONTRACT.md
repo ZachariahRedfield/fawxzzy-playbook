@@ -78,7 +78,7 @@ Required privacy rules:
 
 This model ensures consumer repositories can adopt Playbook without implicit data sharing or cloud dependency.
 
-## 4) Upstream Promotion Model
+## 4) Governed Promotion and Cross-Repo Transfer Model
 
 Consumer repositories produce three classes of intelligence:
 
@@ -86,24 +86,30 @@ Consumer repositories produce three classes of intelligence:
 - **Reusable patterns**: governance/rule/architecture patterns that apply across repositories.
 - **Product gaps**: missing capabilities that require upstream Playbook improvements.
 
-Promotion expectations:
+Promotion/transfer expectations:
 
 - Repo-local knowledge remains local by default.
+- Reusable knowledge may move across repositories only through explicit, approved, provenance-preserving transfer paths.
+- Imported reusable patterns are candidate inputs in receiving repos until local review/adoption promotes them.
 
-Cross-repository learning direction (future-facing) must preserve privacy and scoped ownership boundaries.
+Cross-repository transfer direction (future-facing) must preserve privacy and scoped ownership boundaries.
 
 - No consumer repository should receive another repository's raw local facts by default.
-- Reuse should happen through sanitized, reviewable pattern artifacts only.
-- Ownership metadata should remain explicit so promotion authority and consumption scope are auditable.
-- Reusable patterns should be promoted upstream through:
-  - new rules
-  - architecture patterns
-  - roadmap proposals
+- Reuse should happen through sanitized, reviewable, compatibility-scoped pattern packages only.
+- Ownership metadata and sanitization status should remain explicit so promotion/transfer authority and consumption scope are auditable.
+- Reusable patterns may be promoted through governed transfer targets such as:
+  - upstream core rules/templates/contracts
+  - architecture pattern docs
+  - roadmap/core product proposals
+  - approved reusable pattern libraries
 - Product gaps should be promoted as issues, roadmap items, or targeted design proposals.
+- Transfer must allow explicit demotion/recall paths for bad or superseded reusable patterns.
 
-This keeps local implementation autonomy while strengthening shared Playbook Core.
+This keeps local implementation autonomy while strengthening shared Playbook Core without introducing hidden global-memory behavior.
 
 Longitudinal architecture reference: `docs/architecture/PLAYBOOK_REPO_LONGITUDINAL_STATE_AND_KNOWLEDGE_PROMOTION.md`.
+
+Governed transfer architecture reference: `docs/architecture/PLAYBOOK_GOVERNED_CROSS_REPO_PATTERN_PROMOTION_AND_TRANSFER.md`.
 
 
 ### Repo-local vs promotable knowledge boundaries
@@ -118,10 +124,10 @@ Boundary rules:
 - Repo-local facts stay local unless an explicit promotion workflow is approved.
 - Promotion candidates must be sanitized before any upstream or cross-repository use.
 - Only sanitized reusable patterns are promotable upstream; raw repo-local knowledge is not.
-- Promoted patterns must retain evidence lineage/provenance while preserving privacy and scoped ownership boundaries.
-- Promotion workflows must preserve source artifact and command-output provenance so downstream consumers can audit trust decisions.
+- Promoted/transferable patterns must retain evidence lineage/provenance while preserving privacy and scoped ownership boundaries.
+- Promotion/transfer workflows must preserve source artifact and command-output provenance so downstream consumers can audit trust decisions.
 - Repo-local longitudinal memory (`.playbook/` runtime state, recurring findings, remediation history, approval history) remains repository-scoped by default.
-- Candidate knowledge is not enforceable governance until explicit human review promotes it.
+- Candidate knowledge (including imported reusable patterns) is not enforceable governance until explicit human review promotes it.
 - Stale or contradicted promoted knowledge must be demotable/supersedable through explicit review.
 
 ### Downstream automation synthesis inheritance rules
@@ -134,7 +140,7 @@ If consumer repositories adopt future automation synthesis features, synthesized
 - runtime-learning outputs are candidate artifacts and do not auto-promote enforced governance
 - candidate knowledge and raw conversation memory are not automation-grade inputs
 - repo-local/private-first boundaries apply to synthesis context packaging, runtime feedback retention, and deployment policy
-- promoted reusable patterns may inform shared automation patterns only through intentional governance paths
+- promoted reusable patterns may inform shared automation patterns only through governed promotion/transfer paths
 - no hidden telemetry or implicit upstream synchronization is introduced by synthesis or runtime-learning surfaces
 
 Automation synthesis reference: `docs/architecture/PLAYBOOK_AUTOMATION_SYNTHESIS_GOVERNED_KNOWLEDGE_CONSUMPTION.md`.
