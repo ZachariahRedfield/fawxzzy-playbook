@@ -159,6 +159,7 @@ Recommended dependency chain:
 This sequence is architecture direction and roadmap sequencing guidance, not a claim that all layers are implemented.
 
 ## Cross-links
+- Repo longitudinal state + knowledge promotion: `docs/architecture/PLAYBOOK_REPO_LONGITUDINAL_STATE_AND_KNOWLEDGE_PROMOTION.md`
 
 - Session + Evidence architecture: `docs/architecture/PLAYBOOK_SESSION_EVIDENCE_ARCHITECTURE.md`
 - Product roadmap: `docs/PLAYBOOK_PRODUCT_ROADMAP.md`

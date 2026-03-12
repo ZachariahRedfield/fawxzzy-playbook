@@ -106,6 +106,7 @@ This ordering is architecture direction and backlog sequencing guidance, not a c
 - Not an implication that session runtime is fully shipped today.
 
 ## Cross-links
+- Repo longitudinal state + knowledge promotion: `docs/architecture/PLAYBOOK_REPO_LONGITUDINAL_STATE_AND_KNOWLEDGE_PROMOTION.md`
 
 - Product roadmap layering: `docs/PLAYBOOK_PRODUCT_ROADMAP.md`
 - Control-plane architecture: `docs/architecture/PLAYBOOK_CONTROL_PLANE_ARCHITECTURE.md`
