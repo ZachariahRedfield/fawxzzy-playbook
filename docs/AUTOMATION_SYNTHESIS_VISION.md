@@ -47,6 +47,7 @@ Generated automations are untrusted until verification and approvals pass, and e
 
 Outcome-feedback architecture reference: `docs/architecture/PLAYBOOK_OUTCOME_FEEDBACK_AND_AUTOMATION_RUNTIME_LEARNING.md`.
 
+Governed cross-repo transfer reference: `docs/architecture/PLAYBOOK_GOVERNED_CROSS_REPO_PATTERN_PROMOTION_AND_TRANSFER.md`.
 
 ## Governed knowledge-consumption contract
 
@@ -63,6 +64,7 @@ Disallowed input constraints:
 - no direct synthesis from raw chat transcripts
 - no direct synthesis from opaque prompt memory
 - no direct synthesis from unreviewed candidate knowledge
+- no direct synthesis context from raw cross-repo memory sharing
 - no undocumented ad-hoc repository inference as automation-grade context
 
 Rule: automation synthesis may only consume governed/promoted knowledge artifacts that are inspectable and provenance-linked.
@@ -172,6 +174,7 @@ Automation Synthesis should remain downstream of Playbook's deterministic trust 
 - **Human approval surfaces:** PR checks, CI gates, and future dashboard/API review flows should expose explicit approve/deny transitions.
 - **Longitudinal runtime learning:** post-deployment outcomes should feed deterministic learning loops for template refinement and rollback policy tightening via provenance-linked outcome feedback artifacts.
 - **Promoted knowledge artifacts:** trigger classification and synthesis template selection should consume promoted/reviewed knowledge artifacts (not raw candidate memory), with lineage preserved.
+- **Governed cross-repo transfer prerequisite:** any cross-repo reusable patterns that inform synthesis/template families must arrive through explicit governed promotion/transfer packages with sanitization, provenance, compatibility metadata, and receiving-repo review boundaries.
 - **Knowledge query/inspection prerequisite:** synthesis should consume governed knowledge only after deterministic inspection surfaces make candidate/promoted provenance auditable by humans/CI.
 
 Rule: synthesized automation remains untrusted until verification evidence is complete and required approvals pass.

@@ -251,15 +251,30 @@ Failure Mode: Template/policy mutation driven by opaque outcome signals.
 
 ---
 
-## Platform direction: Multi-Repo Knowledge Transfer Model
+## Platform direction: Governed Cross-Repo Pattern Promotion / Transfer
 
 Backlog scope:
 
-- Define sanitization contracts for promoting reusable patterns across repositories.
-- Define scope/ownership metadata so reusable guidance can be consumed without leaking repo-local facts.
-- Add promotion review workflows for cross-repo reusable pattern candidates.
+- Define a transferable pattern package schema (identity, provenance, evidence summary, sanitization status, compatibility metadata, risk class, failure modes, demotion/supersession fields).
+- Define sanitization/generalization contracts for reusable pattern extraction that prevent direct transfer of raw repo-local facts.
+- Define pattern compatibility metadata contracts (repo type, architecture constraints, applicability scope, fail-closed behavior on mismatch).
+- Define receiving-repo import review flow contracts (imported pattern -> local candidate -> optional local promotion).
+- Define transfer recall/demotion model for bad or superseded transferred patterns.
+- Define explicit upstream core promotion paths for approved reusable patterns and product-gap intelligence.
+- Define privacy-safe reusable pattern library direction without hidden telemetry, automatic sync, or opaque global memory pooling.
 
-Rule: Repo-local facts stay local; only sanitized reusable patterns move upstream.
+Pattern: Local Learning, Governed Promotion, Scoped Transfer.
+Pattern: Transferable Pattern Packages.
+Pattern: Compatibility-Gated Cross-Repo Reuse.
+Rule: Repo-local facts never transfer directly.
+Rule: Imported reusable patterns are candidate inputs until locally reviewed.
+Rule: Transfer must preserve provenance and sanitization status.
+Rule: Bad transferred patterns must be recallable/demotable.
+Failure Mode: Global memory blob disguised as product intelligence.
+Failure Mode: Repo-local workaround promoted as universal doctrine.
+Failure Mode: Cross-repo transfer without sanitization.
+Failure Mode: Imported pattern treated as enforced governance by default.
+Failure Mode: Hidden telemetry disguised as learning.
 
 ---
 
