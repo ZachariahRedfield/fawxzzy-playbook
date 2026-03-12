@@ -756,7 +756,13 @@
       "version": "v0.9",
       "title": "Control Plane architecture",
       "goal": "Define first-class policy, approval, mutation-scope, adapter-boundary, and export/locality contracts after Session + Evidence and before orchestration/autonomy expansion.",
-      "commands": [],
+      "commands": [
+        "agent",
+        "verify",
+        "plan",
+        "apply",
+        "analyze-pr"
+      ],
       "contracts": [
         "docs/architecture/PLAYBOOK_CONTROL_PLANE_ARCHITECTURE.md",
         "docs/architecture/PLAYBOOK_SESSION_EVIDENCE_ARCHITECTURE.md",
@@ -774,14 +780,17 @@
         "docs/AUTOMATION_SYNTHESIS_VISION.md"
       ],
       "dependencies": [
-        "PB-V09-SESSION-EVIDENCE-001",
-        "PB-V06-FAILURE-INTELLIGENCE-001"
+        "PB-V08-MEMORY-SYSTEM-001",
+        "PB-V08-REPLAY-PROMOTION-001",
+        "PB-V08-GRAPH-MEMORY-001",
+        "PB-V09-SESSION-EVIDENCE-001"
       ],
       "verification_commands": [
-        "pnpm playbook docs audit --json",
-        "node scripts/validate-roadmap-contract.mjs --ci"
+        "node scripts/validate-roadmap-contract.mjs --ci",
+        "pnpm playbook verify --json",
+        "pnpm playbook plan --json"
       ],
-      "status": "architecture-defined",
+      "status": "planned",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine",
@@ -1426,6 +1435,221 @@
         "pnpm playbook docs audit --json"
       ],
       "status": "planned-later",
+      "package_ownership": [
+        "@fawxzzy/playbook",
+        "@zachariahredfield/playbook-engine"
+      ]
+    },
+    {
+      "feature_id": "PB-V08-ARCH-CLOSURE-001",
+      "version": "v0.8",
+      "title": "Architecture-closure roadmap bootstrap for memory/control-plane wave",
+      "goal": "Define architecture-closure sequencing and stable feature IDs so memory and control-plane execution can proceed in parallel without roadmap conflicts.",
+      "commands": [
+        "verify",
+        "plan",
+        "apply",
+        "analyze-pr"
+      ],
+      "contracts": [
+        "docs/roadmap/ROADMAP.json",
+        "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
+        "docs/contracts/COMMAND_CONTRACTS_V1.md"
+      ],
+      "tests": [
+        "scripts/validate-roadmap-contract.mjs"
+      ],
+      "docs": [
+        "docs/roadmap/ROADMAP.json",
+        "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
+        "docs/roadmap/IMPROVEMENTS_BACKLOG.md"
+      ],
+      "dependencies": [
+        "PB-V07-ARCH-INTELLIGENCE-GRAPH-001",
+        "PB-V06-FAILURE-INTELLIGENCE-001"
+      ],
+      "verification_commands": [
+        "node scripts/validate-roadmap-contract.mjs --ci",
+        "pnpm playbook verify --json",
+        "pnpm playbook plan --json"
+      ],
+      "status": "planned",
+      "package_ownership": [
+        "@fawxzzy/playbook",
+        "@zachariahredfield/playbook-engine"
+      ]
+    },
+    {
+      "feature_id": "PB-V08-MEMORY-SYSTEM-001",
+      "version": "v0.8",
+      "title": "Memory-system architecture bootstrap",
+      "goal": "Bootstrap deterministic memory-system architecture and command touchpoints for repository intelligence plus remediation workflows.",
+      "commands": [
+        "index",
+        "graph",
+        "query",
+        "explain",
+        "ask",
+        "analyze-pr",
+        "verify",
+        "plan",
+        "apply"
+      ],
+      "contracts": [
+        "docs/roadmap/ROADMAP.json",
+        "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
+        "docs/contracts/COMMAND_CONTRACTS_V1.md"
+      ],
+      "tests": [
+        "scripts/validate-roadmap-contract.mjs"
+      ],
+      "docs": [
+        "docs/roadmap/ROADMAP.json",
+        "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
+        "docs/roadmap/IMPROVEMENTS_BACKLOG.md"
+      ],
+      "dependencies": [
+        "PB-V07-ARCH-INTELLIGENCE-GRAPH-001",
+        "PB-V06-FAILURE-INTELLIGENCE-001"
+      ],
+      "verification_commands": [
+        "node scripts/validate-roadmap-contract.mjs --ci",
+        "pnpm playbook index --json",
+        "pnpm playbook graph --json",
+        "pnpm playbook verify --json"
+      ],
+      "status": "planned",
+      "package_ownership": [
+        "@fawxzzy/playbook",
+        "@zachariahredfield/playbook-engine"
+      ]
+    },
+    {
+      "feature_id": "PB-V08-REPLAY-PROMOTION-001",
+      "version": "v0.8",
+      "title": "Replay and promotion workflow bootstrap",
+      "goal": "Define replay and promotion architecture dependencies for deterministic memory consolidation and governed learning promotion.",
+      "commands": [
+        "index",
+        "graph",
+        "query",
+        "explain",
+        "ask",
+        "analyze-pr",
+        "verify",
+        "plan",
+        "apply"
+      ],
+      "contracts": [
+        "docs/roadmap/ROADMAP.json",
+        "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
+        "docs/contracts/COMMAND_CONTRACTS_V1.md"
+      ],
+      "tests": [
+        "scripts/validate-roadmap-contract.mjs"
+      ],
+      "docs": [
+        "docs/roadmap/ROADMAP.json",
+        "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
+        "docs/roadmap/IMPROVEMENTS_BACKLOG.md"
+      ],
+      "dependencies": [
+        "PB-V08-MEMORY-SYSTEM-001",
+        "PB-V07-ARCH-INTELLIGENCE-GRAPH-001",
+        "PB-V06-FAILURE-INTELLIGENCE-001"
+      ],
+      "verification_commands": [
+        "node scripts/validate-roadmap-contract.mjs --ci",
+        "pnpm playbook query modules --json",
+        "pnpm playbook verify --json"
+      ],
+      "status": "planned",
+      "package_ownership": [
+        "@fawxzzy/playbook",
+        "@zachariahredfield/playbook-engine"
+      ]
+    },
+    {
+      "feature_id": "PB-V08-GRAPH-MEMORY-001",
+      "version": "v0.8",
+      "title": "Graph-memory composition bootstrap",
+      "goal": "Define graph-memory composition between architecture intelligence and memory workflows for deterministic retrieval and explainability.",
+      "commands": [
+        "index",
+        "graph",
+        "query",
+        "explain",
+        "ask",
+        "analyze-pr",
+        "verify",
+        "plan",
+        "apply"
+      ],
+      "contracts": [
+        "docs/roadmap/ROADMAP.json",
+        "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
+        "docs/contracts/COMMAND_CONTRACTS_V1.md"
+      ],
+      "tests": [
+        "scripts/validate-roadmap-contract.mjs"
+      ],
+      "docs": [
+        "docs/roadmap/ROADMAP.json",
+        "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
+        "docs/roadmap/IMPROVEMENTS_BACKLOG.md"
+      ],
+      "dependencies": [
+        "PB-V08-MEMORY-SYSTEM-001",
+        "PB-V08-REPLAY-PROMOTION-001",
+        "PB-V07-ARCH-INTELLIGENCE-GRAPH-001"
+      ],
+      "verification_commands": [
+        "node scripts/validate-roadmap-contract.mjs --ci",
+        "pnpm playbook graph --json",
+        "pnpm playbook explain architecture --json"
+      ],
+      "status": "planned",
+      "package_ownership": [
+        "@fawxzzy/playbook",
+        "@zachariahredfield/playbook-engine"
+      ]
+    },
+    {
+      "feature_id": "PB-V09-OUTCOME-LEARNING-001",
+      "version": "v0.9",
+      "title": "Outcome-learning bootstrap",
+      "goal": "Define outcome-learning dependency closure so remediation outcomes can feed future memory and promotion governance safely.",
+      "commands": [
+        "verify",
+        "plan",
+        "apply",
+        "analyze-pr"
+      ],
+      "contracts": [
+        "docs/roadmap/ROADMAP.json",
+        "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
+        "docs/contracts/FAILURE_INTELLIGENCE_CONTRACT.md"
+      ],
+      "tests": [
+        "scripts/validate-roadmap-contract.mjs"
+      ],
+      "docs": [
+        "docs/roadmap/ROADMAP.json",
+        "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
+        "docs/roadmap/IMPROVEMENTS_BACKLOG.md"
+      ],
+      "dependencies": [
+        "PB-V08-MEMORY-SYSTEM-001",
+        "PB-V08-REPLAY-PROMOTION-001",
+        "PB-V06-FAILURE-INTELLIGENCE-001"
+      ],
+      "verification_commands": [
+        "node scripts/validate-roadmap-contract.mjs --ci",
+        "pnpm playbook analyze-pr --json",
+        "pnpm playbook verify --json",
+        "pnpm playbook plan --json"
+      ],
+      "status": "planned",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine"
