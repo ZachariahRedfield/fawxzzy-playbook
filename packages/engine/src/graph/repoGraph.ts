@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { RepositoryIndex } from '../indexer/repoIndexer.js';
+import { readJsonArtifact } from '../artifacts/artifactIO.js';
 
 export type RepositoryGraphNodeKind = 'module' | 'repository' | 'rule';
 export type RepositoryGraphEdgeKind = 'contains' | 'depends_on' | 'governed_by';
@@ -150,7 +151,7 @@ export const readRepositoryGraph = (projectRoot: string): RepositoryGraph => {
     throw new Error('playbook graph: missing repository graph at .playbook/repo-graph.json. Run "playbook index" first.');
   }
 
-  const parsed = JSON.parse(fs.readFileSync(graphPath, 'utf8')) as Partial<RepositoryGraph>;
+  const parsed = readJsonArtifact<Partial<RepositoryGraph>>(graphPath);
   if (parsed.kind !== 'playbook-repo-graph') {
     throw new Error('playbook graph: invalid graph artifact kind in .playbook/repo-graph.json. Run "playbook index" to regenerate.');
   }
@@ -187,11 +188,18 @@ export const summarizeRepositoryGraph = (graph: RepositoryGraph): RepositoryGrap
     .sort((left, right) => right.incomingDependencies - left.incomingDependencies || left.module.localeCompare(right.module))
     .slice(0, 5);
 
+  const canonicalStats: RepositoryGraphSummary['stats'] = {
+    nodeCount: graph.stats.nodeCount,
+    edgeCount: graph.stats.edgeCount,
+    nodeKinds: graph.stats.nodeKinds,
+    edgeKinds: graph.stats.edgeKinds
+  };
+
   return {
     schemaVersion: graph.schemaVersion,
     kind: graph.kind,
     generatedAt: graph.generatedAt,
-    stats: graph.stats,
+    stats: canonicalStats,
     nodeKinds: toSortedUnique(graph.nodes.map((node) => node.kind)),
     edgeKinds: toSortedUnique(graph.edges.map((edge) => edge.kind)),
     topDependencyHubs
