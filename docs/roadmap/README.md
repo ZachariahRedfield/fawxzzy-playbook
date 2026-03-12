@@ -49,4 +49,19 @@ Rule: Roadmap entries represent planned intent; implemented command truth comes 
 
 - Pattern: One Machine-Readable Contract
 - Rule: Architecture-defined does not equal implemented
+- Pattern: Architecture Then Contract Then Implementation
+- Rule: Build order follows trust and dependency order
+- Failure Mode: Leaving research mode without execution shape
 - Failure Mode: ROADMAP.json lagging behind merged roadmap truth
+
+## Implementation sequencing contract
+
+The roadmap execution shape is dependency-ordered and must stay aligned between markdown roadmap and `ROADMAP.json`:
+
+1. Implemented baseline
+2. Active hardening
+3. Next buildable slices
+4. Later platform layers
+5. Product/business overlays
+
+Rule: Do not promote later platform or overlay work ahead of trust/runtime dependency prerequisites.

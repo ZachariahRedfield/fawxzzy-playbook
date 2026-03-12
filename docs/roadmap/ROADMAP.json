@@ -1283,6 +1283,49 @@
     "architectureSlices": "Implementation-facing architecture slices are represented as explicit feature entries when they define dependency-relevant build sequencing.",
     "productOverlays": "Product/business overlays may be grouped as roadmap feature families and must not be treated as runtime prerequisites.",
     "statusSemantics": "Architecture-defined does not imply implementation-committed or implemented status; statuses must reflect implementation truth.",
-    "alignmentRule": "ROADMAP.json must stay aligned with docs/PLAYBOOK_PRODUCT_ROADMAP.md and the final architecture dependency map."
+    "alignmentRule": "ROADMAP.json must stay aligned with docs/PLAYBOOK_PRODUCT_ROADMAP.md and the final architecture dependency map.",
+    "implementationSequencingRule": "Build order follows trust and dependency order: baseline -> hardening -> next buildable slices -> later platform layers -> product/business overlays.",
+    "researchExitFailureMode": "Leaving research mode without execution shape causes architecture/contract drift and dependency-order violations."
+  },
+  "implementationSequencing": {
+    "baselineImplemented": [
+      "PB-V03-INDEX-001",
+      "PB-V03-QUERY-001",
+      "PB-V04-ANALYZEPR-001",
+      "PB-V09-FINAL-ARCHITECTURE-MAP-001"
+    ],
+    "activeHardening": [
+      "PB-V04-PLAN-APPLY-001",
+      "PB-V05-PACKAGE-BOUNDARIES-001",
+      "PB-V1-DELIVERY-SYSTEM-001",
+      "PB-V1-PRODUCT-TRUTH-PACKAGING-001",
+      "PB-V06-FAILURE-INTELLIGENCE-001",
+      "PB-V08-KNOWLEDGE-COMPACTION-SPEC-001",
+      "PB-V08-KNOWLEDGE-CANDIDATE-EXTRACTION-001",
+      "PB-V08-KNOWLEDGE-BUCKETING-001",
+      "PB-V08-PATTERN-CARD-STORAGE-001"
+    ],
+    "nextBuildableSlicesInOrder": [
+      "PB-V07-ARCH-INTELLIGENCE-GRAPH-001",
+      "PB-V09-SESSION-EVIDENCE-001",
+      "PB-V09-CONTROL-PLANE-001",
+      "PB-V09-PR-REVIEW-LOOP-001",
+      "PB-V09-LONGITUDINAL-STATE-001",
+      "PB-V09-KNOWLEDGE-QUERY-INSPECTION-001"
+    ],
+    "laterPlatformLayers": [
+      "PB-V09-AUTOMATION-SYNTHESIS-001",
+      "PB-V09-OUTCOME-FEEDBACK-LEARNING-001",
+      "PB-V09-MULTI-REPO-TRANSFER-001",
+      "PB-V09-GOVERNED-INTERFACE-API-001",
+      "PB-V09-WORKSPACE-TENANT-GOVERNANCE-001",
+      "PB-V09-INTERFACE-SURFACES-001",
+      "PB-V09-CAPABILITY-ROUTING-001"
+    ],
+    "productBusinessOverlays": [
+      "PB-V09-PACKAGING-SKU-ARCHITECTURE-001",
+      "PB-V09-METRICS-ROI-PROOF-OF-VALUE-001",
+      "PB-V09-PILOT-DESIGN-PARTNER-ROLLOUT-001"
+    ]
   }
 }

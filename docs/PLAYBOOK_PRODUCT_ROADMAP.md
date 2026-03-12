@@ -393,20 +393,11 @@ Roadmap entries describe implementation intent and may include planned command f
 
 Toroidal Flow initiative (`PB-V08-TOROIDAL-FLOW-001`) is roadmap-scoped architecture framing that overlays current behavior. It does not introduce runtime behavior changes in this pass.
 
-## Final roadmap contract alignment: implementation sequencing canon
+## Implementation sequencing pass (post-cleanup)
 
 Pattern: Architecture Then Contract Then Implementation
-Pattern: One Strategic Roadmap, One Machine-Readable Contract
-Pattern: Dependency-Ordered Execution
-Rule: Architecture-defined does not equal implementation-committed
-Rule: ROADMAP.json must reflect merged roadmap truth
-Rule: Product overlays must not be sequenced as runtime prerequisites
-Rule: Local trust/runtime foundations come before hosted/control-plane scale
-Failure Mode: Architecture docs merged without roadmap-contract alignment
-Failure Mode: Machine-readable roadmap lagging behind strategic roadmap
-Failure Mode: Future platform direction mistaken for active implementation
-Failure Mode: Product/commercial layers polluting technical dependency order
-Failure Mode: Hosted/interface expansion outrunning deterministic core hardening
+Rule: Build order follows trust and dependency order
+Failure Mode: Leaving research mode without execution shape
 
 Canonical sequencing reference:
 
@@ -414,61 +405,35 @@ Canonical sequencing reference:
 - machine-readable contract and dependency-linked feature entries: `docs/roadmap/ROADMAP.json`
 - canonical architecture dependency stack: `docs/architecture/PLAYBOOK_FINAL_ARCHITECTURE_MAP_AND_CANONICAL_DEPENDENCY_INDEX.md`
 
-### Implementation sequencing order (canonical)
+### 1) Implemented baseline
 
-#### A) Implemented baseline + active hardening
+- Deterministic core and repository intelligence substrate are live (`PB-V03-INDEX-001`, `PB-V03-QUERY-001`).
+- Deterministic PR analysis and architecture dependency indexing are live baselines (`PB-V04-ANALYZEPR-001`, `PB-V09-FINAL-ARCHITECTURE-MAP-001`).
 
-1. deterministic core runtime
-2. repository intelligence artifacts and query surfaces
-3. plan/apply trust hardening
-4. analyze-pr contract hardening
-5. package boundary convergence
-6. delivery system and roadmap-contract CI hardening
-7. failure intelligence
-8. architecture intelligence graph
+### 2) Active hardening (current build mode)
 
-#### B) Architecture-defined platform layers (not yet fully implemented)
+- Trust/runtime hardening in flight: plan/apply trust model, package-boundary convergence, delivery-system gating, product-truth packaging, failure-intelligence codification, and v0.8 knowledge compaction foundations (`PB-V04-PLAN-APPLY-001`, `PB-V05-PACKAGE-BOUNDARIES-001`, `PB-V1-DELIVERY-SYSTEM-001`, `PB-V1-PRODUCT-TRUTH-PACKAGING-001`, `PB-V06-FAILURE-INTELLIGENCE-001`, `PB-V08-*`).
 
-1. session + evidence
-2. control plane
-3. PR review loop
-4. repo longitudinal state + knowledge promotion
-5. knowledge query / inspection surfaces
-6. automation synthesis consuming governed/promoted knowledge
-7. outcome feedback + automation runtime learning
-8. governed cross-repo pattern promotion / transfer
-9. governed interface / API surfaces for multi-repo control planes
-10. workspace / tenant governance + optional hosted deployment
+### 3) Next buildable slices (dependency-ready after active hardening)
 
-#### C) Product/business overlays (non-runtime prerequisites)
+Near-term dependency chain:
 
-1. packaging / SKU architecture
-2. metrics / ROI / proof-of-value architecture
-3. pilot / design-partner / rollout architecture
+1. `PB-V07-ARCH-INTELLIGENCE-GRAPH-001`
+2. `PB-V09-SESSION-EVIDENCE-001`
+3. `PB-V09-CONTROL-PLANE-001`
+4. `PB-V09-PR-REVIEW-LOOP-001`
+5. `PB-V09-LONGITUDINAL-STATE-001`
+6. `PB-V09-KNOWLEDGE-QUERY-INSPECTION-001`
 
-### Build now vs later
+### 4) Later platform layers (dependency-blocked until prior trust slices are proven)
 
-- **Build now (implementation-ready after active hardening):**
-  1. package boundary convergence and delivery hardening already in motion
-  2. session + evidence implementation surfaces
-  3. control-plane enforcement surfaces
-  4. PR review loop implementation
-  5. repo longitudinal memory + promotion implementation
-  6. knowledge query / inspection implementation
-  7. governed automation synthesis inputs
-  8. outcome feedback learning loop
-  9. governed cross-repo transfer
-  10. interface/API control-plane surfaces
-  11. workspace/tenant governance and hosted/self-hosted coordination
-- **Build later (architecture-defined but dependency-blocked):** wider interface surface expansion and capability/model routing layers that depend on proof from prior implementation slices.
-- **Product overlays:** packaging, ROI, and rollout surfaces stay sequenced over proven implementation evidence and must not be treated as runtime-layer prerequisites.
+- Automation and learning extensions: `PB-V09-AUTOMATION-SYNTHESIS-001`, `PB-V09-OUTCOME-FEEDBACK-LEARNING-001`.
+- Cross-repo and multi-tenant expansion: `PB-V09-MULTI-REPO-TRANSFER-001`, `PB-V09-GOVERNED-INTERFACE-API-001`, `PB-V09-WORKSPACE-TENANT-GOVERNANCE-001`.
+- Broader interface/routing direction remains later and proof-gated: `PB-V09-INTERFACE-SURFACES-001`, `PB-V09-CAPABILITY-ROUTING-001`.
 
-### Architecture status taxonomy (applies across roadmap + contract)
+### 5) Product/business overlays (not runtime prerequisites)
 
-- **Architecture-defined:** scope and dependency position are documented in architecture docs.
-- **Roadmap-committed:** appears in strategic roadmap and `ROADMAP.json` with explicit dependency placement.
-- **Implementation-ready:** dependencies satisfied and eligible for active build planning.
-- **Later / dependency-blocked:** architecture-defined direction that remains intentionally unscheduled.
+- Packaging/SKU, metrics/ROI, and pilot/rollout architecture remain overlay layers scheduled over proven runtime evidence (`PB-V09-PACKAGING-SKU-ARCHITECTURE-001`, `PB-V09-METRICS-ROI-PROOF-OF-VALUE-001`, `PB-V09-PILOT-DESIGN-PARTNER-ROLLOUT-001`).
 
 ## Platform evolution: deterministic runtime first, platform second
 
