@@ -251,3 +251,22 @@ Workspace filters rely on package names that may change or be incorrectly guesse
 
 - Failure Mode: Memory-system conflation with graph substrate
   If structural graph and temporal memory concerns are merged into one opaque store, retrieval provenance and governance semantics become ambiguous.
+
+## Accepted memory/control-plane doctrine additions
+
+- Pattern: Fast Episodic Store, Slow Doctrine Store
+- Pattern: Replay Before Promotion
+- Pattern: Structural Graph + Memory Graph/Index
+- Pattern: Agents Sit Above Deterministic Substrate
+- Pattern: Learn From Reviewed Outcomes, Not Hidden Autonomy
+- Rule: Working Memory Is Not Doctrine
+- Rule: Retrieval Must Return Provenance
+- Rule: Salience Gates Promotion
+- Rule: Agents Never Bypass Engine Mutation Controls
+- Rule: Approval Gates Guard Real Mutation
+- Rule: Outcome Learning Tunes Ranking, Not Mutation Authority
+- Failure Mode: Memory Hoarding
+- Failure Mode: Candidate Flood From Low-Signal Events
+- Failure Mode: Collapsing Repo Graph Into Event Log
+- Failure Mode: Control Plane Without Deterministic Substrate
+- Failure Mode: Opaque Policy Drift

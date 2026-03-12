@@ -767,7 +767,8 @@
         "docs/architecture/PLAYBOOK_CONTROL_PLANE_ARCHITECTURE.md",
         "docs/architecture/PLAYBOOK_SESSION_EVIDENCE_ARCHITECTURE.md",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/roadmap/ROADMAP.json"
+        "docs/roadmap/ROADMAP.json",
+        "docs/architecture/CONTROL_PLANE_AND_AGENT_RUNTIME_V1.md"
       ],
       "tests": [
         "scripts/validate-roadmap-contract.mjs"
@@ -777,7 +778,8 @@
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
         "docs/roadmap/IMPROVEMENTS_BACKLOG.md",
         "docs/CONSUMER_INTEGRATION_CONTRACT.md",
-        "docs/AUTOMATION_SYNTHESIS_VISION.md"
+        "docs/AUTOMATION_SYNTHESIS_VISION.md",
+        "docs/architecture/CONTROL_PLANE_AND_AGENT_RUNTIME_V1.md"
       ],
       "dependencies": [
         "PB-V08-MEMORY-SYSTEM-001",
@@ -1454,7 +1456,12 @@
       "contracts": [
         "docs/roadmap/ROADMAP.json",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/contracts/COMMAND_CONTRACTS_V1.md"
+        "docs/contracts/COMMAND_CONTRACTS_V1.md",
+        "docs/architecture/REPOSITORY_MEMORY_SYSTEM_V1.md",
+        "docs/architecture/REPLAY_CONSOLIDATION_AND_PROMOTION_V1.md",
+        "docs/architecture/STRUCTURAL_GRAPH_AND_MEMORY_INTEGRATION_V1.md",
+        "docs/architecture/CONTROL_PLANE_AND_AGENT_RUNTIME_V1.md",
+        "docs/architecture/OUTCOME_LEARNING_AND_POLICY_IMPROVEMENT_V1.md"
       ],
       "tests": [
         "scripts/validate-roadmap-contract.mjs"
@@ -1462,7 +1469,12 @@
       "docs": [
         "docs/roadmap/ROADMAP.json",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/roadmap/IMPROVEMENTS_BACKLOG.md"
+        "docs/roadmap/IMPROVEMENTS_BACKLOG.md",
+        "docs/architecture/REPOSITORY_MEMORY_SYSTEM_V1.md",
+        "docs/architecture/REPLAY_CONSOLIDATION_AND_PROMOTION_V1.md",
+        "docs/architecture/STRUCTURAL_GRAPH_AND_MEMORY_INTEGRATION_V1.md",
+        "docs/architecture/CONTROL_PLANE_AND_AGENT_RUNTIME_V1.md",
+        "docs/architecture/OUTCOME_LEARNING_AND_POLICY_IMPROVEMENT_V1.md"
       ],
       "dependencies": [
         "PB-V07-ARCH-INTELLIGENCE-GRAPH-001",
@@ -1498,7 +1510,8 @@
       "contracts": [
         "docs/roadmap/ROADMAP.json",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/contracts/COMMAND_CONTRACTS_V1.md"
+        "docs/contracts/COMMAND_CONTRACTS_V1.md",
+        "docs/architecture/REPOSITORY_MEMORY_SYSTEM_V1.md"
       ],
       "tests": [
         "scripts/validate-roadmap-contract.mjs"
@@ -1506,7 +1519,8 @@
       "docs": [
         "docs/roadmap/ROADMAP.json",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/roadmap/IMPROVEMENTS_BACKLOG.md"
+        "docs/roadmap/IMPROVEMENTS_BACKLOG.md",
+        "docs/architecture/REPOSITORY_MEMORY_SYSTEM_V1.md"
       ],
       "dependencies": [
         "PB-V07-ARCH-INTELLIGENCE-GRAPH-001",
@@ -1543,7 +1557,8 @@
       "contracts": [
         "docs/roadmap/ROADMAP.json",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/contracts/COMMAND_CONTRACTS_V1.md"
+        "docs/contracts/COMMAND_CONTRACTS_V1.md",
+        "docs/architecture/REPLAY_CONSOLIDATION_AND_PROMOTION_V1.md"
       ],
       "tests": [
         "scripts/validate-roadmap-contract.mjs"
@@ -1551,7 +1566,8 @@
       "docs": [
         "docs/roadmap/ROADMAP.json",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/roadmap/IMPROVEMENTS_BACKLOG.md"
+        "docs/roadmap/IMPROVEMENTS_BACKLOG.md",
+        "docs/architecture/REPLAY_CONSOLIDATION_AND_PROMOTION_V1.md"
       ],
       "dependencies": [
         "PB-V08-MEMORY-SYSTEM-001",
@@ -1588,7 +1604,8 @@
       "contracts": [
         "docs/roadmap/ROADMAP.json",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/contracts/COMMAND_CONTRACTS_V1.md"
+        "docs/contracts/COMMAND_CONTRACTS_V1.md",
+        "docs/architecture/STRUCTURAL_GRAPH_AND_MEMORY_INTEGRATION_V1.md"
       ],
       "tests": [
         "scripts/validate-roadmap-contract.mjs"
@@ -1596,7 +1613,8 @@
       "docs": [
         "docs/roadmap/ROADMAP.json",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/roadmap/IMPROVEMENTS_BACKLOG.md"
+        "docs/roadmap/IMPROVEMENTS_BACKLOG.md",
+        "docs/architecture/STRUCTURAL_GRAPH_AND_MEMORY_INTEGRATION_V1.md"
       ],
       "dependencies": [
         "PB-V08-MEMORY-SYSTEM-001",
@@ -1628,7 +1646,8 @@
       "contracts": [
         "docs/roadmap/ROADMAP.json",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/contracts/FAILURE_INTELLIGENCE_CONTRACT.md"
+        "docs/contracts/FAILURE_INTELLIGENCE_CONTRACT.md",
+        "docs/architecture/OUTCOME_LEARNING_AND_POLICY_IMPROVEMENT_V1.md"
       ],
       "tests": [
         "scripts/validate-roadmap-contract.mjs"
@@ -1636,7 +1655,8 @@
       "docs": [
         "docs/roadmap/ROADMAP.json",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/roadmap/IMPROVEMENTS_BACKLOG.md"
+        "docs/roadmap/IMPROVEMENTS_BACKLOG.md",
+        "docs/architecture/OUTCOME_LEARNING_AND_POLICY_IMPROVEMENT_V1.md"
       ],
       "dependencies": [
         "PB-V08-MEMORY-SYSTEM-001",

@@ -1149,15 +1149,15 @@ Use a layered phase model so each phase compounds directly on the previous one:
 8. **Phase 8 â€” AI Repository Contract**  
    Machine-readable AI-operability contract and enforcement rules.
 9. **Phase 9 â€” Repository Memory System**  
-   First-class repository memory architecture that separates structural graph artifacts from temporal/event memory and doctrine promotion flows.
-10. **Phase 10 â€” Session + Evidence Layer**  
+   Establish the temporal memory substrate (session/episodic evidence) while keeping repository structural intelligence (`index`/`graph`) as a distinct deterministic layer.
+10. **Phase 10 â€” Replay / Consolidation / Promotion**  
+   Add deterministic replay and consolidation pipelines with salience-gated, provenance-preserving promotion queues so fast episodic memory cannot become durable doctrine without review.
+11. **Phase 11 â€” Session + Evidence Layer**  
    Session envelope and evidence provenance contracts that bind actor context, command lineage, approvals, and deterministic artifact references.
-11. **Phase 11 â€” Control Plane Layer**  
-   First-class policy/approval/mutation-boundary architecture that gates all privileged execution after session evidence and before broader orchestration surfaces.
-12. **Phase 12 â€” Review + Execution Orchestration**  
+12. **Phase 12 â€” Control Plane / Agent Runtime v1**  
+   First-class policy/approval/mutation-boundary architecture that gates privileged execution and keeps agents above (not inside) the deterministic substrate.
+13. **Phase 13 â€” Review + Execution Orchestration**  
    Policy-gated orchestration that consumes repository intelligence + AI contracts + session/evidence + control-plane checks while preserving deterministic mutation workflow.
-13. **Phase 13 â€” Repo Longitudinal State + Knowledge Promotion (Human-Reviewed)**  
-   Repo-local-first longitudinal repository learning built from deterministic evidence, with candidate extraction, compaction, provenance-preserving promotion review, and demotion/supersession handling. This layer is dependency-ordered after Session + Evidence, Control Plane, and PR Review Loop.
 14. **Phase 14 â€” Knowledge Query / Inspection Surfaces (Read Runtime)**  
    Deterministic, provenance-preserving read-runtime inspection of repository memory and promoted knowledge so humans/CI can query, compare, and audit candidate/promoted/stale states before broader automation consumption.
 15. **Phase 15 â€” Automation Synthesis (Governed Knowledge Consumption)**  
@@ -1189,29 +1189,36 @@ TODO (roadmap contract alignment): add explicit feature IDs, dependencies, and v
 1. **Repository Memory System (next major platform phase)**
    - Clarify that structural graph (`.playbook/repo-graph.json` and `.playbook/repo-index.json`) remains repository-shape intelligence, while temporal memory remains under `.playbook/memory/*`.
    - Positioned after graph/failure-intelligence maturity and before deeper agent-runtime expansion.
-   - Formalizes **fast memory vs slow doctrine**:
-     - fast memory = episodic/session evidence and replay inputs
-     - slow doctrine = promoted, reviewed, durable governance knowledge
-   - Formalizes **replay -> consolidation -> salience** as deterministic memory-system internals feeding human-reviewed promotion queues.
-   - Formalizes **structural graph vs memory system** boundaries:
+   - Formalizes **structural graph vs temporal memory** boundaries:
      - structural graph = repository topology and dependency shape
-     - memory system = temporal execution/observation evidence and doctrine-candidate lifecycle
+     - temporal memory = execution/observation events with lifecycle state
+   - Formalizes **fast episodic memory vs slow doctrine**:
+     - fast episodic memory = revisable session/replay evidence
+     - slow doctrine = promoted, reviewed, durable governance knowledge
 
-2. **Control Plane / Agent Runtime v1**
-   - Builds on memory + evidence + policy boundaries, not in parallel with them.
+2. **Replay / Consolidation / Promotion (explicit phase)**
+   - Formalizes **replay -> consolidation -> salience gates -> human-reviewed promotion** as a first-class dependency layer.
+   - Requires provenance-preserving retrieval and review queues before any doctrine promotion/demotion/supersession.
+   - Keeps candidate generation high-recall while preventing low-signal promotion through explicit salience and approval gates.
+
+3. **Control Plane / Agent Runtime v1**
+   - Builds on memory + replay/consolidation + evidence + policy boundaries, not in parallel with them.
    - Keeps the architecture rule explicit: **agents sit on top of the deterministic substrate** (index/graph/verify/plan/apply/contracts), not inside or instead of it.
    - Preserves deterministic governance and human-review boundaries as mandatory runtime gates.
    - Future orchestration scope after deterministic lane contract generation includes: worker launch, merge guards, and orchestration state tracking.
 
-3. **Autonomous Maintenance (policy-gated)**
-   - Distinct from control-plane foundations.
+4. **Outcome Learning / Policy Improvement (human-reviewed)**
+   - Converts reviewed outcomes into ranking/prioritization improvements, not mutation authority expansion.
+   - Maintains promotion gates: learning outputs remain candidate artifacts until explicit human-reviewed promotion/demotion decisions.
+
+5. **Autonomous Maintenance (policy-gated, later phase)**
+   - Remains dependency-ordered after control-plane trust boundaries and outcome-learning/policy-improvement maturity.
    - Focuses on bounded recurring maintenance workflows under explicit approval and fail-closed policies.
    - Does not imply autonomous doctrine promotion or uncontrolled mutation.
 
-4. **Repository Learning Loop / Outcome Learning (human-reviewed)**
-   - Distinct from autonomous maintenance.
-   - Focuses on outcome feedback quality, repository learning signals, and candidate knowledge refinement.
-   - Maintains promotion gates: learning outputs remain candidate artifacts until explicit human-reviewed promotion/demotion decisions.
+6. **Repository Learning Loop Expansion (later phase)**
+   - Distinct from control-plane foundations and from autonomous maintenance.
+   - Expands pattern discovery and repository-level learning after the previous trust layers are stable.
 
 ### Missing Capabilities to Formalize
 

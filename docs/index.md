@@ -16,6 +16,7 @@ Playbook is not a general-purpose chat assistant. It is a contract-first runtime
 - [Command inventory](./commands/README.md)
 - [Product roadmap](./PLAYBOOK_PRODUCT_ROADMAP.md)
 - [Repository memory system architecture](./architecture/REPOSITORY_MEMORY_SYSTEM_V1.md)
+- [Replay / consolidation / promotion architecture](./architecture/REPLAY_CONSOLIDATION_AND_PROMOTION_V1.md)
 - [Structural graph + memory integration](./architecture/STRUCTURAL_GRAPH_AND_MEMORY_INTEGRATION_V1.md)
 - [Control plane / agent runtime v1](./architecture/CONTROL_PLANE_AND_AGENT_RUNTIME_V1.md)
 - [Outcome learning / policy improvement v1](./architecture/OUTCOME_LEARNING_AND_POLICY_IMPROVEMENT_V1.md)

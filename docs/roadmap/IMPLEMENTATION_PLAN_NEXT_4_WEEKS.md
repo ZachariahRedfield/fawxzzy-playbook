@@ -531,7 +531,7 @@ Operationalize roadmap/contracts/docs CI gate model with roadmap verify surface.
 Add one canonical operator checklist for roadmap-driven delivery and gate states (blocking/advisory timeline).
 
 
-## 14) Next Queued Wave After Current Stabilization
+## 14) Next queued wave after stabilization
 
 The 4-week plan above remains the active commitment and is unchanged.
 
