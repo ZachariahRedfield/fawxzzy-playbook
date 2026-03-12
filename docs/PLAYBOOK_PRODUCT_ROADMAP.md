@@ -482,16 +482,18 @@ This ordering is a dependency recommendation, not an active delivery commitment.
 - **Execution window**
   - outside the current near-term execution window except for currently implemented deterministic `analyze-pr` and remediation trust hardening.
 
-#### 7. Longitudinal State / Learning
+#### 7. Repo Longitudinal State + Knowledge Promotion
 
 - **Already exists today**
-  - current artifacts preserve point-in-time repository intelligence, findings, plans, and some internal knowledge lifecycle state.
+  - deterministic artifacts provide point-in-time evidence (index/findings/plan/apply/verify outputs) and candidate knowledge lifecycle framing.
 - **Partially defined**
-  - cycle history, observation snapshots, and self-observation concepts are present in architecture/roadmap language but not yet first-class runtime state.
+  - longitudinal memory and promotion direction exist in roadmap/architecture language, but governed repo-level state and review promotion contracts are not yet fully productized runtime behavior.
 - **Future work**
-  - versioned run history, drift-aware state comparison, learning loops from repeated outcomes, and compact historical rollups.
+  - formalize the canonical architecture in `docs/architecture/PLAYBOOK_REPO_LONGITUDINAL_STATE_AND_KNOWLEDGE_PROMOTION.md`.
+  - define schema-governed repo-local longitudinal state (session/review timelines, recurring findings, remediation history, verification outcomes, approvals, recurring failure clusters, unresolved risks, candidate/promoted/superseded knowledge).
+  - implement a human-reviewed knowledge-promotion pipeline with provenance-preserving compaction, demotion, supersession, and stale-knowledge handling.
 - **Execution window**
-  - outside the current near-term execution window.
+  - after Session + Evidence, Control Plane, and PR Review Loop architecture layers; outside the current near-term execution window unless explicitly promoted in roadmap status.
 
 #### 8. Review + Execution Orchestration
 
@@ -981,10 +983,12 @@ Use a layered phase model so each phase compounds directly on the previous one:
    First-class policy/approval/mutation-boundary architecture that gates all privileged execution after session evidence and before broader orchestration surfaces.
 11. **Phase 11 â€” Review + Execution Orchestration**  
    Policy-gated orchestration that consumes repository intelligence + AI contracts + session/evidence + control-plane checks while preserving deterministic mutation workflow.
-12. **Phase 12 â€” Autonomous Maintenance (Policy-Gated)**  
+12. **Phase 12 â€” Repo Longitudinal State + Knowledge Promotion (Human-Reviewed)**  
+   Repo-local-first longitudinal repository learning built from deterministic evidence, with candidate extraction, compaction, provenance-preserving promotion review, and demotion/supersession handling. This layer is dependency-ordered after Session + Evidence, Control Plane, and PR Review Loop.
+13. **Phase 13 â€” Autonomous Maintenance (Policy-Gated)**  
    Recurring maintenance execution modes with approval and policy controls.
-13. **Phase 13 â€” Repository Learning Loop (Human-Reviewed)**  
-   Pattern detection and candidate improvements from repeated findings/remediations/query usage, including pattern mining from repeated findings, remediation clustering, candidate rule synthesis, invariant discovery, doctrine promotion candidates, memory compaction, and graph-informed learning artifacts. Outputs remain candidate knowledge artifacts until human review promotes them to enforced governance.
+14. **Phase 14 â€” Repository Learning Loop Expansion (Human-Reviewed)**  
+   Broader pattern detection and candidate improvements from repeated findings/remediations/query usage, including advanced clustering, graph-informed learning artifacts, and higher-order synthesis inputs. Outputs remain candidate knowledge artifacts until human review promotes them to enforced governance.
 
 Reasoning for reordering:
 - Separates repository understanding (read runtime) from repository mutation (change runtime).

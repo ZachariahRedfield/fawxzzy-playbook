@@ -103,6 +103,8 @@ Cross-repository learning direction (future-facing) must preserve privacy and sc
 
 This keeps local implementation autonomy while strengthening shared Playbook Core.
 
+Longitudinal architecture reference: `docs/architecture/PLAYBOOK_REPO_LONGITUDINAL_STATE_AND_KNOWLEDGE_PROMOTION.md`.
+
 
 ### Repo-local vs promotable knowledge boundaries
 
@@ -118,6 +120,9 @@ Boundary rules:
 - Only sanitized reusable patterns are promotable upstream; raw repo-local knowledge is not.
 - Promoted patterns must retain evidence lineage/provenance while preserving privacy and scoped ownership boundaries.
 - Promotion workflows must preserve source artifact and command-output provenance so downstream consumers can audit trust decisions.
+- Repo-local longitudinal memory (`.playbook/` runtime state, recurring findings, remediation history, approval history) remains repository-scoped by default.
+- Candidate knowledge is not enforceable governance until explicit human review promotes it.
+- Stale or contradicted promoted knowledge must be demotable/supersedable through explicit review.
 
 ## 5) Extension Model
 

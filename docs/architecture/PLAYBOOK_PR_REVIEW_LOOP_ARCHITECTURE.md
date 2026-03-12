@@ -147,6 +147,7 @@ To prevent semantic drift across interfaces:
 - Not a claim that broad PR autofix capabilities are fully implemented today.
 
 ## Cross-links
+- Repo longitudinal state + knowledge promotion: `docs/architecture/PLAYBOOK_REPO_LONGITUDINAL_STATE_AND_KNOWLEDGE_PROMOTION.md`
 
 - `docs/architecture/PLAYBOOK_SESSION_EVIDENCE_ARCHITECTURE.md`
 - `docs/architecture/PLAYBOOK_CONTROL_PLANE_ARCHITECTURE.md`

@@ -144,14 +144,17 @@ Automation Synthesis should remain downstream of Playbook's deterministic trust 
 - **Policy/control plane:** approval, permission, and execution boundaries should be centrally governed across CLI/CI/API surfaces.
 - **Human approval surfaces:** PR checks, CI gates, and future dashboard/API review flows should expose explicit approve/deny transitions.
 - **Longitudinal runtime learning:** post-deployment outcomes should feed deterministic learning loops for template refinement and rollback policy tightening.
+- **Promoted knowledge artifacts:** trigger classification and synthesis template selection should consume promoted/reviewed knowledge artifacts (not raw candidate memory), with lineage preserved.
 
 Rule: synthesized automation remains untrusted until verification evidence is complete and required approvals pass.
+Rule: automation synthesis is a downstream consumer of governed knowledge artifacts and cannot bypass review, policy, or verification gates.
 
 Rule: verification remains the trust boundary even when synthesis quality, session evidence, or approval history appears strong.
 
 PR review-loop alignment:
 
 - Future synthesized review/remediation flows should inherit PR Review Loop contracts from `docs/architecture/PLAYBOOK_PR_REVIEW_LOOP_ARCHITECTURE.md`.
+- Future synthesis context assembly should consume repo longitudinal state contracts from `docs/architecture/PLAYBOOK_REPO_LONGITUDINAL_STATE_AND_KNOWLEDGE_PROMOTION.md`.
 - Synthesis pathways cannot bypass review evidence lineage, control-plane mutation-scope policy, or re-verification requirements after candidate mutations.
 - PR adapter surfaces (CI comments, checks, future UIs) remain thin transports over one deterministic runtime rather than independent semantics.
 

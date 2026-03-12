@@ -75,9 +75,24 @@ Failure Mode: Memory without evidence.
 Backlog scope (directional, not current-sprint commitment):
 
 - Define deterministic repository identity + run lineage contract across repeated cycles.
-- Version longitudinal state schema for recurring findings, remediations, and outcomes.
+- Version longitudinal memory schema for recurring findings, remediations, and outcomes.
 - Add lifecycle/retention classes so historical state remains bounded and auditable.
 - Add deterministic drift signals that compare current run state to longitudinal baseline.
+- Add recurring-finding clustering contracts.
+- Add candidate pattern extraction contracts from repeated evidence bundles.
+- Add a promotion review queue for human-reviewed knowledge promotion.
+- Add provenance-preserving knowledge compaction contracts.
+- Add demotion/supersession rules when promoted knowledge is contradicted.
+- Add stale-knowledge detection and expiration signals.
+- Add repo health timeline and trend tracking surfaces.
+
+Pattern: Repository Learning Is Longitudinal, Not Session-Isolated.
+Pattern: Human-Reviewed Knowledge Promotion.
+Pattern: Compaction With Provenance.
+Rule: Candidate knowledge is not enforced governance until reviewed.
+Rule: Knowledge must be demotable when contradicted or stale.
+Failure Mode: Memory blob without structure.
+Failure Mode: Accumulating logs instead of compacting knowledge.
 
 Rule: Longitudinal state must strengthen deterministic reasoning rather than creating unbounded memory sprawl.
 
