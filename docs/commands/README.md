@@ -405,3 +405,9 @@ Playbook artifacts must only be written via the artifact IO layer to guarantee d
 
 Failure Mode
 Shell redirection (`>`) may introduce encoding corruption. CLI owned artifact output must always be preferred.
+
+## Execution run state
+
+`verify -> plan -> apply -> verify` now records a deterministic execution run artifact in `.playbook/runs/<run-id>.json`.
+Artifacts include ordered steps, checkpoints, evidence references, and outcomes for auditing/resume workflows.
+Query surfaces: `playbook query runs` and `playbook query run --id <run-id>`.

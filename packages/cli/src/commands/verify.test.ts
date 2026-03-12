@@ -10,8 +10,13 @@ const loadConfig = vi.fn();
 const formatHuman = vi.fn();
 const loadVerifyRules = vi.fn<() => Promise<VerifyRule[]>>();
 
+const resolveExecutionRun = vi.fn();
+const recordExecutionStep = vi.fn();
+const verifyEvidence = vi.fn(() => []);
+
 vi.mock('@zachariahredfield/playbook-engine', () => ({ verifyRepo, loadConfig, formatHuman }));
 vi.mock('../lib/loadVerifyRules.js', () => ({ loadVerifyRules }));
+vi.mock('../lib/executionRun.js', () => ({ resolveExecutionRun, recordExecutionStep, verifyEvidence }));
 
 describe('runVerify policy mode', () => {
   beforeEach(() => {
@@ -19,8 +24,14 @@ describe('runVerify policy mode', () => {
     loadConfig.mockReset();
     formatHuman.mockReset();
     loadVerifyRules.mockReset();
+    resolveExecutionRun.mockReset();
+    recordExecutionStep.mockReset();
+    verifyEvidence.mockReset();
     formatHuman.mockReturnValue('human report');
     loadConfig.mockReturnValue({ config: { verify: { policy: { rules: [] } } } });
+    resolveExecutionRun.mockReturnValue({ id: 'run-test', steps: [], checkpoints: [], version: 1, intent: { id: 'intent-test', goal: 'goal', scope: [], constraints: [], requested_by: 'system' }, created_at: new Date().toISOString() });
+    recordExecutionStep.mockImplementation((_, __, input) => ({ id: 'run-test', ...input }));
+    verifyEvidence.mockReturnValue([]);
     loadVerifyRules.mockResolvedValue([
       {
         id: 'requireNotesOnChanges',
@@ -129,3 +140,4 @@ describe('runVerify policy mode', () => {
     logSpy.mockRestore();
   });
 });
+

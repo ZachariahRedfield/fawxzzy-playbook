@@ -671,3 +671,9 @@ A full local example is available at `.github/workflows/playbook-action-example.
 
 
 `pnpm test:security` runs security contract and regression tests.
+
+## Deterministic execution runs
+
+Playbook now persists multi-step remediation flows as execution run artifacts at `.playbook/runs/<run-id>.json`.
+Each run tracks intent, ordered steps, checkpoints, evidence links to findings/plan/apply artifacts, and final outcome so runs remain inspectable even when partial or failed.
+Use `playbook query runs` to list runs and `playbook query run --id <run-id>` to inspect a specific run.

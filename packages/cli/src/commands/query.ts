@@ -19,7 +19,9 @@ import {
   type RuleOwnersQueryResult,
   type ModuleOwnersQueryResult,
   type TestHotspotsQueryResult,
-  type GraphNeighborhoodSummary
+  type GraphNeighborhoodSummary,
+  listExecutionRuns,
+  readExecutionRun
 } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 import { emitJsonOutput } from '../lib/jsonArtifact.js';
@@ -317,6 +319,76 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
         console.error(message);
       }
 
+      return ExitCode.Failure;
+    }
+  }
+
+  if (fieldArg === 'runs') {
+    const payload = {
+      schemaVersion: '1.0',
+      command: 'query',
+      type: 'runs',
+      runs: (listExecutionRuns(cwd) as Array<{ id: string; created_at: string; completed_at?: string; outcome?: { status: string } | undefined; steps: unknown[] }>).map((run) => ({
+        id: run.id,
+        created_at: run.created_at,
+        completed_at: run.completed_at ?? null,
+        outcome: run.outcome ?? null,
+        stepCount: run.steps.length
+      }))
+    };
+
+    if (options.format === 'json') {
+      emitJsonOutput({ cwd, command: 'query', payload, outFile: options.outFile });
+      return ExitCode.Success;
+    }
+
+    if (!options.quiet) {
+      console.log('Execution Runs');
+      console.log('──────────────');
+      if (payload.runs.length === 0) {
+        console.log('none');
+      } else {
+        for (const run of payload.runs) {
+          console.log(`${run.id} steps=${run.stepCount} outcome=${run.outcome?.status ?? 'running'}`);
+        }
+      }
+    }
+
+    return ExitCode.Success;
+  }
+
+  if (fieldArg === 'run') {
+    const runId = commandArgs.includes('--id') ? commandArgs[commandArgs.indexOf('--id') + 1] : undefined;
+
+    if (!runId) {
+      const message = 'playbook query run: missing required --id <run-id> argument';
+      if (options.format === 'json') {
+        emitJsonOutput({ cwd, command: 'query', payload: { schemaVersion: '1.0', command: 'query', type: 'run', error: message }, outFile: options.outFile });
+      } else {
+        console.error(message);
+      }
+      return ExitCode.Failure;
+    }
+
+    try {
+      const payload = { schemaVersion: '1.0', command: 'query', type: 'run', run: readExecutionRun(cwd, runId) };
+      if (options.format === 'json') {
+        emitJsonOutput({ cwd, command: 'query', payload, outFile: options.outFile });
+        return ExitCode.Success;
+      }
+
+      if (!options.quiet) {
+        console.log(JSON.stringify(payload.run, null, 2));
+      }
+
+      return ExitCode.Success;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (options.format === 'json') {
+        emitJsonOutput({ cwd, command: 'query', payload: { schemaVersion: '1.0', command: 'query', type: 'run', id: runId, error: message }, outFile: options.outFile });
+      } else {
+        console.error(message);
+      }
       return ExitCode.Failure;
     }
   }
@@ -626,7 +698,7 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
             command: 'query',
             field: fieldArg,
             error: message,
-            supportedFields: [...SUPPORTED_QUERY_FIELDS, 'dependencies', 'impact', 'risk', 'docs-coverage', 'rule-owners', 'module-owners', 'test-hotspots', 'patterns']
+            supportedFields: [...SUPPORTED_QUERY_FIELDS, 'dependencies', 'impact', 'risk', 'docs-coverage', 'rule-owners', 'module-owners', 'test-hotspots', 'patterns', 'runs', 'run']
           }, outFile: options.outFile });
     } else {
       console.error(message);

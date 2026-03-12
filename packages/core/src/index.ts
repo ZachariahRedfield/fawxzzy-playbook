@@ -1,3 +1,4 @@
+export type { ExecutionIntent, ExecutionRun, ExecutionStep, ExecutionEvidence, ExecutionOutcome, ExecutionCheckpoint } from './contracts/execution.js';
 export type Severity = 'WARN' | 'RECOMMEND' | 'INFO';
 
 export { runArchitectureAudit } from './audit/architecture.js';

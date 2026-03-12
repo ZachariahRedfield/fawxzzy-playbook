@@ -5,6 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ExitCode } from '../lib/cliContract.js';
 
 const generatePlanContract = vi.fn();
+
+const resolveExecutionRun = vi.fn();
+const recordExecutionStep = vi.fn();
+const verifyEvidence = vi.fn(() => []);
 const applyExecutionPlan = vi.fn();
 const parsePlanArtifact = vi.fn();
 const validateRemediationPlan = vi.fn();
@@ -12,6 +16,7 @@ const loadVerifyRules = vi.fn();
 
 vi.mock('@zachariahredfield/playbook-engine', () => ({ generatePlanContract, applyExecutionPlan, parsePlanArtifact, validateRemediationPlan }));
 vi.mock('../lib/loadVerifyRules.js', () => ({ loadVerifyRules }));
+vi.mock('../lib/executionRun.js', () => ({ resolveExecutionRun, recordExecutionStep, verifyEvidence }));
 
 
 const createPlanPayload = () => ({
@@ -38,6 +43,10 @@ describe('runApply', () => {
     parsePlanArtifact.mockReset();
     validateRemediationPlan.mockReset();
     loadVerifyRules.mockReset();
+    resolveExecutionRun.mockReset();
+    recordExecutionStep.mockReset();
+    resolveExecutionRun.mockReturnValue({ id: 'run-test', steps: [], checkpoints: [], version: 1, intent: { id: 'intent-test', goal: 'goal', scope: [], constraints: [], requested_by: 'system' }, created_at: new Date().toISOString() });
+    recordExecutionStep.mockReturnValue({ id: 'run-test' });
   });
 
   it('renders deterministic text output', async () => {
@@ -84,6 +93,7 @@ describe('runApply', () => {
       command: 'apply',
       ok: true,
       exitCode: ExitCode.Success,
+      runId: 'run-test',
       remediation: { status: 'ready', totalSteps: 1, unresolvedFailures: 0 },
       message: 'Plan remediation is ready. Applying available tasks.',
       results: [{ id: 'task-3', ruleId: 'PB003', file: 'docs/PLAYBOOK_CHECKLIST.md', action: 'add verify step', autoFix: false, status: 'skipped' }],
@@ -302,6 +312,10 @@ describe('runApply remediation status preconditions', () => {
     parsePlanArtifact.mockReset();
     validateRemediationPlan.mockReset();
     loadVerifyRules.mockReset();
+    resolveExecutionRun.mockReset();
+    recordExecutionStep.mockReset();
+    resolveExecutionRun.mockReturnValue({ id: 'run-test', steps: [], checkpoints: [], version: 1, intent: { id: 'intent-test', goal: 'goal', scope: [], constraints: [], requested_by: 'system' }, created_at: new Date().toISOString() });
+    recordExecutionStep.mockReturnValue({ id: 'run-test' });
   });
 
   it('returns explicit no-op when remediation status is not_needed', async () => {
@@ -360,6 +374,10 @@ describe('runApply warning-only remediation handling', () => {
     parsePlanArtifact.mockReset();
     validateRemediationPlan.mockReset();
     loadVerifyRules.mockReset();
+    resolveExecutionRun.mockReset();
+    recordExecutionStep.mockReset();
+    resolveExecutionRun.mockReturnValue({ id: 'run-test', steps: [], checkpoints: [], version: 1, intent: { id: 'intent-test', goal: 'goal', scope: [], constraints: [], requested_by: 'system' }, created_at: new Date().toISOString() });
+    recordExecutionStep.mockReturnValue({ id: 'run-test' });
   });
 
   it('treats warning-only verify output as apply no-op instead of unavailable remediation', async () => {
@@ -389,3 +407,4 @@ describe('runApply warning-only remediation handling', () => {
     logSpy.mockRestore();
   });
 });
+

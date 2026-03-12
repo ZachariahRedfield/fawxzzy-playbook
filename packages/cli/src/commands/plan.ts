@@ -2,6 +2,7 @@ import { generatePlanContract } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 import { emitJsonOutput } from '../lib/jsonArtifact.js';
 import { buildPlanRemediation, deriveVerifyFailureFacts } from '../lib/remediationContract.js';
+import { recordExecutionStep, resolveExecutionRun } from '../lib/executionRun.js';
 
 const renderTextPlan = (tasks: Array<{ ruleId: string; action: string }>): void => {
   console.log('Plan');
@@ -23,7 +24,7 @@ const renderTextPlan = (tasks: Array<{ ruleId: string; action: string }>): void 
 
 export const runPlan = async (
   cwd: string,
-  options: { format: 'text' | 'json'; ci: boolean; quiet: boolean; outFile?: string }
+  options: { format: 'text' | 'json'; ci: boolean; quiet: boolean; outFile?: string; runId?: string }
 ): Promise<number> => {
   const plan = generatePlanContract(cwd);
   const failureFacts = deriveVerifyFailureFacts(plan.verify);
@@ -50,11 +51,20 @@ export const runPlan = async (
   }
 
   if (options.format === 'json') {
+    const run = resolveExecutionRun(cwd, options.runId);
+    const updatedRun = recordExecutionStep(cwd, run, {
+      kind: 'plan',
+      status: 'passed',
+      outputs: { taskCount: plan.tasks.length },
+      evidence: options.outFile ? [{ id: 'plan-artifact', kind: 'artifact', ref: options.outFile, summary: 'Plan artifact.' }] : []
+    });
+
     const payload = {
       schemaVersion: '1.0',
       command: 'plan',
       ok: true,
       exitCode: ExitCode.Success,
+      runId: updatedRun.id,
       verify: plan.verify,
       remediation,
       tasks: plan.tasks
@@ -63,6 +73,13 @@ export const runPlan = async (
     emitJsonOutput({ cwd, command: 'plan', payload, outFile: options.outFile });
     return ExitCode.Success;
   }
+
+  const run = resolveExecutionRun(cwd, options.runId);
+  recordExecutionStep(cwd, run, {
+    kind: 'plan',
+    status: 'passed',
+    outputs: { taskCount: plan.tasks.length }
+  });
 
   if (!options.quiet) {
     renderTextPlan(plan.tasks);

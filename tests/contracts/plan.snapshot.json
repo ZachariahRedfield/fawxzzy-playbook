@@ -3,6 +3,7 @@
   "command": "plan",
   "ok": true,
   "exitCode": 0,
+  "runId": "run-1e8acadbe05c",
   "verify": {
     "ok": true,
     "summary": {

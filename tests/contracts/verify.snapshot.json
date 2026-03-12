@@ -4,6 +4,7 @@
   "ok": true,
   "exitCode": 0,
   "summary": "Verification passed.",
+  "runId": "run-1e8acadbe05c",
   "findings": [
     {
       "id": "verify.warning.base-selection",

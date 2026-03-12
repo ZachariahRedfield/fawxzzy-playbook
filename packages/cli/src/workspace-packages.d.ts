@@ -7,6 +7,8 @@ declare module "@zachariahredfield/playbook-core" {
   export const formatHuman: (...args: any[]) => Promise<any>;
   export const formatJson: (...args: any[]) => Promise<any>;
   export const runArchitectureAudit: (...args: any[]) => any;
+  export type ExecutionEvidence = { id: string; kind: string; ref: string; summary?: string; metadata?: Record<string, unknown> };
+  export type ExecutionRun = { id: string; version: 1; intent: Record<string, unknown>; steps: Array<Record<string, unknown>>; checkpoints: Array<Record<string, unknown>>; created_at: string; completed_at?: string; outcome?: { status: string; summary: string; failure_cause?: string } };
 }
 
 declare module "@zachariahredfield/playbook-node" {
@@ -126,8 +128,16 @@ declare module "@zachariahredfield/playbook-engine" {
   export const generateExecutionPlan: (...args: any[]) => any;
   export const generatePlanContract: (...args: any[]) => any;
   export const applyExecutionPlan: (...args: any[]) => Promise<any>;
+  export const createExecutionRun: (...args: any[]) => any;
+  export const appendExecutionStep: (...args: any[]) => any;
+  export const completeExecutionRun: (...args: any[]) => any;
+  export const failExecutionRun: (...args: any[]) => any;
+  export const writeExecutionRun: (...args: any[]) => any;
+  export const readExecutionRun: (...args: any[]) => ExecutionRun;
+  export const listExecutionRuns: (...args: any[]) => ExecutionRun[];
   export const parsePlanArtifact: (...args: any[]) => any;
   export const validateRemediationPlan: (...args: any[]) => any;
+  export type VerifyReport = { ok: boolean; summary: { failures: number; warnings: number }; failures: Array<{ id: string; message: string; fix?: string }>; warnings: Array<{ id: string; message: string }> };
   export const parsePlaybookIgnore: (...args: any[]) => any;
   export const isPlaybookIgnored: (...args: any[]) => boolean;
   export const suggestPlaybookIgnore: (...args: any[]) => any;

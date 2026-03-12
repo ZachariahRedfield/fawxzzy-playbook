@@ -10,6 +10,7 @@ import {
   remediationToApplyPrecondition,
   type PlanRemediation
 } from '../lib/remediationContract.js';
+import { recordExecutionStep, resolveExecutionRun } from '../lib/executionRun.js';
 
 type ApplyOptions = {
   format: 'text' | 'json';
@@ -18,6 +19,7 @@ type ApplyOptions = {
   help?: boolean;
   fromPlan?: string;
   tasks?: string[];
+  runId?: string;
 };
 
 type ApplyResult = {
@@ -35,6 +37,7 @@ type ApplyJsonResult = {
   command: 'apply';
   ok: boolean;
   exitCode: number;
+  runId?: string;
   remediation: PlanRemediation;
   message?: string;
   results: ApplyResult[];
@@ -258,6 +261,12 @@ export const runApply = async (cwd: string, options: ApplyOptions): Promise<numb
   }
 
   if (applyPrecondition.action === 'no_op') {
+    const run = resolveExecutionRun(cwd, options.runId);
+    const updatedRun = recordExecutionStep(cwd, run, {
+      kind: 'apply',
+      status: 'skipped',
+      outputs: { reason: applyPrecondition.message }
+    });
     const payload: ApplyJsonResult = {
       schemaVersion: '1.0',
       command: 'apply',
@@ -266,7 +275,8 @@ export const runApply = async (cwd: string, options: ApplyOptions): Promise<numb
       remediation: plan.remediation,
       message: applyPrecondition.message,
       results: [],
-      summary: { applied: 0, skipped: 0, unsupported: 0, failed: 0 }
+      summary: { applied: 0, skipped: 0, unsupported: 0, failed: 0 },
+      runId: updatedRun.id
     };
 
     if (options.format === 'json') {
@@ -296,11 +306,29 @@ export const runApply = async (cwd: string, options: ApplyOptions): Promise<numb
   const execution = await applyExecutionPlan(cwd, selectedTasks, { dryRun: false, handlers });
 
   const exitCode = execution.summary.failed > 0 ? ExitCode.Failure : ExitCode.Success;
+  const run = resolveExecutionRun(cwd, options.runId);
+  const updatedRun = recordExecutionStep(cwd, run, {
+    kind: 'apply',
+    status: exitCode === ExitCode.Success ? 'passed' : 'failed',
+    outputs: execution.summary,
+    evidence: options.fromPlan
+      ? [
+          { id: 'plan-source', kind: 'artifact', ref: options.fromPlan, summary: 'Plan artifact used for apply.' },
+          { id: 'apply-results', kind: 'note', ref: 'apply.results', metadata: { total: execution.results.length } }
+        ]
+      : [{ id: 'apply-results', kind: 'note', ref: 'apply.results', metadata: { total: execution.results.length } }],
+    finalize:
+      exitCode === ExitCode.Success
+        ? undefined
+        : { status: 'failed', summary: 'Execution run failed during apply.', failureCause: 'One or more apply tasks failed.' }
+  });
+
   const payload: ApplyJsonResult = {
     schemaVersion: '1.0',
     command: 'apply',
     ok: exitCode === ExitCode.Success,
     exitCode,
+    runId: updatedRun.id,
     remediation: plan.remediation,
     message: applyPrecondition.message,
     results: execution.results,

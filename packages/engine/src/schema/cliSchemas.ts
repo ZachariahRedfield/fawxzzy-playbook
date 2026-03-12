@@ -201,6 +201,7 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
       command: { const: 'verify' },
       ok: { type: 'boolean' },
       exitCode: { type: 'integer' },
+      runId: { type: 'string' },
       summary: { type: 'string' },
       findings: {
         type: 'array',
@@ -248,6 +249,7 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
       command: { const: 'plan' },
       ok: { type: 'boolean' },
       exitCode: { type: 'integer' },
+      runId: { type: 'string' },
       verify: {
         type: 'object',
         required: ['ok'],

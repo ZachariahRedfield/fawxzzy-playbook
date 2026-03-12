@@ -2,6 +2,7 @@ import { formatHuman, loadConfig, verifyRepo } from '@zachariahredfield/playbook
 import { buildResult, emitResult, ExitCode } from '../lib/cliContract.js';
 import { emitJsonOutput } from '../lib/jsonArtifact.js';
 import { loadVerifyRules } from '../lib/loadVerifyRules.js';
+import { recordExecutionStep, resolveExecutionRun, verifyEvidence } from '../lib/executionRun.js';
 
 export type VerifyReport = {
   ok: boolean;
@@ -39,7 +40,7 @@ export const collectVerifyReport = async (cwd: string): Promise<VerifyReport> =>
 
 export const runVerify = async (
   cwd: string,
-  options: { format: 'text' | 'json'; ci: boolean; quiet: boolean; explain: boolean; policy: boolean; outFile?: string }
+  options: { format: 'text' | 'json'; ci: boolean; quiet: boolean; explain: boolean; policy: boolean; outFile?: string; runId?: string }
 ): Promise<number> => {
   const verifyRules = await loadVerifyRules(cwd);
   const report = await collectVerifyReport(cwd);
@@ -122,8 +123,21 @@ export const runVerify = async (
     policyViolations: inPolicyMode ? policyViolations : undefined
   };
 
+  const run = resolveExecutionRun(cwd, options.runId);
+  const isFollowUpVerification = run.steps.some((step) => step.kind === 'apply');
+  const updatedRun = recordExecutionStep(cwd, run, {
+    kind: 'verify',
+    status: ok ? 'passed' : 'failed',
+    inputs: { policy: inPolicyMode },
+    outputs: { ok, failures: report.failures.length, warnings: report.warnings.length },
+    evidence: verifyEvidence(options.outFile, report),
+    finalize: ok && isFollowUpVerification ? { status: 'passed', summary: 'Execution run passed verification.' } : undefined
+  });
+
+  const payloadWithRun = { ...resultPayload, runId: updatedRun.id };
+
   if (options.format === 'json' && options.outFile) {
-    emitJsonOutput({ cwd, command: 'verify', payload: buildResult(resultPayload), outFile: options.outFile });
+    emitJsonOutput({ cwd, command: 'verify', payload: buildResult(payloadWithRun), outFile: options.outFile });
     return exitCode;
   }
 
@@ -131,7 +145,7 @@ export const runVerify = async (
     format: options.format,
     quiet: options.quiet,
     explain: options.explain,
-    ...resultPayload
+    ...payloadWithRun
   });
 
   return exitCode;

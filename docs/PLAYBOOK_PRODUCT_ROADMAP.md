@@ -1956,3 +1956,11 @@ Use explicit least-privilege workflow permissions (`contents: read` for PR valid
 
 Failure Mode
 If workflow permissions are implicit/restricted, `actions/checkout` can fail early with `could not read Username for https://github.com` before any build/test stage executes.
+
+## Deterministic execution run-state (implemented)
+
+- **Rule:** Every multi-step remediation flow must be representable as a deterministic execution run artifact.
+- **Pattern:** A system becomes agent-ready when actions are represented as inspectable state transitions rather than transient command output.
+- **Failure Mode:** Without explicit run-state, the system cannot reliably resume, audit, compare, or learn from execution behavior.
+
+Playbook now emits first-class run artifacts in `.playbook/runs/` and links verify/plan/apply evidence into the run timeline.

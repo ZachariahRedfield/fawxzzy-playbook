@@ -12,6 +12,7 @@ export type { DiagramOptions, StructureModel, DependencyModel, MermaidDiagramRes
 export * from './sessions/index.js';
 
 export { runRuleExecution, generateExecutionPlan, generatePlanContract, applyExecutionPlan, parsePlanArtifact, selectPlanTasks, RuleRunner, PlanGenerator, FixExecutor } from './execution/index.js';
+export { createExecutionRun, appendExecutionStep, completeExecutionRun, failExecutionRun, writeExecutionRun, readExecutionRun, listExecutionRuns, executionRunArtifactPath } from './execution/index.js';
 
 export { generateRepositoryHealth } from './doctor/index.js';
 export type { RepositoryHealth, GovernanceStatusItem, ArtifactHygieneReport } from './doctor/index.js';

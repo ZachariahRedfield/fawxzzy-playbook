@@ -186,4 +186,7 @@ export { RuleRunner } from './ruleRunner.js';
 export { PlanGenerator } from './planGenerator.js';
 export { FixExecutor, HandlerResolver } from './fixExecutor.js';
 export { defaultFixHandlers } from './defaultFixHandlers.js';
+export { createExecutionRun } from './createExecutionRun.js';
+export { appendExecutionStep, completeExecutionRun, failExecutionRun } from './updateExecutionRun.js';
+export { writeExecutionRun, readExecutionRun, listExecutionRuns, executionRunArtifactPath } from './writeExecutionRun.js';
 export type { PlanTask, RuleFailure, Rule, FixHandler } from './types.js';

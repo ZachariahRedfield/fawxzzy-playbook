@@ -6,11 +6,20 @@ import { ExitCode } from '../lib/cliContract.js';
 
 const generatePlanContract = vi.fn();
 
+const resolveExecutionRun = vi.fn();
+const recordExecutionStep = vi.fn();
+const verifyEvidence = vi.fn(() => []);
+
 vi.mock('@zachariahredfield/playbook-engine', () => ({ generatePlanContract }));
+vi.mock('../lib/executionRun.js', () => ({ resolveExecutionRun, recordExecutionStep, verifyEvidence }));
 
 describe('runPlan', () => {
   beforeEach(() => {
     generatePlanContract.mockReset();
+    resolveExecutionRun.mockReset();
+    recordExecutionStep.mockReset();
+    resolveExecutionRun.mockReturnValue({ id: 'run-test', steps: [], checkpoints: [], version: 1, intent: { id: 'intent-test', goal: 'goal', scope: [], constraints: [], requested_by: 'system' }, created_at: new Date().toISOString() });
+    recordExecutionStep.mockReturnValue({ id: 'run-test' });
   });
 
   it('renders deterministic text output with task count and entries', async () => {
@@ -74,6 +83,7 @@ describe('runPlan', () => {
       command: 'plan',
       ok: true,
       exitCode: ExitCode.Success,
+      runId: 'run-test',
       verify: { ok: false, summary: { failures: 1, warnings: 0 }, failures: [], warnings: [] },
       remediation: { status: 'ready', totalSteps: 1, unresolvedFailures: 0 },
       tasks: [{ id: 'task-3', ruleId: 'plugin.custom', file: null, action: 'fix plugin contract', autoFix: true }]
@@ -191,3 +201,4 @@ describe('runPlan', () => {
   });
 
 });
+

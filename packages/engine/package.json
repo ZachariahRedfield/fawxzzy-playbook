@@ -18,6 +18,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@zachariahredfield/playbook-core": "workspace:*",
     "minimatch": "^9.0.5"
   },
   "publishConfig": {
