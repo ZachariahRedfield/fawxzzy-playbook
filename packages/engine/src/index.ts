@@ -269,7 +269,6 @@ export type {
   BuildOrchestratorContractInput,
   LaneContract,
   OrchestratorArtifactWriteResult,
-  OrchestratorContract,
   PlannerLaneInput,
   SharedFileHandling,
   SharedFilePolicy

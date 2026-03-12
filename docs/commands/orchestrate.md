@@ -73,6 +73,10 @@ Policy:
 
 This policy prevents hidden overlap and reduces merge ambiguity.
 
+Integration rule for shared surfaces: treat barrel files (`index.ts`), changelog files, and top-level public API export surfaces as dedicated integration files, not primary worker lanes.
+
+Failure mode to avoid: parallel lanes can each add valid exports independently, but merged shared barrels can accumulate duplicate symbol re-exports that only fail at TypeScript build time; reserve final consolidation of shared export surfaces for an integration pass.
+
 ## Wave and dependency model
 
 Lanes are grouped into deterministic waves:
