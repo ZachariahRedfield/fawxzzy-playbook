@@ -1,10 +1,20 @@
 # Repository Memory System v1 (Canonical Future-State Specification)
 
+- feature_id: PB-V08-MEMORY-SYSTEM-001
+- status: canonical future-state specification
+
 ## Purpose
 
 Define the canonical memory model for Playbook-enabled repositories so temporal engineering memory is captured, promoted, and reused without weakening deterministic governance.
 
-This spec establishes the memory-layer taxonomy, artifact boundaries under `.playbook/`, promotion controls, provenance expectations, privacy stance, and explicit non-goals.
+This specification establishes:
+
+- the four memory layers,
+- the canonical `.playbook/` artifact layout,
+- the promotion boundary from ephemeral context to reviewed durable knowledge,
+- provenance requirements,
+- privacy/local-first constraints,
+- and explicit non-goals.
 
 ## Canonical memory layers
 
@@ -14,7 +24,7 @@ Working memory is ephemeral execution context used during an active task/session
 
 - Scope: current run, short-lived local context, in-flight scaffolding.
 - Characteristics: overwriteable, pruneable, non-authoritative.
-- Primary use: help agents/tools complete a current workflow, not define durable truth.
+- Primary use: help agents/tools complete current workflows, not define durable truth.
 
 ### 2) Episodic memory
 
@@ -37,12 +47,12 @@ Semantic memory is reviewed durable repository knowledge distilled from episodes
 Doctrine/procedural memory is normative guidance that governs behavior.
 
 - Scope: rules, contracts, operating doctrine, approved procedures.
-- Characteristics: PR-reviewed, version-controlled, policy authoritative.
+- Characteristics: PR-reviewed, version-controlled, policy-authoritative.
 - Primary use: define what is allowed, required, and canonical for repository operation.
 
 ## Canonical artifact layout under `.playbook/`
 
-### Structural runtime artifacts (not temporal memory)
+### Structural runtime artifacts (remain structural, not temporal memory)
 
 The following artifacts remain structural runtime intelligence artifacts:
 
@@ -62,7 +72,7 @@ Canonical sub-layout:
 - Working memory: `.playbook/memory/working/*`
 - Episodic memory: `.playbook/memory/episodic/*`
 - Semantic memory: `.playbook/memory/semantic/*`
-- Doctrine/procedural memory snapshots or machine-readable derivatives (optional, non-authoritative mirrors only): `.playbook/memory/doctrine/*`
+- Doctrine/procedural memory derivatives or mirrors (optional, non-authoritative): `.playbook/memory/doctrine/*`
 
 Normative doctrine still lives in governed repository surfaces (for example `AGENTS.md`, docs, rules, and contracts) even if derived mirrors exist under `.playbook/memory/doctrine/*`.
 
@@ -103,7 +113,7 @@ Repository memory is local-first by default.
 
 ## Explicit non-goals
 
-This v1 specification does **not**:
+Repository Memory System v1 (feature_id: PB-V08-MEMORY-SYSTEM-001) does **not**:
 
 - Mandate a specific storage backend (database, queue, or external service).
 - Replace deterministic command outputs with opaque memory retrieval.
@@ -113,10 +123,18 @@ This v1 specification does **not**:
 
 ## Playbook Notes candidates
 
-Candidate note classes for governed promotion workflows:
+- **Pattern: Fast Episodic Store, Slow Doctrine Store**
+  - Episodic capture should optimize for append speed and auditability.
+  - Doctrine promotion should optimize for review quality, stability, and policy safety.
 
-- **Rule**: candidate normative constraint inferred from recurring validated findings.
-- **Pattern**: candidate reusable solution/remediation approach validated across episodes.
-- **Failure Mode**: candidate recurring breakdown with triggers, signals, and mitigations.
+- **Rule: Working Memory Is Not Doctrine**
+  - Working-memory artifacts are never policy-authoritative.
+  - Promotion and review are mandatory before doctrine adoption.
 
-These notes begin as non-normative candidates and become durable knowledge/doctrine only after passing promotion and review gates.
+- **Rule: Retrieval Must Return Provenance**
+  - Any retrieval surface that returns memory-backed claims must include evidence references and lineage metadata.
+  - Claims without provenance are treated as non-authoritative.
+
+- **Failure Mode: Memory Hoarding**
+  - Storing large volumes of uncurated episodic/working artifacts without promotion, pruning, or retention controls degrades retrieval quality and increases risk.
+  - Mitigate via retention windows, compaction, and explicit promotion workflows.
