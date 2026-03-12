@@ -57,6 +57,24 @@ const writeModuleOwners = (repo: string): void => {
   );
 };
 
+
+const writePatternsArtifact = (repo: string): void => {
+  const patternsPath = path.join(repo, '.playbook', 'patterns.json');
+  fs.mkdirSync(path.dirname(patternsPath), { recursive: true });
+  fs.writeFileSync(
+    patternsPath,
+    JSON.stringify(
+      {
+        schemaVersion: '1.0',
+        command: 'pattern-compaction',
+        patterns: [{ id: 'MODULE_TEST_ABSENCE', bucket: 'testing', occurrences: 3, examples: ['module lacks tests'] }]
+      },
+      null,
+      2
+    )
+  );
+};
+
 const writeVerifyReport = (repo: string): void => {
   const verifyPath = path.join(repo, '.playbook', 'verify-report.json');
   fs.mkdirSync(path.dirname(verifyPath), { recursive: true });
@@ -482,6 +500,25 @@ describe('runQuery', () => {
   });
 
 
+
+
+  it('prints patterns query JSON output', async () => {
+    const repo = createRepo('playbook-cli-query-patterns-json');
+    writePatternsArtifact(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['patterns'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload).toEqual({
+      schemaVersion: '1.0',
+      command: 'pattern-compaction',
+      patterns: [{ id: 'MODULE_TEST_ABSENCE', bucket: 'testing', occurrences: 3, examples: ['module lacks tests'] }]
+    });
+
+    logSpy.mockRestore();
+  });
 
   it('prints test-hotspots query JSON output', async () => {
     const repo = createRepo('playbook-cli-query-test-hotspots-json');

@@ -10,6 +10,7 @@ import { queryDocsCoverage } from '../src/query/docsCoverage.js';
 import { queryRuleOwners } from '../src/query/ruleOwners.js';
 import { queryModuleOwners } from '../src/query/moduleOwners.js';
 import { queryTestHotspots } from '../src/query/testHotspots.js';
+import { queryPatterns } from '../src/query/patterns.js';
 
 const createRepo = (name: string): string => fs.mkdtempSync(path.join(os.tmpdir(), `${name}-`));
 
@@ -610,4 +611,28 @@ describe('queryRepositoryIndex', () => {
       'playbook query: unsupported repository index schemaVersion "2.0". Expected "1.0".'
     );
   });
+
+
+  it('returns compacted patterns from .playbook/patterns.json', () => {
+    const repo = createRepo('playbook-repo-query-patterns');
+    const patternsPath = path.join(repo, '.playbook', 'patterns.json');
+    fs.mkdirSync(path.dirname(patternsPath), { recursive: true });
+    fs.writeFileSync(
+      patternsPath,
+      JSON.stringify({
+        schemaVersion: '1.0',
+        command: 'pattern-compaction',
+        patterns: [
+          { id: 'MODULE_TEST_ABSENCE', bucket: 'testing', occurrences: 3, examples: ['module lacks tests'] }
+        ]
+      })
+    );
+
+    expect(queryPatterns(repo)).toEqual({
+      schemaVersion: '1.0',
+      command: 'pattern-compaction',
+      patterns: [{ id: 'MODULE_TEST_ABSENCE', bucket: 'testing', occurrences: 3, examples: ['module lacks tests'] }]
+    });
+  });
+
 });

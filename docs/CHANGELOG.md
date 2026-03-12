@@ -4,6 +4,8 @@
 
 ### Added
 
+- WHAT: Added deterministic verify-stage pattern compaction (`.playbook/patterns.json`) plus `pnpm playbook query patterns` for canonical pattern inspection using stable buckets and occurrence summaries. WHY: Stores reusable engineering knowledge as canonical patterns instead of raw observations, reducing reasoning complexity and enabling future cross-repo learning.
+
 - WHAT: Added first-class `pnpm playbook ignore suggest` and `pnpm playbook ignore apply --safe-defaults` commands that read ranked runtime ignore recommendations, report coverage against `.playbookignore`, and write only missing safe-default entries into a deterministic managed block while preserving user-authored lines and leaving review-first entries unapplied. WHY: Converts ignore intelligence into a reviewable bootstrap/apply workflow without hiding relevant repository content or creating noisy non-idempotent ignore churn.
 
 - WHAT: Added first-class `pnpm playbook pilot --repo "<target-repo-path>"` orchestration that deterministically runs `context -> index -> query modules -> verify -> plan`, writes `.playbook/findings.json` and `.playbook/plan.json` directly, emits `.playbook/pilot-summary.json`, and records one top-level runtime cycle with child phases. WHY: Converts a repeated external multi-command baseline workflow into one canonical command to reduce operator drift and prevent helper scripts from becoming shadow product surface.
@@ -159,6 +161,8 @@
 ## Unreleased
 
 ### Added
+
+- WHAT: Added deterministic verify-stage pattern compaction (`.playbook/patterns.json`) plus `pnpm playbook query patterns` for canonical pattern inspection using stable buckets and occurrence summaries. WHY: Stores reusable engineering knowledge as canonical patterns instead of raw observations, reducing reasoning complexity and enabling future cross-repo learning.
 
 - WHAT: Hardened the repository-graph substrate by extending `.playbook/repo-graph.json` stats with deterministic node/edge kind breakdowns and aligned `pnpm playbook graph --json` schema coverage. WHY: Makes the graph a reusable contract artifact for automation and read-runtime reuse rather than an ornamental side output.
 - WHAT: Added compressed module context digests under `.playbook/context/modules/*.json` during `pnpm playbook index` and reused them in `query impact` / `explain <module>`. WHY: Implements the next thin slice of complexity-through-compression using deterministic local artifacts.
