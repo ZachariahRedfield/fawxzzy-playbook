@@ -556,7 +556,7 @@
         "pnpm playbook docs audit --json",
         "node scripts/validate-roadmap-contract.mjs --ci"
       ],
-      "status": "planned",
+      "status": "implemented-hardening",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine"
@@ -699,7 +699,7 @@
         "pnpm playbook docs audit --json",
         "node scripts/validate-roadmap-contract.mjs --ci"
       ],
-      "status": "planned",
+      "status": "architecture-defined",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine"
@@ -762,13 +762,14 @@
         "docs/AUTOMATION_SYNTHESIS_VISION.md"
       ],
       "dependencies": [
-        "PB-V09-SESSION-EVIDENCE-001"
+        "PB-V09-SESSION-EVIDENCE-001",
+        "PB-V06-FAILURE-INTELLIGENCE-001"
       ],
       "verification_commands": [
         "pnpm playbook docs audit --json",
         "node scripts/validate-roadmap-contract.mjs --ci"
       ],
-      "status": "planned",
+      "status": "architecture-defined",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine",
@@ -804,15 +805,15 @@
         "docs/AUTOMATION_SYNTHESIS_VISION.md"
       ],
       "dependencies": [
+        "PB-V04-PLAN-APPLY-001",
         "PB-V09-SESSION-EVIDENCE-001",
-        "PB-V09-CONTROL-PLANE-001",
-        "PB-V04-ANALYZEPR-001"
+        "PB-V09-CONTROL-PLANE-001"
       ],
       "verification_commands": [
         "pnpm playbook docs audit --json",
         "node scripts/validate-roadmap-contract.mjs --ci"
       ],
-      "status": "planned",
+      "status": "architecture-defined",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine",
@@ -840,14 +841,13 @@
       ],
       "dependencies": [
         "PB-V09-SESSION-EVIDENCE-001",
-        "PB-V09-CONTROL-PLANE-001",
         "PB-V09-PR-REVIEW-LOOP-001"
       ],
       "verification_commands": [
         "pnpm playbook docs audit --json",
         "node scripts/validate-roadmap-contract.mjs --ci"
       ],
-      "status": "planned-later",
+      "status": "architecture-defined",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine"
@@ -881,7 +881,7 @@
         "pnpm playbook docs audit --json",
         "node scripts/validate-roadmap-contract.mjs --ci"
       ],
-      "status": "planned-later",
+      "status": "architecture-defined",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine"
@@ -942,13 +942,14 @@
         "docs/roadmap/README.md"
       ],
       "dependencies": [
+        "PB-V09-LONGITUDINAL-STATE-001",
         "PB-V09-OUTCOME-FEEDBACK-LEARNING-001"
       ],
       "verification_commands": [
         "pnpm playbook docs audit --json",
         "node scripts/validate-roadmap-contract.mjs --ci"
       ],
-      "status": "planned-later",
+      "status": "dependency-blocked",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine",
@@ -977,13 +978,14 @@
         "docs/AUTOMATION_SYNTHESIS_VISION.md"
       ],
       "dependencies": [
+        "PB-V09-CONTROL-PLANE-001",
         "PB-V09-MULTI-REPO-TRANSFER-001"
       ],
       "verification_commands": [
         "pnpm playbook docs audit --json",
         "node scripts/validate-roadmap-contract.mjs --ci"
       ],
-      "status": "planned-later",
+      "status": "dependency-blocked",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine",
@@ -1013,13 +1015,14 @@
         "docs/roadmap/IMPROVEMENTS_BACKLOG.md"
       ],
       "dependencies": [
-        "PB-V09-GOVERNED-INTERFACE-API-001"
+        "PB-V09-GOVERNED-INTERFACE-API-001",
+        "PB-V09-CONTROL-PLANE-001"
       ],
       "verification_commands": [
         "pnpm playbook docs audit --json",
         "node scripts/validate-roadmap-contract.mjs --ci"
       ],
-      "status": "planned-later",
+      "status": "dependency-blocked",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine",
@@ -1056,7 +1059,7 @@
         "pnpm playbook docs audit --json",
         "node scripts/validate-roadmap-contract.mjs --ci"
       ],
-      "status": "planned-later",
+      "status": "dependency-blocked",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine",
@@ -1087,13 +1090,14 @@
         "docs/roadmap/IMPROVEMENTS_BACKLOG.md"
       ],
       "dependencies": [
-        "PB-V09-PACKAGING-SKU-ARCHITECTURE-001"
+        "PB-V09-PACKAGING-SKU-ARCHITECTURE-001",
+        "PB-V09-SESSION-EVIDENCE-001"
       ],
       "verification_commands": [
         "pnpm playbook docs audit --json",
         "node scripts/validate-roadmap-contract.mjs --ci"
       ],
-      "status": "planned-later",
+      "status": "dependency-blocked",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine",
@@ -1130,7 +1134,7 @@
         "pnpm playbook docs audit --json",
         "node scripts/validate-roadmap-contract.mjs --ci"
       ],
-      "status": "planned-later",
+      "status": "dependency-blocked",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine",
@@ -1225,13 +1229,14 @@
         "docs/roadmap/README.md"
       ],
       "dependencies": [
-        "PB-V09-KNOWLEDGE-QUERY-INSPECTION-001"
+        "PB-V09-KNOWLEDGE-QUERY-INSPECTION-001",
+        "PB-V06-FAILURE-INTELLIGENCE-001"
       ],
       "verification_commands": [
         "pnpm playbook docs audit --json",
         "node scripts/validate-roadmap-contract.mjs --ci"
       ],
-      "status": "planned-later",
+      "status": "future-facing",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine",
@@ -1266,7 +1271,7 @@
         "pnpm playbook docs audit --json",
         "node scripts/validate-roadmap-contract.mjs --ci"
       ],
-      "status": "planned-later",
+      "status": "future-facing",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine",
