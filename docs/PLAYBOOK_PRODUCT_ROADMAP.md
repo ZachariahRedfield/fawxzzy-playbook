@@ -449,7 +449,7 @@ Failure Mode: Roadmap inflation from treating platform direction as near-term co
 
 ### Delivery boundary
 
-- **Implemented runtime today**: deterministic repository intelligence, governance validation, risk/docs/ownership intelligence, PR analysis, and reviewed `verify -> plan -> apply -> verify` remediation loops.
+- **Implemented runtime today**: deterministic repository intelligence, governance validation, risk/docs/ownership intelligence, PR analysis, reviewed `verify -> plan -> apply -> verify` remediation loops, and implemented v0 `orchestrate` control-plane lane-contract artifact generation (not full autonomous orchestration execution).
 - **Near-term execution window**: packaging/product-truth sync, delivery-system hardening, command-boundary convergence, external pilot/runtime hardening, and knowledge-compaction foundations already accepted elsewhere in this roadmap and in `docs/roadmap/IMPLEMENTATION_PLAN_NEXT_4_WEEKS.md`.
 - **Long-term platform direction**: the layers below describe how the current runtime compounds into a broader engineering intelligence platform.
 - **Unscheduled backlog themes**: layers marked outside the near-term execution window are directional/backlog work and are not committed as part of the current 4-week plan.

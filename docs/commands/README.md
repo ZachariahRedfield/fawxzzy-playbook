@@ -56,9 +56,9 @@ Do not hand-edit entries inside the managed markers.
 - Repository intelligence: [`index`](index.md), [`query`](query.md), [`deps`](deps.md), [`ask`](ask.md), [`explain`](explain.md), [`analyze-pr`](analyze-pr.md)
 - Governance and support: [`docs`](docs.md), [`audit`](audit.md), [`rules`](rules.md), [`doctor`](doctor.md), [`schema`](schema.md), [`contracts`](contracts.md), [`ignore`](ignore.md), [`diagram`](diagram.md), [`route`](route.md), [`memory`](memory.md), [`fix`](fix.md), [`upgrade`](upgrade.md), [`analyze`](analyze.md)
 
-### Planned command docs (reference contracts)
+### Implemented control-plane command docs
 
-- [`orchestrate`](orchestrate.md)
+- [`orchestrate`](orchestrate.md) (implemented v0 lane-contract artifact generation)
 
 ## External repository targeting (`pnpm playbook --repo <path> <command>`)
 

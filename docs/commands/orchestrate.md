@@ -1,6 +1,6 @@
 # Orchestrate (`pnpm playbook orchestrate`)
 
-`orchestrate` is a **deterministic control-plane command** that compiles one high-level goal into merge-safe lane contracts for parallel Codex plan-mode workflows.
+`orchestrate` is an **implemented v0 deterministic control-plane command** that compiles one high-level goal into merge-safe lane contracts for parallel Codex plan-mode workflows.
 
 ## Control-plane boundary
 
@@ -29,9 +29,14 @@ pnpm playbook orchestrate \
 - `--out <dir>` (optional, default `.playbook/orchestrator`)
 - `--format <md|json|both>` (optional, default `both`)
 
-## Deterministic decomposition model (v1)
+Notes:
 
-`orchestrate` uses fixed lane categories and deterministic merges:
+- `--lanes` must be a positive integer (`>= 1`).
+- global `--json` output mode forces artifact format to `json`.
+
+## Deterministic decomposition model (v0)
+
+`orchestrate` currently uses fixed lane categories and deterministic merges:
 
 1. CLI / command surface
 2. Engine / domain logic
@@ -39,16 +44,14 @@ pnpm playbook orchestrate \
 4. Docs / command-truth integration
 
 If requested lane count is lower than available categories, categories are merged deterministically.
-If safe isolation is not possible, lane count is reduced rather than inventing unsafe parallelism.
+If safe isolation is not possible, lane count is reduced rather than inventing unsafe parallelism. Requested lane counts above 4 are capped to 4 with a warning.
 
-## Output artifacts
+## Output artifacts written today
 
 Default output directory: `.playbook/orchestrator`
 
-- `orchestrator.json`
-- `lane-1.prompt.md`
-- `lane-2.prompt.md`
-- `...`
+- `orchestrator.json` (written when `--format json` or `--format both`)
+- `lane-1.prompt.md`, `lane-2.prompt.md`, ... (written when `--format md` or `--format both`)
 
 `orchestrator.json` includes:
 
@@ -56,6 +59,13 @@ Default output directory: `.playbook/orchestrator`
 - Explicit shared-file conflict hubs
 - Warnings for deterministic degradations
 - Lane contracts with allowed/forbidden paths, wave/dependency ordering, and prompt file mapping
+
+## Current limitations (v0)
+
+- No runtime execution plane: command does not launch workers, create branches, open PRs, merge code, or run autonomous loops.
+- Lane decomposition is template-based with up to four deterministic ownership buckets.
+- Lane contracts are generated from static ownership blueprints; this is not a dynamic graph-aware lane compiler yet.
+- Prompt artifacts are markdown files only; no native task-execution protocol is emitted.
 
 ## Shared-file policy
 
@@ -82,3 +92,9 @@ Each generated lane prompt includes:
 - Merge notes
 
 This keeps worker execution bounded and lane ownership explicit.
+
+## Future scope (not implemented in this command)
+
+Future-oriented orchestration subcommand concepts such as `orchestrate plan`, `orchestrate explain`, or `orchestrate verify` are not implemented on the current branch.
+
+For live behavior and options, use `pnpm playbook orchestrate --help` and treat this page as the authoritative v0 contract.
