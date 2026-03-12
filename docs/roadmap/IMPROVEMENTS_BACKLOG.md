@@ -224,6 +224,33 @@ Failure Mode: Automation consumes stale or superseded knowledge.
 
 ---
 
+
+## Platform direction: Outcome Feedback + Automation Runtime Learning
+
+Backlog scope (directional, not current-sprint commitment):
+
+- Define a canonical automation outcome taxonomy (success, partial success, verification failure, policy rejection, rollback/deactivation, later regression, false positive, false negative, stale template/knowledge, operator correction).
+- Define provenance-linked outcome feedback artifacts and evidence bundle contracts.
+- Add template-quality and pattern-quality confidence tracking from repeated runtime outcomes.
+- Add recurring rollback-pattern mining and candidate rollback-heuristic proposals.
+- Add stale-knowledge detection signals derived from runtime outcomes and verification lineage.
+- Add candidate promotion/demotion/supersession review queue for automation-derived learning artifacts.
+- Add repo health trend updates driven by runtime outcome classes over time.
+
+Pattern: Runtime Outcomes Become Evidence.
+Pattern: Closed Learning Loop With Human-Reviewed Promotion.
+Pattern: Rollback Events Are Learning Signals.
+Rule: Verification remains the trust boundary.
+Rule: Outcome feedback may refine candidate knowledge, not auto-promote governance.
+Rule: Repo-local runtime learning stays local unless intentionally promoted.
+Failure Mode: Self-modifying automation without review.
+Failure Mode: Runtime feedback without provenance.
+Failure Mode: Success metrics mistaken for governance truth.
+Failure Mode: Hidden telemetry disguised as learning.
+Failure Mode: Template/policy mutation driven by opaque outcome signals.
+
+---
+
 ## Platform direction: Multi-Repo Knowledge Transfer Model
 
 Backlog scope:

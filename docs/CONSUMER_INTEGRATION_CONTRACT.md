@@ -129,12 +129,17 @@ Boundary rules:
 If consumer repositories adopt future automation synthesis features, synthesized automations must inherit this contract:
 
 - synthesis consumes governed/promoted, inspectable, provenance-linked knowledge artifacts only
+- generated automation remains untrusted until verification succeeds
+- runtime outcome feedback artifacts remain repo-local/private-first by default
+- runtime-learning outputs are candidate artifacts and do not auto-promote enforced governance
 - candidate knowledge and raw conversation memory are not automation-grade inputs
-- repo-local/private-first boundaries apply to synthesis context packaging and deployment policy
+- repo-local/private-first boundaries apply to synthesis context packaging, runtime feedback retention, and deployment policy
 - promoted reusable patterns may inform shared automation patterns only through intentional governance paths
-- no hidden telemetry or implicit upstream synchronization is introduced by synthesis surfaces
+- no hidden telemetry or implicit upstream synchronization is introduced by synthesis or runtime-learning surfaces
 
 Automation synthesis reference: `docs/architecture/PLAYBOOK_AUTOMATION_SYNTHESIS_GOVERNED_KNOWLEDGE_CONSUMPTION.md`.
+
+Outcome feedback reference: `docs/architecture/PLAYBOOK_OUTCOME_FEEDBACK_AND_AUTOMATION_RUNTIME_LEARNING.md`.
 
 ## 5) Extension Model
 

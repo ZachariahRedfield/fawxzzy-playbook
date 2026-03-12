@@ -40,8 +40,12 @@ Automation Synthesis should follow a staged architecture aligned with Playbook's
    - Publish approved automations into orchestration backends through controlled adapters.
 8. **Runtime monitoring + rollback**
    - Track production behavior and support fast rollback/deactivation.
+9. **Outcome feedback artifacts + governed runtime learning**
+   - Convert verified runtime outcomes (including rollback/deactivation events) into provenance-linked, repo-local candidate learning artifacts for human-reviewed promotion paths.
 
 Generated automations are untrusted until verification and approvals pass, and every synthesis decision should remain traceable to session-scoped evidence and approval history.
+
+Outcome-feedback architecture reference: `docs/architecture/PLAYBOOK_OUTCOME_FEEDBACK_AND_AUTOMATION_RUNTIME_LEARNING.md`.
 
 
 ## Governed knowledge-consumption contract
@@ -166,13 +170,14 @@ Automation Synthesis should remain downstream of Playbook's deterministic trust 
 - **Evidence graph / trust model:** generated automations should carry evidence links from trigger -> synthesis -> verification -> approval, with provenance preserved for later audits.
 - **Policy/control plane:** approval, permission, and execution boundaries should be centrally governed across CLI/CI/API surfaces.
 - **Human approval surfaces:** PR checks, CI gates, and future dashboard/API review flows should expose explicit approve/deny transitions.
-- **Longitudinal runtime learning:** post-deployment outcomes should feed deterministic learning loops for template refinement and rollback policy tightening.
+- **Longitudinal runtime learning:** post-deployment outcomes should feed deterministic learning loops for template refinement and rollback policy tightening via provenance-linked outcome feedback artifacts.
 - **Promoted knowledge artifacts:** trigger classification and synthesis template selection should consume promoted/reviewed knowledge artifacts (not raw candidate memory), with lineage preserved.
 - **Knowledge query/inspection prerequisite:** synthesis should consume governed knowledge only after deterministic inspection surfaces make candidate/promoted provenance auditable by humans/CI.
 
 Rule: synthesized automation remains untrusted until verification evidence is complete and required approvals pass.
 Rule: automation synthesis is a downstream consumer of governed knowledge artifacts and cannot bypass review, policy, or verification gates.
 Rule: automation synthesis should consume promoted knowledge only after that knowledge is inspectable and provenance-linked through deterministic query/inspection surfaces.
+Rule: synthesis improvement must run through governed outcome feedback loops, not opaque self-modifying behavior.
 
 Rule: verification remains the trust boundary even when synthesis quality, session evidence, or approval history appears strong.
 

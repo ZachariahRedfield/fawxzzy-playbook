@@ -403,10 +403,12 @@ Failure Mode: Roadmap inflation from treating platform direction as near-term co
 3. control plane (policy, approvals, mutation scopes, adapter boundaries, export rules)
 4. PR review loop hardening (session/evidence-attached review intelligence + policy-gated actioning)
 5. longitudinal learning / knowledge persistence / promotion layers
-6. broader execution orchestration hardening
-7. multi-repo transfer (explicit promotion only)
-8. interface surfaces
-9. capability / model routing
+6. automation synthesis consuming governed/promoted knowledge
+7. outcome feedback / automation runtime learning
+8. broader execution orchestration hardening
+9. multi-repo transfer (explicit promotion only)
+10. interface surfaces
+11. capability / model routing
 
 This ordering is a dependency recommendation, not an active delivery commitment.
 
@@ -521,7 +523,21 @@ This ordering is a dependency recommendation, not an active delivery commitment.
 - **Execution window**
   - dependency-ordered after Knowledge Query / Inspection Surfaces and before broader orchestration/interface expansion; remains outside the current near-term execution window unless explicitly promoted in roadmap status.
 
-#### 10. Review + Execution Orchestration
+#### 10. Outcome Feedback + Automation Runtime Learning
+
+- **Already exists today**
+  - directional architecture language already requires runtime monitoring, rollback readiness, and evidence-linked automation trust posture.
+- **Partially defined**
+  - outcome classes, feedback artifact contracts, and candidate-learning boundaries are distributed across docs and not yet formalized as one canonical architecture slice.
+- **Future work**
+  - formalize the canonical architecture in `docs/architecture/PLAYBOOK_OUTCOME_FEEDBACK_AND_AUTOMATION_RUNTIME_LEARNING.md`.
+  - define taxonomy-governed outcome classes, provenance-linked feedback artifacts, and repo-local confidence/trend update contracts.
+  - require runtime-learning outputs to remain candidate knowledge until explicit human review promotes, demotes, or supersedes governance artifacts.
+  - require rollback/deactivation and later regressions to become first-class learning signals with preserved lineage.
+- **Execution window**
+  - dependency-ordered after Automation Synthesis (Governed Knowledge Consumption) and before broader orchestration/interface expansion; outside the current near-term execution window unless explicitly promoted in roadmap status.
+
+#### 11. Review + Execution Orchestration
 
 - **Already exists today**
   - reviewed `verify -> plan -> apply -> verify` execution loops, CLI-first execution, and CI-safe remediation workflows are implemented.
@@ -532,7 +548,7 @@ This ordering is a dependency recommendation, not an active delivery commitment.
 - **Execution window**
   - near-term work is limited to current remediation contract hardening; broader orchestration expansion is outside the 4-week plan.
 
-#### 11. Multi-Repo Knowledge Transfer
+#### 12. Multi-Repo Knowledge Transfer
 
 - **Already exists today**
   - external repository targeting and bounded pilot execution exist today through `--repo` and `playbook pilot --repo <path>`.
@@ -543,7 +559,7 @@ This ordering is a dependency recommendation, not an active delivery commitment.
 - **Execution window**
   - outside the current near-term execution window beyond current external pilot/runtime hardening.
 
-#### 12. Interface Surfaces
+#### 13. Interface Surfaces
 
 - **Already exists today**
   - CLI, JSON command contracts, GitHub/CI formatting surfaces, AI contract/bootstrap artifacts, and demo/docs surfaces are implemented.
@@ -554,7 +570,7 @@ This ordering is a dependency recommendation, not an active delivery commitment.
 - **Execution window**
   - outside the current near-term execution window except for current product-truth/documentation packaging work.
 
-#### 13. Capability / Model Routing
+#### 14. Capability / Model Routing
 
 - **Already exists today**
   - deterministic routing is presently command- and contract-driven rather than model-driven; Playbook prefers explicit command surfaces and repository intelligence artifacts over open-ended inference.
@@ -1015,9 +1031,11 @@ Use a layered phase model so each phase compounds directly on the previous one:
    Deterministic, provenance-preserving read-runtime inspection of repository memory and promoted knowledge so humans/CI can query, compare, and audit candidate/promoted/stale states before broader automation consumption.
 14. **Phase 14 â€” Automation Synthesis (Governed Knowledge Consumption)**  
    Future controlled synthesis that consumes only governed/promoted, inspectable, provenance-linked knowledge artifacts after knowledge query/inspection surfaces are in place. This phase explicitly excludes raw chat memory, unreviewed candidate knowledge, and undocumented inference as automation-grade input.
-15. **Phase 15 â€” Autonomous Maintenance (Policy-Gated)**  
-   Recurring maintenance execution modes with approval and policy controls, layered after governed knowledge-consuming synthesis contracts.
-16. **Phase 16 â€” Repository Learning Loop Expansion (Human-Reviewed)**  
+15. **Phase 15 â€” Outcome Feedback + Automation Runtime Learning (Human-Reviewed)**  
+   Governed feedback loops that convert verified runtime outcomes, rollback/deactivation events, and later regressions into provenance-linked repo-local candidate learning artifacts (confidence, template suitability, trigger quality, rollback heuristics, stale-knowledge flags, and trend updates). Outputs remain candidate artifacts until explicit human-reviewed promotion/demotion/supersession.
+16. **Phase 16 â€” Autonomous Maintenance (Policy-Gated)**  
+   Recurring maintenance execution modes with approval and policy controls, layered after governed synthesis and outcome-feedback contracts.
+17. **Phase 17 â€” Repository Learning Loop Expansion (Human-Reviewed)**  
    Broader pattern detection and candidate improvements from repeated findings/remediations/query usage, including advanced clustering, graph-informed learning artifacts, and higher-order synthesis inputs. Outputs remain candidate knowledge artifacts until human review promotes them to enforced governance.
 
 Reasoning for reordering:

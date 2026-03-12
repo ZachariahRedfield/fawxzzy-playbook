@@ -156,3 +156,4 @@ Cross-repo synthesis requires explicit governance paths over sanitized, intentio
 - `docs/architecture/PLAYBOOK_PR_REVIEW_LOOP_ARCHITECTURE.md`
 - `docs/architecture/PLAYBOOK_REPO_LONGITUDINAL_STATE_AND_KNOWLEDGE_PROMOTION.md`
 - `docs/architecture/PLAYBOOK_KNOWLEDGE_QUERY_AND_INSPECTION_SURFACES.md`
+- `docs/architecture/PLAYBOOK_OUTCOME_FEEDBACK_AND_AUTOMATION_RUNTIME_LEARNING.md`

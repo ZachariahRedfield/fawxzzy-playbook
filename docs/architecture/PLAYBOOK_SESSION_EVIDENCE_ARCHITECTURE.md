@@ -116,3 +116,4 @@ This ordering is architecture direction and backlog sequencing guidance, not a c
 - Consumer promotion/privacy constraints: `docs/CONSUMER_INTEGRATION_CONTRACT.md`
 
 - `docs/architecture/PLAYBOOK_AUTOMATION_SYNTHESIS_GOVERNED_KNOWLEDGE_CONSUMPTION.md`
+- `docs/architecture/PLAYBOOK_OUTCOME_FEEDBACK_AND_AUTOMATION_RUNTIME_LEARNING.md`

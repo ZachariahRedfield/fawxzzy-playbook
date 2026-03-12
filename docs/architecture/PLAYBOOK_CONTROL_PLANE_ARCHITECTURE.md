@@ -169,3 +169,4 @@ This sequence is architecture direction and roadmap sequencing guidance, not a c
 - Automation synthesis vision: `docs/AUTOMATION_SYNTHESIS_VISION.md`
 
 - `docs/architecture/PLAYBOOK_AUTOMATION_SYNTHESIS_GOVERNED_KNOWLEDGE_CONSUMPTION.md`
+- `docs/architecture/PLAYBOOK_OUTCOME_FEEDBACK_AND_AUTOMATION_RUNTIME_LEARNING.md`
