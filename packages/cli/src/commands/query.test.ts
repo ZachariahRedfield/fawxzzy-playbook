@@ -229,6 +229,31 @@ describe('runQuery', () => {
 
 
 
+
+  it('includes memory-aware fields only when --with-memory is provided', async () => {
+    const repo = createRepo('playbook-cli-query-memory-json');
+    writeRepoIndex(repo);
+    writePromotedPatterns(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const withMemoryExit = await runQuery(repo, ['modules', '--with-memory'], { format: 'json', quiet: false });
+    expect(withMemoryExit).toBe(ExitCode.Success);
+    const withMemoryPayload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(typeof withMemoryPayload.memorySummary).toBe('string');
+    expect(Array.isArray(withMemoryPayload.memorySources)).toBe(true);
+    expect(Array.isArray(withMemoryPayload.knowledgeHits)).toBe(true);
+    expect(Array.isArray(withMemoryPayload.recentRelevantEvents)).toBe(true);
+
+    logSpy.mockClear();
+    const legacyExit = await runQuery(repo, ['modules'], { format: 'json', quiet: false });
+    expect(legacyExit).toBe(ExitCode.Success);
+    const legacyPayload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(legacyPayload.memorySummary).toBeUndefined();
+    expect(legacyPayload.memorySources).toBeUndefined();
+
+    logSpy.mockRestore();
+  });
+
   it('writes deterministic query JSON output with --out', async () => {
     const repo = createRepo('playbook-cli-query-out');
     writeRepoIndex(repo);

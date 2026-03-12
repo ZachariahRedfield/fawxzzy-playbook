@@ -9,6 +9,7 @@ Explain deterministic repository intelligence targets from `.playbook/repo-index
 - `pnpm playbook explain workouts`
 - `pnpm playbook explain architecture`
 - `pnpm playbook explain workouts --json`
+- `pnpm playbook explain workouts --with-memory --json`
 
 ## Supported target types
 
@@ -39,3 +40,9 @@ Explain deterministic repository intelligence targets from `.playbook/repo-index
   }
 }
 ```
+
+## Memory-aware mode
+
+Use `--with-memory` to add deterministic memory descriptors to explanation payloads without changing legacy output by default.
+
+When enabled, `explanation` may include: `memorySummary`, `memorySources`, `knowledgeHits`, and `recentRelevantEvents`.

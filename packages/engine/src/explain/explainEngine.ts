@@ -4,6 +4,7 @@ import type { RepositoryModule } from '../indexer/repoIndexer.js';
 import { getRuleMetadata } from './ruleRegistry.js';
 import { resolveRepositoryTarget, type ResolvedTarget } from '../intelligence/targetResolver.js';
 import { readModuleContextDigest } from '../context/moduleContext.js';
+import { readRuntimeMemoryEnvelope, type RuntimeMemoryEnvelope } from '../intelligence/runtimeMemory.js';
 
 const toModuleNames = (modules: string[] | RepositoryModule[]): string[] => {
   if (modules.length === 0) {
@@ -25,7 +26,14 @@ type ExplainContext = {
   rules: string[];
 };
 
-export type RuleExplanation = {
+type ExplainMemoryFields = {
+  memorySummary?: RuntimeMemoryEnvelope['memorySummary'];
+  memorySources?: RuntimeMemoryEnvelope['memorySources'];
+  knowledgeHits?: RuntimeMemoryEnvelope['knowledgeHits'];
+  recentRelevantEvents?: RuntimeMemoryEnvelope['recentRelevantEvents'];
+};
+
+export type RuleExplanation = ExplainMemoryFields & {
   type: 'rule';
   resolvedTarget: ResolvedTarget;
   id: string;
@@ -35,7 +43,7 @@ export type RuleExplanation = {
   graphNeighborhood?: GraphNeighborhoodSummary;
 };
 
-export type ModuleExplanation = {
+export type ModuleExplanation = ExplainMemoryFields & {
   type: 'module';
   resolvedTarget: ResolvedTarget;
   name: string;
@@ -45,7 +53,7 @@ export type ModuleExplanation = {
   graphNeighborhood?: GraphNeighborhoodSummary;
 };
 
-export type ArchitectureExplanation = {
+export type ArchitectureExplanation = ExplainMemoryFields & {
   type: 'architecture';
   resolvedTarget: ResolvedTarget;
   architecture: string;
@@ -54,7 +62,7 @@ export type ArchitectureExplanation = {
   graphNeighborhood?: GraphNeighborhoodSummary;
 };
 
-export type UnknownExplanation = {
+export type UnknownExplanation = ExplainMemoryFields & {
   type: 'unknown';
   resolvedTarget: ResolvedTarget;
   target: string;
@@ -132,18 +140,42 @@ const explainRule = (projectRoot: string, context: ExplainContext, resolvedTarge
   };
 };
 
-export const explainTarget = (projectRoot: string, target: string): ExplainTargetResult => {
+type ExplainTargetOptions = {
+  withMemory?: boolean;
+};
+
+const withMemory = <T extends Record<string, unknown>>(
+  projectRoot: string,
+  enabled: boolean | undefined,
+  input: T,
+  options?: { target?: string }
+): T & ExplainMemoryFields => {
+  if (!enabled) {
+    return input;
+  }
+
+  const memory = readRuntimeMemoryEnvelope(projectRoot, { target: options?.target });
+  return {
+    ...input,
+    memorySummary: memory.memorySummary,
+    memorySources: memory.memorySources,
+    knowledgeHits: memory.knowledgeHits,
+    recentRelevantEvents: memory.recentRelevantEvents
+  };
+};
+
+export const explainTarget = (projectRoot: string, target: string, options?: ExplainTargetOptions): ExplainTargetResult => {
   const context = gatherContext(projectRoot);
   const resolvedTarget = resolveRepositoryTarget(projectRoot, normalizeTarget(target));
 
   if (resolvedTarget.kind === 'rule') {
-    return explainRule(projectRoot, context, resolvedTarget);
+    return withMemory(projectRoot, options?.withMemory, explainRule(projectRoot, context, resolvedTarget), { target: resolvedTarget.selector });
   }
 
   if (resolvedTarget.kind === 'module') {
     const moduleName = resolvedTarget.selector;
     const digest = readModuleContextDigest(projectRoot, moduleName);
-    return {
+    return withMemory(projectRoot, options?.withMemory, {
       type: 'module',
       resolvedTarget,
       name: moduleName,
@@ -151,24 +183,24 @@ export const explainTarget = (projectRoot: string, target: string): ExplainTarge
       dependencies: digest?.dependencies ?? [],
       architecture: context.architecture,
       graphNeighborhood: readGraphNeighborhood(projectRoot, `module:${moduleName}`)
-    };
+    }, { target: moduleName });
   }
 
   if (resolvedTarget.kind === 'architecture') {
-    return {
+    return withMemory(projectRoot, options?.withMemory, {
       type: 'architecture',
       resolvedTarget,
       architecture: context.architecture,
       structure: architectureStructure(context.architecture),
       reasoning: architectureReasoning(context.architecture, context.framework, context.modules),
       graphNeighborhood: readGraphNeighborhood(projectRoot, 'repository:root')
-    };
+    }, { target: 'architecture' });
   }
 
-  return {
+  return withMemory(projectRoot, options?.withMemory, {
     type: 'unknown',
     resolvedTarget,
     target,
     message: `Unable to explain "${target}" from repository intelligence. Try: playbook query modules | playbook rules.`
-  };
+  }, { target });
 };

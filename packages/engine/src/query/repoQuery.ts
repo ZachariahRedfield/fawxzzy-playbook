@@ -10,6 +10,7 @@ import type {
 } from '../indexer/repoIndexer.js';
 import { readRepositoryGraph, summarizeGraphNeighborhood, type GraphNeighborhoodSummary } from '../graph/repoGraph.js';
 import { readJsonArtifact } from '../artifacts/artifactIO.js';
+import { readRuntimeMemoryEnvelope, type RuntimeMemoryEnvelope } from '../intelligence/runtimeMemory.js';
 
 export const SUPPORTED_QUERY_FIELDS = [
   'architecture',
@@ -30,6 +31,14 @@ export type RepositoryQueryResult = {
   field: RepositoryQueryField;
   result: string | string[] | RepositoryModule[] | RepositoryDependencyEdge[] | RepositoryWorkspaceNode[] | RepositoryTestCoverage[] | RepositoryConfigEntry[];
   graphNeighborhood?: GraphNeighborhoodSummary;
+  memorySummary?: RuntimeMemoryEnvelope['memorySummary'];
+  memorySources?: RuntimeMemoryEnvelope['memorySources'];
+  knowledgeHits?: RuntimeMemoryEnvelope['knowledgeHits'];
+  recentRelevantEvents?: RuntimeMemoryEnvelope['recentRelevantEvents'];
+};
+
+type QueryRepositoryIndexOptions = {
+  withMemory?: boolean;
 };
 
 const INDEX_RELATIVE_PATH = '.playbook/repo-index.json' as const;
@@ -90,7 +99,7 @@ const readGraphNeighborhood = (projectRoot: string, nodeId: string): GraphNeighb
   }
 };
 
-export const queryRepositoryIndex = (projectRoot: string, field: string): RepositoryQueryResult => {
+export const queryRepositoryIndex = (projectRoot: string, field: string, options?: QueryRepositoryIndexOptions): RepositoryQueryResult => {
   const resolvedField = normalizeRepositoryQueryField(field);
   if (!resolvedField) {
     throw new Error(`playbook query: unsupported field "${field}". Supported fields: ${SUPPORTED_FIELDS_MESSAGE}.`);
@@ -104,6 +113,14 @@ export const queryRepositoryIndex = (projectRoot: string, field: string): Reposi
 
   if (resolvedField === 'architecture') {
     queryResult.graphNeighborhood = readGraphNeighborhood(projectRoot, 'repository:root');
+  }
+
+  if (options?.withMemory) {
+    const memory = readRuntimeMemoryEnvelope(projectRoot, { target: resolvedField });
+    queryResult.memorySummary = memory.memorySummary;
+    queryResult.memorySources = memory.memorySources;
+    queryResult.knowledgeHits = memory.knowledgeHits;
+    queryResult.recentRelevantEvents = memory.recentRelevantEvents;
   }
 
   return queryResult;

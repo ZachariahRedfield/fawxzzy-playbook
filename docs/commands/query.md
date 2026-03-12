@@ -23,6 +23,7 @@ Query structured repository intelligence from `.playbook/repo-index.json` with a
 - `pnpm playbook query module-owners workouts --json`
 - `pnpm playbook query test-hotspots`
 - `pnpm playbook query test-hotspots --json`
+- `pnpm playbook query modules --with-memory --json`
 
 ## Behavior
 
@@ -34,6 +35,7 @@ The command:
 2. Validates `schemaVersion`
 3. Returns only the requested field payload
 4. Optionally enriches read output with deterministic graph neighborhood summaries when the graph artifact is available
+5. Optionally adds memory-aware retrieval descriptors when `--with-memory` is set
 
 Supported fields:
 
@@ -68,6 +70,15 @@ Heuristics are intentionally deterministic and include:
 - module references inside architecture docs (`docs/ARCHITECTURE.md`, `docs/ARCHITECTURE_DIAGRAMS.md`)
 
 `pnpm playbook query` never modifies repository files and never reruns repository analysis.
+
+`--with-memory` is additive and contract-safe. Without it, legacy JSON shape is unchanged. With it, read results may include:
+
+- `memorySummary`
+- `memorySources`
+- `knowledgeHits`
+- `recentRelevantEvents`
+
+These fields are provenance descriptors and summaries only (no raw repository dumps).
 
 For `rule-owners`, the command returns deterministic ownership metadata for known verify/explain rules (`pnpm playbook query rule-owners` or `pnpm playbook query rule-owners <rule-id>`).
 

@@ -100,6 +100,10 @@ describe('ask --repo-context', () => {
     expect(payload.context.sources).toContainEqual({ type: 'module', name: 'workouts' });
     expect(payload.context.sources).toContainEqual({ type: 'module-digest', path: '.playbook/context/modules/workouts.json' });
     expect(payload.context.sources).toContainEqual({ type: 'ai-contract', path: 'generated-ai-contract-fallback' });
+    expect(typeof payload.context.memorySummary).toBe('string');
+    expect(Array.isArray(payload.context.memorySources)).toBe(true);
+    expect(Array.isArray(payload.context.knowledgeHits)).toBe(true);
+    expect(Array.isArray(payload.context.recentRelevantEvents)).toBe(true);
 
     logSpy.mockRestore();
   });
@@ -134,6 +138,10 @@ describe('ask --repo-context', () => {
     expect(payload.context.sources).toContainEqual({ type: 'repo-index', path: '.playbook/repo-index.json' });
     expect(payload.context.sources).toContainEqual({ type: 'repo-graph', path: '.playbook/repo-graph.json' });
     expect(payload.context.sources).toContainEqual({ type: 'ai-contract', path: 'generated-ai-contract-fallback' });
+    expect(typeof payload.context.memorySummary).toBe('string');
+    expect(Array.isArray(payload.context.memorySources)).toBe(true);
+    expect(Array.isArray(payload.context.knowledgeHits)).toBe(true);
+    expect(Array.isArray(payload.context.recentRelevantEvents)).toBe(true);
 
     logSpy.mockRestore();
   });

@@ -7,6 +7,50 @@ import { runExplain } from './explain.js';
 
 const createRepo = (name: string): string => fs.mkdtempSync(path.join(os.tmpdir(), `${name}-`));
 
+
+const writePromotedPatterns = (repo: string): void => {
+  const filePath = path.join(repo, '.playbook', 'patterns-promoted.json');
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(
+    filePath,
+    JSON.stringify(
+      {
+        schemaVersion: '1.0',
+        kind: 'playbook-promoted-patterns',
+        promotedPatterns: [
+          {
+            id: 'MODULE_TEST_ABSENCE',
+            sourceCandidateId: 'candidate-module_test_absence',
+            canonicalPatternName: 'module test absence',
+            whyItExists: 'Pattern MODULE_TEST_ABSENCE is relevant to module testing coverage.',
+            examples: ['module lacks tests'],
+            confidence: 0.9,
+            reusableEngineeringMeaning: 'testing governance signal',
+            promotedAt: '2026-01-02T00:00:00.000Z',
+            reviewRecord: {
+              candidateId: 'candidate-module_test_absence',
+              canonicalPatternName: 'module test absence',
+              whyItExists: 'Pattern MODULE_TEST_ABSENCE is relevant to module testing coverage.',
+              examples: ['module lacks tests'],
+              confidence: 0.9,
+              reusableEngineeringMeaning: 'testing governance signal',
+              decision: {
+                candidateId: 'candidate-module_test_absence',
+                decision: 'approve',
+                decidedBy: 'human-reviewed-local',
+                decidedAt: '2026-01-02T00:00:00.000Z',
+                rationale: 'approved'
+              }
+            }
+          }
+        ]
+      },
+      null,
+      2
+    )
+  );
+};
+
 const writeRepoIndex = (repo: string): void => {
   const indexPath = path.join(repo, '.playbook', 'repo-index.json');
   fs.mkdirSync(path.dirname(indexPath), { recursive: true });
@@ -103,6 +147,26 @@ describe('runExplain', () => {
         message: 'Unable to explain "payments" from repository intelligence. Try: playbook query modules | playbook rules.'
       }
     });
+
+    logSpy.mockRestore();
+  });
+
+
+  it('includes memory-aware fields when --with-memory is set', async () => {
+    const repo = createRepo('playbook-cli-explain-memory-json');
+    writeRepoIndex(repo);
+    writePromotedPatterns(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runExplain(repo, ['workouts', '--with-memory'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.type).toBe('module');
+    expect(typeof payload.explanation.memorySummary).toBe('string');
+    expect(Array.isArray(payload.explanation.memorySources)).toBe(true);
+    expect(Array.isArray(payload.explanation.knowledgeHits)).toBe(true);
+    expect(Array.isArray(payload.explanation.recentRelevantEvents)).toBe(true);
 
     logSpy.mockRestore();
   });

@@ -24,6 +24,8 @@ Answer repository questions using machine-readable repository intelligence.
 
 `--repo-context` is optimized for indexed repository-shape, module, and rule-intelligence questions. Broad workflow/meta prompts may return `unsupported-question`; when you need deterministic structural evidence, prefer `pnpm playbook query` and `pnpm playbook explain`.
 
+When `--repo-context` or `--diff-context` is enabled, ask now also returns additive memory-aware context descriptors: `memorySummary`, `memorySources`, `knowledgeHits`, and `recentRelevantEvents`.
+
 `--diff-context` narrows reasoning to the active change set by combining git diff file discovery with indexed Playbook module intelligence. It fails deterministically when index/diff inputs are missing and does not silently broaden to full-repo inference.
 
 ## Example text output

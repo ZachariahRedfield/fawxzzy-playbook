@@ -15,6 +15,8 @@ type ExplainOutput = {
 
 const firstPositionalArg = (args: string[]): string | undefined => args.find((arg) => !arg.startsWith('-'));
 
+const hasWithMemoryFlag = (args: string[]): boolean => args.includes('--with-memory');
+
 const toOutput = (target: string, explanation: ExplainTargetResult): ExplainOutput => {
   if (explanation.type === 'unknown') {
     return {
@@ -101,7 +103,7 @@ export const runExplain = async (cwd: string, commandArgs: string[], options: Ex
   }
 
   try {
-    const explanation = explainTarget(cwd, target);
+    const explanation = explainTarget(cwd, target, { withMemory: hasWithMemoryFlag(commandArgs) });
     const output = toOutput(target, explanation);
 
     if (options.format === 'json') {

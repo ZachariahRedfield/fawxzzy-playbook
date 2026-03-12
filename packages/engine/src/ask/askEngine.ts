@@ -5,6 +5,7 @@ import type { RepositoryModule } from '../indexer/repoIndexer.js';
 import { buildModuleAskContext, resolveIndexedModuleContext, type IndexedModuleContext } from '../query/moduleIntelligence.js';
 import { readModuleContextDigest, type ModuleContextDigest } from '../context/moduleContext.js';
 import { resolveDiffAskContext, type DiffAskContext } from './diffContext.js';
+import { readRuntimeMemoryEnvelope, type RuntimeMemoryEnvelope } from '../intelligence/runtimeMemory.js';
 
 type AskContext = {
   architecture: string;
@@ -24,6 +25,10 @@ export type AskEngineResult = {
     artifact?: string;
   };
   context: {
+    memorySummary?: RuntimeMemoryEnvelope['memorySummary'];
+    memorySources?: RuntimeMemoryEnvelope['memorySources'];
+    knowledgeHits?: RuntimeMemoryEnvelope['knowledgeHits'];
+    recentRelevantEvents?: RuntimeMemoryEnvelope['recentRelevantEvents'];
     architecture: string;
     framework: string;
     modules: string[];
@@ -37,6 +42,7 @@ type AskEngineOptions = {
   module?: string;
   diffContext?: boolean;
   baseRef?: string;
+  withMemory?: boolean;
 };
 
 const AI_CONTRACT_PATH = '.playbook/ai-contract.json' as const;
@@ -93,6 +99,7 @@ const formatRulesHint = (rules: string[]): string => {
 const includesAny = (question: string, values: string[]): boolean => values.some((value) => question.includes(value));
 
 const hasAiContractArtifact = (projectRoot: string): boolean => fs.existsSync(path.join(projectRoot, AI_CONTRACT_PATH));
+
 
 const governanceQuestionAnswer = (
   normalizedQuestion: string,
@@ -166,6 +173,21 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
     ? resolveIndexedModuleContext(projectRoot, options.module, { unknownModulePrefix: 'playbook ask --module' })
     : undefined;
   const diffContext = options?.diffContext ? resolveDiffAskContext(projectRoot, { baseRef: options.baseRef }) : undefined;
+  const memoryEnvelope = options?.withMemory
+    ? readRuntimeMemoryEnvelope(projectRoot, {
+        question: userQuestion,
+        target: options.module ?? (options.diffContext ? 'diff-context' : 'repo-context')
+      })
+    : undefined;
+
+  const memoryContext = memoryEnvelope
+    ? {
+        memorySummary: memoryEnvelope.memorySummary,
+        memorySources: memoryEnvelope.memorySources,
+        knowledgeHits: memoryEnvelope.knowledgeHits,
+        recentRelevantEvents: memoryEnvelope.recentRelevantEvents
+      }
+    : {};
 
   const governanceAnswer = governanceQuestionAnswer(normalizedQuestion, projectRoot);
   if (governanceAnswer) {
@@ -178,6 +200,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         artifact: governanceAnswer.artifact
       },
       context: {
+        ...memoryContext,
         architecture: context.architecture,
         framework: context.framework,
         modules: context.modules,
@@ -201,6 +224,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         artifact: '.playbook/repo-index.json'
       },
       context: {
+        ...memoryContext,
         architecture: context.architecture,
         framework: context.framework,
         modules: context.modules,
@@ -222,6 +246,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         artifact: '.playbook/repo-index.json'
       },
       context: {
+        ...memoryContext,
         architecture: context.architecture,
         framework: context.framework,
         modules: context.modules,
@@ -252,6 +277,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         artifact: '.playbook/repo-index.json'
       },
       context: {
+        ...memoryContext,
         architecture: context.architecture,
         framework: context.framework,
         modules: context.modules,
@@ -282,6 +308,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
           artifact: `.playbook/context/modules/${moduleDigest.module.name.replace(/[\\/]/g, '__')}.json`
         },
         context: {
+        ...memoryContext,
           architecture: context.architecture,
           framework: context.framework,
           modules: context.modules,
@@ -304,6 +331,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         artifact: '.playbook/repo-index.json'
       },
       context: {
+        ...memoryContext,
         architecture: context.architecture,
         framework: context.framework,
         modules: context.modules,
@@ -326,6 +354,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
           artifact: '.playbook/repo-index.json'
         },
         context: {
+        ...memoryContext,
           architecture: context.architecture,
           framework: context.framework,
           modules: context.modules
@@ -342,6 +371,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         artifact: '.playbook/repo-index.json'
       },
       context: {
+        ...memoryContext,
         architecture: context.architecture,
         framework: context.framework,
         modules: context.modules,
@@ -361,6 +391,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         artifact: '.playbook/repo-index.json'
       },
       context: {
+        ...memoryContext,
         architecture: context.architecture,
         framework: context.framework,
         modules: context.modules,
@@ -380,6 +411,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         artifact: '.playbook/repo-index.json'
       },
       context: {
+        ...memoryContext,
         architecture: context.architecture,
         framework: context.framework,
         modules: context.modules,

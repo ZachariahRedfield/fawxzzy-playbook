@@ -39,6 +39,10 @@ type QueryResult = {
   field: RepositoryQueryField;
   result: string | string[] | RepositoryModule[] | Array<Record<string, unknown>>;
   graphNeighborhood?: GraphNeighborhoodSummary;
+  memorySummary?: string;
+  memorySources?: Array<Record<string, unknown>>;
+  knowledgeHits?: Array<Record<string, unknown>>;
+  recentRelevantEvents?: Array<Record<string, unknown>>;
 };
 
 const firstPositionalArg = (args: string[]): string | undefined => args.find((arg) => !arg.startsWith('-'));
@@ -742,13 +746,19 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     }
   }
 
+  const withMemory = commandArgs.includes('--with-memory');
+
   try {
-    const query = queryRepositoryIndex(cwd, fieldArg);
+    const query = queryRepositoryIndex(cwd, fieldArg, { withMemory });
     const result: QueryResult = {
       command: 'query',
       field: query.field,
       result: query.result,
-      graphNeighborhood: query.graphNeighborhood
+      graphNeighborhood: query.graphNeighborhood,
+      memorySummary: query.memorySummary,
+      memorySources: query.memorySources as Array<Record<string, unknown>> | undefined,
+      knowledgeHits: query.knowledgeHits as Array<Record<string, unknown>> | undefined,
+      recentRelevantEvents: query.recentRelevantEvents as Array<Record<string, unknown>> | undefined
     };
 
     if (options.format === 'json') {

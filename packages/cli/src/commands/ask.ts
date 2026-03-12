@@ -216,7 +216,8 @@ export const runAsk = async (cwd: string, commandArgs: string[], options: AskOpt
     const answer = answerRepositoryQuestion(cwd, enrichedQuestion, {
       module: options.module,
       diffContext: options.diffContext,
-      baseRef: options.base
+      baseRef: options.base,
+      withMemory: Boolean(options.repoContext || options.diffContext)
     });
     const modeInstruction = getResponseModeInstruction(mode);
     const answerForMode = formatAnswerForMode(answer.answer, answer.reason, mode);
