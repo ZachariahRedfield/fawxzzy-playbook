@@ -44,3 +44,9 @@ Failure Mode: Idea soup after architecture is already defined.
 - Use the implementation plan docs only for near-term execution.
 
 Rule: Roadmap entries represent planned intent; implemented command truth comes from shipped CLI/contracts.
+
+## Docs summary labels
+
+- Pattern: One Machine-Readable Contract
+- Rule: Architecture-defined does not equal implemented
+- Failure Mode: ROADMAP.json lagging behind merged roadmap truth
