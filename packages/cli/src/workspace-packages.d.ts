@@ -37,9 +37,8 @@ declare module "@zachariahredfield/playbook-engine" {
   export const loadAiContract: (...args: any[]) => any;
   export const buildContractRegistry: (...args: any[]) => any;
   export type OrchestratorContract = any;
-  export const buildOrchestratorPlan: (...args: any[]) => any;
-  export const parseOrchestratorContract: (...args: any[]) => any;
-  export const writeOrchestratorArtifact: (...args: any[]) => any;
+  export type OrchestratorLane = any;
+  export const buildOrchestratorContract: (...args: any[]) => OrchestratorContract;
   export type CompileOrchestratorArtifactsResult = {
     contract: {
       goal: string;
