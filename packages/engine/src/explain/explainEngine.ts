@@ -5,6 +5,14 @@ import { getRuleMetadata } from './ruleRegistry.js';
 import { resolveRepositoryTarget, type ResolvedTarget } from '../intelligence/targetResolver.js';
 import { readModuleContextDigest } from '../context/moduleContext.js';
 import { readRuntimeMemoryEnvelope, type RuntimeMemoryEnvelope } from '../intelligence/runtimeMemory.js';
+import {
+  expandMemoryProvenance,
+  lookupMemoryCandidateKnowledge,
+  lookupPromotedMemoryKnowledge,
+  type ExpandedMemoryProvenance
+} from '../memory/inspection.js';
+import type { MemoryKnowledgeEntry } from '../memory/knowledge.js';
+import type { MemoryReplayCandidate } from '../schema/memoryReplay.js';
 
 const toModuleNames = (modules: string[] | RepositoryModule[]): string[] => {
   if (modules.length === 0) {
@@ -31,6 +39,28 @@ type ExplainMemoryFields = {
   memorySources?: RuntimeMemoryEnvelope['memorySources'];
   knowledgeHits?: RuntimeMemoryEnvelope['knowledgeHits'];
   recentRelevantEvents?: RuntimeMemoryEnvelope['recentRelevantEvents'];
+  memoryKnowledge?: {
+    promoted: MemoryKnowledgeExplanation[];
+    candidates: MemoryCandidateExplanation[];
+  };
+};
+
+type MemoryKnowledgeExplanation = {
+  knowledgeId: string;
+  kind: MemoryKnowledgeEntry['kind'];
+  title: string;
+  summary: string;
+  promotedAt: string;
+  provenance: ExpandedMemoryProvenance[];
+};
+
+type MemoryCandidateExplanation = {
+  candidateId: string;
+  kind: MemoryReplayCandidate['kind'];
+  title: string;
+  summary: string;
+  lastSeenAt?: string;
+  provenance: ExpandedMemoryProvenance[];
 };
 
 export type RuleExplanation = ExplainMemoryFields & {
@@ -155,12 +185,115 @@ const withMemory = <T extends Record<string, unknown>>(
   }
 
   const memory = readRuntimeMemoryEnvelope(projectRoot, { target: options?.target });
+
+  const memoryKnowledge = resolveMemoryKnowledge(projectRoot, options?.target);
   return {
     ...input,
     memorySummary: memory.memorySummary,
     memorySources: memory.memorySources,
     knowledgeHits: memory.knowledgeHits,
-    recentRelevantEvents: memory.recentRelevantEvents
+    recentRelevantEvents: memory.recentRelevantEvents,
+    memoryKnowledge
+  };
+};
+
+const toComparableTimestamp = (value: string | undefined): number => {
+  if (!value) {
+    return 0;
+  }
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const normalizeRelevanceTokens = (target: string | undefined): string[] =>
+  (target ?? '')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length >= 3);
+
+const scoreTokenRelevance = (tokens: string[], value: string): number => {
+  if (tokens.length === 0) {
+    return 0;
+  }
+
+  const normalized = value.toLowerCase();
+  return tokens.reduce((score, token) => (normalized.includes(token) ? score + 1 : score), 0);
+};
+
+const rankPromotedKnowledge = (entries: MemoryKnowledgeEntry[], target: string | undefined): MemoryKnowledgeEntry[] => {
+  const tokens = normalizeRelevanceTokens(target);
+  return [...entries]
+    .map((entry) => {
+      const content = [entry.knowledgeId, entry.kind, entry.title, entry.summary, entry.module, entry.ruleId, entry.failureShape].join(' ');
+      return {
+        entry,
+        relevance: scoreTokenRelevance(tokens, content)
+      };
+    })
+    .filter((item) => tokens.length === 0 || item.relevance > 0)
+    .sort((left, right) => {
+      if (right.relevance !== left.relevance) {
+        return right.relevance - left.relevance;
+      }
+      const promotedDelta = toComparableTimestamp(right.entry.promotedAt) - toComparableTimestamp(left.entry.promotedAt);
+      if (promotedDelta !== 0) {
+        return promotedDelta;
+      }
+      return left.entry.knowledgeId.localeCompare(right.entry.knowledgeId);
+    })
+    .map((item) => item.entry);
+};
+
+const rankCandidateKnowledge = (entries: MemoryReplayCandidate[], target: string | undefined): MemoryReplayCandidate[] => {
+  const tokens = normalizeRelevanceTokens(target);
+  return [...entries]
+    .map((entry) => {
+      const content = [entry.candidateId, entry.kind, entry.title, entry.summary, entry.module, entry.ruleId, entry.failureShape].join(' ');
+      return {
+        entry,
+        relevance: scoreTokenRelevance(tokens, content)
+      };
+    })
+    .filter((item) => tokens.length === 0 || item.relevance > 0)
+    .sort((left, right) => {
+      if (right.relevance !== left.relevance) {
+        return right.relevance - left.relevance;
+      }
+      const seenDelta = toComparableTimestamp(right.entry.lastSeenAt) - toComparableTimestamp(left.entry.lastSeenAt);
+      if (seenDelta !== 0) {
+        return seenDelta;
+      }
+      return left.entry.candidateId.localeCompare(right.entry.candidateId);
+    })
+    .map((item) => item.entry);
+};
+
+const resolveMemoryKnowledge = (projectRoot: string, target: string | undefined): ExplainMemoryFields['memoryKnowledge'] => {
+  const promoted = rankPromotedKnowledge(lookupPromotedMemoryKnowledge(projectRoot), target)
+    .slice(0, 3)
+    .map((entry) => ({
+      knowledgeId: entry.knowledgeId,
+      kind: entry.kind,
+      title: entry.title,
+      summary: entry.summary,
+      promotedAt: entry.promotedAt,
+      provenance: expandMemoryProvenance(projectRoot, entry.provenance)
+    }));
+
+  const candidates = rankCandidateKnowledge(lookupMemoryCandidateKnowledge(projectRoot), target)
+    .slice(0, 3)
+    .map((entry) => ({
+      candidateId: entry.candidateId,
+      kind: entry.kind,
+      title: entry.title,
+      summary: entry.summary,
+      lastSeenAt: entry.lastSeenAt,
+      provenance: expandMemoryProvenance(projectRoot, entry.provenance)
+    }));
+
+  return {
+    promoted,
+    candidates
   };
 };
 

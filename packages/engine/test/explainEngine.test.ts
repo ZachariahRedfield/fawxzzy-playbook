@@ -12,6 +12,200 @@ const writeRepoIndex = (repo: string, payload: Record<string, unknown>): void =>
   fs.writeFileSync(indexPath, JSON.stringify(payload, null, 2));
 };
 
+const writeMemoryFixtures = (repo: string): void => {
+  const memoryRoot = path.join(repo, '.playbook', 'memory');
+  fs.mkdirSync(path.join(memoryRoot, 'knowledge'), { recursive: true });
+  fs.mkdirSync(path.join(memoryRoot, 'events'), { recursive: true });
+
+  const event = {
+    schemaVersion: '1.0',
+    eventInstanceId: 'evt-001',
+    runId: 'run-1',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    eventFingerprint: 'fp-evt-001',
+    subjectModules: ['workouts'],
+    ruleIds: ['PB001'],
+    category: 'verify-finding',
+    title: 'Workouts module missing tests',
+    summary: 'PB001 surfaced missing tests in workouts',
+    severity: 'high'
+  };
+  fs.writeFileSync(path.join(memoryRoot, 'events', 'evt-001.json'), `${JSON.stringify(event, null, 2)}\n`);
+
+  fs.writeFileSync(
+    path.join(memoryRoot, 'index.json'),
+    `${JSON.stringify(
+      {
+        schemaVersion: '1.0',
+        generatedAt: '2026-01-01T00:00:00.000Z',
+        eventsIndexed: 1,
+        byModule: { workouts: ['events/evt-001.json'] },
+        byRule: { PB001: ['events/evt-001.json'] },
+        byFingerprint: { 'fp-evt-001': ['events/evt-001.json'] },
+        latestEventAt: '2026-01-01T00:00:00.000Z'
+      },
+      null,
+      2
+    )}\n`
+  );
+
+  fs.writeFileSync(
+    path.join(memoryRoot, 'candidates.json'),
+    `${JSON.stringify(
+      {
+        schemaVersion: '1.0',
+        command: 'memory-replay',
+        sourceIndex: '.playbook/memory/index.json',
+        generatedAt: '2026-01-03T00:00:00.000Z',
+        totalEvents: 1,
+        clustersEvaluated: 1,
+        candidates: [
+          {
+            candidateId: 'cand-workouts-stable',
+            kind: 'pattern',
+            title: 'Workouts test coverage drift',
+            summary: 'Recurring test coverage drift in workouts module.',
+            clusterKey: 'cluster-workouts',
+            salienceScore: 0.8,
+            salienceFactors: {
+              severity: 0.7,
+              recurrenceCount: 0.8,
+              blastRadius: 0.6,
+              crossModuleSpread: 0.2,
+              ownershipDocsGap: 0.3,
+              novelSuccessfulRemediationSignal: 0.5
+            },
+            fingerprint: 'fp-candidate-1',
+            module: 'workouts',
+            ruleId: 'PB001',
+            failureShape: 'missing-tests',
+            eventCount: 3,
+            provenance: [
+              {
+                eventId: 'evt-001',
+                sourcePath: 'events/evt-001.json',
+                fingerprint: 'fp-evt-001',
+                runId: 'run-1'
+              }
+            ],
+            lastSeenAt: '2099-01-03T00:00:00.000Z',
+            supersession: {
+              evolutionOrdinal: 1,
+              priorCandidateIds: [],
+              supersedesCandidateIds: []
+            }
+          },
+          {
+            candidateId: 'cand-workouts-stale',
+            kind: 'pattern',
+            title: 'Stale candidate should be hidden',
+            summary: 'Old candidate expected to be filtered out.',
+            clusterKey: 'cluster-stale',
+            salienceScore: 0.4,
+            salienceFactors: {
+              severity: 0.2,
+              recurrenceCount: 0.2,
+              blastRadius: 0.1,
+              crossModuleSpread: 0.1,
+              ownershipDocsGap: 0.1,
+              novelSuccessfulRemediationSignal: 0.1
+            },
+            fingerprint: 'fp-candidate-stale',
+            module: 'workouts',
+            ruleId: 'PB001',
+            failureShape: 'stale-shape',
+            eventCount: 1,
+            provenance: [
+              {
+                eventId: 'evt-001',
+                sourcePath: 'events/evt-001.json',
+                fingerprint: 'fp-evt-001',
+                runId: 'run-1'
+              }
+            ],
+            lastSeenAt: '2000-01-01T00:00:00.000Z',
+            supersession: {
+              evolutionOrdinal: 1,
+              priorCandidateIds: [],
+              supersedesCandidateIds: []
+            }
+          }
+        ]
+      },
+      null,
+      2
+    )}\n`
+  );
+
+  const promotedPatternArtifact = {
+    schemaVersion: '1.0',
+    artifact: 'memory-knowledge',
+    kind: 'pattern',
+    generatedAt: '2026-01-03T00:00:00.000Z',
+    entries: [
+      {
+        knowledgeId: 'k-workouts-active',
+        candidateId: 'cand-workouts-stable',
+        sourceCandidateIds: ['cand-workouts-stable'],
+        sourceEventFingerprints: ['fp-evt-001'],
+        kind: 'pattern',
+        title: 'Active workouts pattern',
+        summary: 'Promoted pattern for workouts reliability behavior.',
+        fingerprint: 'fp-knowledge-active',
+        module: 'workouts',
+        ruleId: 'PB001',
+        failureShape: 'missing-tests',
+        promotedAt: '2026-01-04T00:00:00.000Z',
+        provenance: [
+          {
+            eventId: 'evt-001',
+            sourcePath: 'events/evt-001.json',
+            fingerprint: 'fp-evt-001',
+            runId: 'run-1'
+          }
+        ],
+        status: 'active',
+        supersedes: [],
+        supersededBy: []
+      },
+      {
+        knowledgeId: 'k-workouts-superseded',
+        candidateId: 'cand-workouts-old',
+        sourceCandidateIds: ['cand-workouts-old'],
+        sourceEventFingerprints: ['fp-evt-001'],
+        kind: 'pattern',
+        title: 'Superseded workouts pattern',
+        summary: 'This should be filtered out by default.',
+        fingerprint: 'fp-knowledge-old',
+        module: 'workouts',
+        ruleId: 'PB001',
+        failureShape: 'missing-tests',
+        promotedAt: '2025-01-04T00:00:00.000Z',
+        provenance: [
+          {
+            eventId: 'evt-001',
+            sourcePath: 'events/evt-001.json',
+            fingerprint: 'fp-evt-001',
+            runId: 'run-1'
+          }
+        ],
+        status: 'superseded',
+        supersedes: [],
+        supersededBy: ['k-workouts-active']
+      }
+    ]
+  };
+
+  fs.writeFileSync(path.join(memoryRoot, 'knowledge', 'patterns.json'), `${JSON.stringify(promotedPatternArtifact, null, 2)}\n`);
+
+  for (const file of ['decisions.json', 'failure-modes.json', 'invariants.json']) {
+    fs.writeFileSync(
+      path.join(memoryRoot, 'knowledge', file),
+      `${JSON.stringify({ schemaVersion: '1.0', artifact: 'memory-knowledge', kind: 'decision', generatedAt: '2026-01-03T00:00:00.000Z', entries: [] }, null, 2)}\n`
+    );
+  }
+};
+
 describe('explainTarget', () => {
   it('returns rule explanations from rule registry metadata', () => {
     const repo = createRepo('playbook-explain-engine-rule');
@@ -60,7 +254,6 @@ describe('explainTarget', () => {
       architecture: 'modular-monolith'
     });
   });
-
 
   it('resolves explicit module:<name> targets for indexed modules', () => {
     const repo = createRepo('playbook-explain-engine-module-explicit');
@@ -129,5 +322,75 @@ describe('explainTarget', () => {
       target: 'payments',
       message: 'Unable to explain "payments" from repository intelligence. Try: playbook query modules | playbook rules.'
     });
+  });
+
+  it('keeps default explain behavior unchanged without withMemory option', () => {
+    const repo = createRepo('playbook-explain-engine-no-memory-default');
+    writeRepoIndex(repo, {
+      schemaVersion: '1.0',
+      framework: 'nextjs',
+      language: 'typescript',
+      architecture: 'modular-monolith',
+      modules: ['workouts'],
+      database: 'supabase',
+      rules: []
+    });
+    writeMemoryFixtures(repo);
+
+    const result = explainTarget(repo, 'workouts');
+    expect(result.type).toBe('module');
+    expect(result).not.toHaveProperty('memoryKnowledge');
+    expect(result).not.toHaveProperty('memorySummary');
+  });
+
+  it('adds promoted memory enrichment with provenance only when opt-in is enabled', () => {
+    const repo = createRepo('playbook-explain-engine-memory-opt-in');
+    writeRepoIndex(repo, {
+      schemaVersion: '1.0',
+      framework: 'nextjs',
+      language: 'typescript',
+      architecture: 'modular-monolith',
+      modules: ['workouts'],
+      database: 'supabase',
+      rules: ['PB001']
+    });
+    writeMemoryFixtures(repo);
+
+    const result = explainTarget(repo, 'workouts', { withMemory: true });
+    expect(result.type).toBe('module');
+    if (result.type !== 'module') {
+      return;
+    }
+
+    expect(result.memoryKnowledge?.promoted).toHaveLength(1);
+    expect(result.memoryKnowledge?.promoted[0]).toMatchObject({
+      knowledgeId: 'k-workouts-active',
+      title: 'Active workouts pattern'
+    });
+    expect(result.memoryKnowledge?.promoted[0]?.provenance[0]?.event?.eventInstanceId).toBe('evt-001');
+
+    expect(result.memoryKnowledge?.candidates).toHaveLength(1);
+    expect(result.memoryKnowledge?.candidates[0]).toMatchObject({
+      candidateId: 'cand-workouts-stable'
+    });
+  });
+
+  it('returns deterministic memory ordering for the same repo and memory state', () => {
+    const repo = createRepo('playbook-explain-engine-memory-deterministic');
+    writeRepoIndex(repo, {
+      schemaVersion: '1.0',
+      framework: 'nextjs',
+      language: 'typescript',
+      architecture: 'modular-monolith',
+      modules: ['workouts'],
+      database: 'supabase',
+      rules: ['PB001']
+    });
+    writeMemoryFixtures(repo);
+
+    const first = explainTarget(repo, 'workouts', { withMemory: true });
+    const second = explainTarget(repo, 'workouts', { withMemory: true });
+
+    expect(first).toEqual(second);
   });
 });
