@@ -128,6 +128,53 @@ describe('runSchema', () => {
     logSpy.mockRestore();
   });
 
+
+
+  it('emits additive schema fields for memory-aware query/explain and plan/analyze-pr outputs', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    expect(await runSchema('/repo', ['query'], { format: 'json', quiet: false })).toBe(ExitCode.Success);
+    const querySchema = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+    const queryOneOf = querySchema.oneOf as Array<Record<string, unknown>>;
+    const queryWithMemory = queryOneOf.find((entry) => Array.isArray(entry.required) && (entry.required as string[]).includes('memoryKnowledge'));
+    expect(queryWithMemory).toBeDefined();
+
+    logSpy.mockClear();
+    expect(await runSchema('/repo', ['explain'], { format: 'json', quiet: false })).toBe(ExitCode.Success);
+    const explainSchema = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+    const explainOneOf = explainSchema.oneOf as Array<Record<string, unknown>>;
+    const successExplain = explainOneOf[1] as Record<string, unknown>;
+    const explainProps = (((successExplain.properties as Record<string, unknown>).explanation as Record<string, unknown>).properties ?? {}) as Record<string, unknown>;
+    expect(explainProps).toHaveProperty('memoryKnowledge');
+
+    logSpy.mockClear();
+    expect(await runSchema('/repo', ['plan'], { format: 'json', quiet: false })).toBe(ExitCode.Success);
+    const planSchema = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+    const planTaskProps = (((planSchema.properties as Record<string, unknown>).tasks as Record<string, unknown>).items as Record<string, unknown>).properties as Record<string, unknown>;
+    expect(planTaskProps).toHaveProperty('advisory');
+
+    logSpy.mockClear();
+    expect(await runSchema('/repo', ['analyze-pr'], { format: 'json', quiet: false })).toBe(ExitCode.Success);
+    const analyzeSchema = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+    const analyzeOneOf = analyzeSchema.oneOf as Array<Record<string, unknown>>;
+    const analyzeSuccess = analyzeOneOf[1] as Record<string, unknown>;
+    expect(((analyzeSuccess.required as string[]) ?? [])).toContain('preventionGuidance');
+
+    logSpy.mockRestore();
+  });
+
+  it('extends contracts schema with schema registry section', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runSchema('/repo', ['contracts'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+    expect(payload.required).toContain('schemas');
+
+    logSpy.mockRestore();
+  });
+
   it('fails on unknown schema target', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 

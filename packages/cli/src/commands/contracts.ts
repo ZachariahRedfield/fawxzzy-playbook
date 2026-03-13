@@ -11,6 +11,30 @@ type ContractsOptions = {
 
 const DEFAULT_OUTPUT_PATH = '.playbook/contracts-registry.json';
 
+
+type RegisteredSchema = {
+  id: string;
+  version: string;
+  path: string;
+};
+
+const memoryArtifactSchemas: RegisteredSchema[] = [
+  { id: 'memory-event', version: '1.0.0', path: '.playbook/memory/events/runtime/*.json' },
+  { id: 'candidate-knowledge-record', version: '1.0.0', path: '.playbook/memory/knowledge/candidates/*.json' },
+  { id: 'promoted-knowledge-record', version: '1.0.0', path: '.playbook/memory/knowledge/promoted/*.json' },
+  { id: 'retired-knowledge-record', version: '1.0.0', path: '.playbook/memory/knowledge/promoted/*.json' },
+  { id: 'memory-replay-result', version: '1.0', path: '.playbook/memory/replay/*.json' },
+  { id: 'knowledge-candidate-output', version: '1.0', path: '.playbook/knowledge/candidates.json' }
+];
+
+const additiveCommandOutputSchemas: RegisteredSchema[] = [
+  { id: 'query.memoryKnowledge', version: '1.0', path: 'schema://cli/query' },
+  { id: 'explain.memoryKnowledge', version: '1.0', path: 'schema://cli/explain' },
+  { id: 'plan.tasks[].advisory.outcomeLearning', version: '1.0', path: 'schema://cli/plan' },
+  { id: 'analyze-pr.preventionGuidance', version: '1.0', path: 'schema://cli/analyze-pr' },
+  { id: 'analyze-pr.context.sources[].promoted-knowledge', version: '1.0', path: 'schema://cli/analyze-pr' }
+];
+
 const printText = (outPath: string): void => {
   console.log('Playbook Contracts Registry');
   console.log('');
@@ -19,7 +43,13 @@ const printText = (outPath: string): void => {
 };
 
 export const runContracts = async (cwd: string, options: ContractsOptions): Promise<number> => {
-  const payload = buildContractRegistry(cwd);
+  const payload = {
+    ...buildContractRegistry(cwd),
+    schemas: {
+      memoryArtifacts: [...memoryArtifactSchemas],
+      commandOutputs: [...additiveCommandOutputSchemas]
+    }
+  };
   const outputPath = options.out ?? DEFAULT_OUTPUT_PATH;
   const absoluteOutputPath = path.resolve(cwd, outputPath);
   const outputJson = `${JSON.stringify(payload, null, 2)}\n`;
