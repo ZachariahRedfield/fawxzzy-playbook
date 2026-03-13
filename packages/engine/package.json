@@ -18,7 +18,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "minimatch": "^9.0.5"
+    "minimatch": "^9.0.5",
+    "@zachariahredfield/playbook-core": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

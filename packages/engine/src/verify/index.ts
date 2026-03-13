@@ -7,7 +7,7 @@ import { getRegisteredRules, registerRule, resetPluginRegistry } from '../plugin
 import { getCoreRules } from '../rules/coreRules.js';
 import { RuleRunner } from '../execution/ruleRunner.js';
 import { compactPatterns } from '../compaction/compactPatterns.js';
-import { captureMemoryEventSafe } from '../memory/index.js';
+import { buildVerifyMemoryEvent, captureMemoryRuntimeEventSafe } from '../memory/runtimeEvents.js';
 
 export const verifyRepo = (repoRoot: string): VerifyReport => {
   const warnings: VerifyReport['warnings'] = [];
@@ -46,33 +46,13 @@ export const verifyRepo = (repoRoot: string): VerifyReport => {
     report.summary.warnings = report.warnings.length;
   }
 
-  captureMemoryEventSafe(repoRoot, {
-    kind: 'verify_run',
-    sources: [
-      { type: 'command', reference: 'verify' },
-      { type: 'artifact', reference: '.playbook/findings.json' }
-    ],
-    subjectModules: [],
-    ruleIds: report.failures.map((failure) => failure.id),
-    riskSummary: {
-      level: report.failures.length > 0 ? 'high' : report.warnings.length > 0 ? 'medium' : 'low',
-      signals: report.failures.map((failure) => failure.id)
-    },
-    outcome: {
-      status: report.ok ? 'success' : 'failure',
-      summary: report.ok ? 'verify completed without failures' : 'verify produced one or more failures',
-      metrics: {
-        failures: report.summary.failures,
-        warnings: report.summary.warnings
-      }
-    },
-    salienceInputs: {
-      baseRef: report.summary.baseRef ?? null,
-      baseSha: report.summary.baseSha ?? null,
-      failureCount: report.summary.failures,
-      warningCount: report.summary.warnings
-    }
-  });
+  captureMemoryRuntimeEventSafe(
+    repoRoot,
+    buildVerifyMemoryEvent({
+      repoId: repoRoot,
+      report
+    })
+  );
 
   return report;
 };

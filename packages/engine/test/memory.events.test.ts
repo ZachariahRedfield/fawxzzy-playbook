@@ -11,6 +11,12 @@ import {
   verifyRepo,
   analyzePullRequest
 } from '../src/index.js';
+import {
+  buildApplyMemoryEvent,
+  buildVerifyMemoryEvent,
+  captureMemoryRuntimeEventSafe,
+  writeMemoryRuntimeEvent
+} from '../src/memory/runtimeEvents.js';
 import { verifyMemoryEventFixture } from './__fixtures__/memoryEvent.fixture.js';
 
 const readJson = <T>(filePath: string): T => JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
@@ -72,7 +78,7 @@ describe('memory event capture', () => {
     expect(index.byFingerprint[event.eventFingerprint]).toHaveLength(1);
   });
 
-  it('captures verify, plan, and apply events from execution workflows', async () => {
+  it('captures verify, plan, and apply runtime events with provenance links', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-memory-workflow-'));
     fs.mkdirSync(path.join(root, 'docs'), { recursive: true });
     fs.writeFileSync(path.join(root, 'docs', 'PROJECT_GOVERNANCE.md'), '# Governance\n');
@@ -80,14 +86,76 @@ describe('memory event capture', () => {
 
     verifyRepo(root);
     const plan = generateExecutionPlan(root);
-    await applyExecutionPlan(root, plan.tasks, { dryRun: false });
+    await applyExecutionPlan(root, plan.tasks, {
+      dryRun: false,
+      postApplyVerificationArtifact: '.playbook/findings.post-apply.json',
+      postApplyVerification: {
+        ok: true,
+        summary: { failures: 0, warnings: 0 }
+      }
+    });
 
-    const eventsDir = path.join(root, '.playbook', 'memory', 'events');
+    const eventsDir = path.join(root, '.playbook', 'memory', 'events', 'runtime');
     const events = fs.readdirSync(eventsDir).filter((entry) => entry.endsWith('.json'));
-    const payloads = events.map((entry) => readJson<{ kind: string }>(path.join(eventsDir, entry)));
-    expect(payloads.some((entry) => entry.kind === 'verify_run')).toBe(true);
-    expect(payloads.some((entry) => entry.kind === 'plan_run')).toBe(true);
-    expect(payloads.some((entry) => entry.kind === 'apply_run')).toBe(true);
+    const payloads = events.map((entry) => readJson<{ eventType: string; evidence: Array<{ artifactPath: string }> }>(path.join(eventsDir, entry)));
+
+    expect(payloads.some((entry) => entry.eventType === 'verify.findings.summary.v1')).toBe(true);
+    expect(payloads.some((entry) => entry.eventType === 'plan.generation.summary.v1')).toBe(true);
+    expect(payloads.some((entry) => entry.eventType === 'apply.execution.summary.v1')).toBe(true);
+    expect(
+      payloads.some(
+        (entry) =>
+          entry.eventType === 'apply.execution.summary.v1' &&
+          entry.evidence.some((evidence) => evidence.artifactPath === '.playbook/findings.post-apply.json')
+      )
+    ).toBe(true);
+  });
+
+  it('keeps runtime event fingerprints stable for equivalent verify summaries', () => {
+    const eventA = buildVerifyMemoryEvent({
+      repoId: '/tmp/repo',
+      occurredAt: 100,
+      report: {
+        ok: false,
+        summary: { failures: 1, warnings: 0 },
+        failures: [{ id: 'notes.missing', message: 'missing' }],
+        warnings: []
+      }
+    });
+
+    const eventB = buildVerifyMemoryEvent({
+      repoId: '/tmp/repo',
+      occurredAt: 200,
+      report: {
+        ok: false,
+        summary: { failures: 1, warnings: 0 },
+        failures: [{ id: 'notes.missing', message: 'missing', evidence: 'docs/PLAYBOOK_NOTES.md' }],
+        warnings: []
+      }
+    });
+
+    expect(eventA.eventFingerprint.value).toBe(eventB.eventFingerprint.value);
+    expect(eventA.eventInstanceId).not.toBe(eventB.eventInstanceId);
+  });
+
+  it('writes runtime events under core artifact conventions', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-memory-runtime-write-'));
+    const event = buildApplyMemoryEvent({
+      repoId: root,
+      occurredAt: 111,
+      tasks: [],
+      result: {
+        results: [],
+        summary: { applied: 0, skipped: 0, unsupported: 0, failed: 0 }
+      }
+    });
+
+    const outputPath = writeMemoryRuntimeEvent(root, event);
+    expect(outputPath).toContain(path.join('.playbook', 'memory', 'events', 'runtime'));
+    expect(fs.existsSync(outputPath)).toBe(true);
+
+    captureMemoryRuntimeEventSafe(root, event);
+    expect(fs.existsSync(outputPath)).toBe(true);
   });
 
   it('captures failure_ingest when analyze-pr fails to bootstrap', () => {
