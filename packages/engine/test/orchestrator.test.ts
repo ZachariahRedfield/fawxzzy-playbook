@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildOrchestratorPlan, parseOrchestratorContract } from '../src/orchestrator.js';
 
-const FIXTURE_DIR = path.resolve(path.dirname(new URL(import.meta.url).pathname), '__fixtures__', 'orchestrator');
+const FIXTURE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '__fixtures__', 'orchestrator');
 const fixture = (name: string): string => fs.readFileSync(path.join(FIXTURE_DIR, name), 'utf8');
 
 describe('orchestrator contracts', () => {

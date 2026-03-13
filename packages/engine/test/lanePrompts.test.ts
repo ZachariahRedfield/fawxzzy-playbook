@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { buildLanePromptFilename, renderLanePrompt, writeLanePrompts, type LanePromptSpec } from '../src/execution/lanePrompts.js';
 
 const sampleLane: LanePromptSpec = {
@@ -48,7 +48,7 @@ describe('lane prompt rendering', () => {
         lanes: [sampleLane, { ...sampleLane, objective: 'Second lane objective.' }]
       });
 
-      expect(written.map((path) => path.split('/').pop())).toEqual(['lane-1.prompt.md', 'lane-2.prompt.md']);
+      expect(written.map((filePath) => basename(filePath))).toEqual(['lane-1.prompt.md', 'lane-2.prompt.md']);
       expect(readFileSync(join(outputDir, 'lane-1.prompt.md'), 'utf8')).toContain('# Lane 1 Prompt');
       expect(readFileSync(join(outputDir, 'lane-2.prompt.md'), 'utf8')).toContain('# Lane 2 Prompt');
     } finally {

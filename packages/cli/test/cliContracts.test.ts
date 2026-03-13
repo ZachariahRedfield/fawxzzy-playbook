@@ -9,6 +9,13 @@ const cliEntry = path.join(repoRoot, 'packages', 'cli', 'dist', 'main.js');
 const snapshotDir = path.join(repoRoot, 'tests', 'contracts');
 const shouldUpdateSnapshots = process.env.UPDATE_CONTRACT_SNAPSHOTS === '1';
 
+function normalizeDynamicContractString(value: string): string {
+  return value
+    .replace(/failure_ingest-[0-9a-f-]+/gi, 'failure_ingest-<RUNTIME_EVENT_ID>')
+    .replace(/evt_[0-9a-f]+/gi, 'evt_<RUNTIME_EVENT_ID>')
+    .replace(/evtfp_[0-9a-f]+/gi, 'evtfp_<RUNTIME_EVENT_FP>');
+}
+
 function normalizeLineEndings(text: string): string {
   return text.replace(/\r\n/g, '\n');
 }
@@ -16,7 +23,7 @@ function normalizeLineEndings(text: string): string {
 type CommandContract = {
   file: string;
   args: readonly string[];
-  schemaCommand: 'rules' | 'explain' | 'index' | 'graph' | 'verify' | 'plan' | 'context' | 'ai-context' | 'ai-contract' | 'docs' | 'doctor' | 'analyze-pr' | 'contracts' | 'ignore';
+  schemaCommand: 'rules' | 'explain' | 'index' | 'graph' | 'verify' | 'plan' | 'context' | 'ai-context' | 'ai-contract' | 'docs' | 'doctor' | 'analyze-pr' | 'contracts' | 'ignore' | 'knowledge';
 };
 
 const commandContracts: readonly CommandContract[] = [
@@ -34,8 +41,16 @@ const commandContracts: readonly CommandContract[] = [
   { file: 'doctor.snapshot.json', args: ['doctor', '--json'], schemaCommand: 'doctor' },
   { file: 'analyze-pr.snapshot.json', args: ['analyze-pr', '--json'], schemaCommand: 'analyze-pr' },
   { file: 'contracts.snapshot.json', args: ['contracts', '--json'], schemaCommand: 'contracts' },
-  { file: 'ignore-suggest.snapshot.json', args: ['ignore', 'suggest', '--json'], schemaCommand: 'ignore' }
+  { file: 'ignore-suggest.snapshot.json', args: ['ignore', 'suggest', '--json'], schemaCommand: 'ignore' },
+  { file: 'knowledge-list.snapshot.json', args: ['knowledge', 'list', '--json'], schemaCommand: 'knowledge' },
+  { file: 'knowledge-query.snapshot.json', args: ['knowledge', 'query', '--type', 'candidate', '--json'], schemaCommand: 'knowledge' },
+  { file: 'knowledge-inspect.snapshot.json', args: ['knowledge', 'inspect', 'pattern-live', '--json'], schemaCommand: 'knowledge' }
 ] as const;
+
+function writeJson(filePath: string, payload: unknown): void {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+}
 
 function createContractFixtureRepo(): string {
   const fixtureRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-contract-fixture-'));
@@ -131,6 +146,89 @@ function createContractFixtureRepo(): string {
     )
   );
 
+  writeJson(path.join(fixtureRepo, '.playbook', 'memory', 'events', 'event-1.json'), {
+    schemaVersion: '1.0',
+    kind: 'verify_run',
+    eventInstanceId: 'event-1',
+    eventFingerprint: 'fp-1',
+    createdAt: '2026-02-01T00:00:00.000Z',
+    repoRevision: 'r1',
+    sources: [{ type: 'verify', reference: 'verify-1' }],
+    subjectModules: ['module-a'],
+    ruleIds: ['RULE-1'],
+    riskSummary: { level: 'low', signals: [] },
+    outcome: { status: 'success', summary: 'ok' },
+    salienceInputs: {}
+  });
+  writeJson(path.join(fixtureRepo, '.playbook', 'memory', 'events', 'event-2.json'), {
+    schemaVersion: '1.0',
+    kind: 'plan_run',
+    eventInstanceId: 'event-2',
+    eventFingerprint: 'fp-2',
+    createdAt: '2026-02-02T00:00:00.000Z',
+    repoRevision: 'r2',
+    sources: [{ type: 'plan', reference: 'plan-1' }],
+    subjectModules: ['module-b'],
+    ruleIds: ['RULE-2'],
+    riskSummary: { level: 'medium', signals: [] },
+    outcome: { status: 'success', summary: 'ok' },
+    salienceInputs: {}
+  });
+  writeJson(path.join(fixtureRepo, '.playbook', 'memory', 'candidates.json'), {
+    schemaVersion: '1.0',
+    command: 'memory-replay',
+    generatedAt: '2026-02-03T00:00:00.000Z',
+    candidates: [
+      {
+        candidateId: 'cand-live',
+        kind: 'pattern',
+        title: 'Live candidate',
+        summary: 'Needs review',
+        clusterKey: 'cluster-live',
+        salienceScore: 8,
+        salienceFactors: { severity: 1 },
+        fingerprint: 'fp-1',
+        module: 'module-a',
+        ruleId: 'RULE-1',
+        failureShape: 'shape-a',
+        eventCount: 1,
+        provenance: [
+          { eventId: 'event-1', sourcePath: '.playbook/memory/events/event-1.json', fingerprint: 'fp-1', runId: 'run-1' }
+        ],
+        lastSeenAt: '2026-02-03T00:00:00.000Z',
+        supersession: { evolutionOrdinal: 1, priorCandidateIds: [], supersedesCandidateIds: [] }
+      }
+    ]
+  });
+  writeJson(path.join(fixtureRepo, '.playbook', 'memory', 'knowledge', 'patterns.json'), {
+    schemaVersion: '1.0',
+    artifact: 'memory-knowledge',
+    kind: 'pattern',
+    generatedAt: '2026-02-04T00:00:00.000Z',
+    entries: [
+      {
+        knowledgeId: 'pattern-live',
+        candidateId: 'cand-live',
+        sourceCandidateIds: ['cand-live'],
+        sourceEventFingerprints: ['fp-1'],
+        kind: 'pattern',
+        title: 'Promoted pattern',
+        summary: 'Reusable guidance',
+        fingerprint: 'fp-1',
+        module: 'module-a',
+        ruleId: 'RULE-1',
+        failureShape: 'shape-a',
+        promotedAt: '2026-02-04T00:00:00.000Z',
+        provenance: [
+          { eventId: 'event-1', sourcePath: '.playbook/memory/events/event-1.json', fingerprint: 'fp-1', runId: 'run-1' }
+        ],
+        status: 'active',
+        supersedes: [],
+        supersededBy: []
+      }
+    ]
+  });
+
   return fixtureRepo;
 }
 
@@ -148,6 +246,11 @@ function normalizeContractPayload(value: unknown, fixtureRepo: string): unknown 
         continue;
       }
 
+      if (key === 'createdAt' && typeof raw === 'string') {
+        normalized[key] = '<TIMESTAMP>';
+        continue;
+      }
+
       normalized[key] = normalizeContractPayload(raw, fixtureRepo);
     }
 
@@ -155,10 +258,12 @@ function normalizeContractPayload(value: unknown, fixtureRepo: string): unknown 
   }
 
   if (typeof value === 'string') {
-    return value
+    return normalizeDynamicContractString(
+      value
       .replaceAll('\\', '/')
       .replaceAll(fixtureRepo.replaceAll('\\', '/'), '<CONTRACT_FIXTURE_REPO>')
-      .replaceAll(repoRoot.replaceAll('\\', '/'), '<REPO_ROOT>');
+      .replaceAll(repoRoot.replaceAll('\\', '/'), '<REPO_ROOT>')
+    );
   }
 
   return value;

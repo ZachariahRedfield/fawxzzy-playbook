@@ -256,6 +256,18 @@
       "example": "pnpm playbook init"
     },
     {
+      "name": "knowledge",
+      "category": "Repository intelligence",
+      "role": "repo-intelligence",
+      "lifecycle": "canonical",
+      "discoverability": "secondary",
+      "onboardingPriority": null,
+      "canonicalSequence": null,
+      "productFacing": true,
+      "machineReadable": true,
+      "example": "pnpm playbook knowledge list --json"
+    },
+    {
       "name": "learn",
       "category": "Utility",
       "role": "utility",
@@ -451,6 +463,7 @@
     "graph",
     "ignore",
     "index",
+    "knowledge",
     "orchestrate",
     "patterns",
     "pilot",

@@ -2,6 +2,7 @@
 import { spawnSync } from 'node:child_process';
 
 const args = process.argv.slice(2);
+const PNPM_BIN = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
 
 const targetedSmokeCommands = new Map([
   ['ask', ['node', 'packages/cli/dist/main.js', 'ask', 'summarize repository modules', '--repo-context', '--json']],
@@ -26,10 +27,11 @@ const run = (command, commandArgs) =>
   spawnSync(command, commandArgs, {
     stdio: 'inherit',
     env: process.env,
+    shell: process.platform === 'win32',
   });
 
 if (args.length === 0) {
-  const result = run('pnpm', ['-r', 'test']);
+  const result = run(PNPM_BIN, ['-r', 'test']);
   process.exit(typeof result.status === 'number' ? result.status : 1);
 }
 
@@ -48,5 +50,5 @@ if (filteredArgs.length === 1) {
   }
 }
 
-const result = run('pnpm', ['-C', 'packages/cli', 'test', '--', ...args]);
+const result = run(PNPM_BIN, ['-C', 'packages/cli', 'test', '--', ...args]);
 process.exit(typeof result.status === 'number' ? result.status : 1);

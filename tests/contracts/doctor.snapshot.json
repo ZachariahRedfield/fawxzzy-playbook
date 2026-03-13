@@ -4,7 +4,7 @@
   "status": "error",
   "summary": {
     "errors": 13,
-    "warnings": 10,
+    "warnings": 11,
     "info": 2
   },
   "findings": [
@@ -132,7 +132,13 @@
       "category": "Memory",
       "severity": "warning",
       "id": "doctor.memory.memory-artifacts-missing",
-      "message": "Missing required memory artifacts: .playbook/memory/index.json, .playbook/memory/candidates.json Regenerate missing memory artifacts before relying on replay or promotion diagnostics."
+      "message": "Missing required memory artifacts: .playbook/memory/index.json Regenerate missing memory artifacts before relying on replay or promotion diagnostics."
+    },
+    {
+      "category": "Memory",
+      "severity": "warning",
+      "id": "doctor.memory.replay-output-inconsistent",
+      "message": "Replay output inconsistencies detected (0 missing indexed events, 1 provenance mismatches). Regenerate replay outputs from a valid memory index and event set before promotion."
     },
     {
       "category": "Testing",
@@ -187,8 +193,14 @@
       {
         "code": "memory-artifacts-missing",
         "severity": "warning",
-        "message": "Missing required memory artifacts: .playbook/memory/index.json, .playbook/memory/candidates.json",
+        "message": "Missing required memory artifacts: .playbook/memory/index.json",
         "recommendation": "Regenerate missing memory artifacts before relying on replay or promotion diagnostics."
+      },
+      {
+        "code": "replay-output-inconsistent",
+        "severity": "warning",
+        "message": "Replay output inconsistencies detected (0 missing indexed events, 1 provenance mismatches).",
+        "recommendation": "Regenerate replay outputs from a valid memory index and event set before promotion."
       }
     ],
     "suggestions": [
@@ -199,6 +211,15 @@
           "Rebuild .playbook/memory/index.json",
           "Regenerate .playbook/memory/candidates.json",
           "Validate JSON artifacts before commit"
+        ]
+      },
+      {
+        "id": "PB018",
+        "title": "Regenerate replay outputs for deterministic consistency",
+        "actions": [
+          "Refresh memory index events",
+          "Re-run memory replay",
+          "Revalidate candidate provenance against index events"
         ]
       }
     ]

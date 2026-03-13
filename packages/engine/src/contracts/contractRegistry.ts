@@ -65,6 +65,7 @@ const cliSchemaCommands = [
   'ai-context',
   'ai-contract',
   'analyze-pr',
+  'knowledge',
   'context',
   'contracts',
   'docs',

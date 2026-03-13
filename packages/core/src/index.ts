@@ -89,6 +89,15 @@ export { runArchitectureAudit } from './audit/architecture.js';
 export { decideKnowledgeCompaction } from './knowledge/compaction/compaction-engine.js';
 export { canonicalizeCanonicalKey, canonicalizeKnowledgeRecord, canonicalizeKnowledgeShape } from './knowledge/compaction/canonicalize.js';
 export { compareCanonicalKnowledge } from './knowledge/compaction/compare.js';
+export {
+  buildKnowledgeSummary,
+  getKnowledgeById,
+  getKnowledgeProvenance,
+  getKnowledgeTimeline,
+  getStaleKnowledge,
+  listKnowledge,
+  queryKnowledge
+} from './knowledge/store.js';
 export type {
   CandidateCompactionInput,
   CanonicalKnowledgeRecord,
@@ -97,6 +106,18 @@ export type {
 } from './knowledge/compaction/compaction-types.js';
 export type { RunCycle, RunCycleMetrics, RunCyclePhaseOutputs } from './knowledge/run-cycle.js';
 export { createEmptyRunCycle } from './knowledge/run-cycle.js';
+export type {
+  KnowledgeArtifactType,
+  KnowledgeProvenanceResult,
+  KnowledgeQueryOptions,
+  KnowledgeRecord,
+  KnowledgeRecordProvenance,
+  KnowledgeRecordSource,
+  KnowledgeRecordStatus,
+  KnowledgeSourceKind,
+  KnowledgeSummary,
+  KnowledgeTimelineOptions
+} from './knowledge/types.js';
 export type {
   ArchitectureAuditCheck,
   ArchitectureAuditCheckContext,

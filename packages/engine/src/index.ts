@@ -97,6 +97,19 @@ export { queryDependencies } from './query/dependencies.js';
 export type { DependenciesQueryResult } from './query/dependencies.js';
 export { queryImpact } from './query/impact.js';
 export type { ImpactQueryResult } from './query/impact.js';
+export { knowledgeInspect, knowledgeList, knowledgeProvenance, knowledgeQuery, knowledgeStale, knowledgeTimeline } from './query/knowledge.js';
+export type {
+  KnowledgeInspectResult,
+  KnowledgeListResult,
+  KnowledgeProvenanceQueryResult,
+  KnowledgeQueryResult,
+  KnowledgeRecord,
+  KnowledgeQueryOptions,
+  KnowledgeStaleResult,
+  KnowledgeSummary,
+  KnowledgeTimelineOptions,
+  KnowledgeTimelineResult
+} from './query/knowledge.js';
 
 export { resolveIndexedModuleContext, buildModuleAskContext } from './query/moduleIntelligence.js';
 export type { IndexedModuleContext, IndexedModuleIdentity, ModuleImpact } from './query/moduleIntelligence.js';

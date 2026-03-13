@@ -1,7 +1,123 @@
 {
-  "schemaVersion": "1.1",
+  "edges": [
+    {
+      "from": "repository:root",
+      "kind": "contains",
+      "to": "module:@fawxzzy/playbook"
+    },
+    {
+      "from": "repository:root",
+      "kind": "contains",
+      "to": "module:@zachariahredfield/playbook-core"
+    },
+    {
+      "from": "repository:root",
+      "kind": "contains",
+      "to": "module:@zachariahredfield/playbook-engine"
+    },
+    {
+      "from": "repository:root",
+      "kind": "contains",
+      "to": "module:@zachariahredfield/playbook-node"
+    },
+    {
+      "from": "repository:root",
+      "kind": "contains",
+      "to": "rule:requireNotesFileWhenGovernanceExists"
+    },
+    {
+      "from": "repository:root",
+      "kind": "contains",
+      "to": "rule:requireNotesOnChanges"
+    },
+    {
+      "from": "repository:root",
+      "kind": "contains",
+      "to": "rule:verify.rule.tests.required"
+    },
+    {
+      "from": "module:@fawxzzy/playbook",
+      "kind": "depends_on",
+      "to": "module:@zachariahredfield/playbook-core"
+    },
+    {
+      "from": "module:@fawxzzy/playbook",
+      "kind": "depends_on",
+      "to": "module:@zachariahredfield/playbook-engine"
+    },
+    {
+      "from": "module:@fawxzzy/playbook",
+      "kind": "depends_on",
+      "to": "module:@zachariahredfield/playbook-node"
+    },
+    {
+      "from": "module:@zachariahredfield/playbook-engine",
+      "kind": "depends_on",
+      "to": "module:@zachariahredfield/playbook-core"
+    },
+    {
+      "from": "module:@fawxzzy/playbook",
+      "kind": "governed_by",
+      "to": "rule:requireNotesFileWhenGovernanceExists"
+    },
+    {
+      "from": "module:@fawxzzy/playbook",
+      "kind": "governed_by",
+      "to": "rule:requireNotesOnChanges"
+    },
+    {
+      "from": "module:@fawxzzy/playbook",
+      "kind": "governed_by",
+      "to": "rule:verify.rule.tests.required"
+    },
+    {
+      "from": "module:@zachariahredfield/playbook-core",
+      "kind": "governed_by",
+      "to": "rule:requireNotesFileWhenGovernanceExists"
+    },
+    {
+      "from": "module:@zachariahredfield/playbook-core",
+      "kind": "governed_by",
+      "to": "rule:requireNotesOnChanges"
+    },
+    {
+      "from": "module:@zachariahredfield/playbook-core",
+      "kind": "governed_by",
+      "to": "rule:verify.rule.tests.required"
+    },
+    {
+      "from": "module:@zachariahredfield/playbook-engine",
+      "kind": "governed_by",
+      "to": "rule:requireNotesFileWhenGovernanceExists"
+    },
+    {
+      "from": "module:@zachariahredfield/playbook-engine",
+      "kind": "governed_by",
+      "to": "rule:requireNotesOnChanges"
+    },
+    {
+      "from": "module:@zachariahredfield/playbook-engine",
+      "kind": "governed_by",
+      "to": "rule:verify.rule.tests.required"
+    },
+    {
+      "from": "module:@zachariahredfield/playbook-node",
+      "kind": "governed_by",
+      "to": "rule:requireNotesFileWhenGovernanceExists"
+    },
+    {
+      "from": "module:@zachariahredfield/playbook-node",
+      "kind": "governed_by",
+      "to": "rule:requireNotesOnChanges"
+    },
+    {
+      "from": "module:@zachariahredfield/playbook-node",
+      "kind": "governed_by",
+      "to": "rule:verify.rule.tests.required"
+    }
+  ],
+  "generatedAt": "2026-03-13T18:34:11.879Z",
   "kind": "playbook-repo-graph",
-  "generatedAt": "2026-03-11T20:02:30.304Z",
   "nodes": [
     {
       "id": "module:@fawxzzy/playbook",
@@ -44,130 +160,19 @@
       "name": "verify.rule.tests.required"
     }
   ],
-  "edges": [
-    {
-      "kind": "contains",
-      "from": "repository:root",
-      "to": "module:@fawxzzy/playbook"
-    },
-    {
-      "kind": "contains",
-      "from": "repository:root",
-      "to": "module:@zachariahredfield/playbook-core"
-    },
-    {
-      "kind": "contains",
-      "from": "repository:root",
-      "to": "module:@zachariahredfield/playbook-engine"
-    },
-    {
-      "kind": "contains",
-      "from": "repository:root",
-      "to": "module:@zachariahredfield/playbook-node"
-    },
-    {
-      "kind": "contains",
-      "from": "repository:root",
-      "to": "rule:requireNotesFileWhenGovernanceExists"
-    },
-    {
-      "kind": "contains",
-      "from": "repository:root",
-      "to": "rule:requireNotesOnChanges"
-    },
-    {
-      "kind": "contains",
-      "from": "repository:root",
-      "to": "rule:verify.rule.tests.required"
-    },
-    {
-      "kind": "depends_on",
-      "from": "module:@fawxzzy/playbook",
-      "to": "module:@zachariahredfield/playbook-core"
-    },
-    {
-      "kind": "depends_on",
-      "from": "module:@fawxzzy/playbook",
-      "to": "module:@zachariahredfield/playbook-engine"
-    },
-    {
-      "kind": "depends_on",
-      "from": "module:@fawxzzy/playbook",
-      "to": "module:@zachariahredfield/playbook-node"
-    },
-    {
-      "kind": "governed_by",
-      "from": "module:@fawxzzy/playbook",
-      "to": "rule:requireNotesFileWhenGovernanceExists"
-    },
-    {
-      "kind": "governed_by",
-      "from": "module:@fawxzzy/playbook",
-      "to": "rule:requireNotesOnChanges"
-    },
-    {
-      "kind": "governed_by",
-      "from": "module:@fawxzzy/playbook",
-      "to": "rule:verify.rule.tests.required"
-    },
-    {
-      "kind": "governed_by",
-      "from": "module:@zachariahredfield/playbook-core",
-      "to": "rule:requireNotesFileWhenGovernanceExists"
-    },
-    {
-      "kind": "governed_by",
-      "from": "module:@zachariahredfield/playbook-core",
-      "to": "rule:requireNotesOnChanges"
-    },
-    {
-      "kind": "governed_by",
-      "from": "module:@zachariahredfield/playbook-core",
-      "to": "rule:verify.rule.tests.required"
-    },
-    {
-      "kind": "governed_by",
-      "from": "module:@zachariahredfield/playbook-engine",
-      "to": "rule:requireNotesFileWhenGovernanceExists"
-    },
-    {
-      "kind": "governed_by",
-      "from": "module:@zachariahredfield/playbook-engine",
-      "to": "rule:requireNotesOnChanges"
-    },
-    {
-      "kind": "governed_by",
-      "from": "module:@zachariahredfield/playbook-engine",
-      "to": "rule:verify.rule.tests.required"
-    },
-    {
-      "kind": "governed_by",
-      "from": "module:@zachariahredfield/playbook-node",
-      "to": "rule:requireNotesFileWhenGovernanceExists"
-    },
-    {
-      "kind": "governed_by",
-      "from": "module:@zachariahredfield/playbook-node",
-      "to": "rule:requireNotesOnChanges"
-    },
-    {
-      "kind": "governed_by",
-      "from": "module:@zachariahredfield/playbook-node",
-      "to": "rule:verify.rule.tests.required"
-    }
-  ],
+  "schemaVersion": "1.1",
   "stats": {
+    "edgeCount": 23,
+    "edgeKinds": {
+      "contains": 7,
+      "depends_on": 4,
+      "governed_by": 12
+    },
     "nodeCount": 8,
-    "edgeCount": 22,
     "nodeKinds": {
       "module": 4,
       "repository": 1,
       "rule": 3
-    },
-    "edgeKinds": {
-      "contains": 7,
-      "depends_on": 3,
-      "governed_by": 12
     }
   }
 }

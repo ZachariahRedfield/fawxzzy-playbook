@@ -26,7 +26,7 @@
     "pack:cli": "pnpm -C packages/cli pack --out ../../packages/cli/fawxzzy-playbook-%v.tgz",
     "docs:merge": "node scripts/docs-merge.mjs",
     "test:cli": "node scripts/cli-smoke.mjs",
-    "test:update-snapshots": "UPDATE_CONTRACT_SNAPSHOTS=1 pnpm -C packages/cli test -- cliContracts.test.ts",
+    "test:update-snapshots": "node scripts/update-contract-snapshots.mjs",
     "agents:update": "pnpm docs:update",
     "agents:check": "pnpm docs:check",
     "docs:update": "pnpm -r build && node scripts/update-managed-docs.mjs",
@@ -64,6 +64,7 @@
     "vitest": "^3.0.8"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "*"
+    "@rollup/rollup-linux-x64-gnu": "*",
+    "@rollup/rollup-win32-x64-msvc": "*"
   }
 }

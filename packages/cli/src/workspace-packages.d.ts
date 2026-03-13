@@ -30,6 +30,13 @@ declare module "@zachariahredfield/playbook-engine" {
   export const promoteMemoryCandidate: (...args: any[]) => any;
   export const retirePromotedKnowledge: (...args: any[]) => any;
   export const pruneMemoryKnowledge: (...args: any[]) => any;
+  export type KnowledgeQueryOptions = any;
+  export const knowledgeList: (...args: any[]) => any;
+  export const knowledgeQuery: (...args: any[]) => any;
+  export const knowledgeInspect: (...args: any[]) => any;
+  export const knowledgeTimeline: (...args: any[]) => any;
+  export const knowledgeProvenance: (...args: any[]) => any;
+  export const knowledgeStale: (...args: any[]) => any;
   export const generateRepositoryIndex: (...args: any[]) => any;
   export const generateRepositoryGraph: (...args: any[]) => any;
   export const buildModuleContextDigests: (...args: any[]) => any;

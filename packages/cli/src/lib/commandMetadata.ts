@@ -476,6 +476,19 @@ export const commandMetadata: CommandMetadata[] = [
     machineReadable: true
   },
   {
+    name: 'knowledge',
+    description: 'Inspect read-only knowledge artifacts and provenance surfaces',
+    category: 'Repository intelligence',
+    role: 'repo-intelligence',
+    lifecycle: 'canonical',
+    discoverability: 'secondary',
+    onboardingPriority: null,
+    canonicalSequence: null,
+    productFacing: true,
+    exampleArgs: 'knowledge list --json',
+    machineReadable: true
+  },
+  {
     name: 'agent',
     description: 'Read runtime control-plane records and run plan-backed dry-run previews',
     category: 'Utility',

@@ -226,6 +226,8 @@ Do not hand-edit entries inside the managed markers.
   - Example: `pnpm playbook explain architecture --json`
 - `route`: Classify tasks into deterministic execution vs bounded model reasoning routes
   - Example: `pnpm playbook route "summarize current repo state" --json`
+- `knowledge`: Inspect read-only knowledge artifacts and provenance surfaces
+  - Example: `pnpm playbook knowledge list --json`
 
 ### Utility
 
@@ -282,5 +284,6 @@ Do not hand-edit entries inside the managed markers.
 | `route` | `pnpm playbook route "summarize current repo state" --json` |
 | `learn` | `pnpm playbook learn draft --json --out .playbook/knowledge/candidates.json` |
 | `memory` | `pnpm playbook memory events --json` |
+| `knowledge` | `pnpm playbook knowledge list --json` |
 | `agent` | `pnpm playbook agent run --from-plan .playbook/plan.json --dry-run --json` |
 <!-- PLAYBOOK:EXAMPLES_END -->

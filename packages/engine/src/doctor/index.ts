@@ -147,6 +147,9 @@ const readJsonSafe = <T>(filePath: string): { payload: T | null; malformed: bool
   }
 };
 
+const toRepoRelativePath = (repoRoot: string, absolutePath: string): string =>
+  path.relative(repoRoot, absolutePath).split(path.sep).join('/');
+
 const collectMemoryDiagnostics = (repoRoot: string): MemoryDiagnosticsReport => {
   const findings: MemoryDiagnosticFinding[] = [];
   const suggestions = new Set<MemoryDiagnosticSuggestion['id']>();
@@ -180,7 +183,7 @@ const collectMemoryDiagnostics = (repoRoot: string): MemoryDiagnosticsReport => 
     findings.push({
       code: 'memory-artifacts-missing',
       severity: 'warning',
-      message: `Missing required memory artifacts: ${missingPaths.map((entry) => path.relative(repoRoot, entry)).join(', ')}`,
+      message: `Missing required memory artifacts: ${missingPaths.map((entry) => toRepoRelativePath(repoRoot, entry)).join(', ')}`,
       recommendation: 'Regenerate missing memory artifacts before relying on replay or promotion diagnostics.'
     });
     suggestions.add('PB015');
@@ -190,10 +193,10 @@ const collectMemoryDiagnostics = (repoRoot: string): MemoryDiagnosticsReport => 
   const candidates = readJsonSafe<MemoryCandidatesArtifact>(candidatesPath);
   const malformedArtifacts: string[] = [];
   if (index.malformed) {
-    malformedArtifacts.push(path.relative(repoRoot, indexPath));
+    malformedArtifacts.push(toRepoRelativePath(repoRoot, indexPath));
   }
   if (candidates.malformed) {
-    malformedArtifacts.push(path.relative(repoRoot, candidatesPath));
+    malformedArtifacts.push(toRepoRelativePath(repoRoot, candidatesPath));
   }
 
   const parsedKnowledge = knowledgePaths.map((knowledgePath) => ({
@@ -203,7 +206,7 @@ const collectMemoryDiagnostics = (repoRoot: string): MemoryDiagnosticsReport => 
 
   for (const artifact of parsedKnowledge) {
     if (artifact.parsed.malformed) {
-      malformedArtifacts.push(path.relative(repoRoot, artifact.path));
+      malformedArtifacts.push(toRepoRelativePath(repoRoot, artifact.path));
     }
   }
 

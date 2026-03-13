@@ -8,6 +8,7 @@
       "ai-context",
       "ai-contract",
       "analyze-pr",
+      "knowledge",
       "context",
       "contracts",
       "docs",
@@ -104,6 +105,11 @@
         "id": "query.memoryKnowledge",
         "version": "1.0",
         "path": "schema://cli/query"
+      },
+      {
+        "id": "knowledge",
+        "version": "1.0",
+        "path": "packages/contracts/src/knowledge.schema.json"
       },
       {
         "id": "explain.memoryKnowledge",

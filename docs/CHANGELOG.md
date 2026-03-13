@@ -4,6 +4,8 @@
 
 ### Added
 
+- WHAT: Added read-only `pnpm playbook knowledge` inspection surfaces (`list`, `query`, `inspect`, `timeline`, `provenance`, `stale`) backed by a canonical normalized knowledge record schema, CLI contract coverage, and roadmap/docs updates for Phase 14. WHY: Makes evidence, candidate knowledge, promoted doctrine, and superseded knowledge queryable and auditable without introducing mutation into the inspection layer.
+
 - WHAT: Implemented first live `pnpm playbook orchestrate` as a deterministic control-plane lane-contract compiler that emits `orchestrator.json` plus lane prompt artifacts with explicit ownership, shared-file risk, wave/dependency ordering, and safe lane-count degradation. WHY: Turns orchestration from planned direction into a merge-safe governance surface for parallel Codex plan-mode execution without introducing autonomous worker/branch/PR behavior.
 
 - WHAT: Aligned `orchestrate` command docs/contracts to current implemented v0 behavior (`--goal`, `--lanes`, `--out`, `--format`), explicitly documenting current artifact outputs/limitations and labeling future subcommand concepts as future scope only. WHY: Prevents command contract drift where command-truth surfaces show `orchestrate` as implemented but command-specific docs read as planned-only design.

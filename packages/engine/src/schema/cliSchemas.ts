@@ -13,6 +13,7 @@ export type CliSchemaCommand =
   | 'doctor'
   | 'analyze-pr'
   | 'query'
+  | 'knowledge'
   | 'docs'
   | 'contracts'
   | 'ignore'
@@ -20,6 +21,96 @@ export type CliSchemaCommand =
 
 export type JsonSchema = {
   [key: string]: unknown;
+};
+
+const knowledgeRecordSchema: JsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['id', 'type', 'createdAt', 'repo', 'source', 'confidence', 'status', 'provenance', 'metadata'],
+  properties: {
+    id: { type: 'string' },
+    type: { enum: ['evidence', 'candidate', 'promoted', 'superseded'] },
+    createdAt: { type: 'string' },
+    repo: { type: 'string' },
+    source: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['kind', 'path', 'command'],
+      properties: {
+        kind: { enum: ['memory-event', 'memory-candidate', 'memory-knowledge'] },
+        path: { type: 'string' },
+        command: { type: ['string', 'null'] }
+      }
+    },
+    confidence: { type: ['number', 'null'] },
+    status: { enum: ['observed', 'active', 'stale', 'retired', 'superseded'] },
+    provenance: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['repo', 'sourceCommand', 'runId', 'sourcePath', 'eventIds', 'evidenceIds', 'fingerprints', 'relatedRecordIds'],
+      properties: {
+        repo: { type: 'string' },
+        sourceCommand: { type: ['string', 'null'] },
+        runId: { type: ['string', 'null'] },
+        sourcePath: { type: 'string' },
+        eventIds: { type: 'array', items: { type: 'string' } },
+        evidenceIds: { type: 'array', items: { type: 'string' } },
+        fingerprints: { type: 'array', items: { type: 'string' } },
+        relatedRecordIds: { type: 'array', items: { type: 'string' } }
+      }
+    },
+    metadata: {
+      type: 'object',
+      additionalProperties: true
+    }
+  }
+};
+
+const knowledgeSummarySchema: JsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['total', 'byType', 'byStatus'],
+  properties: {
+    total: { type: 'integer' },
+    byType: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['evidence', 'candidate', 'promoted', 'superseded'],
+      properties: {
+        evidence: { type: 'integer' },
+        candidate: { type: 'integer' },
+        promoted: { type: 'integer' },
+        superseded: { type: 'integer' }
+      }
+    },
+    byStatus: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['observed', 'active', 'stale', 'retired', 'superseded'],
+      properties: {
+        observed: { type: 'integer' },
+        active: { type: 'integer' },
+        stale: { type: 'integer' },
+        retired: { type: 'integer' },
+        superseded: { type: 'integer' }
+      }
+    }
+  }
+};
+
+const knowledgeFiltersSchema: JsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    type: { enum: ['evidence', 'candidate', 'promoted', 'superseded'] },
+    status: { enum: ['observed', 'active', 'stale', 'retired', 'superseded'] },
+    module: { type: 'string' },
+    ruleId: { type: 'string' },
+    text: { type: 'string' },
+    limit: { type: 'integer' },
+    order: { enum: ['asc', 'desc'] },
+    staleDays: { type: 'integer' }
+  }
 };
 
 const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
@@ -1257,6 +1348,70 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
   },
 
 
+  knowledge: {
+    $schema: JSON_SCHEMA_DRAFT,
+    title: 'PlaybookKnowledgeOutput',
+    oneOf: [
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: ['schemaVersion', 'command', 'error'],
+        properties: {
+          schemaVersion: { const: '1.0' },
+          command: { enum: ['knowledge-list', 'knowledge-query', 'knowledge-inspect', 'knowledge-timeline', 'knowledge-provenance', 'knowledge-stale'] },
+          error: { type: 'string' }
+        }
+      },
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: ['schemaVersion', 'command', 'filters', 'summary', 'knowledge'],
+        properties: {
+          schemaVersion: { const: '1.0' },
+          command: { enum: ['knowledge-list', 'knowledge-query', 'knowledge-timeline', 'knowledge-stale'] },
+          filters: knowledgeFiltersSchema,
+          summary: knowledgeSummarySchema,
+          knowledge: {
+            type: 'array',
+            items: knowledgeRecordSchema
+          }
+        }
+      },
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: ['schemaVersion', 'command', 'id', 'knowledge'],
+        properties: {
+          schemaVersion: { const: '1.0' },
+          command: { const: 'knowledge-inspect' },
+          id: { type: 'string' },
+          knowledge: knowledgeRecordSchema
+        }
+      },
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: ['schemaVersion', 'command', 'id', 'provenance'],
+        properties: {
+          schemaVersion: { const: '1.0' },
+          command: { const: 'knowledge-provenance' },
+          id: { type: 'string' },
+          provenance: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['record', 'evidence', 'relatedRecords'],
+            properties: {
+              record: knowledgeRecordSchema,
+              evidence: { type: 'array', items: knowledgeRecordSchema },
+              relatedRecords: { type: 'array', items: knowledgeRecordSchema }
+            }
+          }
+        }
+      }
+    ]
+  },
+
+
   learn: {
     $schema: JSON_SCHEMA_DRAFT,
     title: 'PlaybookLearnDraftOutput',
@@ -1457,6 +1612,7 @@ export const getCliSchemas = (): Record<CliSchemaCommand, JsonSchema> => ({
   'ai-contract': cliSchemas['ai-contract'],
   doctor: cliSchemas.doctor,
   'analyze-pr': cliSchemas['analyze-pr'],
+  knowledge: cliSchemas.knowledge,
   docs: cliSchemas.docs,
   contracts: cliSchemas.contracts,
   ignore: cliSchemas.ignore,

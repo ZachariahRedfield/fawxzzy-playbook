@@ -46,6 +46,7 @@ Do not hand-edit entries inside the managed markers.
 | `route` | Classify tasks into deterministic execution vs bounded model reasoning routes | canonical | repo-intelligence | primary | — | Current (implemented) | `pnpm playbook route "summarize current repo state" --json` |
 | `learn` | Draft deterministic knowledge candidates from local diff and repository intelligence | utility | utility | secondary | — | Current (implemented) | `pnpm playbook learn draft --json --out .playbook/knowledge/candidates.json` |
 | `memory` | Inspect, review, and curate repository memory artifacts with explicit human-reviewed doctrine promotion | utility | utility | secondary | — | Current (implemented) | `pnpm playbook memory events --json` |
+| `knowledge` | Inspect read-only knowledge artifacts and provenance surfaces | canonical | repo-intelligence | secondary | — | Current (implemented) | `pnpm playbook knowledge list --json` |
 | `agent` | Read runtime control-plane records and run plan-backed dry-run previews | utility | utility | secondary | — | Current (implemented) | `pnpm playbook agent run --from-plan .playbook/plan.json --dry-run --json` |
 <!-- PLAYBOOK:DOCS_COMMAND_STATUS_END -->
 
@@ -54,7 +55,7 @@ Do not hand-edit entries inside the managed markers.
 ### Implemented command docs
 
 - Core flow: [`verify`](verify.md), [`plan`](plan.md), [`apply`](apply.md), [`pilot`](pilot.md)
-- Repository intelligence: [`index`](index.md), [`query`](query.md), [`deps`](deps.md), [`ask`](ask.md), [`explain`](explain.md), [`analyze-pr`](analyze-pr.md)
+- Repository intelligence: [`index`](index.md), [`query`](query.md), [`knowledge`](knowledge.md), [`deps`](deps.md), [`ask`](ask.md), [`explain`](explain.md), [`analyze-pr`](analyze-pr.md)
 - AI bootstrap/context: [`ai-context`](ai-context.md), [`ai-contract`](ai-contract.md), [`context`](overview.md)
 - Governance and support: [`docs`](docs.md), [`audit`](audit.md), [`rules`](rules.md), [`doctor`](doctor.md), [`schema`](schema.md), [`contracts`](contracts.md), [`ignore`](ignore.md), [`diagram`](diagram.md), [`route`](route.md), [`memory`](memory.md), [`fix`](fix.md), [`upgrade`](upgrade.md), [`analyze`](analyze.md)
 
@@ -185,6 +186,16 @@ pnpm playbook memory candidates --json
 pnpm playbook memory knowledge --json
 pnpm playbook memory show <id> --json
 ```
+
+## Knowledge inspection surfaces (`pnpm playbook knowledge ...`)
+
+`pnpm playbook knowledge` is the read-only inspection surface for normalized knowledge records.
+
+- `knowledge list` enumerates all record types.
+- `knowledge query` filters by type, status, module, rule, or text.
+- `knowledge inspect <id>` reads one record.
+- `knowledge provenance <id>` resolves direct evidence and related records.
+- `knowledge stale` returns stale, retired, and superseded records.
 
 ## Internal knowledge compaction status (no public command surface yet)
 

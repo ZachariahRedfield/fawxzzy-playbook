@@ -1,34 +1,230 @@
 {
-  "schemaVersion": "1.0",
+  "architecture": "modular-monolith",
+  "configs": [
+    {
+      "name": "eslint",
+      "path": ".eslintrc.js",
+      "present": false
+    },
+    {
+      "name": "eslint",
+      "path": ".eslintrc.cjs",
+      "present": true
+    },
+    {
+      "name": "eslint",
+      "path": ".eslintrc.json",
+      "present": false
+    },
+    {
+      "name": "eslint",
+      "path": "eslint.config.js",
+      "present": false
+    },
+    {
+      "name": "eslint",
+      "path": "eslint.config.mjs",
+      "present": false
+    },
+    {
+      "name": "tsconfig",
+      "path": "tsconfig.json",
+      "present": false
+    },
+    {
+      "name": "jest",
+      "path": "jest.config.js",
+      "present": false
+    },
+    {
+      "name": "jest",
+      "path": "jest.config.cjs",
+      "present": false
+    },
+    {
+      "name": "jest",
+      "path": "jest.config.ts",
+      "present": false
+    },
+    {
+      "name": "vitest",
+      "path": "vitest.config.ts",
+      "present": false
+    },
+    {
+      "name": "vitest",
+      "path": "vitest.config.js",
+      "present": false
+    },
+    {
+      "name": "vitest",
+      "path": "vitest.workspace.ts",
+      "present": false
+    },
+    {
+      "commands": [
+        "agents:check",
+        "agents:update",
+        "build",
+        "check:tests",
+        "docs:check",
+        "docs:merge",
+        "docs:update",
+        "lint",
+        "pack:check",
+        "pack:cli",
+        "pack:smoke",
+        "pilot",
+        "playbook",
+        "playbook:diagram",
+        "playbook:help",
+        "pr:sync-metadata",
+        "preinstall",
+        "prepare",
+        "smoke",
+        "smoke:ci",
+        "sync:templates",
+        "test",
+        "test:cli",
+        "test:security",
+        "test:targeted",
+        "test:update-snapshots",
+        "validate:roadmap",
+        "verify",
+        "verify:repo"
+      ],
+      "name": "command-inventory",
+      "path": "package.json#scripts",
+      "present": true
+    }
+  ],
+  "database": "none",
+  "dependencies": [
+    {
+      "from": "@fawxzzy/playbook",
+      "to": "@zachariahredfield/playbook-core",
+      "type": "source-import"
+    },
+    {
+      "from": "@fawxzzy/playbook",
+      "to": "@zachariahredfield/playbook-core",
+      "type": "workspace-manifest"
+    },
+    {
+      "from": "@fawxzzy/playbook",
+      "to": "@zachariahredfield/playbook-engine",
+      "type": "source-import"
+    },
+    {
+      "from": "@fawxzzy/playbook",
+      "to": "@zachariahredfield/playbook-engine",
+      "type": "workspace-manifest"
+    },
+    {
+      "from": "@fawxzzy/playbook",
+      "to": "@zachariahredfield/playbook-node",
+      "type": "source-import"
+    },
+    {
+      "from": "@fawxzzy/playbook",
+      "to": "@zachariahredfield/playbook-node",
+      "type": "workspace-manifest"
+    },
+    {
+      "from": "@zachariahredfield/playbook-engine",
+      "to": "@zachariahredfield/playbook-core",
+      "type": "source-import"
+    },
+    {
+      "from": "@zachariahredfield/playbook-engine",
+      "to": "@zachariahredfield/playbook-core",
+      "type": "workspace-manifest"
+    }
+  ],
   "framework": "node",
   "language": "javascript",
-  "architecture": "modular-monolith",
   "modules": [
     {
-      "name": "@fawxzzy/playbook",
       "dependencies": [
         "@zachariahredfield/playbook-core",
         "@zachariahredfield/playbook-engine",
         "@zachariahredfield/playbook-node"
-      ]
+      ],
+      "name": "@fawxzzy/playbook"
     },
     {
-      "name": "@zachariahredfield/playbook-core",
-      "dependencies": []
+      "dependencies": [],
+      "name": "@zachariahredfield/playbook-core"
     },
     {
-      "name": "@zachariahredfield/playbook-engine",
-      "dependencies": []
+      "dependencies": [
+        "@zachariahredfield/playbook-core"
+      ],
+      "name": "@zachariahredfield/playbook-engine"
     },
     {
-      "name": "@zachariahredfield/playbook-node",
-      "dependencies": []
+      "dependencies": [],
+      "name": "@zachariahredfield/playbook-node"
     }
   ],
-  "database": "none",
   "rules": [
     "requireNotesFileWhenGovernanceExists",
     "requireNotesOnChanges",
     "verify.rule.tests.required"
+  ],
+  "schemaVersion": "1.0",
+  "tests": [
+    {
+      "coverage_estimate": "unknown",
+      "module": "@fawxzzy/playbook",
+      "tests_present": true
+    },
+    {
+      "coverage_estimate": "unknown",
+      "module": "@zachariahredfield/playbook-core",
+      "tests_present": true
+    },
+    {
+      "coverage_estimate": "unknown",
+      "module": "@zachariahredfield/playbook-engine",
+      "tests_present": true
+    },
+    {
+      "coverage_estimate": "unknown",
+      "module": "@zachariahredfield/playbook-node",
+      "tests_present": false
+    }
+  ],
+  "workspace": [
+    {
+      "dependsOn": [
+        "@zachariahredfield/playbook-core",
+        "@zachariahredfield/playbook-engine",
+        "@zachariahredfield/playbook-node"
+      ],
+      "name": "@fawxzzy/playbook",
+      "path": "packages/cli",
+      "role": "cli"
+    },
+    {
+      "dependsOn": [],
+      "name": "@zachariahredfield/playbook-core",
+      "path": "packages/core",
+      "role": "cli"
+    },
+    {
+      "dependsOn": [
+        "@zachariahredfield/playbook-core"
+      ],
+      "name": "@zachariahredfield/playbook-engine",
+      "path": "packages/engine",
+      "role": "cli"
+    },
+    {
+      "dependsOn": [],
+      "name": "@zachariahredfield/playbook-node",
+      "path": "packages/node",
+      "role": "cli"
+    }
   ]
 }

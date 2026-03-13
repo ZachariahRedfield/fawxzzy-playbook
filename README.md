@@ -14,7 +14,7 @@ Playbook is not positioned as a general-purpose chat assistant. It is the runtim
 
 Playbook is best understood as **deterministic repo intelligence + governance + safe remediation runtime**:
 
-- **Read substrate**: `ai-context`, `ai-contract`, `index`, `query`, `deps`, `ask --repo-context`, `explain`
+- **Read substrate**: `ai-context`, `ai-contract`, `index`, `query`, `knowledge`, `deps`, `ask --repo-context`, `explain`
 - **Governance kernel**: `verify`
 - **Change bridge**: `plan -> apply -> verify`
 - **Delivery surfaces**: one engine used via CLI, CI, automation, and integrations
@@ -243,6 +243,7 @@ pnpm playbook verify --json
 - `index`
 - `graph`
 - `query`
+- `knowledge`
 - `deps`
 - `ask`
 - `explain`
@@ -255,7 +256,7 @@ Run `pnpm playbook index` to generate deterministic machine-readable repository 
 
 Complexity Through Compression: Playbook reduces repository complexity by extracting small deterministic artifacts (index -> graph -> module digests) and reusing them across query/explain/ask surfaces rather than repeatedly rescanning broad repository state.
 
-Use `pnpm playbook schema` to retrieve the JSON Schema contracts for command outputs (`rules`, `explain`, `index`, `graph`, `verify`, `plan`, `context`, `ai-context`, `ai-contract`, `docs`) so CI and agents can validate payloads.
+Use `pnpm playbook schema` to retrieve the JSON Schema contracts for command outputs (`rules`, `explain`, `index`, `graph`, `verify`, `plan`, `context`, `ai-context`, `ai-contract`, `query`, `knowledge`, `docs`) so CI and agents can validate payloads.
 
 ## Playbook Context
 
@@ -335,6 +336,8 @@ pnpm playbook query impact workouts
 pnpm playbook query docs-coverage
 pnpm playbook query rule-owners
 pnpm playbook query test-hotspots
+pnpm playbook knowledge list
+pnpm playbook knowledge query --type candidate
 pnpm playbook ask "where should a new feature live?"
 pnpm playbook ask "what modules exist?" --json
 pnpm playbook ask "how does auth work?" --repo-context --mode concise
@@ -345,6 +348,8 @@ pnpm playbook explain workouts
 pnpm playbook explain PB001
 pnpm playbook explain architecture
 ```
+
+`pnpm playbook knowledge` is the read-only inspection surface for normalized evidence, candidate knowledge, promoted doctrine, and superseded knowledge.
 
 ### Repo-aware ask (`pnpm playbook ask --repo-context`, `--module`)
 
