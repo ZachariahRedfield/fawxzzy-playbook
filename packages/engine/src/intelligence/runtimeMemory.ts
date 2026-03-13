@@ -449,7 +449,11 @@ export const readRuntimeMemoryEnvelope = (projectRoot: string, options?: Runtime
     .filter((entry) => relevanceTokens.length === 0 || entry.relevance > 0)
     .sort((left, right) => right.relevance - left.relevance || (right.confidence ?? 0) - (left.confidence ?? 0) || left.id.localeCompare(right.id))
     .slice(0, maxEntries)
-    .map(({ relevance: _relevance, ...hit }) => hit);
+    .map((hit) => {
+      const withoutRelevance = { ...hit };
+      delete withoutRelevance.relevance;
+      return withoutRelevance;
+    });
 
   const candidates = readKnowledgeCandidates(projectRoot);
   const candidateHits = (candidates?.candidates ?? [])
@@ -467,7 +471,11 @@ export const readRuntimeMemoryEnvelope = (projectRoot: string, options?: Runtime
     .filter((entry) => relevanceTokens.length === 0 || entry.relevance > 0)
     .sort((left, right) => right.relevance - left.relevance || left.id.localeCompare(right.id))
     .slice(0, maxEntries)
-    .map(({ relevance: _relevance, ...hit }) => hit);
+    .map((hit) => {
+      const withoutRelevance = { ...hit };
+      delete withoutRelevance.relevance;
+      return withoutRelevance;
+    });
 
   const session = readSession(projectRoot);
   const runs = readExecutionRuns(projectRoot);

@@ -355,8 +355,6 @@ export const supersedePromotedKnowledge = (
   const kind = supersededLocation.kind;
   const artifact = supersededLocation.artifact;
   const superseded = requireKnowledgeEntry(artifact, supersededKnowledgeId);
-  const successor = requireKnowledgeEntry(artifact, successorKnowledgeId);
-
   const nowIso = new Date().toISOString();
   const updatedEntries = artifact.entries.map((entry) => {
     if (entry.knowledgeId === supersededKnowledgeId) {

@@ -179,7 +179,11 @@ const buildMemoryKnowledge = (projectRoot: string, resolvedField: RepositoryQuer
       return right.relevance - left.relevance || left.candidateId.localeCompare(right.candidateId);
     })
     .slice(0, 10)
-    .map(({ relevance: _relevance, ...entry }) => entry);
+    .map((entry) => {
+      const withoutRelevance = { ...entry };
+      delete withoutRelevance.relevance;
+      return withoutRelevance;
+    });
 };
 
 export const queryRepositoryIndex = (projectRoot: string, field: string, options?: QueryRepositoryIndexOptions): RepositoryQueryResult => {

@@ -155,7 +155,11 @@ const buildMemoryKnowledgeHits = (projectRoot: string, target: 'repo-context' | 
       return right.relevance - left.relevance || left.candidateId.localeCompare(right.candidateId);
     })
     .slice(0, 10)
-    .map(({ relevance: _relevance, ...entry }) => entry);
+    .map((entry) => {
+      const withoutRelevance = { ...entry };
+      delete withoutRelevance.relevance;
+      return withoutRelevance;
+    });
 };
 
 const gatherContext = (projectRoot: string): AskContext => {

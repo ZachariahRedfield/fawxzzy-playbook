@@ -40,8 +40,6 @@ const readJson = <T>(filePath: string): T => JSON.parse(fs.readFileSync(filePath
 
 const uniqueSorted = (values: string[]): string[] => [...new Set(values.filter((value) => value.length > 0))].sort((a, b) => a.localeCompare(b));
 
-const isObject = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-
 const safeDate = (value: unknown): string => {
   if (typeof value !== 'string') {
     return new Date(0).toISOString();
