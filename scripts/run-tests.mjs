@@ -4,14 +4,23 @@ import { spawnSync } from 'node:child_process';
 const args = process.argv.slice(2);
 const PNPM_BIN = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
 
-const targetedSmokeCommands = new Map([
-  ['ask', ['node', 'packages/cli/dist/main.js', 'ask', 'summarize repository modules', '--repo-context', '--json']],
-  ['ai-contract', ['node', 'packages/cli/dist/main.js', 'ai-contract', '--json']],
-  ['schema', ['node', 'packages/cli/dist/main.js', 'schema', 'verify', '--json']],
-  ['doctor', ['node', 'packages/cli/dist/main.js', 'doctor', '--dry-run', '--json']],
-  ['policy', ['node', 'packages/cli/dist/main.js', 'verify', '--policy', '--json']],
-  ['runtime', ['node', 'packages/cli/dist/main.js', 'agent', 'status', '--json']],
-  ['scheduler', ['node', 'packages/cli/dist/main.js', 'agent', 'runs', '--json']],
+const createSmokeStep = (command, commandArgs) => ({ command, commandArgs });
+
+const targetedSmokeRuns = new Map([
+  [
+    'ask',
+    [
+      // Repo-context smoke tests must self-bootstrap required .playbook artifacts.
+      createSmokeStep('node', ['packages/cli/dist/main.js', 'index', '--json']),
+      createSmokeStep('node', ['packages/cli/dist/main.js', 'ask', 'summarize repository modules', '--repo-context', '--json']),
+    ],
+  ],
+  ['ai-contract', [createSmokeStep('node', ['packages/cli/dist/main.js', 'ai-contract', '--json'])]],
+  ['schema', [createSmokeStep('node', ['packages/cli/dist/main.js', 'schema', 'verify', '--json'])]],
+  ['doctor', [createSmokeStep('node', ['packages/cli/dist/main.js', 'doctor', '--dry-run', '--json'])]],
+  ['policy', [createSmokeStep('node', ['packages/cli/dist/main.js', 'verify', '--policy', '--json'])]],
+  ['runtime', [createSmokeStep('node', ['packages/cli/dist/main.js', 'agent', 'status', '--json'])]],
+  ['scheduler', [createSmokeStep('node', ['packages/cli/dist/main.js', 'agent', 'runs', '--json'])]],
 ]);
 
 const runTargetedAgentDryRun = () => {
@@ -30,6 +39,17 @@ const run = (command, commandArgs) =>
     shell: process.platform === 'win32',
   });
 
+const runSteps = (steps) => {
+  for (const { command, commandArgs } of steps) {
+    const result = run(command, commandArgs);
+    if (result.status !== 0) {
+      return result;
+    }
+  }
+
+  return { status: 0 };
+};
+
 if (args.length === 0) {
   const result = run(PNPM_BIN, ['-r', 'test']);
   process.exit(typeof result.status === 'number' ? result.status : 1);
@@ -42,10 +62,9 @@ if (filteredArgs.length === 1) {
     process.exit(typeof result.status === 'number' ? result.status : 1);
   }
 
-  const command = targetedSmokeCommands.get(filteredArgs[0]);
-  if (command) {
-    const [bin, ...commandArgs] = command;
-    const result = run(bin, commandArgs);
+  const steps = targetedSmokeRuns.get(filteredArgs[0]);
+  if (steps) {
+    const result = runSteps(steps);
     process.exit(typeof result.status === 'number' ? result.status : 1);
   }
 }
