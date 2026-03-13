@@ -27,14 +27,15 @@ const setupRepo = (): string => {
         summary: 'candidate one',
         clusterKey: 'finger-1|module-a|rule-a|shape-a',
         salienceScore: 1,
-        salienceFactors: { severity: 1, recurrenceCount: 1, crossModuleBreadth: 1, riskScore: 1, persistenceAcrossRuns: 1, ownershipDocsGap: 0, novelSuccessfulRemediationShape: 0 },
+        salienceFactors: { severity: 1, recurrenceCount: 1, blastRadius: 1, crossModuleSpread: 1, ownershipDocsGap: 0, novelSuccessfulRemediationSignal: 0 },
         fingerprint: 'finger-1',
         module: 'module-a',
         ruleId: 'rule-a',
         failureShape: 'shape-a',
         eventCount: 1,
         provenance: [{ eventId: 'evt-1', sourcePath: '.playbook/memory/events/evt-1.json', fingerprint: 'finger-1', runId: 'run-1' }],
-        lastSeenAt: '2099-01-01T00:00:00.000Z'
+        lastSeenAt: '2099-01-01T00:00:00.000Z',
+        supersession: { evolutionOrdinal: 1, priorCandidateIds: [], supersedesCandidateIds: [] }
       },
       {
         candidateId: 'cand-stale',
@@ -43,14 +44,15 @@ const setupRepo = (): string => {
         summary: 'stale candidate',
         clusterKey: 'finger-stale|module-a|rule-a|shape-a',
         salienceScore: 1,
-        salienceFactors: { severity: 1, recurrenceCount: 1, crossModuleBreadth: 1, riskScore: 1, persistenceAcrossRuns: 1, ownershipDocsGap: 0, novelSuccessfulRemediationShape: 0 },
+        salienceFactors: { severity: 1, recurrenceCount: 1, blastRadius: 1, crossModuleSpread: 1, ownershipDocsGap: 0, novelSuccessfulRemediationSignal: 0 },
         fingerprint: 'finger-stale',
         module: 'module-a',
         ruleId: 'rule-a',
         failureShape: 'shape-a',
         eventCount: 1,
         provenance: [{ eventId: 'evt-2', sourcePath: '.playbook/memory/events/evt-2.json', fingerprint: 'finger-stale', runId: 'run-1' }],
-        lastSeenAt: '2020-01-01T00:00:00.000Z'
+        lastSeenAt: '2020-01-01T00:00:00.000Z',
+        supersession: { evolutionOrdinal: 1, priorCandidateIds: [], supersedesCandidateIds: [] }
       },
       {
         candidateId: 'cand-dup',
@@ -59,14 +61,15 @@ const setupRepo = (): string => {
         summary: 'duplicate fingerprint candidate',
         clusterKey: 'finger-1|module-b|rule-b|shape-b',
         salienceScore: 1,
-        salienceFactors: { severity: 1, recurrenceCount: 1, crossModuleBreadth: 1, riskScore: 1, persistenceAcrossRuns: 1, ownershipDocsGap: 0, novelSuccessfulRemediationShape: 0 },
+        salienceFactors: { severity: 1, recurrenceCount: 1, blastRadius: 1, crossModuleSpread: 1, ownershipDocsGap: 0, novelSuccessfulRemediationSignal: 0 },
         fingerprint: 'finger-1',
         module: 'module-b',
         ruleId: 'rule-b',
         failureShape: 'shape-b',
         eventCount: 1,
         provenance: [{ eventId: 'evt-3', sourcePath: '.playbook/memory/events/evt-3.json', fingerprint: 'finger-1', runId: 'run-2' }],
-        lastSeenAt: '2099-01-02T00:00:00.000Z'
+        lastSeenAt: '2099-01-02T00:00:00.000Z',
+        supersession: { evolutionOrdinal: 1, priorCandidateIds: [], supersedesCandidateIds: [] }
       }
     ]
   });

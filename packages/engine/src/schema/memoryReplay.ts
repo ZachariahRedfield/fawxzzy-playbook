@@ -20,11 +20,16 @@ export type MemoryReplayCandidateProvenance = {
 export type MemoryReplaySalienceFactors = {
   severity: number;
   recurrenceCount: number;
-  crossModuleBreadth: number;
-  riskScore: number;
-  persistenceAcrossRuns: number;
+  blastRadius: number;
+  crossModuleSpread: number;
   ownershipDocsGap: number;
-  novelSuccessfulRemediationShape: number;
+  novelSuccessfulRemediationSignal: number;
+};
+
+export type MemoryReplayCandidateSupersession = {
+  evolutionOrdinal: number;
+  priorCandidateIds: string[];
+  supersedesCandidateIds: string[];
 };
 
 export type MemoryReplayCandidate = {
@@ -42,6 +47,7 @@ export type MemoryReplayCandidate = {
   eventCount: number;
   provenance: MemoryReplayCandidateProvenance[];
   lastSeenAt?: string;
+  supersession: MemoryReplayCandidateSupersession;
 };
 
 export type MemoryReplayResult = {

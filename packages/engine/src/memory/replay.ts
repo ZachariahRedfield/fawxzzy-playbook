@@ -9,6 +9,7 @@ import type {
   MemoryReplayResult,
   MemoryReplaySalienceFactors
 } from '../schema/memoryReplay.js';
+import type { MemoryEvent } from './types.js';
 
 const MEMORY_INDEX_RELATIVE_PATH = '.playbook/memory/index.json' as const;
 export const MEMORY_CANDIDATES_RELATIVE_PATH = '.playbook/memory/candidates.json' as const;
@@ -16,20 +17,16 @@ export const MEMORY_CANDIDATES_RELATIVE_PATH = '.playbook/memory/candidates.json
 type ReplayEvent = {
   eventId: string;
   sourcePath: string;
-  runId: string | null;
-  fingerprint: string;
-  module: string;
-  ruleId: string;
-  failureShape: string;
-  severity: 'info' | 'warning' | 'error' | 'critical';
-  recurrenceCount: number;
-  riskScore: number;
-  modules: string[];
-  ownershipGap: boolean;
-  docsGap: boolean;
-  successfulRemediation: boolean;
-  remediationShape: string | null;
+  eventFingerprint: string;
   createdAt: string;
+  subjectModules: string[];
+  ruleIds: string[];
+  severity: 'low' | 'medium' | 'high' | 'unknown';
+  recurrence: number;
+  blastRadius: number;
+  crossModuleSpread: number;
+  ownershipDocsGap: number;
+  novelSuccessfulRemediationSignal: number;
 };
 
 type ReplayCluster = {
@@ -38,51 +35,37 @@ type ReplayCluster = {
 };
 
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
-const normalizeInt = (value: unknown, fallback: number): number => {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return Math.trunc(value);
-  }
-  return fallback;
-};
 
-const normalizeNumber = (value: unknown, fallback: number): number => {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-  return fallback;
-};
+const readJson = <T>(filePath: string): T => JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
 
-const normalizeSeverity = (value: unknown): ReplayEvent['severity'] => {
-  if (value === 'info' || value === 'warning' || value === 'error' || value === 'critical') {
-    return value;
-  }
-  return 'warning';
-};
+const uniqueSorted = (values: string[]): string[] => [...new Set(values.filter((value) => value.length > 0))].sort((a, b) => a.localeCompare(b));
 
-const stableString = (value: unknown, fallback: string): string => {
+const isObject = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+const safeDate = (value: unknown): string => {
   if (typeof value !== 'string') {
-    return fallback;
+    return new Date(0).toISOString();
   }
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : fallback;
+  const timestamp = Date.parse(value);
+  return Number.isNaN(timestamp) ? new Date(0).toISOString() : new Date(timestamp).toISOString();
 };
 
-const toStringArray = (value: unknown): string[] => {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+const toEventRefsFromLegacyIndex = (index: MemoryEventIndex): MemoryReplayEventReference[] => {
+  const refs = new Set<string>();
+  Object.values(index.byFingerprint ?? {}).forEach((entries) => {
+    entries.forEach((entry) => refs.add(entry));
+  });
 
-  return value
-    .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
-    .filter((entry) => entry.length > 0)
-    .sort((a, b) => a.localeCompare(b));
+  return [...refs]
+    .sort((a, b) => a.localeCompare(b))
+    .map((relativePath) => ({
+      eventId: path.posix.basename(relativePath, '.json'),
+      relativePath: path.posix.join('.playbook', 'memory', relativePath)
+    }));
 };
 
-const severityWeight: Record<ReplayEvent['severity'], number> = {
-  info: 0,
-  warning: 2,
-  error: 4,
-  critical: 6
+type MemoryEventIndex = {
+  byFingerprint?: Record<string, string[]>;
 };
 
 const ensureMemoryIndex = (projectRoot: string): MemoryReplayIndex => {
@@ -91,54 +74,80 @@ const ensureMemoryIndex = (projectRoot: string): MemoryReplayIndex => {
     throw new Error(`playbook memory replay: missing memory index at ${MEMORY_INDEX_RELATIVE_PATH}`);
   }
 
-  const parsed = JSON.parse(fs.readFileSync(fullPath, 'utf8')) as Partial<MemoryReplayIndex> & {
-    entries?: MemoryReplayEventReference[];
-  };
-
+  const parsed = readJson<Partial<MemoryReplayIndex> & { entries?: MemoryReplayEventReference[] } & MemoryEventIndex>(fullPath);
   const events = parsed.events ?? parsed.entries;
-  if (!Array.isArray(events)) {
-    throw new Error(`playbook memory replay: invalid memory index format at ${MEMORY_INDEX_RELATIVE_PATH}`);
+  if (Array.isArray(events)) {
+    return {
+      schemaVersion: parsed.schemaVersion,
+      events
+    };
   }
 
-  return {
-    schemaVersion: parsed.schemaVersion,
-    events
-  };
+  const legacyEvents = toEventRefsFromLegacyIndex(parsed);
+  if (legacyEvents.length > 0) {
+    return {
+      schemaVersion: parsed.schemaVersion,
+      events: legacyEvents
+    };
+  }
+
+  throw new Error(`playbook memory replay: invalid memory index format at ${MEMORY_INDEX_RELATIVE_PATH}`);
 };
 
-const parseReplayEvent = (eventId: string, sourcePath: string, raw: Record<string, unknown>): ReplayEvent => {
-  const eventRuleId = stableString(raw.ruleId ?? (raw.rule as Record<string, unknown> | undefined)?.id, 'unknown-rule');
-  const eventModule = stableString(raw.module ?? (raw.scope as Record<string, unknown> | undefined)?.module, 'unknown-module');
-  const eventFailureShape = stableString(raw.failureShape ?? (raw.failure as Record<string, unknown> | undefined)?.shape, 'unknown-shape');
-  const runId = typeof raw.runId === 'string' ? raw.runId : typeof raw.cycleId === 'string' ? raw.cycleId : null;
-  const modules = toStringArray(raw.modules ?? (raw.scope as Record<string, unknown> | undefined)?.modules);
-  const remediation = raw.remediation as Record<string, unknown> | undefined;
+const levelWeight: Record<ReplayEvent['severity'], number> = {
+  low: 1,
+  medium: 3,
+  high: 6,
+  unknown: 2
+};
 
-  const fingerprint = stableString(
-    raw.fingerprint,
-    createHash('sha256').update(JSON.stringify({ eventRuleId, eventModule, eventFailureShape })).digest('hex').slice(0, 16)
+const pickSeverity = (event: MemoryEvent): ReplayEvent['severity'] => event.riskSummary.level;
+
+const hasTruthySignal = (inputs: MemoryEvent['salienceInputs'], keys: string[]): boolean =>
+  keys.some((key) => inputs[key] === true || inputs[key] === 'true');
+
+const toReplayEvent = (eventId: string, sourcePath: string, event: MemoryEvent): ReplayEvent => {
+  const modules = uniqueSorted(event.subjectModules);
+  const blastRadius = clamp(
+    Number(event.salienceInputs.blastRadius ?? event.salienceInputs.failureCount ?? modules.length ?? 1),
+    1,
+    10
   );
 
-  const successfulRemediation =
-    raw.successfulRemediation === true || remediation?.success === true || remediation?.status === 'success';
+  const crossModuleSpread = clamp(
+    Number(event.salienceInputs.crossModuleSpread ?? event.salienceInputs.moduleSpread ?? modules.length ?? 1),
+    1,
+    10
+  );
+
+  const recurrence = clamp(
+    Number(event.salienceInputs.recurrence ?? event.salienceInputs.recurrenceCount ?? 1),
+    1,
+    10
+  );
+
+  const unresolvedOwnership = hasTruthySignal(event.salienceInputs, ['ownershipGap', 'unresolvedOwnership']);
+  const unresolvedDocs = hasTruthySignal(event.salienceInputs, ['docsGap', 'docsCoverageGap']);
+
+  const remediationSignal = hasTruthySignal(event.salienceInputs, ['novelSuccessfulRemediation', 'successfulRemediation'])
+    ? 1
+    : event.outcome.status === 'success'
+      ? 1
+      : 0;
 
   return {
     eventId,
     sourcePath,
-    runId,
-    fingerprint,
-    module: eventModule,
-    ruleId: eventRuleId,
-    failureShape: eventFailureShape,
-    severity: normalizeSeverity(raw.severity),
-    recurrenceCount: Math.max(1, normalizeInt(raw.recurrenceCount ?? (raw.recurrence as Record<string, unknown> | undefined)?.count, 1)),
-    riskScore: clamp(normalizeNumber(raw.riskScore, 0), 0, 10),
-    modules,
-    ownershipGap: raw.ownershipGap === true || (raw.gaps as Record<string, unknown> | undefined)?.ownership === true,
-    docsGap: raw.docsGap === true || (raw.gaps as Record<string, unknown> | undefined)?.docs === true,
-    successfulRemediation,
-    remediationShape: typeof remediation?.shape === 'string' ? remediation.shape : null,
-    createdAt: typeof raw.createdAt === 'string' && !Number.isNaN(Date.parse(raw.createdAt)) ? new Date(Date.parse(raw.createdAt)).toISOString() : new Date(0).toISOString()
+    eventFingerprint: event.eventFingerprint,
+    createdAt: safeDate(event.createdAt),
+    subjectModules: modules,
+    ruleIds: uniqueSorted(event.ruleIds),
+    severity: pickSeverity(event),
+    recurrence,
+    blastRadius,
+    crossModuleSpread,
+    ownershipDocsGap: Number(unresolvedOwnership) + Number(unresolvedDocs),
+    novelSuccessfulRemediationSignal: remediationSignal
   };
 };
 
@@ -150,157 +159,171 @@ const readReplayEvents = (projectRoot: string, index: MemoryReplayIndex): Replay
       if (!fs.existsSync(fullEventPath)) {
         throw new Error(`playbook memory replay: missing event file ${entry.relativePath}`);
       }
-      const raw = JSON.parse(fs.readFileSync(fullEventPath, 'utf8')) as Record<string, unknown>;
-      return parseReplayEvent(entry.eventId, entry.relativePath, raw);
+      const parsed = readJson<MemoryEvent>(fullEventPath);
+      return toReplayEvent(entry.eventId, entry.relativePath, parsed);
     });
 
-const buildClusterKey = (event: ReplayEvent): string =>
-  [event.fingerprint, event.module, event.ruleId, event.failureShape].join('|');
+const clusterEvents = (events: ReplayEvent[]): ReplayCluster[] => {
+  const buckets = new Map<string, ReplayEvent[]>();
+  for (const event of events) {
+    const existing = buckets.get(event.eventFingerprint) ?? [];
+    existing.push(event);
+    buckets.set(event.eventFingerprint, existing);
+  }
 
-const scoreCluster = (cluster: ReplayCluster, remediationShapeSeen: Map<string, number>): MemoryReplaySalienceFactors => {
-  const severity = Math.max(...cluster.events.map((event) => severityWeight[event.severity]));
-  const recurrenceCount = clamp(cluster.events.reduce((acc, event) => acc + event.recurrenceCount, 0), 1, 10);
+  return [...buckets.entries()]
+    .map(([key, bucket]) => ({
+      key,
+      events: [...bucket].sort((a, b) => `${a.eventId}:${a.sourcePath}`.localeCompare(`${b.eventId}:${b.sourcePath}`))
+    }))
+    .sort((a, b) => a.key.localeCompare(b.key));
+};
 
-  const crossModuleBreadth = clamp(
-    new Set(cluster.events.flatMap((event) => [event.module, ...event.modules])).size,
-    1,
-    10
-  );
-
-  const riskScore = clamp(Math.max(...cluster.events.map((event) => event.riskScore)), 0, 10);
-  const persistenceAcrossRuns = clamp(new Set(cluster.events.map((event) => event.runId).filter((value): value is string => value !== null)).size, 1, 10);
-
-  const ownershipDocsGap = cluster.events.some((event) => event.ownershipGap || event.docsGap)
-    ? cluster.events.reduce((score, event) => score + Number(event.ownershipGap) + Number(event.docsGap), 0)
-    : 0;
-
-  const novelSuccessfulRemediationShape = cluster.events.some((event) => {
-    if (!event.successfulRemediation || !event.remediationShape) {
-      return false;
-    }
-    return (remediationShapeSeen.get(event.remediationShape) ?? 0) === 1;
-  })
-    ? 1
-    : 0;
+const scoreCluster = (cluster: ReplayCluster): MemoryReplaySalienceFactors => {
+  const severity = Math.max(...cluster.events.map((event) => levelWeight[event.severity]));
+  const recurrenceCount = clamp(cluster.events.reduce((sum, event) => sum + event.recurrence, 0), 1, 10);
+  const blastRadius = clamp(Math.max(...cluster.events.map((event) => event.blastRadius)), 1, 10);
+  const crossModuleSpread = clamp(new Set(cluster.events.flatMap((event) => event.subjectModules)).size, 1, 10);
+  const ownershipDocsGap = clamp(cluster.events.reduce((sum, event) => sum + event.ownershipDocsGap, 0), 0, 10);
+  const novelSuccessfulRemediationSignal = cluster.events.some((event) => event.novelSuccessfulRemediationSignal > 0) ? 1 : 0;
 
   return {
     severity,
     recurrenceCount,
-    crossModuleBreadth,
-    riskScore,
-    persistenceAcrossRuns,
+    blastRadius,
+    crossModuleSpread,
     ownershipDocsGap,
-    novelSuccessfulRemediationShape
+    novelSuccessfulRemediationSignal
   };
 };
 
 const computeSalienceScore = (factors: MemoryReplaySalienceFactors): number => {
-  const rawScore =
-    factors.severity * 1.2 +
-    factors.recurrenceCount * 1.1 +
-    factors.crossModuleBreadth * 0.8 +
-    factors.riskScore * 1.4 +
-    factors.persistenceAcrossRuns * 0.9 +
-    factors.ownershipDocsGap * 0.7 +
-    factors.novelSuccessfulRemediationShape * 1.3;
+  const raw =
+    factors.severity * 1.4 +
+    factors.recurrenceCount * 1.2 +
+    factors.blastRadius * 1.1 +
+    factors.crossModuleSpread * 1.0 +
+    factors.ownershipDocsGap * 0.8 +
+    factors.novelSuccessfulRemediationSignal * 1.3;
 
-  return Number(rawScore.toFixed(3));
+  return Number(raw.toFixed(3));
 };
 
-const chooseCandidateKind = (cluster: ReplayCluster, factors: MemoryReplaySalienceFactors): MemoryCandidateKind => {
+const chooseCandidateKind = (factors: MemoryReplaySalienceFactors): MemoryCandidateKind => {
   if (factors.ownershipDocsGap > 0) {
     return 'open_question';
   }
-  if (factors.novelSuccessfulRemediationShape > 0) {
+  if (factors.novelSuccessfulRemediationSignal > 0) {
     return 'pattern';
   }
-  if (factors.severity >= 4 || factors.riskScore >= 7) {
+  if (factors.severity >= 6 || factors.blastRadius >= 7) {
     return 'failure_mode';
   }
-  if (factors.persistenceAcrossRuns >= 3 && cluster.events.every((event) => event.successfulRemediation)) {
+  if (factors.recurrenceCount >= 4 && factors.crossModuleSpread <= 2) {
     return 'invariant';
   }
   return 'decision';
 };
 
-const clusterEvents = (events: ReplayEvent[]): ReplayCluster[] => {
-  const buckets = new Map<string, ReplayEvent[]>();
-
-  for (const event of events) {
-    const key = buildClusterKey(event);
-    const existing = buckets.get(key) ?? [];
-    existing.push(event);
-    buckets.set(key, existing);
+const dominantValue = <T extends string>(values: T[], fallback: T): T => {
+  if (values.length === 0) {
+    return fallback;
   }
 
-  return [...buckets.entries()]
-    .map(([key, bucket]) => ({ key, events: bucket }))
-    .sort((a, b) => a.key.localeCompare(b.key));
+  const counts = new Map<T, number>();
+  values.forEach((value) => counts.set(value, (counts.get(value) ?? 0) + 1));
+
+  return [...counts.entries()]
+    .sort((a, b) => {
+      if (b[1] !== a[1]) {
+        return b[1] - a[1];
+      }
+      return String(a[0]).localeCompare(String(b[0]));
+    })[0]?.[0] ?? fallback;
 };
 
-const remediationShapeStats = (events: ReplayEvent[]): Map<string, number> => {
-  const counts = new Map<string, number>();
-  for (const event of events) {
-    if (!event.successfulRemediation || !event.remediationShape) {
-      continue;
-    }
-    counts.set(event.remediationShape, (counts.get(event.remediationShape) ?? 0) + 1);
+const readPriorCandidates = (projectRoot: string): MemoryReplayCandidate[] => {
+  const outPath = path.join(projectRoot, MEMORY_CANDIDATES_RELATIVE_PATH);
+  if (!fs.existsSync(outPath)) {
+    return [];
   }
-  return counts;
+
+  const prior = readJson<Partial<MemoryReplayResult>>(outPath);
+  return Array.isArray(prior.candidates) ? prior.candidates : [];
 };
 
-const toCandidate = (cluster: ReplayCluster, factors: MemoryReplaySalienceFactors): MemoryReplayCandidate => {
-  const [fingerprint, module, ruleId, failureShape] = cluster.key.split('|');
-  const kind = chooseCandidateKind(cluster, factors);
-  const salienceScore = computeSalienceScore(factors);
+const buildSupersession = (
+  cluster: ReplayCluster,
+  candidateId: string,
+  priorCandidates: MemoryReplayCandidate[]
+): MemoryReplayCandidate['supersession'] => {
+  const lineage = priorCandidates
+    .filter((candidate) => candidate.fingerprint === cluster.key)
+    .map((candidate) => candidate.candidateId);
 
-  const sortedEvents = [...cluster.events].sort((a, b) => `${a.eventId}:${a.sourcePath}`.localeCompare(`${b.eventId}:${b.sourcePath}`));
-  const lastSeenAt = sortedEvents.reduce((latest, event) => (Date.parse(event.createdAt) > Date.parse(latest) ? event.createdAt : latest), new Date(0).toISOString());
+  const uniqueLineage = uniqueSorted(lineage);
+  const supersedesCandidateIds = uniqueLineage.filter((priorId) => priorId !== candidateId);
 
   return {
-    candidateId: createHash('sha256').update(cluster.key).digest('hex').slice(0, 16),
+    evolutionOrdinal: supersedesCandidateIds.length + 1,
+    priorCandidateIds: supersedesCandidateIds,
+    supersedesCandidateIds
+  };
+};
+
+const toCandidate = (cluster: ReplayCluster, priorCandidates: MemoryReplayCandidate[]): MemoryReplayCandidate => {
+  const salienceFactors = scoreCluster(cluster);
+  const candidateId = createHash('sha256').update(cluster.key).digest('hex').slice(0, 16);
+
+  const module = dominantValue(cluster.events.flatMap((event) => event.subjectModules), 'unknown-module');
+  const ruleId = dominantValue(cluster.events.flatMap((event) => event.ruleIds), 'unknown-rule');
+
+  const lastSeenAt = cluster.events.reduce(
+    (latest, event) => (Date.parse(event.createdAt) > Date.parse(latest) ? event.createdAt : latest),
+    new Date(0).toISOString()
+  );
+
+  const kind = chooseCandidateKind(salienceFactors);
+
+  return {
+    candidateId,
     kind,
     title: `${kind.replace('_', ' ')}: ${ruleId}`,
-    summary: `${cluster.events.length} related memory events clustered by fingerprint/module/rule/failure shape.`,
+    summary: `${cluster.events.length} replayed memory events for fingerprint ${cluster.key}.`,
     clusterKey: cluster.key,
-    salienceScore,
-    salienceFactors: factors,
-    fingerprint,
+    salienceScore: computeSalienceScore(salienceFactors),
+    salienceFactors,
+    fingerprint: cluster.key,
     module,
     ruleId,
-    failureShape,
+    failureShape: cluster.key,
     eventCount: cluster.events.length,
-    provenance: sortedEvents
-      .map((event) => ({
-        eventId: event.eventId,
-        sourcePath: event.sourcePath,
-        fingerprint: event.fingerprint,
-        runId: event.runId
-      })),
-    lastSeenAt
+    provenance: cluster.events.map((event) => ({
+      eventId: event.eventId,
+      sourcePath: event.sourcePath,
+      fingerprint: event.eventFingerprint,
+      runId: null
+    })),
+    lastSeenAt,
+    supersession: buildSupersession(cluster, candidateId, priorCandidates)
   };
 };
 
 const sortCandidates = (candidates: MemoryReplayCandidate[]): MemoryReplayCandidate[] =>
-  [...candidates].sort((a, b) => {
-    if (b.salienceScore !== a.salienceScore) {
-      return b.salienceScore - a.salienceScore;
+  [...candidates].sort((left, right) => {
+    if (right.salienceScore !== left.salienceScore) {
+      return right.salienceScore - left.salienceScore;
     }
-    return a.clusterKey.localeCompare(b.clusterKey);
+    return left.clusterKey.localeCompare(right.clusterKey);
   });
 
 export const replayMemoryToCandidates = (projectRoot: string): MemoryReplayResult => {
   const index = ensureMemoryIndex(projectRoot);
   const events = readReplayEvents(projectRoot, index);
   const clusters = clusterEvents(events);
-  const remediationShapeSeen = remediationShapeStats(events);
+  const priorCandidates = readPriorCandidates(projectRoot);
 
-  const candidates = sortCandidates(
-    clusters.map((cluster) => {
-      const factors = scoreCluster(cluster, remediationShapeSeen);
-      return toCandidate(cluster, factors);
-    })
-  );
+  const candidates = sortCandidates(clusters.map((cluster) => toCandidate(cluster, priorCandidates)));
 
   const artifact: MemoryReplayResult = {
     schemaVersion: '1.0',

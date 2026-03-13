@@ -1,13 +1,21 @@
 {
-  "runId": "run-1",
-  "fingerprint": "fp-notes",
-  "module": "packages/cli",
-  "ruleId": "notes.missing",
-  "failureShape": "missing-file",
-  "severity": "error",
-  "recurrenceCount": 2,
-  "modules": ["packages/cli", "docs"],
-  "riskScore": 8,
-  "gaps": { "ownership": true, "docs": true },
-  "remediation": { "status": "pending" }
+  "schemaVersion": "1.0",
+  "kind": "verify_run",
+  "eventInstanceId": "evt-verify-1",
+  "eventFingerprint": "fp-notes",
+  "createdAt": "2025-01-01T00:00:00.000Z",
+  "repoRevision": "rev-a",
+  "sources": [{ "type": "command", "reference": "verify" }],
+  "subjectModules": ["packages/cli", "docs"],
+  "ruleIds": ["notes.missing"],
+  "riskSummary": { "level": "high", "score": 8, "signals": ["docs-gap"] },
+  "outcome": { "status": "failure", "summary": "missing notes" },
+  "salienceInputs": {
+    "severity": "high",
+    "recurrence": 2,
+    "blastRadius": 7,
+    "crossModuleSpread": 2,
+    "ownershipGap": true,
+    "docsGap": true
+  }
 }

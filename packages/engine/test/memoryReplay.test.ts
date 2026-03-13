@@ -20,27 +20,19 @@ const setupFixtureRepo = (): string => {
 };
 
 describe('replayMemoryToCandidates', () => {
-  it('replays fixture events into deterministically sorted candidates', () => {
+  it('clusters replay events by event fingerprint', () => {
     const root = setupFixtureRepo();
 
     const output = replayMemoryToCandidates(root);
 
     expect(output.totalEvents).toBe(4);
     expect(output.clustersEvaluated).toBe(2);
-    expect(output.candidates.map((candidate) => candidate.kind)).toEqual(['open_question', 'pattern']);
+    expect(output.candidates.map((candidate) => candidate.fingerprint)).toEqual(['fp-notes', 'fp-tests']);
+    expect(output.candidates[0]?.eventCount).toBe(2);
     expect(output.candidates[0]?.provenance.map((entry) => entry.eventId)).toEqual(['evt-plan-1', 'evt-verify-1']);
-    expect(output.candidates[0]?.lastSeenAt).toBeDefined();
-
-    const written = JSON.parse(
-      fs.readFileSync(path.join(root, '.playbook/memory/candidates.json'), 'utf8')
-    ) as typeof output;
-
-    expect(written.candidates.map((candidate) => candidate.candidateId)).toEqual(
-      output.candidates.map((candidate) => candidate.candidateId)
-    );
   });
 
-  it('returns stable scores and ordering for identical inputs', () => {
+  it('keeps stable deterministic salience ranking', () => {
     const root = setupFixtureRepo();
 
     const first = replayMemoryToCandidates(root);
@@ -50,5 +42,55 @@ describe('replayMemoryToCandidates', () => {
     expect(second.candidates.map((candidate) => candidate.salienceScore)).toEqual(
       first.candidates.map((candidate) => candidate.salienceScore)
     );
+    expect(first.candidates.map((candidate) => candidate.kind)).toEqual(['open_question', 'pattern']);
+  });
+
+  it('writes deterministic candidate artifact output', () => {
+    const root = setupFixtureRepo();
+    const output = replayMemoryToCandidates(root);
+
+    const written = JSON.parse(
+      fs.readFileSync(path.join(root, '.playbook/memory/candidates.json'), 'utf8')
+    ) as typeof output;
+
+    expect(written.command).toBe('memory-replay');
+    expect(written.candidates.map((candidate) => candidate.candidateId)).toEqual(
+      output.candidates.map((candidate) => candidate.candidateId)
+    );
+  });
+
+  it('adds supersession metadata when prior candidate lineage exists', () => {
+    const root = setupFixtureRepo();
+
+    const baseline = replayMemoryToCandidates(root);
+    const priorNotesCandidate = baseline.candidates.find((candidate) => candidate.fingerprint === 'fp-notes');
+    if (!priorNotesCandidate) {
+      throw new Error('missing fixture candidate for fp-notes');
+    }
+
+    const candidatesPath = path.join(root, '.playbook/memory/candidates.json');
+    const priorArtifact = JSON.parse(fs.readFileSync(candidatesPath, 'utf8')) as {
+      candidates: Array<Record<string, unknown>>;
+    };
+
+    priorArtifact.candidates = priorArtifact.candidates.map((candidate) => {
+      if (candidate.fingerprint !== 'fp-notes') {
+        return candidate;
+      }
+      return {
+        ...candidate,
+        candidateId: 'legacy-notes-candidate'
+      };
+    });
+
+    fs.writeFileSync(candidatesPath, `${JSON.stringify(priorArtifact, null, 2)}\n`, 'utf8');
+
+    const rerun = replayMemoryToCandidates(root);
+    const notesCandidate = rerun.candidates.find((candidate) => candidate.fingerprint === 'fp-notes');
+
+    expect(notesCandidate?.candidateId).toBe(priorNotesCandidate.candidateId);
+    expect(notesCandidate?.supersession.priorCandidateIds).toContain('legacy-notes-candidate');
+    expect(notesCandidate?.supersession.supersedesCandidateIds).toContain('legacy-notes-candidate');
+    expect(notesCandidate?.supersession.evolutionOrdinal).toBe(2);
   });
 });

@@ -1,14 +1,19 @@
 {
-  "runId": "run-2",
-  "fingerprint": "fp-tests",
-  "module": "packages/engine",
-  "ruleId": "tests.required",
-  "failureShape": "missing-test",
-  "severity": "warning",
-  "recurrenceCount": 2,
-  "modules": ["packages/engine", "packages/cli"],
-  "riskScore": 4,
-  "ownershipGap": false,
-  "docsGap": false,
-  "remediation": { "status": "success", "shape": "add-fixture-and-assert" }
+  "schemaVersion": "1.0",
+  "kind": "apply_run",
+  "eventInstanceId": "evt-apply-1",
+  "eventFingerprint": "fp-tests",
+  "createdAt": "2025-01-03T00:00:00.000Z",
+  "repoRevision": "rev-c",
+  "sources": [{ "type": "command", "reference": "apply" }],
+  "subjectModules": ["packages/engine", "packages/cli"],
+  "ruleIds": ["tests.required"],
+  "riskSummary": { "level": "low", "score": 3, "signals": [] },
+  "outcome": { "status": "success", "summary": "tests added" },
+  "salienceInputs": {
+    "recurrence": 2,
+    "blastRadius": 3,
+    "crossModuleSpread": 2,
+    "novelSuccessfulRemediation": true
+  }
 }
