@@ -645,7 +645,7 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
     title: 'PlaybookDoctorOutput',
     type: 'object',
     additionalProperties: false,
-    required: ['schemaVersion', 'command', 'status', 'summary', 'findings', 'artifactHygiene'],
+    required: ['schemaVersion', 'command', 'status', 'summary', 'findings', 'artifactHygiene', 'memoryDiagnostics'],
     properties: {
       schemaVersion: { const: '1.0' },
       command: { const: 'doctor' },
@@ -667,7 +667,7 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
           additionalProperties: false,
           required: ['category', 'severity', 'id', 'message'],
           properties: {
-            category: { enum: ['Architecture', 'Docs', 'Testing', 'Risk'] },
+            category: { enum: ['Architecture', 'Docs', 'Testing', 'Risk', 'Memory'] },
             severity: { enum: ['error', 'warning', 'info'] },
             id: { type: 'string' },
             message: { type: 'string' }
@@ -715,6 +715,51 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
                 id: { enum: ['PB012', 'PB013', 'PB014'] },
                 title: { type: 'string' },
                 entries: { type: 'array', items: { type: 'string' } }
+              }
+            }
+          }
+        }
+      },
+      memoryDiagnostics: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['findings', 'suggestions'],
+        properties: {
+          findings: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['code', 'severity', 'message', 'recommendation'],
+              properties: {
+                code: {
+                  enum: [
+                    'memory-artifacts-absent',
+                    'memory-artifacts-missing',
+                    'memory-artifacts-malformed',
+                    'candidate-hoarding-risk',
+                    'superseded-knowledge-lingering',
+                    'replay-output-inconsistent',
+                    'promoted-knowledge-provenance-gap',
+                    'memory-lifecycle-healthy'
+                  ]
+                },
+                severity: { enum: ['info', 'warning'] },
+                message: { type: 'string' },
+                recommendation: { type: 'string' }
+              }
+            }
+          },
+          suggestions: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['id', 'title', 'actions'],
+              properties: {
+                id: { enum: ['PB015', 'PB016', 'PB017', 'PB018'] },
+                title: { type: 'string' },
+                actions: { type: 'array', items: { type: 'string' } }
               }
             }
           }

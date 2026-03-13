@@ -139,7 +139,8 @@ describe('runDoctor', () => {
       findings: [
         {
           code: 'memory-lifecycle-healthy',
-          severity: 'info'
+          severity: 'info',
+          recommendation: 'Continue replay-before-promotion and salience-gated promotion workflows.'
         }
       ],
       suggestions: []

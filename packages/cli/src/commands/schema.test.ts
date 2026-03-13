@@ -120,6 +120,30 @@ describe('runSchema', () => {
     logSpy.mockRestore();
   });
 
+  it('prints the doctor schema', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runSchema('/repo', ['doctor'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+    expect(payload.title).toBe('PlaybookDoctorOutput');
+
+    const required = payload.required as string[];
+    expect(required).toContain('memoryDiagnostics');
+
+    const doctorProps = payload.properties as Record<string, unknown>;
+    const findings = doctorProps.findings as Record<string, unknown>;
+    const findingProps = ((findings.items as Record<string, unknown>).properties ?? {}) as Record<string, unknown>;
+    const category = findingProps.category as Record<string, unknown>;
+    expect(category.enum).toContain('Memory');
+
+    const memoryDiagnostics = doctorProps.memoryDiagnostics as Record<string, unknown>;
+    expect(memoryDiagnostics.required).toEqual(['findings', 'suggestions']);
+
+    logSpy.mockRestore();
+  });
+
   it('prints the query schema', async () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
