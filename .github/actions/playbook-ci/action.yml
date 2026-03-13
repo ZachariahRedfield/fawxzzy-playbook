@@ -99,6 +99,13 @@ runs:
         echo "+ pnpm test"
         pnpm test
 
+    - name: Run targeted CLI test filters
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "+ pnpm test:targeted"
+        pnpm test:targeted
+
     - name: Run Playbook verification (primary contract gate)
       shell: bash
       working-directory: ${{ inputs.working-directory }}
