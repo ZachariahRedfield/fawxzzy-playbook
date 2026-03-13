@@ -474,7 +474,10 @@ describe('answerRepositoryQuestion', () => {
     runGit(repo, ['commit', '-m', 'initial']);
     fs.writeFileSync(path.join(repo, 'src', 'workouts', 'index.ts'), 'export const workouts = 2;\n');
 
-    const result = answerRepositoryQuestion(repo, 'what modules are affected?', { withDiffContextMemory: true, diffContext: true });
+    const result = answerRepositoryQuestion(repo, 'what do we know about workouts PB001 missing-tests in this diff?', {
+      withDiffContextMemory: true,
+      diffContext: true
+    });
     const memoryKnowledge = (result.context as { memoryKnowledge?: Array<{ source: string }> }).memoryKnowledge;
 
     expect(Array.isArray(result.context.knowledgeHits)).toBe(true);
