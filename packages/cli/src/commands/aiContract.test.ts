@@ -24,7 +24,26 @@ describe('runAiContract', () => {
     expect(contract.schemaVersion).toBe('1.0');
     expect(contract.kind).toBe('playbook-ai-contract');
     expect(contract.ai_runtime).toBe('playbook-agent');
-    expect((contract.memory as Record<string, unknown>).retrieval).toBeDefined();
+    const memory = contract.memory as Record<string, unknown>;
+    const artifactLocations = memory.artifactLocations as Record<string, unknown>;
+    expect(artifactLocations.events).toBe('.playbook/memory/events');
+    expect(artifactLocations.candidates).toBe('.playbook/memory/candidates.json');
+    expect(artifactLocations.promotedKnowledge).toEqual([
+      '.playbook/memory/knowledge/decisions.json',
+      '.playbook/memory/knowledge/patterns.json',
+      '.playbook/memory/knowledge/failure-modes.json',
+      '.playbook/memory/knowledge/invariants.json'
+    ]);
+
+    const policy = memory.promotedKnowledgePolicy as Record<string, unknown>;
+    expect(policy.preferPromotedKnowledgeForRetrieval).toBe(true);
+    expect(policy.candidatesAreAdvisoryOnlyUntilReviewedPromotion).toBe(true);
+    expect(policy.reviewedPromotionRequired).toBe(true);
+    expect(policy.noHiddenMutation).toBe(true);
+
+    const retrieval = memory.retrieval as Record<string, unknown>;
+    expect(retrieval.requireProvenance).toBe(true);
+    expect(retrieval.provenanceFields).toEqual(['knowledgeId', 'eventId', 'sourcePath', 'fingerprint']);
 
     logSpy.mockRestore();
   });

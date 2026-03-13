@@ -103,6 +103,20 @@ describe('runSchema', () => {
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
     expect(payload.title).toBe('PlaybookAiContractOutput');
 
+    const contractSchema = ((payload.properties as Record<string, unknown>).contract as Record<string, unknown>);
+    expect(contractSchema.required).toContain('memory');
+
+    const contractProps = contractSchema.properties as Record<string, unknown>;
+    const memorySchema = contractProps.memory as Record<string, unknown>;
+    expect(memorySchema.required).toEqual(['artifactLocations', 'promotedKnowledgePolicy', 'retrieval']);
+
+    const memoryProps = memorySchema.properties as Record<string, unknown>;
+    const artifactLocations = memoryProps.artifactLocations as Record<string, unknown>;
+    expect((artifactLocations.required as string[])).toEqual(['events', 'candidates', 'promotedKnowledge']);
+
+    const retrieval = memoryProps.retrieval as Record<string, unknown>;
+    expect((retrieval.required as string[])).toEqual(['requireProvenance', 'provenanceFields']);
+
     logSpy.mockRestore();
   });
 

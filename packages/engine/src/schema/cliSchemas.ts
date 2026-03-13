@@ -350,7 +350,8 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
           'intelligence_sources',
           'queries',
           'remediation',
-          'rules'
+          'rules',
+          'memory'
         ],
         properties: {
           schemaVersion: { const: '1.0' },
@@ -388,6 +389,70 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
               requireIndexBeforeQuery: { type: 'boolean' },
               preferPlaybookCommandsOverAdHocInspection: { type: 'boolean' },
               allowDirectEditsWithoutPlan: { type: 'boolean' }
+            }
+          },
+          memory: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['artifactLocations', 'promotedKnowledgePolicy', 'retrieval'],
+            properties: {
+              artifactLocations: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['events', 'candidates', 'promotedKnowledge'],
+                properties: {
+                  events: { const: '.playbook/memory/events' },
+                  candidates: { const: '.playbook/memory/candidates.json' },
+                  promotedKnowledge: {
+                    type: 'array',
+                    prefixItems: [
+                      { const: '.playbook/memory/knowledge/decisions.json' },
+                      { const: '.playbook/memory/knowledge/patterns.json' },
+                      { const: '.playbook/memory/knowledge/failure-modes.json' },
+                      { const: '.playbook/memory/knowledge/invariants.json' }
+                    ],
+                    items: false,
+                    minItems: 4,
+                    maxItems: 4
+                  }
+                }
+              },
+              promotedKnowledgePolicy: {
+                type: 'object',
+                additionalProperties: false,
+                required: [
+                  'preferPromotedKnowledgeForRetrieval',
+                  'candidatesAreAdvisoryOnlyUntilReviewedPromotion',
+                  'reviewedPromotionRequired',
+                  'noHiddenMutation'
+                ],
+                properties: {
+                  preferPromotedKnowledgeForRetrieval: { const: true },
+                  candidatesAreAdvisoryOnlyUntilReviewedPromotion: { const: true },
+                  reviewedPromotionRequired: { const: true },
+                  noHiddenMutation: { const: true }
+                }
+              },
+              retrieval: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['requireProvenance', 'provenanceFields'],
+                properties: {
+                  requireProvenance: { const: true },
+                  provenanceFields: {
+                    type: 'array',
+                    prefixItems: [
+                      { const: 'knowledgeId' },
+                      { const: 'eventId' },
+                      { const: 'sourcePath' },
+                      { const: 'fingerprint' }
+                    ],
+                    items: false,
+                    minItems: 4,
+                    maxItems: 4
+                  }
+                }
+              }
             }
           },
           ownership: {
