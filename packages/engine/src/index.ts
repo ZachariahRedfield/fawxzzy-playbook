@@ -194,6 +194,15 @@ export type {
 
 export { validateRepoBoundary, validateRemediationPlan, redactSecretsForLogs } from './security/guards.js';
 export {
+  SECURITY_BASELINE_RELATIVE_PATH,
+  SECURITY_BASELINE_STATUSES,
+  readSecurityBaselineArtifact,
+  sortSecurityBaselineFindings,
+  summarizeSecurityBaseline,
+  showSecurityBaselineForPackage
+} from './security/securityBaseline.js';
+export type { SecurityBaselineArtifact, SecurityBaselineFinding, SecurityBaselineStatus, SecurityBaselineSummary } from './security/securityBaseline.js';
+export {
   extractPatternCandidates,
   buildPatternCandidateArtifact,
   writePatternCandidateArtifact,

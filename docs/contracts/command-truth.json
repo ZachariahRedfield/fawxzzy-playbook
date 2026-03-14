@@ -400,6 +400,18 @@
       "example": "pnpm playbook schema verify --json"
     },
     {
+      "name": "security",
+      "category": "Utility",
+      "role": "governance",
+      "lifecycle": "canonical",
+      "discoverability": "secondary",
+      "onboardingPriority": null,
+      "canonicalSequence": null,
+      "productFacing": true,
+      "machineReadable": true,
+      "example": "pnpm playbook security baseline summary --json"
+    },
+    {
       "name": "session",
       "category": "Utility",
       "role": "utility",
@@ -472,6 +484,7 @@
     "query",
     "route",
     "rules",
+    "security",
     "verify"
   ],
   "compatibilityCommands": [

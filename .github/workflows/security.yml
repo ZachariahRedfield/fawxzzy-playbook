@@ -68,6 +68,94 @@ jobs:
           path: ${{ steps.grype_scan.outputs.sarif }}
           if-no-files-found: warn
 
+      - name: Step 3.3 — Capture deterministic security baseline
+        shell: bash
+        run: |
+          mkdir -p .playbook
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          const sarifPath = process.env.SARIF_PATH;
+          if (!sarifPath || !fs.existsSync(sarifPath)) {
+            throw new Error(`Missing SARIF artifact at ${sarifPath ?? '<unset>'}.`);
+          }
+
+          const sarif = JSON.parse(fs.readFileSync(sarifPath, 'utf8'));
+          const results = Array.isArray(sarif.runs)
+            ? sarif.runs.flatMap((run) => (Array.isArray(run.results) ? run.results : []))
+            : [];
+
+          const parseDependencyPath = (value) => {
+            if (typeof value !== 'string') return '';
+            const segments = value
+              .split(/\s+/)
+              .map((segment) => segment.trim())
+              .filter(Boolean)
+              .filter((segment) => !segment.includes('>'));
+            return segments.join(' > ');
+          };
+
+          const findingsByKey = new Map();
+
+          for (const result of results) {
+            const properties = result && typeof result === 'object' && result.properties && typeof result.properties === 'object'
+              ? result.properties
+              : {};
+            const packageName = String(properties.depPkgName || properties.package || 'unknown-package');
+            const installedVersion = String(properties.depPkgVersion || properties.version || 'unknown-version');
+            const ecosystem = String(properties.depPkgType || properties.ecosystem || 'unknown-ecosystem');
+            const vulnerabilityId = String(properties.vulnerabilityID || result.ruleId || 'unknown-vulnerability');
+            const severity = String(properties.severity || result.level || 'unknown').toLowerCase();
+            const dependencyPath = parseDependencyPath(
+              properties.depPath || properties.dependencyPath || properties.dependency_path || ''
+            );
+
+            const directness = dependencyPath.length > 0 && dependencyPath.includes(' > ') ? 'transitive' : 'direct';
+            const baselineStatus = directness === 'direct' ? 'direct' : 'transitive';
+
+            const key = [packageName, installedVersion, ecosystem, vulnerabilityId, dependencyPath].join('::');
+            findingsByKey.set(key, {
+              package_name: packageName,
+              installed_version: installedVersion,
+              ecosystem,
+              vulnerability_id: vulnerabilityId,
+              severity,
+              dependency_path: dependencyPath,
+              direct_or_transitive: directness,
+              status: baselineStatus
+            });
+          }
+
+          const findings = Array.from(findingsByKey.values()).sort((left, right) => {
+            const packageCompare = left.package_name.localeCompare(right.package_name);
+            if (packageCompare !== 0) return packageCompare;
+            const vulnerabilityCompare = left.vulnerability_id.localeCompare(right.vulnerability_id);
+            if (vulnerabilityCompare !== 0) return vulnerabilityCompare;
+            const versionCompare = left.installed_version.localeCompare(right.installed_version);
+            if (versionCompare !== 0) return versionCompare;
+            return left.dependency_path.localeCompare(right.dependency_path);
+          });
+
+          const artifact = {
+            schemaVersion: '1.0',
+            kind: 'security-baseline',
+            generatedAt: new Date().toISOString(),
+            findings
+          };
+
+          fs.writeFileSync('.playbook/security-baseline.json', `${JSON.stringify(artifact, null, 2)}
+`, 'utf8');
+          NODE
+        env:
+          SARIF_PATH: ${{ steps.grype_scan.outputs.sarif }}
+
+      - name: Step 3.4 — Upload security baseline artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-baseline
+          path: .playbook/security-baseline.json
+          if-no-files-found: error
+
       - name: Install Cosign
         uses: sigstore/cosign-installer@v4.0.0
         with:

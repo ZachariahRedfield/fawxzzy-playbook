@@ -488,6 +488,20 @@ export const commandMetadata: CommandMetadata[] = [
     exampleArgs: 'knowledge list --json',
     machineReadable: true
   },
+
+  {
+    name: 'security',
+    description: 'Inspect deterministic security baseline findings and summary',
+    category: 'Utility',
+    role: 'governance',
+    lifecycle: 'canonical',
+    discoverability: 'secondary',
+    onboardingPriority: null,
+    canonicalSequence: null,
+    productFacing: true,
+    exampleArgs: 'security baseline summary --json',
+    machineReadable: true
+  },
   {
     name: 'agent',
     description: 'Read runtime control-plane records and run plan-backed dry-run previews',

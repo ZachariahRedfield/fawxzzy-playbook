@@ -191,6 +191,11 @@ declare module "@zachariahredfield/playbook-engine" {
   export const applyExecutionPlan: (...args: any[]) => Promise<any>;
   export const parsePlanArtifact: (...args: any[]) => any;
   export const validateRemediationPlan: (...args: any[]) => any;
+  export const readSecurityBaselineArtifact: (...args: any[]) => any;
+  export const showSecurityBaselineForPackage: (...args: any[]) => any;
+  export const summarizeSecurityBaseline: (...args: any[]) => any;
+  export type SecurityBaselineArtifact = any;
+  export type SecurityBaselineSummary = any;
   export const parsePlaybookIgnore: (...args: any[]) => any;
   export const isPlaybookIgnored: (...args: any[]) => boolean;
   export const suggestPlaybookIgnore: (...args: any[]) => any;

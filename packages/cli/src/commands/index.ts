@@ -268,6 +268,10 @@ const commandRunners: Record<string, (context: CommandContext) => Promise<Comman
     const { runKnowledge } = await import('./knowledge.js');
     return runKnowledge(cwd, commandArgs, { format, quiet });
   },
+  security: async ({ cwd, commandArgs, format, quiet }) => {
+    const { runSecurity } = await import('./security.js');
+    return runSecurity(cwd, commandArgs, { format, quiet });
+  },
   agent: async ({ cwd, commandArgs, format, quiet }) => {
     const { runAgent } = await import('./agent.js');
     return runAgent(cwd, commandArgs, { format, quiet });
@@ -386,6 +390,7 @@ const commandOrder = [
   'learn',
   'memory',
   'knowledge',
+  'security',
   'agent'
 ] as const;
 
