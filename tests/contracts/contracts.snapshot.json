@@ -1,3 +1,7 @@
+
+> playbook-monorepo@0.1.1 playbook /workspace/playbook
+> node scripts/run-playbook.mjs contracts --json
+
 {
   "schemaVersion": "1.0",
   "command": "contracts",
@@ -45,15 +49,13 @@
       {
         "path": "docs/contracts/ARTIFACT_EVOLUTION_POLICY.md",
         "availability": {
-          "available": false,
-          "reason": "missing"
+          "available": true
         }
       },
       {
         "path": "docs/contracts/COMMAND_CONTRACTS_V1.md",
         "availability": {
-          "available": false,
-          "reason": "missing"
+          "available": true
         }
       }
     ]
@@ -61,11 +63,23 @@
   "roadmap": {
     "path": "docs/roadmap/ROADMAP.json",
     "availability": {
-      "available": false,
-      "reason": "missing"
+      "available": true
     },
-    "schemaVersion": null,
-    "trackedFeatures": []
+    "schemaVersion": "1.0",
+    "trackedFeatures": [
+      {
+        "featureId": "PB-V04-ANALYZEPR-001",
+        "status": "implemented-hardening"
+      },
+      {
+        "featureId": "PB-V04-PLAN-APPLY-001",
+        "status": "in-progress"
+      },
+      {
+        "featureId": "PB-V1-DELIVERY-SYSTEM-001",
+        "status": "in-progress"
+      }
+    ]
   },
   "schemas": {
     "memoryArtifacts": [
@@ -125,6 +139,11 @@
         "id": "task-execution-profile",
         "version": "1.0",
         "path": "packages/contracts/src/task-execution-profile.schema.json"
+      },
+      {
+        "id": "learning-state",
+        "version": "1.0",
+        "path": "packages/contracts/src/learning-state.schema.json"
       },
       {
         "id": "explain.memoryKnowledge",
