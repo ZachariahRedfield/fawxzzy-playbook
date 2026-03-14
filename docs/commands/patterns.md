@@ -38,6 +38,25 @@ Show highest-ranked patterns by the latest attractor score (`--limit <n>` option
 
 Apply explicit local promotion decisions for compacted pattern candidates.
 
+
+### `patterns outcomes <patternId>`
+
+Show outcome-oriented inspection signals for a pattern id, including:
+
+- `attractor`
+- `fitness`
+- `strength`
+- deterministic outcome bullets
+
+### `patterns doctrine-candidates`
+
+List promoted/high-strength patterns as doctrine candidates ranked by strength.
+
+### `patterns anti-patterns`
+
+Show anti-pattern risk signals inferred from low-strength patterns.
+
+
 ## Guarantees
 
 - Rule: New CLI knowledge surfaces begin as inspection tools.
@@ -53,6 +72,9 @@ pnpm playbook patterns related <id> --json
 pnpm playbook patterns layers --json
 pnpm playbook patterns score --json
 pnpm playbook patterns top --limit 10 --json
+pnpm playbook patterns outcomes pattern.modularity
+pnpm playbook patterns doctrine-candidates --json
+pnpm playbook patterns anti-patterns --json
 pnpm playbook patterns promote --id <pattern-id> --decision approve --json
 ```
 

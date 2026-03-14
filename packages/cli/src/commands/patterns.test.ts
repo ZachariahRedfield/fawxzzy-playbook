@@ -260,4 +260,63 @@ describe('runPatterns', () => {
 
     logSpy.mockRestore();
   });
+
+  it('returns outcome and fitness signals for a pattern', async () => {
+    const repo = createRepo('playbook-cli-patterns-outcomes');
+    writeContractPatternGraph(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runPatterns(repo, ['outcomes', 'pattern.modularity'], {
+      format: 'json',
+      quiet: false
+    });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.action).toBe('outcomes');
+    expect(payload.patternId).toBe('pattern.modularity');
+    expect(payload.signals).toMatchObject({ attractor: 0.91, fitness: 0.82, strength: 0.87 });
+    expect(payload.outcomes).toEqual(['low blast radius', 'stable contracts', 'reduced dependency churn']);
+
+    logSpy.mockRestore();
+  });
+
+  it('lists doctrine candidates ranked by strength', async () => {
+    const repo = createRepo('playbook-cli-patterns-doctrine-candidates');
+    writeContractPatternGraph(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runPatterns(repo, ['doctrine-candidates'], {
+      format: 'json',
+      quiet: false
+    });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.action).toBe('doctrine-candidates');
+    expect(payload.candidates.length).toBeGreaterThan(0);
+    expect(payload.candidates[0].strength).toBeGreaterThanOrEqual(payload.candidates.at(-1).strength);
+
+    logSpy.mockRestore();
+  });
+
+  it('lists anti-pattern risk signals', async () => {
+    const repo = createRepo('playbook-cli-patterns-anti-patterns');
+    writeContractPatternGraph(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runPatterns(repo, ['anti-patterns'], {
+      format: 'json',
+      quiet: false
+    });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.action).toBe('anti-patterns');
+    expect(payload.antiPatterns.length).toBeGreaterThan(0);
+    expect(payload.antiPatterns[0].antiPatterns.length).toBe(3);
+
+    logSpy.mockRestore();
+  });
+
 });

@@ -2,6 +2,9 @@ import { listTopPatterns, promotePatternCandidate, scorePatternGraph } from '@za
 import { emitJsonOutput } from '../lib/jsonArtifact.js';
 import { ExitCode } from '../lib/cliContract.js';
 import { findPatternNode, findRelatedPatterns, readContractPatternGraph, readPatternKnowledgeGraph, summarizePatternLayers } from './patterns/graph.js';
+import { runPatternsOutcomes } from './patterns/outcomes.js';
+import { runPatternsDoctrineCandidates } from './patterns/doctrineCandidates.js';
+import { runPatternsAntiPatterns } from './patterns/antiPatterns.js';
 
 type PatternsOptions = {
   format: 'text' | 'json';
@@ -24,7 +27,7 @@ const emitError = (cwd: string, options: PatternsOptions, message: string): numb
 };
 
 const printHelp = (): void => {
-  console.log('playbook patterns subcommands: list | show <id> | related <id> | layers | score | top [--limit <n>] | promote --id <pattern-id> --decision approve|reject');
+  console.log('playbook patterns subcommands: list | show <id> | related <id> | layers | score | top [--limit <n>] | outcomes <patternId> | doctrine-candidates | anti-patterns | promote --id <pattern-id> --decision approve|reject');
 };
 
 
@@ -108,7 +111,7 @@ export const runPatterns = async (cwd: string, commandArgs: string[], options: P
           payload: {
             schemaVersion: '1.0',
             command: 'patterns',
-            subcommands: ['list', 'show', 'related', 'layers', 'score', 'top', 'promote']
+            subcommands: ['list', 'show', 'related', 'layers', 'score', 'top', 'outcomes', 'doctrine-candidates', 'anti-patterns', 'promote']
           },
           outFile: options.outFile
         });
@@ -128,6 +131,19 @@ export const runPatterns = async (cwd: string, commandArgs: string[], options: P
 
     if (subcommand === 'top') {
       return runTop(cwd, commandArgs, options);
+    }
+
+
+    if (subcommand === 'outcomes') {
+      return runPatternsOutcomes(cwd, commandArgs, options);
+    }
+
+    if (subcommand === 'doctrine-candidates') {
+      return runPatternsDoctrineCandidates(cwd, options);
+    }
+
+    if (subcommand === 'anti-patterns') {
+      return runPatternsAntiPatterns(cwd, options);
     }
 
     const graph = readPatternKnowledgeGraph(cwd);
@@ -208,7 +224,7 @@ export const runPatterns = async (cwd: string, commandArgs: string[], options: P
     return emitError(
       cwd,
       options,
-      'playbook patterns: unsupported subcommand. Use list, show <id>, related <id>, layers, score, top [--limit <n>], or promote --id <pattern-id> --decision approve|reject.'
+      'playbook patterns: unsupported subcommand. Use list, show <id>, related <id>, layers, score, top [--limit <n>], outcomes <patternId>, doctrine-candidates, anti-patterns, or promote --id <pattern-id> --decision approve|reject.'
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
