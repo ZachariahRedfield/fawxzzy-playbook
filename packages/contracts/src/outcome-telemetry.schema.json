@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/outcome-telemetry.schema.json",
+  "title": "PlaybookOutcomeTelemetry",
+  "description": "Deterministic additive repository outcome telemetry for architecture learning evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "generatedAt", "records", "summary"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "kind": { "const": "outcome-telemetry" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "records": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/OutcomeRecord" }
+    },
+    "summary": { "$ref": "#/$defs/OutcomeSummary" }
+  },
+  "$defs": {
+    "OutcomeRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "recordedAt",
+        "plan_churn",
+        "apply_retries",
+        "dependency_drift",
+        "contract_breakage",
+        "docs_mismatch",
+        "ci_failure_categories"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "plan_churn": { "type": "integer", "minimum": 0 },
+        "apply_retries": { "type": "integer", "minimum": 0 },
+        "dependency_drift": { "type": "integer", "minimum": 0 },
+        "contract_breakage": { "type": "integer", "minimum": 0 },
+        "docs_mismatch": { "type": "boolean" },
+        "ci_failure_categories": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "OutcomeSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total_records",
+        "sum_plan_churn",
+        "sum_apply_retries",
+        "sum_dependency_drift",
+        "sum_contract_breakage",
+        "docs_mismatch_count",
+        "ci_failure_category_counts"
+      ],
+      "properties": {
+        "total_records": { "type": "integer", "minimum": 0 },
+        "sum_plan_churn": { "type": "integer", "minimum": 0 },
+        "sum_apply_retries": { "type": "integer", "minimum": 0 },
+        "sum_dependency_drift": { "type": "integer", "minimum": 0 },
+        "sum_contract_breakage": { "type": "integer", "minimum": 0 },
+        "docs_mismatch_count": { "type": "integer", "minimum": 0 },
+        "ci_failure_category_counts": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

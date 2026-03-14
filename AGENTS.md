@@ -237,6 +237,8 @@ Do not hand-edit entries inside the managed markers.
   - Example: `pnpm playbook memory events --json`
 - `security`: Inspect deterministic security baseline findings and summary
   - Example: `pnpm playbook security baseline summary --json`
+- `telemetry`: Inspect deterministic repository and process outcome telemetry artifacts
+  - Example: `pnpm playbook telemetry summary --json`
 - `agent`: Read runtime control-plane records and run plan-backed dry-run previews
   - Example: `pnpm playbook agent run --from-plan .playbook/plan.json --dry-run --json`
 
@@ -288,5 +290,6 @@ Do not hand-edit entries inside the managed markers.
 | `memory` | `pnpm playbook memory events --json` |
 | `knowledge` | `pnpm playbook knowledge list --json` |
 | `security` | `pnpm playbook security baseline summary --json` |
+| `telemetry` | `pnpm playbook telemetry summary --json` |
 | `agent` | `pnpm playbook agent run --from-plan .playbook/plan.json --dry-run --json` |
 <!-- PLAYBOOK:EXAMPLES_END -->

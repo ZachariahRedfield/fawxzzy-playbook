@@ -436,6 +436,18 @@
       "example": "pnpm playbook status --json"
     },
     {
+      "name": "telemetry",
+      "category": "Utility",
+      "role": "utility",
+      "lifecycle": "utility",
+      "discoverability": "secondary",
+      "onboardingPriority": null,
+      "canonicalSequence": null,
+      "productFacing": true,
+      "machineReadable": true,
+      "example": "pnpm playbook telemetry summary --json"
+    },
+    {
       "name": "upgrade",
       "category": "Utility",
       "role": "utility",
@@ -502,6 +514,7 @@
     "schema",
     "session",
     "status",
+    "telemetry",
     "upgrade"
   ],
   "bootstrapLadder": [

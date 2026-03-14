@@ -503,6 +503,19 @@ export const commandMetadata: CommandMetadata[] = [
     machineReadable: true
   },
   {
+    name: 'telemetry',
+    description: 'Inspect deterministic repository and process outcome telemetry artifacts',
+    category: 'Utility',
+    role: 'utility',
+    lifecycle: 'utility',
+    discoverability: 'secondary',
+    onboardingPriority: null,
+    canonicalSequence: null,
+    productFacing: true,
+    exampleArgs: 'telemetry summary --json',
+    machineReadable: true
+  },
+  {
     name: 'agent',
     description: 'Read runtime control-plane records and run plan-backed dry-run previews',
     category: 'Utility',

@@ -222,6 +222,13 @@ declare module "@zachariahredfield/playbook-engine" {
   export const routeTask: (...args: any[]) => RouteDecision;
 
 
+  export type OutcomeTelemetryArtifact = any;
+  export type ProcessTelemetryArtifact = any;
+  export const normalizeOutcomeTelemetryArtifact: (...args: any[]) => OutcomeTelemetryArtifact;
+  export const normalizeProcessTelemetryArtifact: (...args: any[]) => ProcessTelemetryArtifact;
+  export const summarizeStructuralTelemetry: (...args: any[]) => any;
+
+
   export const listRuntimeRuns: (...args: any[]) => any[];
   export const readRuntimeRun: (...args: any[]) => any;
   export const listRuntimeTasks: (...args: any[]) => any[];

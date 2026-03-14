@@ -434,3 +434,5 @@ export type {
   OrchestratorContract as OrchestratorLaneContractArtifact,
   OrchestratorLaneContract
 } from './orchestrator/index.js';
+
+export * from './telemetry/index.js';

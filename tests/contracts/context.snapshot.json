@@ -54,6 +54,7 @@
       "memory",
       "knowledge",
       "security",
+      "telemetry",
       "agent"
     ]
   }
