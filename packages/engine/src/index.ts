@@ -200,6 +200,7 @@ export {
   generatePatternCandidateArtifact,
   PATTERN_CANDIDATES_RELATIVE_PATH
 } from './extract/patternCandidates.js';
+export { linkPatternCandidatesToGraph } from './extract/candidateLinking.js';
 export {
   layeringDetector,
   modularityDetector,
@@ -210,6 +211,13 @@ export {
 } from './extract/detectors/index.js';
 export type { PatternCandidateArtifact, ExtractPatternCandidatesInput } from './extract/patternCandidates.js';
 export type { PatternCandidate, Detector, ExtractionArtifacts, PatternEvidence } from './extract/detectors/index.js';
+export type {
+  CandidateLinkProposalOperation,
+  CandidateLinkScore,
+  CandidateLinkMatch,
+  CandidateLinkReportEntry,
+  CandidateLinkReport
+} from './extract/candidateLinking.js';
 
 export {
   compactPatterns,

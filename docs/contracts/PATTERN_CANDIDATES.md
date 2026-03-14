@@ -39,6 +39,20 @@ Each `candidates[]` entry contains:
 - Candidate observations must remain separate from canonical pattern graph nodes.
 - Promotion into canonical knowledge requires explicit governance review; candidates are never doctrine by default.
 
+
+## Candidate linking proposals
+
+Candidate linking is a deterministic **proposal** surface that compares extracted candidates against existing pattern-graph nodes using:
+
+- pattern family compatibility
+- mechanism overlap
+- relation compatibility
+- evidence compatibility
+
+Linking outputs may propose additive append operations (instance/evidence), but linking itself must never mutate canonical pattern doctrine automatically.
+
+Low-confidence or weak-compatibility candidates remain in `observed` state and require explicit review.
+
 ## Rule
 
 Pattern candidates are extraction outputs, not promoted knowledge.

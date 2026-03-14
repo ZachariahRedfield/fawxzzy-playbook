@@ -113,6 +113,29 @@ Determinism guarantees:
 - normalized confidence in `[0,1]` with fixed 2-decimal precision
 - deterministic missing-artifact errors for absent required sources
 
+
+## Candidate linking workflow
+
+`patterns candidates link` should be treated as a **proposal surface**, not an automatic doctrine merge.
+
+Linking evaluates deterministic compatibility across:
+
+- pattern family
+- mechanism overlap
+- relation compatibility
+- evidence compatibility
+
+Expected behavior:
+
+- matched candidates produce **proposal-only** append operations (instance/evidence suggestions)
+- unmatched or low-confidence candidates remain in `observed` state
+- canonical pattern graph artifacts are never silently rewritten by linking
+
+Governance rule:
+
+- Linking may propose graph enrichment, never silently rewrite canonical knowledge.
+- Failure Mode: Implicit graph mutation makes it impossible to audit how patterns entered doctrine.
+
 ## Guarantees
 
 - Rule: New CLI knowledge surfaces begin as inspection tools.
