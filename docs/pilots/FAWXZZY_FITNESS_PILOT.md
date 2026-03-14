@@ -62,6 +62,7 @@ The pilot writes advisory artifacts to the target repository only:
 - `.playbook/pattern-cards/drafts`
 - `.playbook/promotion`
 - `.playbook/meta`
+- `.playbook/evidence` (contains `cross-repo-evidence.json` with `patternInstances`, `patternOutcomes`, `patternRelations`, and `crossRepoSuccess`)
 
 No artifacts are written into the Playbook runtime repository when using `--target-repo`.
 
@@ -71,3 +72,14 @@ No artifacts are written into the Playbook runtime repository when using `--targ
 2. Artifacts are present under `<fitness-path>/.playbook/`.
 3. Runtime log shows Playbook runtime path and external target path.
 4. Safeguards remain advisory-only in run-cycle output.
+
+## Wave 2E cross-repo evidence
+
+Each pilot run now appends or refreshes repository-scoped entries inside `.playbook/evidence/cross-repo-evidence.json` with strict layer separation:
+
+- `layers.observedPatterns`: raw observed instances from external repositories
+- `layers.evaluatedPatterns`: scored/evaluated patterns correlated with outcomes
+- `layers.canonicalDoctrine`: intentionally empty in this workflow (promotion/governance only)
+
+Rule:
+Never collapse observed patterns, evaluated patterns, and canonical doctrine into the same layer.

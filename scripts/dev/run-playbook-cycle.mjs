@@ -27,7 +27,8 @@ const ARTIFACT_DIRS = {
   groups: path.join(targetRepoRoot, PLAYBOOK_DIRNAME, 'groups'),
   patternDrafts: path.join(targetRepoRoot, PLAYBOOK_DIRNAME, 'pattern-cards', 'drafts'),
   promotion: path.join(targetRepoRoot, PLAYBOOK_DIRNAME, 'promotion'),
-  meta: path.join(targetRepoRoot, PLAYBOOK_DIRNAME, 'meta')
+  meta: path.join(targetRepoRoot, PLAYBOOK_DIRNAME, 'meta'),
+  evidence: path.join(targetRepoRoot, PLAYBOOK_DIRNAME, 'evidence')
 };
 
 const IGNORED_DIRS = new Set(['.git', 'node_modules', '.next', 'dist', 'build', PLAYBOOK_DIRNAME]);
@@ -136,6 +137,83 @@ const buildCandidatePatterns = (zettels) => {
   return patterns.sort((a, b) => a.candidateId.localeCompare(b.candidateId));
 };
 
+const loadJson = async (filePath, fallback) => {
+  try {
+    const raw = await readFile(filePath, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+};
+
+const toConfidence = (count, total) => Number((Math.min(1, count / Math.max(1, total))).toFixed(2));
+
+const toCrossRepoSuccess = (metaFindings) => {
+  const byType = Object.fromEntries(metaFindings.findings.map((finding) => [finding.findingType, finding.score]));
+  const stability = 1 - (byType.architecture_drift ?? 0);
+  const coherence = 1 - (byType.duplication ?? 0);
+  const reuse = byType.pattern_reuse ?? 0;
+  return Number(((stability + coherence + reuse) / 3).toFixed(2));
+};
+
+const buildCrossRepoEvidenceRecord = ({ pilotConfig, zettels, relationships, candidatePatterns, drafts, metaFindings }) => {
+  const repositoryName = pilotConfig?.pilot?.repository ?? path.basename(targetRepoRoot);
+  const repositoryId = stableId(repositoryName.toLowerCase(), targetRepoRoot.toLowerCase());
+
+  const observedPatterns = candidatePatterns.map((pattern) => ({
+    patternId: pattern.candidateId,
+    title: pattern.title,
+    observedInRepo: repositoryName,
+    sourceRunCycleId: runId,
+    evidenceRefs: pattern.evidenceRefs,
+    sourceZettelIds: pattern.sourceZettelIds,
+    confidence: toConfidence(pattern.evidenceRefs.length, zettels.length)
+  }));
+
+  const evaluatedPatterns = drafts.map((draft) => ({
+    patternId: draft.patternId,
+    status: draft.status,
+    evidenceCount: draft.evidenceRefs.length,
+    crossRepoSuccess: toCrossRepoSuccess(metaFindings),
+    outcomeRefs: metaFindings.findings.map((finding) => finding.findingType)
+  }));
+
+  const patternOutcomes = metaFindings.findings.map((finding) => ({
+    outcomeId: `outcome.${stableId(repositoryId, finding.findingType, String(finding.score))}`,
+    findingType: finding.findingType,
+    description: finding.description,
+    score: finding.score,
+    sourceRunCycleId: runId
+  }));
+
+  const patternRelations = relationships.map((relation) => ({
+    relationId: `rel.${stableId(relation.from, relation.to, relation.relation)}`,
+    fromPatternRef: relation.from,
+    toPatternRef: relation.to,
+    relation: relation.relation,
+    sourceRunCycleId: runId
+  }));
+
+  return {
+    repository: {
+      repositoryId,
+      repositoryName,
+      repositoryPath: targetRepoRoot
+    },
+    sourceRunCycleId: runId,
+    createdAt,
+    layers: {
+      observedPatterns,
+      evaluatedPatterns,
+      canonicalDoctrine: []
+    },
+    patternInstances: observedPatterns,
+    patternOutcomes,
+    patternRelations,
+    crossRepoSuccess: toCrossRepoSuccess(metaFindings)
+  };
+};
+
 const ensureDirectories = async () => {
   await Promise.all(Object.values(ARTIFACT_DIRS).map((dir) => mkdir(dir, { recursive: true })));
 };
@@ -203,8 +281,19 @@ const main = async () => {
       groups: '.playbook/groups',
       patternDrafts: '.playbook/pattern-cards/drafts',
       promotion: '.playbook/promotion',
-      meta: '.playbook/meta'
+      meta: '.playbook/meta',
+      evidence: '.playbook/evidence'
     },
+    closedLearningLoop: [
+      'repo observation',
+      'pattern graph',
+      'attractor scoring',
+      'outcome correlation',
+      'pattern fitness',
+      'doctrine candidates',
+      'governance review',
+      'architecture guidance'
+    ],
     zettelCount: zettels.length,
     relationshipCount: relationships.length,
     candidatePatternCount: candidatePatterns.length
@@ -272,6 +361,42 @@ const main = async () => {
     }))
   };
 
+  const evidenceArtifactPath = path.join(ARTIFACT_DIRS.evidence, 'cross-repo-evidence.json');
+  const existingEvidence = await loadJson(evidenceArtifactPath, {
+    schemaVersion: '1.0',
+    kind: 'playbook-cross-repo-evidence',
+    updatedAt: createdAt,
+    repositories: []
+  });
+
+  const repoEvidence = buildCrossRepoEvidenceRecord({
+    pilotConfig,
+    zettels,
+    relationships,
+    candidatePatterns,
+    drafts,
+    metaFindings
+  });
+
+  const repositories = (existingEvidence.repositories ?? []).filter(
+    (entry) => entry?.repository?.repositoryId !== repoEvidence.repository.repositoryId
+  );
+  repositories.push(repoEvidence);
+  repositories.sort((a, b) => a.repository.repositoryName.localeCompare(b.repository.repositoryName));
+
+  const updatedEvidence = {
+    schemaVersion: '1.0',
+    kind: 'playbook-cross-repo-evidence',
+    updatedAt: createdAt,
+    repositories,
+    summary: {
+      repositoryCount: repositories.length,
+      crossRepoSuccess: Number(
+        (repositories.reduce((sum, entry) => sum + (entry.crossRepoSuccess ?? 0), 0) / Math.max(1, repositories.length)).toFixed(2)
+      )
+    }
+  };
+
   await ensureDirectories();
 
   await writeFile(path.join(ARTIFACT_DIRS.runCycles, `${runId}.json`), `${JSON.stringify(runCycle, null, 2)}\n`);
@@ -281,11 +406,13 @@ const main = async () => {
   await writeFile(path.join(ARTIFACT_DIRS.patternDrafts, `${runId}.json`), `${JSON.stringify({ schemaVersion: '1.0', kind: 'playbook-pattern-card-drafts', runCycleId: runId, drafts }, null, 2)}\n`);
   await writeFile(path.join(ARTIFACT_DIRS.promotion, `${runId}.json`), `${JSON.stringify(reviewQueue, null, 2)}\n`);
   await writeFile(path.join(ARTIFACT_DIRS.meta, `${runId}.json`), `${JSON.stringify(metaFindings, null, 2)}\n`);
+  await writeFile(evidenceArtifactPath, `${JSON.stringify(updatedEvidence, null, 2)}\n`);
 
   console.log(`Playbook runtime: ${runtimeRepoRoot}`);
   console.log(`External target repository: ${targetRepoRoot}`);
   console.log(`Generated advisory pilot artifacts under: ${path.join(targetRepoRoot, PLAYBOOK_DIRNAME)}`);
   console.log(`Run cycle: ${runId}`);
+  console.log(`Cross-repo evidence updated: ${evidenceArtifactPath}`);
 };
 
 main().catch((error) => {

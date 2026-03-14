@@ -4,6 +4,7 @@
 
 ### Added
 
+- WHAT: Extended the bounded Fawxzzy Fitness external pilot to ingest cross-repo evidence into `.playbook/evidence/cross-repo-evidence.json` with explicit `patternInstances`, `patternOutcomes`, `patternRelations`, and aggregate `crossRepoSuccess`, while preserving strict `observedPatterns -> evaluatedPatterns -> canonicalDoctrine` separation. WHY: Prevents self-referential learning loops and establishes the Wave 2E architecture-intelligence feedback substrate without auto-promoting doctrine.
 - WHAT: Synced v0.9 roadmap feature metadata for Control Plane, PR Review Loop, Longitudinal State, Knowledge Query/Inspection, and Execution Orchestration to shipped Phase 14 / Wave 6-7 reality; refreshed Phase 14 architecture doc references and populated command/docs/tests/contracts arrays from current command surface. WHY: Keeps machine-readable roadmap contract truth aligned with implemented CLI/runtime surfaces and prevents stale architecture-only placeholders.
 - WHAT: Restored `.playbook` artifact hygiene by relocating tracked repository intelligence outputs into committed demo fixtures (`.playbook/demo-artifacts/repo-index.example.json`, `.playbook/demo-artifacts/repo-graph.example.json`) and removing root runtime artifacts from tracked state. WHY: Prevents regenerated local runtime files from creating noisy feature diffs while preserving contract examples for docs and tests.
 - WHAT: Tightened ignore policy to explicitly exclude nested runtime memory outputs under `packages/engine/.playbook/**` and clarified README commit policy for `.playbook` content. WHY: Reduces accidental recommit risk for runtime artifacts and makes allowed committed `.playbook` surfaces explicit.
@@ -174,6 +175,7 @@
 
 ### Added
 
+- WHAT: Extended the bounded Fawxzzy Fitness external pilot to ingest cross-repo evidence into `.playbook/evidence/cross-repo-evidence.json` with explicit `patternInstances`, `patternOutcomes`, `patternRelations`, and aggregate `crossRepoSuccess`, while preserving strict `observedPatterns -> evaluatedPatterns -> canonicalDoctrine` separation. WHY: Prevents self-referential learning loops and establishes the Wave 2E architecture-intelligence feedback substrate without auto-promoting doctrine.
 - WHAT: Added deterministic verify-stage pattern compaction (`.playbook/patterns.json`) plus `pnpm playbook query patterns` for canonical pattern inspection using stable buckets and occurrence summaries. WHY: Stores reusable engineering knowledge as canonical patterns instead of raw observations, reducing reasoning complexity and enabling future cross-repo learning.
 
 - WHAT: Hardened the repository-graph substrate by extending `.playbook/repo-graph.json` stats with deterministic node/edge kind breakdowns and aligned `pnpm playbook graph --json` schema coverage. WHY: Makes the graph a reusable contract artifact for automation and read-runtime reuse rather than an ornamental side output.
