@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/task-execution-profile.schema.json",
+  "title": "Task Execution Profile Artifact",
+  "description": "Deterministic read-only proposal contract for routing a task to the smallest sufficient governance and validation surface.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "generatedAt",
+    "proposalOnly",
+    "profiles"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "kind": {
+      "type": "string",
+      "const": "task-execution-profile"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "proposalOnly": {
+      "type": "boolean",
+      "const": true,
+      "description": "Execution profiles are routing proposals and must not mutate repository state automatically."
+    },
+    "profiles": {
+      "type": "array",
+      "description": "Task-family execution profile proposals in deterministic task_family order.",
+      "items": {
+        "$ref": "#/$defs/taskExecutionProfile"
+      }
+    }
+  },
+  "$defs": {
+    "taskExecutionProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_family",
+        "scope",
+        "affected_surfaces",
+        "rule_packs",
+        "required_validations",
+        "optional_validations",
+        "docs_requirements",
+        "parallel_safe",
+        "estimated_change_surface"
+      ],
+      "properties": {
+        "task_family": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "single-file",
+            "single-module",
+            "multi-module",
+            "cross-repo"
+          ]
+        },
+        "affected_surfaces": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "docs",
+              "contracts",
+              "schemas",
+              "cli",
+              "engine",
+              "knowledge",
+              "tests",
+              "governance"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "rule_packs": {
+          "type": "array",
+          "description": "Minimal deterministic rule sets needed to preserve governance for this task family.",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "required_validations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "optional_validations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "docs_requirements": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "parallel_safe": {
+          "type": "boolean"
+        },
+        "estimated_change_surface": {
+          "type": "string",
+          "enum": [
+            "small",
+            "medium",
+            "large"
+          ]
+        }
+      }
+    }
+  }
+}

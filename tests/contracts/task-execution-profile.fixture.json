@@ -1,0 +1,148 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "task-execution-profile",
+  "generatedAt": "2026-03-14T00:00:00.000Z",
+  "proposalOnly": true,
+  "profiles": [
+    {
+      "task_family": "cli-subcommand-change",
+      "scope": "single-module",
+      "affected_surfaces": [
+        "cli",
+        "tests",
+        "docs"
+      ],
+      "rule_packs": [
+        "cli-command-contracts",
+        "docs-governance"
+      ],
+      "required_validations": [
+        "pnpm -r build",
+        "pnpm test",
+        "pnpm playbook contracts --json"
+      ],
+      "optional_validations": [
+        "pnpm playbook docs audit --json"
+      ],
+      "docs_requirements": [
+        "docs/commands/README.md",
+        "README.md",
+        "docs/CHANGELOG.md"
+      ],
+      "parallel_safe": true,
+      "estimated_change_surface": "medium"
+    },
+    {
+      "task_family": "contract-schema-change",
+      "scope": "multi-module",
+      "affected_surfaces": [
+        "contracts",
+        "schemas",
+        "tests",
+        "docs"
+      ],
+      "rule_packs": [
+        "schema-contracts",
+        "snapshot-stability",
+        "docs-governance"
+      ],
+      "required_validations": [
+        "pnpm -r build",
+        "pnpm test",
+        "pnpm playbook contracts --json"
+      ],
+      "optional_validations": [
+        "pnpm playbook docs audit --json"
+      ],
+      "docs_requirements": [
+        "docs/contracts/COMMAND_CONTRACTS_V1.md",
+        "docs/contracts/CONTRACT_REGISTRY_V1.md",
+        "docs/CHANGELOG.md"
+      ],
+      "parallel_safe": false,
+      "estimated_change_surface": "medium"
+    },
+    {
+      "task_family": "cross-repo-learning-change",
+      "scope": "cross-repo",
+      "affected_surfaces": [
+        "knowledge",
+        "contracts",
+        "docs",
+        "governance"
+      ],
+      "rule_packs": [
+        "cross-repo-normalization",
+        "provenance-integrity",
+        "docs-governance"
+      ],
+      "required_validations": [
+        "pnpm -r build",
+        "pnpm test",
+        "pnpm playbook contracts --json"
+      ],
+      "optional_validations": [
+        "pnpm playbook verify --json"
+      ],
+      "docs_requirements": [
+        "docs/contracts/CROSS_REPO_PATTERN_CANDIDATES.md",
+        "docs/contracts/REPOSITORY_MEMORY_KNOWLEDGE_CONTRACT.md",
+        "docs/CHANGELOG.md"
+      ],
+      "parallel_safe": false,
+      "estimated_change_surface": "large"
+    },
+    {
+      "task_family": "docs-only-change",
+      "scope": "single-file",
+      "affected_surfaces": [
+        "docs"
+      ],
+      "rule_packs": [
+        "docs-governance"
+      ],
+      "required_validations": [
+        "pnpm -r build",
+        "pnpm playbook docs audit --json"
+      ],
+      "optional_validations": [
+        "pnpm test",
+        "pnpm playbook contracts --json"
+      ],
+      "docs_requirements": [
+        "updated target document",
+        "docs/CHANGELOG.md"
+      ],
+      "parallel_safe": true,
+      "estimated_change_surface": "small"
+    },
+    {
+      "task_family": "engine-scoring-change",
+      "scope": "single-module",
+      "affected_surfaces": [
+        "engine",
+        "tests",
+        "docs"
+      ],
+      "rule_packs": [
+        "engine-determinism",
+        "scoring-regression",
+        "docs-governance"
+      ],
+      "required_validations": [
+        "pnpm -r build",
+        "pnpm test",
+        "pnpm playbook contracts --json"
+      ],
+      "optional_validations": [
+        "pnpm playbook verify --json"
+      ],
+      "docs_requirements": [
+        "docs/contracts/PATTERN_GRAPH.md",
+        "docs/CHANGELOG.md"
+      ],
+      "parallel_safe": false,
+      "estimated_change_surface": "medium"
+    }
+  ]
+}

@@ -122,6 +122,11 @@
         "path": "packages/contracts/src/cross-repo-candidates.schema.json"
       },
       {
+        "id": "task-execution-profile",
+        "version": "1.0",
+        "path": "packages/contracts/src/task-execution-profile.schema.json"
+      },
+      {
         "id": "explain.memoryKnowledge",
         "version": "1.0",
         "path": "schema://cli/explain"
