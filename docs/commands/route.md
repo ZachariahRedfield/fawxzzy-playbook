@@ -21,3 +21,13 @@ Routing always returns:
 - whether repository mutation is allowed
 
 Rule: the model must never decide its own authority boundary; Playbook classifies the task first.
+
+## Execution router overview
+
+The execution router now emits a deterministic task execution profile proposal as a first step toward process self-improvement.
+
+- Inputs considered: changed files, task family, affected packages, and command/docs/contracts surfaces.
+- Output: smallest sufficient rule packs plus required/optional validation bundles, with `proposalOnly: true`.
+- Safety boundary: inspection/proposal only; no autonomous mutation is performed by routing.
+
+Routing rule: prefer the smallest sufficient rule system for governance, not merely the smallest possible one.
