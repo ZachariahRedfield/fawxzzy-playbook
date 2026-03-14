@@ -200,6 +200,13 @@ export {
   generatePatternCandidateArtifact,
   PATTERN_CANDIDATES_RELATIVE_PATH
 } from './extract/patternCandidates.js';
+export {
+  aggregateCrossRepoCandidates,
+  readCrossRepoCandidateAggregationArtifact,
+  writeCrossRepoCandidateAggregationArtifact,
+  PATTERN_CANDIDATES_RELATIVE_PATH as CROSS_REPO_PATTERN_CANDIDATE_SOURCE_PATH,
+  CROSS_REPO_CANDIDATES_RELATIVE_PATH
+} from './learning/crossRepoCandidateAggregation.js';
 export { linkPatternCandidatesToGraph } from './extract/candidateLinking.js';
 export {
   layeringDetector,
@@ -210,6 +217,11 @@ export {
   DEFAULT_PATTERN_CANDIDATE_DETECTORS
 } from './extract/detectors/index.js';
 export type { PatternCandidateArtifact, ExtractPatternCandidatesInput } from './extract/patternCandidates.js';
+export type {
+  CrossRepoCandidateInput,
+  CrossRepoCandidateAggregate,
+  CrossRepoCandidateAggregationArtifact
+} from './learning/crossRepoCandidateAggregation.js';
 export type { PatternCandidate, Detector, ExtractionArtifacts, PatternEvidence } from './extract/detectors/index.js';
 export type {
   CandidateLinkProposalOperation,
