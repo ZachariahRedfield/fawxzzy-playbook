@@ -9,6 +9,7 @@ const EXECUTION_STATE_PATH = '.playbook/execution-state.json';
 type ExecuteOptions = {
   format: 'text' | 'json';
   quiet: boolean;
+  help?: boolean;
 };
 
 type LaneRuntimeState = 'blocked' | 'ready' | 'running' | 'completed' | 'failed';
@@ -55,7 +56,24 @@ const renderText = (runId: string, lanes: Array<{ lane_id: string; state: string
   console.log(`Execution status: ${status}`);
 };
 
+const printExecuteHelp = (): void => {
+  console.log('Usage: playbook execute [options]');
+  console.log('');
+  console.log('Execute orchestration lanes through the execution supervisor runtime.');
+  console.log('');
+  console.log('Options:');
+  console.log('  --json                     Alias for --format=json');
+  console.log('  --format <text|json>       Output format');
+  console.log('  --quiet                    Suppress success output in text mode');
+  console.log('  --help                     Show help');
+};
+
 export const runExecution = async (cwd: string, options: ExecuteOptions): Promise<number> => {
+  if (options.help) {
+    printExecuteHelp();
+    return ExitCode.Success;
+  }
+
   const worksetPlan = readJsonArtifact<WorksetPlanArtifact>(cwd, WORKSET_PLAN_PATH);
   if (!worksetPlan) {
     const message = `playbook execute: missing workset plan at ${WORKSET_PLAN_PATH}. Run \"playbook orchestrate\" first.`;

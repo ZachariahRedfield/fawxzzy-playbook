@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { ExitCode } from '../lib/cliContract.js';
-import { listRegisteredCommands } from './index.js';
+import { listRegisteredCommands, runRegisteredCommand } from './index.js';
 import { runExecution } from './execute.js';
 
 const createRepo = (name: string): string => fs.mkdtempSync(path.join(os.tmpdir(), `${name}-`));
@@ -56,6 +56,19 @@ const writeWorksetPlan = (repo: string): void => {
 };
 
 describe('runExecution', () => {
+  it('prints help and exits successfully without requiring workset plan', async () => {
+    const repo = createRepo('playbook-cli-execute-help');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const code = await runExecution(repo, { format: 'text', quiet: false, help: true });
+
+    expect(code).toBe(ExitCode.Success);
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('Usage: playbook execute [options]');
+    expect(fs.existsSync(path.join(repo, '.playbook', 'workset-plan.json'))).toBe(false);
+
+    logSpy.mockRestore();
+  });
+
   it('runs deterministic supervisor flow and writes execution-state', async () => {
     const repo = createRepo('playbook-cli-execute');
     writeWorksetPlan(repo);
@@ -79,5 +92,25 @@ describe('command registry', () => {
   it('registers execute command', () => {
     const command = listRegisteredCommands().find((entry) => entry.name === 'execute');
     expect(command).toBeDefined();
+  });
+
+  it('short-circuits execute --help before runtime artifacts', async () => {
+    const repo = createRepo('playbook-cli-execute-registry-help');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const result = await runRegisteredCommand('execute', {
+      cwd: repo,
+      args: ['execute', '--help'],
+      commandArgs: ['--help'],
+      ci: false,
+      explain: false,
+      format: 'text',
+      quiet: false
+    });
+
+    expect(result.exitCode).toBe(ExitCode.Success);
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('Usage: playbook execute [options]');
+
+    logSpy.mockRestore();
   });
 });
