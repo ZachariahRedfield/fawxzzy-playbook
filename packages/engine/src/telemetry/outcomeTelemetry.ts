@@ -10,6 +10,16 @@ export type OutcomeTelemetryRecord = {
   contract_breakage: number;
   docs_mismatch: boolean;
   ci_failure_categories: string[];
+  task_profile_id?: string;
+  task_family?: string;
+  affected_surfaces?: string[];
+  estimated_change_surface?: number;
+  actual_change_surface?: number;
+  files_changed_count?: number;
+  post_apply_verify_passed?: boolean;
+  post_apply_ci_passed?: boolean;
+  regression_categories?: string[];
+  pattern_families_implicated?: string[];
 };
 
 export type OutcomeTelemetrySummary = {
@@ -20,6 +30,15 @@ export type OutcomeTelemetrySummary = {
   sum_contract_breakage: number;
   docs_mismatch_count: number;
   ci_failure_category_counts: Record<string, number>;
+  task_family_counts?: Record<string, number>;
+  affected_surface_counts?: Record<string, number>;
+  regression_category_counts?: Record<string, number>;
+  pattern_family_implicated_counts?: Record<string, number>;
+  post_apply_verify_passed_count?: number;
+  post_apply_ci_passed_count?: number;
+  sum_estimated_change_surface?: number;
+  sum_actual_change_surface?: number;
+  sum_files_changed_count?: number;
 };
 
 export type OutcomeTelemetryArtifact = {
@@ -78,10 +97,65 @@ const compareRecords = <T extends { recordedAt: string; id: string }>(left: T, r
 
 const round4 = (value: number): number => Number(value.toFixed(4));
 
-const normalizeOutcomeRecord = (record: OutcomeTelemetryRecord): OutcomeTelemetryRecord => ({
-  ...record,
-  ci_failure_categories: sortStrings(record.ci_failure_categories)
-});
+const asNonNegativeNumber = (value: unknown): number => {
+  if (typeof value !== 'number' || Number.isNaN(value) || value < 0) {
+    return 0;
+  }
+
+  return value;
+};
+
+const asInteger = (value: unknown): number => Math.trunc(asNonNegativeNumber(value));
+
+const asBoolean = (value: unknown): boolean => value === true;
+
+const asNonEmptyString = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const asStringArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((entry): entry is string => typeof entry === 'string')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+};
+
+const normalizeOutcomeRecord = (record: Partial<OutcomeTelemetryRecord>): OutcomeTelemetryRecord => {
+  const taskProfileId = asNonEmptyString(record.task_profile_id);
+  const taskFamily = asNonEmptyString(record.task_family);
+  const postApplyVerifyPassed = record.post_apply_verify_passed === undefined ? undefined : asBoolean(record.post_apply_verify_passed);
+  const postApplyCiPassed = record.post_apply_ci_passed === undefined ? undefined : asBoolean(record.post_apply_ci_passed);
+
+  return {
+    id: asNonEmptyString(record.id) ?? 'unknown',
+    recordedAt: asNonEmptyString(record.recordedAt) ?? new Date(0).toISOString(),
+    plan_churn: asInteger(record.plan_churn),
+    apply_retries: asInteger(record.apply_retries),
+    dependency_drift: asInteger(record.dependency_drift),
+    contract_breakage: asInteger(record.contract_breakage),
+    docs_mismatch: asBoolean(record.docs_mismatch),
+    ci_failure_categories: sortStrings(asStringArray(record.ci_failure_categories)),
+    ...(taskProfileId ? { task_profile_id: taskProfileId } : {}),
+    ...(taskFamily ? { task_family: taskFamily } : {}),
+    affected_surfaces: sortStrings(asStringArray(record.affected_surfaces)),
+    estimated_change_surface: asNonNegativeNumber(record.estimated_change_surface),
+    actual_change_surface: asNonNegativeNumber(record.actual_change_surface),
+    files_changed_count: asInteger(record.files_changed_count),
+    ...(postApplyVerifyPassed === undefined ? {} : { post_apply_verify_passed: postApplyVerifyPassed }),
+    ...(postApplyCiPassed === undefined ? {} : { post_apply_ci_passed: postApplyCiPassed }),
+    regression_categories: sortStrings(asStringArray(record.regression_categories)),
+    pattern_families_implicated: sortStrings(asStringArray(record.pattern_families_implicated))
+  };
+};
 
 const normalizeProcessRecord = (record: ProcessTelemetryRecord): ProcessTelemetryRecord => ({
   ...record,
@@ -92,11 +166,43 @@ const normalizeProcessRecord = (record: ProcessTelemetryRecord): ProcessTelemetr
 
 export const summarizeOutcomeTelemetry = (records: OutcomeTelemetryRecord[]): OutcomeTelemetrySummary => {
   const ciFailureCategoryCounts = new Map<string, number>();
+  const taskFamilyCounts = new Map<string, number>();
+  const affectedSurfaceCounts = new Map<string, number>();
+  const regressionCategoryCounts = new Map<string, number>();
+  const patternFamilyCounts = new Map<string, number>();
+
+  let postApplyVerifyPassedCount = 0;
+  let postApplyCiPassedCount = 0;
+  let estimatedChangeSurface = 0;
+  let actualChangeSurface = 0;
+  let filesChangedCount = 0;
 
   for (const record of records) {
     for (const category of record.ci_failure_categories) {
       ciFailureCategoryCounts.set(category, (ciFailureCategoryCounts.get(category) ?? 0) + 1);
     }
+
+    if (record.task_family) {
+      taskFamilyCounts.set(record.task_family, (taskFamilyCounts.get(record.task_family) ?? 0) + 1);
+    }
+
+    for (const surface of record.affected_surfaces ?? []) {
+      affectedSurfaceCounts.set(surface, (affectedSurfaceCounts.get(surface) ?? 0) + 1);
+    }
+
+    for (const category of record.regression_categories ?? []) {
+      regressionCategoryCounts.set(category, (regressionCategoryCounts.get(category) ?? 0) + 1);
+    }
+
+    for (const family of record.pattern_families_implicated ?? []) {
+      patternFamilyCounts.set(family, (patternFamilyCounts.get(family) ?? 0) + 1);
+    }
+
+    postApplyVerifyPassedCount += record.post_apply_verify_passed ? 1 : 0;
+    postApplyCiPassedCount += record.post_apply_ci_passed ? 1 : 0;
+    estimatedChangeSurface += record.estimated_change_surface ?? 0;
+    actualChangeSurface += record.actual_change_surface ?? 0;
+    filesChangedCount += record.files_changed_count ?? 0;
   }
 
   return {
@@ -106,7 +212,16 @@ export const summarizeOutcomeTelemetry = (records: OutcomeTelemetryRecord[]): Ou
     sum_dependency_drift: records.reduce((sum, record) => sum + record.dependency_drift, 0),
     sum_contract_breakage: records.reduce((sum, record) => sum + record.contract_breakage, 0),
     docs_mismatch_count: records.filter((record) => record.docs_mismatch).length,
-    ci_failure_category_counts: sortCountMap(Object.fromEntries(ciFailureCategoryCounts))
+    ci_failure_category_counts: sortCountMap(Object.fromEntries(ciFailureCategoryCounts)),
+    task_family_counts: sortCountMap(Object.fromEntries(taskFamilyCounts)),
+    affected_surface_counts: sortCountMap(Object.fromEntries(affectedSurfaceCounts)),
+    regression_category_counts: sortCountMap(Object.fromEntries(regressionCategoryCounts)),
+    pattern_family_implicated_counts: sortCountMap(Object.fromEntries(patternFamilyCounts)),
+    post_apply_verify_passed_count: postApplyVerifyPassedCount,
+    post_apply_ci_passed_count: postApplyCiPassedCount,
+    sum_estimated_change_surface: round4(estimatedChangeSurface),
+    sum_actual_change_surface: round4(actualChangeSurface),
+    sum_files_changed_count: filesChangedCount
   };
 };
 
@@ -157,9 +272,10 @@ export const summarizeProcessTelemetry = (records: ProcessTelemetryRecord[]): Pr
 };
 
 export const normalizeOutcomeTelemetryArtifact = (artifact: OutcomeTelemetryArtifact): OutcomeTelemetryArtifact => {
-  const records = artifact.records.map(normalizeOutcomeRecord).sort(compareRecords);
+  const records = (artifact.records ?? []).map((record) => normalizeOutcomeRecord(record)).sort(compareRecords);
   return {
     ...artifact,
+    generatedAt: asNonEmptyString(artifact.generatedAt) ?? new Date(0).toISOString(),
     records,
     summary: summarizeOutcomeTelemetry(records)
   };
@@ -169,6 +285,7 @@ export const normalizeProcessTelemetryArtifact = (artifact: ProcessTelemetryArti
   const records = artifact.records.map(normalizeProcessRecord).sort(compareRecords);
   return {
     ...artifact,
+    generatedAt: asNonEmptyString(artifact.generatedAt) ?? new Date(0).toISOString(),
     records,
     summary: summarizeProcessTelemetry(records)
   };
