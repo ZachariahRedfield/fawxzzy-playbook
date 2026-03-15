@@ -1,4 +1,4 @@
-import { routeTask, type RouteDecision } from '@zachariahredfield/playbook-engine';
+import { resolveTaskExecutionPlan, routeTask, type RouteDecision, type TaskExecutionPlan } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 
 type RouteOptions = {
@@ -15,6 +15,7 @@ type RouteOutput = {
   requiredInputs: string[];
   missingPrerequisites: string[];
   repoMutationAllowed: boolean;
+  executionPlan: TaskExecutionPlan;
 };
 
 const extractTask = (args: string[]): string | undefined => {
@@ -34,7 +35,8 @@ const toOutput = (task: string, decision: RouteDecision): RouteOutput => ({
   why: decision.why,
   requiredInputs: decision.requiredInputs,
   missingPrerequisites: decision.missingPrerequisites,
-  repoMutationAllowed: decision.repoMutationAllowed
+  repoMutationAllowed: decision.repoMutationAllowed,
+  executionPlan: resolveTaskExecutionPlan({ task })
 });
 
 const printText = (payload: RouteOutput): void => {
@@ -44,16 +46,27 @@ const printText = (payload: RouteOutput): void => {
   console.log(`Selected route: ${payload.selectedRoute}`);
   console.log(`Why: ${payload.why}`);
   console.log(`Repository mutation allowed: ${payload.repoMutationAllowed ? 'yes' : 'no'}`);
+  console.log(`Task family: ${payload.executionPlan.task_family}`);
+  console.log(`Route id: ${payload.executionPlan.route_id}`);
+  console.log(`Parallel lanes: ${payload.executionPlan.parallel_lanes}`);
   console.log('');
   console.log('Required inputs:');
   for (const item of payload.requiredInputs) {
     console.log(`- ${item}`);
   }
 
-  if (payload.missingPrerequisites.length > 0) {
+  if (payload.executionPlan.warnings.length > 0) {
+    console.log('');
+    console.log('Warnings:');
+    for (const warning of payload.executionPlan.warnings) {
+      console.log(`- ${warning}`);
+    }
+  }
+
+  if (payload.missingPrerequisites.length > 0 || payload.executionPlan.missing_prerequisites.length > 0) {
     console.log('');
     console.log('Missing prerequisites:');
-    for (const item of payload.missingPrerequisites) {
+    for (const item of [...payload.missingPrerequisites, ...payload.executionPlan.missing_prerequisites]) {
       console.log(`- ${item}`);
     }
   }
@@ -71,16 +84,17 @@ export const runRoute = async (cwd: string, commandArgs: string[], options: Rout
 
   if (options.format === 'json') {
     console.log(JSON.stringify(output, null, 2));
-    return decision.route === 'unsupported' ? ExitCode.Failure : ExitCode.Success;
+    return decision.route === 'unsupported' || output.executionPlan.route_status === 'incomplete' ? ExitCode.Failure : ExitCode.Success;
   }
 
   if (!options.quiet) {
     printText(output);
   }
 
-  if (decision.route === 'unsupported') {
-    if (output.missingPrerequisites.length > 0) {
-      console.error(`Next steps: provide ${output.missingPrerequisites.join(', ')} and retry.`);
+  if (decision.route === 'unsupported' || output.executionPlan.route_status === 'incomplete') {
+    const prerequisites = [...output.missingPrerequisites, ...output.executionPlan.missing_prerequisites];
+    if (prerequisites.length > 0) {
+      console.error(`Next steps: provide ${prerequisites.join(', ')} and retry.`);
     }
     return ExitCode.Failure;
   }

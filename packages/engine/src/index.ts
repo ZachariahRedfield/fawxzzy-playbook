@@ -398,14 +398,18 @@ export { writeJsonArtifact as writeArtifactJson, readJsonArtifact as readArtifac
 
 export { routeTask } from './routing/routeTask.js';
 export type { RouteDecision, RouteTaskInput, RouteTaskKind, RouteMutabilityLevel, RouteSafetyConstraints, TaskRoute } from './routing/types.js';
-export { buildTaskExecutionProfile } from './routing/executionRouter.js';
+export { buildTaskExecutionProfile, resolveTaskExecutionPlan } from './routing/executionRouter.js';
 export type {
   ExecutionSurface,
   ExecutionScope,
   ExecutionTaskFamily,
   TaskExecutionProfileArtifact,
   TaskExecutionProfileInput,
-  TaskExecutionProfileProposal
+  TaskExecutionProfileProposal,
+  TaskExecutionPlan,
+  ResolveTaskExecutionPlanInput,
+  EstimatedChangeSurface,
+  ExecutionPlanRouteStatus
 } from './routing/executionRouter.js';
 
 export {

@@ -7,7 +7,7 @@ Classify a task into deterministic local execution, bounded model reasoning, hyb
 ```bash
 pnpm playbook route "summarize current repo state"
 pnpm playbook route "propose fix for failing tests"
-pnpm playbook route "apply approved remediation plan"
+pnpm playbook route "update command docs" --json
 ```
 
 ## Output contract
@@ -19,15 +19,44 @@ Routing always returns:
 - required inputs
 - missing prerequisites
 - whether repository mutation is allowed
+- `executionPlan` (deterministic task-execution plan)
 
 Rule: the model must never decide its own authority boundary; Playbook classifies the task first.
 
-## Execution router overview
+## Deterministic task-family classification
 
-The execution router now emits a deterministic task execution profile proposal as a first step toward process self-improvement.
+The execution-plan resolver classifies each task into one of:
 
-- Inputs considered: changed files, task family, affected packages, and command/docs/contracts surfaces.
-- Output: smallest sufficient rule packs plus required/optional validation bundles, with `proposalOnly: true`.
-- Safety boundary: inspection/proposal only; no autonomous mutation is performed by routing.
+- `docs_only`
+- `contracts_schema`
+- `cli_command`
+- `engine_scoring`
+- `pattern_learning`
 
-Routing rule: prefer the smallest sufficient rule system for governance, not merely the smallest possible one.
+Classification is deterministic and keyword/surface driven. If multiple families are detected, routing uses a conservative family selection and emits a warning in `executionPlan.warnings`.
+
+## Execution plan fields
+
+`executionPlan` includes deterministic, task-scoped fields:
+
+- `route_id`
+- `task_family`
+- `affected_surfaces`
+- `estimated_change_surface`
+- `rule_packs`
+- `required_validations`
+- `optional_validations`
+- `parallel_lanes` (derived from `parallel_safe`)
+- `mutation_allowed` (always `false` in this phase)
+
+## Unsupported/incomplete behavior
+
+If no profile can be resolved from task intent and optional file context, route emits:
+
+- `executionPlan.route_status = "incomplete"`
+- `executionPlan.task_family = "unsupported"`
+- explicit `executionPlan.missing_prerequisites`
+
+Safety boundary: inspection/proposal only; no autonomous mutation is performed by routing.
+
+Routing rule: prefer conservative correctness over aggressive optimization.
