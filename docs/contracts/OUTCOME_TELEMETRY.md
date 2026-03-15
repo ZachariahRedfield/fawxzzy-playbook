@@ -18,7 +18,7 @@ Top-level fields:
 - `records`: additive list of repository outcome records
 - `summary`: deterministic rollup computed from `records`
 
-Each `records[]` entry includes:
+Each `records[]` entry includes baseline outcome evidence:
 
 - `id`
 - `recordedAt`
@@ -29,14 +29,29 @@ Each `records[]` entry includes:
 - `docs_mismatch`
 - `ci_failure_categories`
 
+Additive Phase 7 Wave 2A context fields (optional, backward compatible):
+
+- `task_profile_id`: links record to task execution profile lineage.
+- `task_family`: links structural outcomes to route/task family.
+- `affected_surfaces`: normalized changed surfaces (`docs`, `contracts`, `engine`, etc).
+- `estimated_change_surface`: planned structural change-surface estimate.
+- `actual_change_surface`: observed structural change-surface after execution.
+- `files_changed_count`: observed changed file count.
+- `post_apply_verify_passed`: explicit verify result after apply.
+- `post_apply_ci_passed`: explicit CI result after apply.
+- `regression_categories`: normalized regression taxonomy tags.
+- `pattern_families_implicated`: pattern families tied to the outcome.
+
+`summary` now includes additive rollups for the context fields while preserving all original required rollups.
+
 ## Rule
 
-Telemetry artifacts must capture what happened, not reinterpret it as guidance.
+Telemetry must preserve task context, not just event counts.
 
 ## Pattern
 
-Separating repository outcomes from process outcomes preserves analyzability for architecture learning.
+Structural outcome evidence becomes useful when linked to route/task metadata.
 
 ## Failure mode
 
-Mixing process signals with repository health signals in one artifact weakens causal reasoning and future routing decisions.
+Outcome metrics without task context create false learning signals.

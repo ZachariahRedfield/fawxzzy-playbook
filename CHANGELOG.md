@@ -4,6 +4,7 @@
 
 ### WHAT
 
+- Added Phase 7 Wave 2A additive outcome telemetry context fields (`task_profile_id`, `task_family`, `affected_surfaces`, `estimated_change_surface`, `actual_change_surface`, `files_changed_count`, `post_apply_verify_passed`, `post_apply_ci_passed`, `regression_categories`, `pattern_families_implicated`) plus deterministic normalization/rollups and safe degradation for partial or legacy records.
 - Added Phase 7 Wave 1 deterministic learning-state snapshots (`learning-state-snapshot`) with required compact metrics (`first_pass_yield`, `retry_pressure`, `validation_load_ratio`, `route_efficiency_score`, `smallest_sufficient_route_score`, `pattern_family_effectiveness_score`, `portability_confidence`) derived from outcome telemetry, process telemetry, and optional task-execution-profile evidence.
 - Added `pnpm playbook telemetry learning-state` inspection surface with JSON/text output and safe degradation when telemetry artifacts are partially or fully missing.
 - Registered the additive `learning-state` contract in schema registries/contracts output and added deterministic fixture/test coverage for strong docs-only efficiency, weak contracts-schema retry pressure, high-validation engine scoring, low-confidence cross-repo pattern learning, and low-sample open-question scenarios.
@@ -25,6 +26,7 @@
 
 ### WHY
 
+- Preserves structural task context in outcome evidence so learning snapshots avoid false signals from decontextualized event counts.
 - Establishes a compact, deterministic, reviewable learning layer between raw evidence and future routing/meta-evolution proposals while preserving proposal-only posture and preventing autonomous mutation from unsegmented telemetry.
 - Reduces Goodhart-router risk by exposing explicit confidence/open-question summaries tied to sample size, coverage, and evidence completeness rather than raw log replay.
 - Prevent Windows/PowerShell plan redirection encoding differences from breaking deterministic `apply --from-plan` workflows while keeping plan contract validation strict.

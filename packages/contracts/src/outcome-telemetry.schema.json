@@ -5,16 +5,33 @@
   "description": "Deterministic additive repository outcome telemetry for architecture learning evidence.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "kind", "generatedAt", "records", "summary"],
+  "required": [
+    "schemaVersion",
+    "kind",
+    "generatedAt",
+    "records",
+    "summary"
+  ],
   "properties": {
-    "schemaVersion": { "const": "1.0" },
-    "kind": { "const": "outcome-telemetry" },
-    "generatedAt": { "type": "string", "format": "date-time" },
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "kind": {
+      "const": "outcome-telemetry"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
     "records": {
       "type": "array",
-      "items": { "$ref": "#/$defs/OutcomeRecord" }
+      "items": {
+        "$ref": "#/$defs/OutcomeRecord"
+      }
     },
-    "summary": { "$ref": "#/$defs/OutcomeSummary" }
+    "summary": {
+      "$ref": "#/$defs/OutcomeSummary"
+    }
   },
   "$defs": {
     "OutcomeRecord": {
@@ -31,16 +48,89 @@
         "ci_failure_categories"
       ],
       "properties": {
-        "id": { "type": "string", "minLength": 1 },
-        "recordedAt": { "type": "string", "format": "date-time" },
-        "plan_churn": { "type": "integer", "minimum": 0 },
-        "apply_retries": { "type": "integer", "minimum": 0 },
-        "dependency_drift": { "type": "integer", "minimum": 0 },
-        "contract_breakage": { "type": "integer", "minimum": 0 },
-        "docs_mismatch": { "type": "boolean" },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recordedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "plan_churn": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "apply_retries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dependency_drift": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "contract_breakage": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "docs_mismatch": {
+          "type": "boolean"
+        },
         "ci_failure_categories": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 },
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "task_profile_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "task_family": {
+          "type": "string",
+          "minLength": 1
+        },
+        "affected_surfaces": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "estimated_change_surface": {
+          "type": "number",
+          "minimum": 0
+        },
+        "actual_change_surface": {
+          "type": "number",
+          "minimum": 0
+        },
+        "files_changed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "post_apply_verify_passed": {
+          "type": "boolean"
+        },
+        "post_apply_ci_passed": {
+          "type": "boolean"
+        },
+        "regression_categories": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "pattern_families_implicated": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
           "uniqueItems": true
         }
       }
@@ -58,15 +148,84 @@
         "ci_failure_category_counts"
       ],
       "properties": {
-        "total_records": { "type": "integer", "minimum": 0 },
-        "sum_plan_churn": { "type": "integer", "minimum": 0 },
-        "sum_apply_retries": { "type": "integer", "minimum": 0 },
-        "sum_dependency_drift": { "type": "integer", "minimum": 0 },
-        "sum_contract_breakage": { "type": "integer", "minimum": 0 },
-        "docs_mismatch_count": { "type": "integer", "minimum": 0 },
+        "total_records": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sum_plan_churn": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sum_apply_retries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sum_dependency_drift": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sum_contract_breakage": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "docs_mismatch_count": {
+          "type": "integer",
+          "minimum": 0
+        },
         "ci_failure_category_counts": {
           "type": "object",
-          "additionalProperties": { "type": "integer", "minimum": 0 }
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "task_family_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "affected_surface_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "regression_category_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "pattern_family_implicated_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "post_apply_verify_passed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "post_apply_ci_passed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sum_estimated_change_surface": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sum_actual_change_surface": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sum_files_changed_count": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     }
