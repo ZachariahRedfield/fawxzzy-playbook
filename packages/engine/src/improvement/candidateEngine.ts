@@ -19,7 +19,7 @@ export type ImprovementCandidateCategory =
   | 'validation_efficiency'
   | 'ontology';
 
-export type ImprovementTier = 'AUTO-SAFE' | 'CONVERSATIONAL' | 'GOVERNANCE';
+export type ImprovementTier = 'auto_safe' | 'conversation' | 'governance';
 
 export type ImprovementCandidate = {
   candidate_id: string;
@@ -55,6 +55,26 @@ export type ImprovementCandidatesArtifact = {
     total: number;
   };
   candidates: ImprovementCandidate[];
+};
+
+export type ImprovementActionArtifact = {
+  schemaVersion: typeof IMPROVEMENT_CANDIDATES_SCHEMA_VERSION;
+  kind: 'improvement-actions';
+  generatedAt: string;
+  action: 'apply-safe';
+  applied: string[];
+  pending_conversation: string[];
+  pending_governance: string[];
+};
+
+export type ImprovementGovernanceApprovalArtifact = {
+  schemaVersion: typeof IMPROVEMENT_CANDIDATES_SCHEMA_VERSION;
+  kind: 'improvement-governance-approvals';
+  updatedAt: string;
+  approvals: Array<{
+    proposal_id: string;
+    approvedAt: string;
+  }>;
 };
 
 const MINIMUM_RECURRENCE = 3;
@@ -102,16 +122,23 @@ const readRepositoryEvents = (repoRoot: string): RepositoryEvent[] => {
   return events;
 };
 
-const buildTier = (category: ImprovementCandidateCategory): ImprovementTier => {
-  if (category === 'ontology') {
-    return 'GOVERNANCE';
+const buildTier = (input: { category: ImprovementCandidateCategory; suggestedAction: string }): ImprovementTier => {
+  const suggestedAction = input.suggestedAction.toLowerCase();
+
+  if (
+    input.category === 'ontology' ||
+    suggestedAction.includes('required validation') ||
+    suggestedAction.includes('mutation scope') ||
+    suggestedAction.includes('schema')
+  ) {
+    return 'governance';
   }
 
-  if (category === 'orchestration' || category === 'worker_prompts') {
-    return 'CONVERSATIONAL';
+  if (input.category === 'routing' || suggestedAction.includes('classifier') || suggestedAction.includes('task family')) {
+    return 'conversation';
   }
 
-  return 'AUTO-SAFE';
+  return 'auto_safe';
 };
 
 const buildConfidence = (recurrenceCount: number, signalScore: number, learningConfidence: number): number =>
@@ -139,7 +166,7 @@ const emitCandidate = (input: {
     recurrence_count: input.recurrenceCount,
     confidence,
     suggested_action: input.suggestedAction,
-    improvement_tier: buildTier(input.category),
+    improvement_tier: buildTier({ category: input.category, suggestedAction: input.suggestedAction }),
     evidence: {
       event_ids: [...input.eventIds].sort((left, right) => left.localeCompare(right))
     }
@@ -336,9 +363,9 @@ export const generateImprovementCandidates = (repoRoot: string): ImprovementCand
   });
 
   const summary = {
-    AUTO_SAFE: candidates.filter((candidate) => candidate.improvement_tier === 'AUTO-SAFE').length,
-    CONVERSATIONAL: candidates.filter((candidate) => candidate.improvement_tier === 'CONVERSATIONAL').length,
-    GOVERNANCE: candidates.filter((candidate) => candidate.improvement_tier === 'GOVERNANCE').length,
+    AUTO_SAFE: candidates.filter((candidate) => candidate.improvement_tier === 'auto_safe').length,
+    CONVERSATIONAL: candidates.filter((candidate) => candidate.improvement_tier === 'conversation').length,
+    GOVERNANCE: candidates.filter((candidate) => candidate.improvement_tier === 'governance').length,
     total: candidates.length
   };
 
@@ -370,4 +397,65 @@ export const writeImprovementCandidatesArtifact = (
   fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
   fs.writeFileSync(resolvedPath, deterministicStringify(artifact), 'utf8');
   return resolvedPath;
+};
+
+export const applyAutoSafeImprovements = (repoRoot: string): ImprovementActionArtifact => {
+  const artifact = generateImprovementCandidates(repoRoot);
+  writeImprovementCandidatesArtifact(repoRoot, artifact);
+
+  const actionArtifact: ImprovementActionArtifact = {
+    schemaVersion: IMPROVEMENT_CANDIDATES_SCHEMA_VERSION,
+    kind: 'improvement-actions',
+    generatedAt: new Date().toISOString(),
+    action: 'apply-safe',
+    applied: artifact.candidates
+      .filter((candidate) => candidate.improvement_tier === 'auto_safe')
+      .map((candidate) => candidate.candidate_id),
+    pending_conversation: artifact.candidates
+      .filter((candidate) => candidate.improvement_tier === 'conversation')
+      .map((candidate) => candidate.candidate_id),
+    pending_governance: artifact.candidates
+      .filter((candidate) => candidate.improvement_tier === 'governance')
+      .map((candidate) => candidate.candidate_id)
+  };
+
+  const outputPath = path.join(repoRoot, '.playbook', 'improvement-actions.json');
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, deterministicStringify(actionArtifact), 'utf8');
+  return actionArtifact;
+};
+
+export const approveGovernanceImprovement = (
+  repoRoot: string,
+  proposalId: string
+): ImprovementGovernanceApprovalArtifact => {
+  const candidates = generateImprovementCandidates(repoRoot).candidates;
+  const target = candidates.find((candidate) => candidate.candidate_id === proposalId);
+
+  if (!target) {
+    throw new Error(`Unknown improvement proposal: ${proposalId}`);
+  }
+
+  if (target.improvement_tier !== 'governance') {
+    throw new Error(`Proposal ${proposalId} is not governance-tier and does not require explicit governance approval.`);
+  }
+
+  const approvalsPath = path.join(repoRoot, '.playbook', 'improvement-approvals.json');
+  const existing = readJsonFileIfExists<ImprovementGovernanceApprovalArtifact>(approvalsPath);
+
+  const approvals = existing?.approvals ?? [];
+  if (!approvals.some((entry) => entry.proposal_id === proposalId)) {
+    approvals.push({ proposal_id: proposalId, approvedAt: new Date().toISOString() });
+  }
+
+  const artifact: ImprovementGovernanceApprovalArtifact = {
+    schemaVersion: IMPROVEMENT_CANDIDATES_SCHEMA_VERSION,
+    kind: 'improvement-governance-approvals',
+    updatedAt: new Date().toISOString(),
+    approvals: approvals.sort((left, right) => left.proposal_id.localeCompare(right.proposal_id))
+  };
+
+  fs.mkdirSync(path.dirname(approvalsPath), { recursive: true });
+  fs.writeFileSync(approvalsPath, deterministicStringify(artifact), 'utf8');
+  return artifact;
 };

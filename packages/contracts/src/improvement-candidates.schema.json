@@ -157,9 +157,9 @@
         "improvement_tier": {
           "type": "string",
           "enum": [
-            "AUTO-SAFE",
-            "CONVERSATIONAL",
-            "GOVERNANCE"
+            "auto_safe",
+            "conversation",
+            "governance"
           ]
         },
         "evidence": {

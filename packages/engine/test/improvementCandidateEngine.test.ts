@@ -3,6 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  applyAutoSafeImprovements,
+  approveGovernanceImprovement,
   generateImprovementCandidates,
   writeImprovementCandidatesArtifact,
   type LearningStateSnapshotArtifact
@@ -108,6 +110,75 @@ describe('improvement candidate engine', () => {
     const outputPath = writeImprovementCandidatesArtifact(repo, artifact);
     expect(outputPath.endsWith('.playbook/improvement-candidates.json')).toBe(true);
     expect(fs.existsSync(outputPath)).toBe(true);
+  });
+
+
+
+  it('applies auto-safe candidates and tracks pending approvals by tier', () => {
+    const repo = createRepo();
+    writeLearning(repo, learningSnapshot);
+
+    for (let i = 0; i < 3; i += 1) {
+      writeEvent(repo, `route-${i}`, {
+        schemaVersion: '1.0',
+        event_type: 'route_decision',
+        event_id: `route-${i}`,
+        timestamp: `2026-01-0${i + 1}T00:00:00.000Z`,
+        task_text: 'update docs',
+        task_family: 'docs_only',
+        route_id: 'docs_default',
+        confidence: 0.92
+      });
+      writeEvent(repo, `lane-${i}`, {
+        schemaVersion: '1.0',
+        event_type: 'lane_transition',
+        event_id: `lane-${i}`,
+        timestamp: `2026-01-1${i}T00:00:00.000Z`,
+        lane_id: `lane-${i}`,
+        from_state: 'assigned',
+        to_state: 'blocked',
+        reason: 'waiting_on_contract'
+      });
+      writeEvent(repo, `ontology-${i}`, {
+        schemaVersion: '1.0',
+        event_type: 'improvement_candidate',
+        event_id: `ontology-${i}`,
+        timestamp: `2026-01-2${i}T00:00:00.000Z`,
+        source: 'ontology-observer',
+        summary: 'Ontology drift in route taxonomy',
+        confidence: 0.9
+      });
+    }
+
+    const result = applyAutoSafeImprovements(repo);
+    expect(result.action).toBe('apply-safe');
+    expect(result.applied.length).toBeGreaterThan(0);
+    expect(result.pending_conversation.length).toBeGreaterThan(0);
+    expect(result.pending_governance.length).toBeGreaterThan(0);
+  });
+
+  it('requires explicit governance approval for governance-tier proposals', () => {
+    const repo = createRepo();
+    writeLearning(repo, learningSnapshot);
+
+    for (let i = 0; i < 3; i += 1) {
+      writeEvent(repo, `ontology-${i}`, {
+        schemaVersion: '1.0',
+        event_type: 'improvement_candidate',
+        event_id: `ontology-${i}`,
+        timestamp: `2026-01-2${i}T00:00:00.000Z`,
+        source: 'ontology-observer',
+        summary: 'Ontology drift in route taxonomy',
+        confidence: 0.9
+      });
+    }
+
+    const artifact = generateImprovementCandidates(repo);
+    const governanceCandidate = artifact.candidates.find((candidate) => candidate.improvement_tier === 'governance');
+    expect(governanceCandidate).toBeDefined();
+
+    const approval = approveGovernanceImprovement(repo, governanceCandidate!.candidate_id);
+    expect(approval.approvals.some((item) => item.proposal_id === governanceCandidate!.candidate_id)).toBe(true);
   });
 
   it('does not emit candidates when recurrence threshold is not met', () => {

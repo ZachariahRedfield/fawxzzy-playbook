@@ -1,4 +1,6 @@
 import {
+  applyAutoSafeImprovements,
+  approveGovernanceImprovement,
   generateImprovementCandidates,
   writeImprovementCandidatesArtifact,
   type ImprovementCandidatesArtifact
@@ -17,11 +19,11 @@ const renderText = (artifact: ImprovementCandidatesArtifact): void => {
   console.log(`Generated at: ${artifact.generatedAt}`);
   console.log(`Thresholds: recurrence >= ${artifact.thresholds.minimum_recurrence}, confidence >= ${artifact.thresholds.minimum_confidence}`);
   console.log('');
-  console.log('AUTO-SAFE improvements');
+  console.log('AUTO-SAFE');
   console.log(`- ${artifact.summary.AUTO_SAFE}`);
-  console.log('CONVERSATIONAL improvements');
+  console.log('CONVERSATIONAL');
   console.log(`- ${artifact.summary.CONVERSATIONAL}`);
-  console.log('GOVERNANCE improvements');
+  console.log('GOVERNANCE');
   console.log(`- ${artifact.summary.GOVERNANCE}`);
   console.log('');
 
@@ -38,6 +40,16 @@ const renderText = (artifact: ImprovementCandidatesArtifact): void => {
   }
 };
 
+const printConversationPrompts = (artifact: ImprovementCandidatesArtifact): void => {
+  const conversational = artifact.candidates.filter((candidate: { improvement_tier: string }) => candidate.improvement_tier === 'conversation');
+
+  for (const candidate of conversational) {
+    console.log(`Approval needed (conversation): ${candidate.candidate_id}`);
+    console.log(`- observation: ${candidate.observation}`);
+    console.log(`- suggested action: ${candidate.suggested_action}`);
+  }
+};
+
 export const runImprove = async (cwd: string, options: ImproveOptions): Promise<number> => {
   const artifact = generateImprovementCandidates(cwd);
   writeImprovementCandidatesArtifact(cwd, artifact);
@@ -49,7 +61,60 @@ export const runImprove = async (cwd: string, options: ImproveOptions): Promise<
 
   if (!options.quiet) {
     renderText(artifact);
+    printConversationPrompts(artifact);
   }
 
   return ExitCode.Success;
+};
+
+export const runImproveApplySafe = async (cwd: string, options: ImproveOptions): Promise<number> => {
+  const artifact = applyAutoSafeImprovements(cwd);
+
+  if (options.format === 'json') {
+    emitJsonOutput({ cwd, command: 'improve-apply-safe', payload: artifact });
+    return ExitCode.Success;
+  }
+
+  if (!options.quiet) {
+    console.log('Applied auto-safe improvements');
+    console.log('────────────────────────────');
+    console.log(`Applied: ${artifact.applied.length}`);
+    console.log(`Pending conversational: ${artifact.pending_conversation.length}`);
+    console.log(`Pending governance: ${artifact.pending_governance.length}`);
+  }
+
+  return ExitCode.Success;
+};
+
+export const runImproveApprove = async (cwd: string, proposalId: string | undefined, options: ImproveOptions): Promise<number> => {
+  if (!proposalId) {
+    const message = 'playbook improve approve: missing <proposal_id>.';
+    if (options.format === 'json') {
+      emitJsonOutput({ cwd, command: 'improve-approve', payload: { error: message } });
+    } else {
+      console.error(message);
+    }
+    return ExitCode.Failure;
+  }
+
+  try {
+    const artifact = approveGovernanceImprovement(cwd, proposalId);
+    if (options.format === 'json') {
+      emitJsonOutput({ cwd, command: 'improve-approve', payload: artifact });
+      return ExitCode.Success;
+    }
+
+    if (!options.quiet) {
+      console.log(`Approved governance improvement: ${proposalId}`);
+    }
+    return ExitCode.Success;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error while approving governance improvement.';
+    if (options.format === 'json') {
+      emitJsonOutput({ cwd, command: 'improve-approve', payload: { error: message } });
+    } else {
+      console.error(message);
+    }
+    return ExitCode.Failure;
+  }
 };

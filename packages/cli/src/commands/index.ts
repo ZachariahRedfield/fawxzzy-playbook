@@ -295,8 +295,19 @@ const commandRunners: Record<string, (context: CommandContext) => Promise<Comman
     const { runTelemetry } = await import('./telemetry.js');
     return runTelemetry(cwd, commandArgs, { format, quiet });
   },
-  improve: async ({ cwd, format, quiet }) => {
-    const { runImprove } = await import('./improve.js');
+  improve: async ({ cwd, commandArgs, format, quiet }) => {
+    const { runImprove, runImproveApplySafe, runImproveApprove } = await import('./improve.js');
+    const subcommand = commandArgs.find((arg) => !arg.startsWith('-'));
+
+    if (subcommand === 'apply-safe') {
+      return runImproveApplySafe(cwd, { format, quiet });
+    }
+
+    if (subcommand === 'approve') {
+      const proposalId = commandArgs.find((arg, index) => index > commandArgs.indexOf('approve') && !arg.startsWith('-'));
+      return runImproveApprove(cwd, proposalId, { format, quiet });
+    }
+
     return runImprove(cwd, { format, quiet });
   },
   agent: async ({ cwd, commandArgs, format, quiet }) => {

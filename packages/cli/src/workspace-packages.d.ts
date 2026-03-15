@@ -250,8 +250,12 @@ declare module "@zachariahredfield/playbook-engine" {
   export const deriveLearningStateSnapshot: (...args: any[]) => LearningStateSnapshotArtifact;
 
   export type ImprovementCandidatesArtifact = any;
+  export type ImprovementActionArtifact = any;
+  export type ImprovementGovernanceApprovalArtifact = any;
   export const generateImprovementCandidates: (...args: any[]) => ImprovementCandidatesArtifact;
   export const writeImprovementCandidatesArtifact: (...args: any[]) => string;
+  export const applyAutoSafeImprovements: (...args: any[]) => ImprovementActionArtifact;
+  export const approveGovernanceImprovement: (...args: any[]) => ImprovementGovernanceApprovalArtifact;
 
   export const listRuntimeRuns: (...args: any[]) => any[];
   export const readRuntimeRun: (...args: any[]) => any;

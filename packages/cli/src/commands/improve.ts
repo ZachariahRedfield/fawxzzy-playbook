@@ -1,1 +1,1 @@
-export { runImprove } from './improve/index.js';
+export { runImprove, runImproveApplySafe, runImproveApprove } from './improve/index.js';

@@ -156,13 +156,17 @@ export {
   IMPROVEMENT_CANDIDATES_SCHEMA_VERSION,
   IMPROVEMENT_CANDIDATES_RELATIVE_PATH,
   generateImprovementCandidates,
-  writeImprovementCandidatesArtifact
+  writeImprovementCandidatesArtifact,
+  applyAutoSafeImprovements,
+  approveGovernanceImprovement
 } from './improvement/candidateEngine.js';
 export type {
   ImprovementCandidateCategory,
   ImprovementTier,
   ImprovementCandidate,
-  ImprovementCandidatesArtifact
+  ImprovementCandidatesArtifact,
+  ImprovementActionArtifact,
+  ImprovementGovernanceApprovalArtifact
 } from './improvement/candidateEngine.js';
 
 export {

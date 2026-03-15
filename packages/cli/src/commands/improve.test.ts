@@ -4,7 +4,7 @@ import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { ExitCode } from '../lib/cliContract.js';
 import { listRegisteredCommands } from './index.js';
-import { runImprove } from './improve.js';
+import { runImprove, runImproveApplySafe, runImproveApprove } from './improve.js';
 
 const createRepo = (): string => fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-improve-cli-'));
 
@@ -72,6 +72,25 @@ const seedRepo = (repo: string): void => {
       )
     );
   }
+
+  for (let i = 0; i < 3; i += 1) {
+    fs.writeFileSync(
+      path.join(eventsDir, `ontology-${i}.json`),
+      JSON.stringify(
+        {
+          schemaVersion: '1.0',
+          event_type: 'improvement_candidate',
+          event_id: `ontology-${i}`,
+          timestamp: `2026-01-1${i}T00:00:00.000Z`,
+          source: 'ontology-observer',
+          summary: 'Ontology drift in route taxonomy',
+          confidence: 0.9
+        },
+        null,
+        2
+      )
+    );
+  }
 };
 
 describe('runImprove', () => {
@@ -87,10 +106,35 @@ describe('runImprove', () => {
     expect(payload.kind).toBe('improvement-candidates');
     expect((payload.summary as Record<string, number>).AUTO_SAFE).toBeGreaterThan(0);
 
+    const candidates = payload.candidates as Array<{ improvement_tier: string }>;
+    expect(candidates.some((candidate) => ['auto_safe', 'conversation', 'governance'].includes(candidate.improvement_tier))).toBe(true);
+
     const artifactPath = path.join(repo, '.playbook', 'improvement-candidates.json');
     expect(fs.existsSync(artifactPath)).toBe(true);
 
     logSpy.mockRestore();
+    fs.rmSync(repo, { recursive: true, force: true });
+  });
+
+  it('supports apply-safe and governance approval workflows', async () => {
+    const repo = createRepo();
+    seedRepo(repo);
+
+    const applyExit = await runImproveApplySafe(repo, { format: 'text', quiet: true });
+    expect(applyExit).toBe(ExitCode.Success);
+
+    const artifact = JSON.parse(fs.readFileSync(path.join(repo, '.playbook', 'improvement-candidates.json'), 'utf8')) as {
+      candidates: Array<{ candidate_id: string; improvement_tier: string }>;
+    };
+    const governance = artifact.candidates.find((candidate) => candidate.improvement_tier === 'governance');
+    expect(governance).toBeDefined();
+
+    const approveExit = await runImproveApprove(repo, governance?.candidate_id, { format: 'text', quiet: true });
+    expect(approveExit).toBe(ExitCode.Success);
+
+    const approvalPath = path.join(repo, '.playbook', 'improvement-approvals.json');
+    expect(fs.existsSync(approvalPath)).toBe(true);
+
     fs.rmSync(repo, { recursive: true, force: true });
   });
 });
