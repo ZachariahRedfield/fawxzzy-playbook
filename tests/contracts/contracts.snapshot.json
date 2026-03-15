@@ -157,6 +157,11 @@
         "path": "packages/contracts/src/learning-state.schema.json"
       },
       {
+        "id": "improvement-candidates",
+        "version": "1.0",
+        "path": "packages/contracts/src/improvement-candidates.schema.json"
+      },
+      {
         "id": "lane-state",
         "version": "1.0",
         "path": "packages/contracts/src/lane-state.schema.json"

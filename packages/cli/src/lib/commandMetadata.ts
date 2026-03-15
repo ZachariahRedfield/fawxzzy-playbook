@@ -502,6 +502,19 @@ export const commandMetadata: CommandMetadata[] = [
     machineReadable: true
   },
   {
+    name: 'improve',
+    description: 'Generate deterministic improvement candidates from memory events and learning-state signals',
+    category: 'Utility',
+    role: 'utility',
+    lifecycle: 'utility',
+    discoverability: 'secondary',
+    onboardingPriority: null,
+    canonicalSequence: null,
+    productFacing: true,
+    exampleArgs: 'improve --json',
+    machineReadable: true
+  },
+  {
     name: 'knowledge',
     description: 'Inspect read-only knowledge artifacts and provenance surfaces',
     category: 'Repository intelligence',

@@ -48,6 +48,7 @@ Do not hand-edit entries inside the managed markers.
 | `route` | Classify tasks and emit deterministic proposal-only execution plans for task-specific routing decisions | canonical | repo-intelligence | primary | — | Current (implemented) | `pnpm playbook route "summarize current repo state" --json` |
 | `learn` | Draft deterministic knowledge candidates from local diff and repository intelligence | utility | utility | secondary | — | Current (implemented) | `pnpm playbook learn draft --json --out .playbook/knowledge/candidates.json` |
 | `memory` | Inspect, review, and curate repository memory artifacts with explicit human-reviewed doctrine promotion | utility | utility | secondary | — | Current (implemented) | `pnpm playbook memory events --json` |
+| `improve` | Generate deterministic improvement candidates from memory events and learning-state signals | utility | utility | secondary | — | Current (implemented) | `pnpm playbook improve --json` |
 | `knowledge` | Inspect read-only knowledge artifacts and provenance surfaces | canonical | repo-intelligence | secondary | — | Current (implemented) | `pnpm playbook knowledge list --json` |
 | `security` | Inspect deterministic security baseline findings and summary | canonical | governance | secondary | — | Current (implemented) | `pnpm playbook security baseline summary --json` |
 | `telemetry` | Inspect deterministic repository/process telemetry and compact learning-state snapshots | utility | utility | secondary | — | Current (implemented) | `pnpm playbook telemetry learning-state --json` |

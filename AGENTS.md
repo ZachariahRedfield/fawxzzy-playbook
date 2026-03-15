@@ -239,6 +239,8 @@ Do not hand-edit entries inside the managed markers.
   - Example: `pnpm playbook learn draft --json --out .playbook/knowledge/candidates.json`
 - `memory`: Inspect, review, and curate repository memory artifacts with explicit human-reviewed doctrine promotion
   - Example: `pnpm playbook memory events --json`
+- `improve`: Generate deterministic improvement candidates from memory events and learning-state signals
+  - Example: `pnpm playbook improve --json`
 - `security`: Inspect deterministic security baseline findings and summary
   - Example: `pnpm playbook security baseline summary --json`
 - `telemetry`: Inspect deterministic repository/process telemetry and compact learning-state snapshots
@@ -294,6 +296,7 @@ Do not hand-edit entries inside the managed markers.
 | `route` | `pnpm playbook route "summarize current repo state" --json` |
 | `learn` | `pnpm playbook learn draft --json --out .playbook/knowledge/candidates.json` |
 | `memory` | `pnpm playbook memory events --json` |
+| `improve` | `pnpm playbook improve --json` |
 | `knowledge` | `pnpm playbook knowledge list --json` |
 | `security` | `pnpm playbook security baseline summary --json` |
 | `telemetry` | `pnpm playbook telemetry learning-state --json` |

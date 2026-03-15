@@ -152,6 +152,18 @@ export type {
 } from './query/testHotspots.js';
 
 export { runDocsAudit } from './docs/audit.js';
+export {
+  IMPROVEMENT_CANDIDATES_SCHEMA_VERSION,
+  IMPROVEMENT_CANDIDATES_RELATIVE_PATH,
+  generateImprovementCandidates,
+  writeImprovementCandidatesArtifact
+} from './improvement/candidateEngine.js';
+export type {
+  ImprovementCandidateCategory,
+  ImprovementTier,
+  ImprovementCandidate,
+  ImprovementCandidatesArtifact
+} from './improvement/candidateEngine.js';
 
 export {
   captureMemoryEvent,

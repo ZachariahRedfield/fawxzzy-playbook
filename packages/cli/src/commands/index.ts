@@ -295,6 +295,10 @@ const commandRunners: Record<string, (context: CommandContext) => Promise<Comman
     const { runTelemetry } = await import('./telemetry.js');
     return runTelemetry(cwd, commandArgs, { format, quiet });
   },
+  improve: async ({ cwd, format, quiet }) => {
+    const { runImprove } = await import('./improve.js');
+    return runImprove(cwd, { format, quiet });
+  },
   agent: async ({ cwd, commandArgs, format, quiet }) => {
     const { runAgent } = await import('./agent.js');
     return runAgent(cwd, commandArgs, { format, quiet });
@@ -414,6 +418,7 @@ const commandOrder = [
   'patterns',
   'learn',
   'memory',
+  'improve',
   'knowledge',
   'security',
   'telemetry',

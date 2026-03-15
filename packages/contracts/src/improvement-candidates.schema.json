@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/improvement-candidates.schema.json",
+  "title": "PlaybookImprovementCandidates",
+  "description": "Deterministic improvement candidate artifact derived from repository memory events and learning-state signals.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "generatedAt",
+    "thresholds",
+    "sourceArtifacts",
+    "summary",
+    "candidates"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "kind": {
+      "const": "improvement-candidates"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimum_recurrence",
+        "minimum_confidence"
+      ],
+      "properties": {
+        "minimum_recurrence": {
+          "type": "integer",
+          "minimum": 1,
+          "const": 3
+        },
+        "minimum_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "const": 0.6
+        }
+      }
+    },
+    "sourceArtifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "memoryEventsPath",
+        "learningStatePath",
+        "memoryEventCount",
+        "learningStateAvailable"
+      ],
+      "properties": {
+        "memoryEventsPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "learningStatePath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "memoryEventCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "learningStateAvailable": {
+          "type": "boolean"
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "AUTO_SAFE",
+        "CONVERSATIONAL",
+        "GOVERNANCE",
+        "total"
+      ],
+      "properties": {
+        "AUTO_SAFE": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "CONVERSATIONAL": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "GOVERNANCE": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ImprovementCandidate"
+      }
+    }
+  },
+  "$defs": {
+    "ImprovementCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "category",
+        "observation",
+        "recurrence_count",
+        "confidence",
+        "suggested_action",
+        "improvement_tier",
+        "evidence"
+      ],
+      "properties": {
+        "candidate_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "routing",
+            "orchestration",
+            "worker_prompts",
+            "validation_efficiency",
+            "ontology"
+          ]
+        },
+        "observation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recurrence_count": {
+          "type": "integer",
+          "minimum": 3
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.6,
+          "maximum": 1
+        },
+        "suggested_action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "improvement_tier": {
+          "type": "string",
+          "enum": [
+            "AUTO-SAFE",
+            "CONVERSATIONAL",
+            "GOVERNANCE"
+          ]
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "event_ids"
+          ],
+          "properties": {
+            "event_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}
