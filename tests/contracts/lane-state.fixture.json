@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "lane-state",
+  "generatedAt": "1970-01-01T00:00:00.000Z",
+  "proposalOnly": true,
+  "workset_plan_path": ".playbook/workset-plan.json",
+  "lanes": [
+    {
+      "lane_id": "lane-1",
+      "task_ids": ["task-docs"],
+      "status": "ready",
+      "dependency_level": "low",
+      "dependencies_satisfied": true,
+      "blocked_reasons": [],
+      "verification_summary": {
+        "status": "pending",
+        "required_checks": ["pnpm -r build", "pnpm test"],
+        "optional_checks": ["pnpm playbook contracts --json"],
+        "notes": ["lane is ready for deterministic validation execution"]
+      },
+      "merge_ready": true,
+      "worker_ready": true
+    }
+  ],
+  "blocked_lanes": [],
+  "ready_lanes": ["lane-1"],
+  "running_lanes": [],
+  "completed_lanes": [],
+  "dependency_status": {
+    "total_edges": 0,
+    "satisfied_edges": 0,
+    "unsatisfied_edges": 0
+  },
+  "merge_readiness": {
+    "merge_ready_lanes": ["lane-1"],
+    "not_merge_ready_lanes": []
+  },
+  "verification_status": {
+    "status": "pending",
+    "lanes_pending_verification": ["lane-1"],
+    "lanes_blocked_from_verification": []
+  },
+  "warnings": []
+}

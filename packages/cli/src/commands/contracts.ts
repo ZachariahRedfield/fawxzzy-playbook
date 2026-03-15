@@ -37,6 +37,7 @@ const additiveCommandOutputSchemas: RegisteredSchema[] = [
   { id: 'workset-plan', version: '1.0', path: 'packages/contracts/src/workset-plan.schema.json' },
   { id: 'outcome-telemetry', version: '1.0', path: 'packages/contracts/src/outcome-telemetry.schema.json' },
   { id: 'learning-state', version: '1.0', path: 'packages/contracts/src/learning-state.schema.json' },
+  { id: 'lane-state', version: '1.0', path: 'packages/contracts/src/lane-state.schema.json' },
   { id: 'explain.memoryKnowledge', version: '1.0', path: 'schema://cli/explain' },
   { id: 'plan.tasks[].advisory.outcomeLearning', version: '1.0', path: 'schema://cli/plan' },
   { id: 'analyze-pr.preventionGuidance', version: '1.0', path: 'schema://cli/analyze-pr' },

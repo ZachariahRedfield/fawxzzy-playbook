@@ -71,6 +71,19 @@ export const commandMetadata: CommandMetadata[] = [
     machineReadable: true
   },
   {
+    name: 'lanes',
+    description: 'Derive deterministic lane-state from .playbook/workset-plan.json',
+    category: 'Core',
+    role: 'remediation',
+    lifecycle: 'canonical',
+    discoverability: 'primary',
+    onboardingPriority: null,
+    canonicalSequence: null,
+    productFacing: true,
+    exampleArgs: 'lanes --json',
+    machineReadable: true
+  },
+  {
     name: 'orchestrate',
     description: 'Generate deterministic orchestration lane artifacts for a goal or tasks-file workset',
     category: 'Core',

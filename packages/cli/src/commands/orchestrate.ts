@@ -16,6 +16,7 @@ type OrchestrateOptions = {
 };
 
 const WORKSET_PLAN_PATH = '.playbook/workset-plan.json';
+const LANE_STATE_PATH = '.playbook/lane-state.json';
 
 type WorksetTaskInput = { task_id: string; task: string };
 
@@ -88,6 +89,22 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
       return ExitCode.Failure;
     }
 
+    const deriveLaneState = engineModule.deriveLaneState as ((worksetPlan: Record<string, unknown>, worksetPlanPath: string) => Record<string, unknown>) | undefined;
+
+    if (!deriveLaneState) {
+      emitResult({
+        format: options.format,
+        quiet: options.quiet,
+        command: 'orchestrate',
+        ok: false,
+        exitCode: ExitCode.Failure,
+        summary: 'Orchestration failed: lane state derivation is unavailable on this build.',
+        findings: [{ id: 'orchestrate.lane-state.unavailable', level: 'error', message: 'Missing engine export: deriveLaneState' }],
+        nextActions: ['Rebuild workspace packages and retry.']
+      });
+      return ExitCode.Failure;
+    }
+
     const worksetPlan = buildWorksetPlan(cwd, tasks, tasksFile) as {
       input_tasks: unknown[];
       routed_tasks: unknown[];
@@ -95,8 +112,15 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
       blocked_tasks: unknown[];
       warnings: string[];
     };
+    const laneState = deriveLaneState(worksetPlan, WORKSET_PLAN_PATH) as {
+      blocked_lanes: unknown[];
+      ready_lanes: unknown[];
+      warnings: string[];
+    };
+
     fs.mkdirSync(path.join(cwd, '.playbook'), { recursive: true });
     fs.writeFileSync(path.join(cwd, WORKSET_PLAN_PATH), `${JSON.stringify(worksetPlan, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(path.join(cwd, LANE_STATE_PATH), `${JSON.stringify(laneState, null, 2)}\n`, 'utf8');
 
     emitResult({
       format: options.format,
@@ -110,12 +134,17 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
         { id: 'orchestrate.workset.routed', level: 'info', message: `Routed tasks: ${worksetPlan.routed_tasks.length}` },
         { id: 'orchestrate.workset.lanes', level: 'info', message: `Parallel lanes: ${worksetPlan.lanes.length}` },
         { id: 'orchestrate.workset.blocked', level: 'warning', message: `Blocked tasks: ${worksetPlan.blocked_tasks.length}` },
+        { id: 'orchestrate.workset.lane-state.blocked', level: 'warning', message: `Blocked lanes: ${laneState.blocked_lanes.length}` },
+        { id: 'orchestrate.workset.lane-state.ready', level: 'info', message: `Ready lanes: ${laneState.ready_lanes.length}` },
         ...worksetPlan.warnings.map((warning, index) => ({ id: `orchestrate.workset.warning.${index + 1}`, level: 'warning' as const, message: warning }))
       ],
-      nextActions: ['Review lane codex_prompt fields and blocked task prerequisites before running any workers.']
+      nextActions: [
+        'Review lane codex_prompt fields and blocked task prerequisites before running any workers.',
+        `Review ${LANE_STATE_PATH} for deterministic lane readiness before any execution handoff.`
+      ]
     });
 
-    return worksetPlan.blocked_tasks.length > 0 ? ExitCode.Failure : ExitCode.Success;
+    return laneState.blocked_lanes.length > 0 ? ExitCode.Failure : ExitCode.Success;
   }
 
   const goal = options.goal?.trim();

@@ -109,10 +109,11 @@ Use `--tasks-file` to compile multiple routed tasks into deterministic, proposal
 pnpm playbook orchestrate --tasks-file ./fixtures/tasks.json --json
 ```
 
-This writes `.playbook/workset-plan.json` with:
+This writes `.playbook/workset-plan.json` and `.playbook/lane-state.json` with:
 
 - `input_tasks`, `routed_tasks`, `lanes`, `blocked_tasks`
 - deterministic `dependency_edges` and `merge_risk_notes`
+- deterministic lane-state (`blocked_lanes`, `ready_lanes`, `merge_readiness`, `verification_status`)
 - one worker-ready `codex_prompt` per lane
 
 Why this exists:
@@ -120,3 +121,10 @@ Why this exists:
 - lane planning is the safety layer between single-task routing and autonomous orchestration
 - unsupported/ambiguous tasks stay explicit in `blocked_tasks` instead of being silently forced into lanes
 - proposal-only posture is preserved end-to-end
+
+
+## Workset-plan -> lane-state progression
+
+`workset-plan` is deterministic planning intent. `lane-state` is deterministic readiness tracking for that intent.
+
+This progression is required before any future autonomous orchestration slice because it keeps unsupported/ambiguous work explicit, blocks unresolved dependency chains, and exposes conservative merge readiness rather than inferring optimistic execution state.

@@ -2109,3 +2109,4 @@ Execution state is persisted under `.playbook/runs/<run-id>.json` and is queryab
 - Added deterministic `workset-plan` compilation from `orchestrate --tasks-file`.
 - Execution-plan to lane-plan compilation now happens before any autonomous orchestration concerns.
 - Worker-ready prompts are emitted per lane while unsupported/ambiguous tasks remain explicitly blocked.
+- Added deterministic `lane-state` derivation at `.playbook/lane-state.json` so planned lanes become explicit tracked readiness state (`blocked`, `ready`, conservative `merge_readiness`, verification posture) before any autonomous execution concerns.

@@ -197,6 +197,7 @@ describe('runOrchestrate', () => {
 
     expect(exitCode).toBe(ExitCode.Success);
     expect(fs.existsSync(path.join(repoDir, '.playbook', 'workset-plan.json'))).toBe(true);
+    expect(fs.existsSync(path.join(repoDir, '.playbook', 'lane-state.json'))).toBe(true);
 
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as { command: string; ok: boolean };
     expect(payload.command).toBe('orchestrate');

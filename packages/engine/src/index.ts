@@ -402,8 +402,8 @@ export { buildTaskExecutionProfile } from './routing/executionRouter.js';
 export { buildExecutionPlan } from './routing/executionPlan.js';
 export type { BuildExecutionPlanInput, ExecutionPlanArtifact, ExecutionPlanSourceArtifacts } from './routing/executionPlan.js';
 export { compileCodexPrompt } from './routing/codexPrompt.js';
-export { buildWorksetPlan } from './orchestration/index.js';
-export type { WorksetPlanArtifact, WorksetTaskInput, WorksetLane } from './orchestration/index.js';
+export { buildWorksetPlan, deriveLaneState } from './orchestration/index.js';
+export type { WorksetPlanArtifact, WorksetTaskInput, WorksetLane, LaneStateArtifact, LaneStateEntry, LaneExecutionStatus } from './orchestration/index.js';
 export type {
   ExecutionSurface,
   ExecutionScope,

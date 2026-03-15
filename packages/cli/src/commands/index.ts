@@ -141,6 +141,10 @@ const commandRunners: Record<string, (context: CommandContext) => Promise<Comman
     const { runPlan } = await import('./plan.js');
     return runPlan(cwd, { ci, format, quiet, outFile: parseOptionValue(commandArgs, '--out'), runId: parseOptionValue(commandArgs, '--run-id') });
   },
+  lanes: async ({ cwd, format, quiet }) => {
+    const { runLanes } = await import('./lanes.js');
+    return runLanes(cwd, { format, quiet });
+  },
   orchestrate: async ({ cwd, commandArgs, format, quiet }) => {
     const { runOrchestrate } = await import('./orchestrate.js');
     const lanesValue = parseOptionValue(commandArgs, '--lanes');
@@ -369,6 +373,7 @@ const commandOrder = [
   'verify',
   'plan',
   'orchestrate',
+  'lanes',
   'apply',
   'fix',
   'doctor',

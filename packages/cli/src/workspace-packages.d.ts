@@ -225,6 +225,10 @@ declare module "@zachariahredfield/playbook-engine" {
   export type TaskExecutionProfileArtifact = any;
   export type ExecutionPlanArtifact = any;
 
+  export type WorksetPlanArtifact = any;
+  export type LaneStateArtifact = any;
+  export const buildWorksetPlan: (...args: any[]) => WorksetPlanArtifact;
+  export const deriveLaneState: (...args: any[]) => LaneStateArtifact;
   export type OutcomeTelemetryArtifact = any;
   export type ProcessTelemetryArtifact = any;
   export const normalizeOutcomeTelemetryArtifact: (...args: any[]) => OutcomeTelemetryArtifact;
