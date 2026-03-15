@@ -65,13 +65,28 @@ const writeArchitectureRegistry = (repo: string): void => {
             name: 'observation_engine',
             purpose: 'Deterministic repository understanding',
             commands: ['index', 'query', 'explain'],
-            artifacts: ['.playbook/repo-index.json']
+            artifacts: ['.playbook/repo-index.json'],
+            downstream: ['execution_supervisor']
           },
           {
             name: 'execution_supervisor',
             purpose: 'Run workers and monitor execution',
             commands: ['execute'],
-            artifacts: ['.playbook/execution-state.json']
+            artifacts: ['.playbook/execution-state.json'],
+            upstream: ['observation_engine'],
+            downstream: ['telemetry_learning', 'lane_lifecycle']
+          },
+          {
+            name: 'telemetry_learning',
+            purpose: 'Execution telemetry and learning state',
+            commands: ['telemetry'],
+            artifacts: ['.playbook/learning-state.json']
+          },
+          {
+            name: 'lane_lifecycle',
+            purpose: 'Track orchestration progress',
+            commands: ['lanes'],
+            artifacts: ['.playbook/lane-state.json']
           }
         ]
       },
@@ -227,9 +242,32 @@ describe('runExplain', () => {
         name: 'observation_engine',
         purpose: 'Deterministic repository understanding',
         commands: ['index', 'query', 'explain'],
-        artifacts: ['.playbook/repo-index.json']
+        artifacts: ['.playbook/repo-index.json'],
+        subsystem_dependencies: {
+          upstream: [],
+          downstream: ['execution_supervisor']
+        }
       }
     });
+
+    logSpy.mockRestore();
+  });
+
+
+  it('renders subsystem dependency flow in text mode', async () => {
+    const repo = createRepo('playbook-cli-explain-subsystem-text');
+    writeArchitectureRegistry(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runExplain(repo, ['subsystem', 'execution_supervisor'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const lines = logSpy.mock.calls.map((call) => String(call[0]));
+    expect(lines).toContain('Upstream');
+    expect(lines).toContain('- observation_engine');
+    expect(lines).toContain('Downstream');
+    expect(lines).toContain('- telemetry_learning');
+    expect(lines).toContain('- lane_lifecycle');
 
     logSpy.mockRestore();
   });

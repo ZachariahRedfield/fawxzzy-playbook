@@ -12,6 +12,12 @@
       ],
       "artifacts": [
         ".playbook/ai-contract.json"
+      ],
+      "upstream": [
+        "observation_engine"
+      ],
+      "downstream": [
+        "knowledge_lifecycle"
       ]
     },
     {
@@ -92,6 +98,13 @@
       ],
       "artifacts": [
         ".playbook/execution-state.json"
+      ],
+      "upstream": [
+        "orchestration_planner"
+      ],
+      "downstream": [
+        "telemetry_learning",
+        "lane_lifecycle"
       ]
     },
     {
@@ -145,7 +158,14 @@
         "knowledge",
         "patterns"
       ],
-      "artifacts": []
+      "artifacts": [],
+      "upstream": [
+        "bootstrap_contract_surface",
+        "repository_memory"
+      ],
+      "downstream": [
+        "improvement_engine"
+      ]
     }
   ]
 }

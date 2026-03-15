@@ -100,6 +100,10 @@ export type SubsystemExplanation = ExplainMemoryFields & {
   purpose: string;
   commands: string[];
   artifacts: string[];
+  subsystem_dependencies: {
+    upstream: string[];
+    downstream: string[];
+  };
 };
 
 export type ArtifactExplanation = ExplainMemoryFields & {
@@ -330,7 +334,11 @@ const explainSubsystem = (projectRoot: string, target: string): SubsystemExplana
     name: details.subsystem.name,
     purpose: details.subsystem.purpose,
     commands: details.subsystem.commands,
-    artifacts: details.subsystem.artifacts
+    artifacts: details.subsystem.artifacts,
+    subsystem_dependencies: {
+      upstream: details.subsystem.upstream ?? [],
+      downstream: details.subsystem.downstream ?? []
+    }
   };
 };
 

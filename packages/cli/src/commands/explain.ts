@@ -109,6 +109,24 @@ const printText = (target: string, explanation: ExplainTargetResult): void => {
     console.log('Purpose');
     console.log(explanation.purpose);
     console.log('');
+    console.log('Upstream');
+    if (explanation.subsystem_dependencies.upstream.length === 0) {
+      console.log('- none');
+    } else {
+      for (const upstreamSubsystem of explanation.subsystem_dependencies.upstream) {
+        console.log(`- ${upstreamSubsystem}`);
+      }
+    }
+    console.log('');
+    console.log('Downstream');
+    if (explanation.subsystem_dependencies.downstream.length === 0) {
+      console.log('- none');
+    } else {
+      for (const downstreamSubsystem of explanation.subsystem_dependencies.downstream) {
+        console.log(`- ${downstreamSubsystem}`);
+      }
+    }
+    console.log('');
     console.log('Owned commands');
     for (const command of explanation.commands) {
       console.log(`- ${command}`);
