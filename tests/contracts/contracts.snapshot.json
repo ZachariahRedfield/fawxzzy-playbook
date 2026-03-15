@@ -1,7 +1,3 @@
-
-> playbook-monorepo@0.1.1 playbook /workspace/playbook
-> node scripts/run-playbook.mjs contracts --json
-
 {
   "schemaVersion": "1.0",
   "command": "contracts",
@@ -49,13 +45,15 @@
       {
         "path": "docs/contracts/ARTIFACT_EVOLUTION_POLICY.md",
         "availability": {
-          "available": true
+          "available": false,
+          "reason": "missing"
         }
       },
       {
         "path": "docs/contracts/COMMAND_CONTRACTS_V1.md",
         "availability": {
-          "available": true
+          "available": false,
+          "reason": "missing"
         }
       }
     ]
@@ -63,23 +61,11 @@
   "roadmap": {
     "path": "docs/roadmap/ROADMAP.json",
     "availability": {
-      "available": true
+      "available": false,
+      "reason": "missing"
     },
-    "schemaVersion": "1.0",
-    "trackedFeatures": [
-      {
-        "featureId": "PB-V04-ANALYZEPR-001",
-        "status": "implemented-hardening"
-      },
-      {
-        "featureId": "PB-V04-PLAN-APPLY-001",
-        "status": "in-progress"
-      },
-      {
-        "featureId": "PB-V1-DELIVERY-SYSTEM-001",
-        "status": "in-progress"
-      }
-    ]
+    "schemaVersion": null,
+    "trackedFeatures": []
   },
   "schemas": {
     "memoryArtifacts": [
