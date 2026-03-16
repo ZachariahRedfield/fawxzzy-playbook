@@ -3,6 +3,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  listImprovementSignalsForArtifact,
+  listLaneTransitionsForRun,
+  listRecentRouteDecisions,
+  listWorkerAssignmentsForRun,
+  queryRepositoryEvents,
   readRepositoryEvents,
   recordImprovementSignal,
   recordExecutionOutcome,
@@ -114,6 +119,12 @@ describe('repository memory events', () => {
     const byRun = readRepositoryEvents(root, { runId: 'run-1' });
     expect(byRun).toHaveLength(1);
     expect(byRun[0]?.payload).toMatchObject({ lane_id: 'lane-a' });
+
+    const byType = queryRepositoryEvents(root, { event_type: 'lane_transition', order: 'asc' });
+    expect(byType).toHaveLength(2);
+
+    const none = queryRepositoryEvents(root, { run_id: 'run-missing' });
+    expect(none).toEqual([]);
   });
 
   it('handles missing optional fields safely', () => {
@@ -135,5 +146,76 @@ describe('repository memory events', () => {
     expect(payload.run_id).toBeUndefined();
     expect(payload.payload.confidence).toBeUndefined();
     expect(payload.related_artifacts).toEqual([]);
+  });
+
+  it('filters by related artifact and exposes deterministic summary views', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-repository-events-artifacts-'));
+
+    recordRouteDecision(root, {
+      timestamp: '2026-02-01T00:00:00.000Z',
+      run_id: 'run-1',
+      task_text: 'Task 1',
+      task_family: 'governance',
+      route_id: 'proposal-only',
+      confidence: 0.8,
+      related_artifacts: [{ path: '.playbook/workset-plan.json' }]
+    });
+
+    recordLaneTransition(root, {
+      timestamp: '2026-02-01T00:00:01.000Z',
+      run_id: 'run-1',
+      lane_id: 'lane-a',
+      from_state: 'planned',
+      to_state: 'ready'
+    });
+
+    recordWorkerAssignment(root, {
+      timestamp: '2026-02-01T00:00:02.000Z',
+      run_id: 'run-1',
+      lane_id: 'lane-a',
+      worker_id: 'worker-a',
+      assignment_status: 'assigned'
+    });
+
+    recordImprovementSignal(root, {
+      timestamp: '2026-02-01T00:00:03.000Z',
+      run_id: 'run-1',
+      candidate_id: 'cand-1',
+      source: 'memory',
+      summary: 'improve',
+      related_artifacts: [{ path: '.playbook/workset-plan.json' }]
+    });
+
+    const byArtifact = queryRepositoryEvents(root, { related_artifact: '.playbook/workset-plan.json', order: 'asc' });
+    expect(byArtifact.map((entry) => entry.event_type)).toEqual(['route_decision', 'improvement_signal']);
+
+    expect(listRecentRouteDecisions(root, 1)).toHaveLength(1);
+    expect(listLaneTransitionsForRun(root, 'run-1')).toHaveLength(1);
+    expect(listWorkerAssignmentsForRun(root, 'run-1')).toHaveLength(1);
+    expect(listImprovementSignalsForArtifact(root, '.playbook/workset-plan.json')).toHaveLength(1);
+  });
+
+  it('writes stable parseable json artifacts for equivalent event payloads', () => {
+    const rootA = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-repository-events-stable-a-'));
+    const rootB = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-repository-events-stable-b-'));
+
+    const input = {
+      timestamp: '2026-02-01T00:00:00.000Z',
+      run_id: 'run-1',
+      lane_id: 'lane-a',
+      from_state: 'planned',
+      to_state: 'ready',
+      related_artifacts: [{ path: '.playbook/workset-plan.json', kind: 'plan' as const }]
+    };
+
+    const eventA = recordLaneTransition(rootA, input);
+    const eventB = recordLaneTransition(rootB, input);
+
+    const payloadA = readJson<Record<string, unknown>>(path.join(rootA, '.playbook', 'memory', 'events', `${eventA.event_id}.json`));
+    const payloadB = readJson<Record<string, unknown>>(path.join(rootB, '.playbook', 'memory', 'events', `${eventB.event_id}.json`));
+
+    expect(payloadA.event_type).toBe('lane_transition');
+    expect(payloadA.payload).toEqual(payloadB.payload);
+    expect(payloadA.related_artifacts).toEqual(payloadB.related_artifacts);
   });
 });

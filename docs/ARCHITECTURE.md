@@ -384,3 +384,9 @@ Operational event types in this normalized stream:
 Rule: operational memory must use one event schema.
 Pattern: normalized event stream enables deterministic replay/query/compaction workflows.
 Failure mode: memory shape drift fragments retrieval and promotion quality.
+
+Query/inspection surface:
+
+- `playbook memory query` provides deterministic normalized filtering by `event_type`, `subsystem`, `run_id`, `subject`, and `related_artifact`.
+- deterministic summary views expose recent route decisions, lane transitions for a run, worker assignments for a run, and artifact-scoped improvement signals.
+- JSON mode remains contract-stable for automation and agent consumption.

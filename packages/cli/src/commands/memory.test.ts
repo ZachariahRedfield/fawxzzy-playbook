@@ -2,6 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { ExitCode } from '../lib/cliContract.js';
 
 const lookupMemoryEventTimeline = vi.fn();
+const queryRepositoryEvents = vi.fn();
+const listRecentRouteDecisions = vi.fn();
+const listLaneTransitionsForRun = vi.fn();
+const listWorkerAssignmentsForRun = vi.fn();
+const listImprovementSignalsForArtifact = vi.fn();
 const lookupMemoryCandidateKnowledge = vi.fn();
 const lookupPromotedMemoryKnowledge = vi.fn();
 const expandMemoryProvenance = vi.fn();
@@ -11,6 +16,11 @@ const retirePromotedKnowledge = vi.fn();
 
 vi.mock('@zachariahredfield/playbook-engine', () => ({
   lookupMemoryEventTimeline,
+  queryRepositoryEvents,
+  listRecentRouteDecisions,
+  listLaneTransitionsForRun,
+  listWorkerAssignmentsForRun,
+  listImprovementSignalsForArtifact,
   lookupMemoryCandidateKnowledge,
   lookupPromotedMemoryKnowledge,
   expandMemoryProvenance,
@@ -51,6 +61,57 @@ describe('runMemory', () => {
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(payload.command).toBe('memory-show');
     expect(payload.type).toBe('candidate');
+    logSpy.mockRestore();
+  });
+
+  it('supports query subcommand filters and emits json output', async () => {
+    const { runMemory } = await import('./memory.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    queryRepositoryEvents.mockReturnValue([{ event_id: 'evt-1', run_id: 'run-1', event_type: 'lane_transition' }]);
+
+    const exitCode = await runMemory(
+      '/repo',
+      ['query', '--event-type', 'lane_transition', '--run-id', 'run-1', '--related-artifact', '.playbook/workset-plan.json'],
+      { format: 'json', quiet: false }
+    );
+    expect(exitCode).toBe(ExitCode.Success);
+
+    expect(queryRepositoryEvents).toHaveBeenCalledWith(
+      '/repo',
+      expect.objectContaining({ event_type: 'lane_transition', run_id: 'run-1', related_artifact: '.playbook/workset-plan.json' })
+    );
+
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.command).toBe('memory-query');
+    expect(payload.events).toHaveLength(1);
+    logSpy.mockRestore();
+  });
+
+  it('supports query summary views', async () => {
+    const { runMemory } = await import('./memory.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    listRecentRouteDecisions.mockReturnValue([{ event_id: 'evt-route-1' }]);
+    const routesExit = await runMemory('/repo', ['query', '--view', 'recent-routes', '--limit', '1'], { format: 'json', quiet: false });
+    expect(routesExit).toBe(ExitCode.Success);
+
+    listLaneTransitionsForRun.mockReturnValue([]);
+    const transitionsExit = await runMemory('/repo', ['query', '--view', 'lane-transitions', '--run-id', 'run-1'], { format: 'json', quiet: false });
+    expect(transitionsExit).toBe(ExitCode.Success);
+
+    listWorkerAssignmentsForRun.mockReturnValue([]);
+    const workersExit = await runMemory('/repo', ['query', '--view', 'worker-assignments', '--run-id', 'run-1'], { format: 'json', quiet: false });
+    expect(workersExit).toBe(ExitCode.Success);
+
+    listImprovementSignalsForArtifact.mockReturnValue([]);
+    const improvementsExit = await runMemory(
+      '/repo',
+      ['query', '--view', 'artifact-improvements', '--related-artifact', '.playbook/workset-plan.json'],
+      { format: 'json', quiet: false }
+    );
+    expect(improvementsExit).toBe(ExitCode.Success);
+
     logSpy.mockRestore();
   });
 
