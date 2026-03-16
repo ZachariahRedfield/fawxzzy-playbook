@@ -178,7 +178,10 @@ export {
   recordLaneTransition,
   recordWorkerAssignment,
   recordLaneOutcome,
+  recordExecutionOutcome,
   recordImprovementCandidate,
+  recordImprovementSignal,
+  readRepositoryEvents,
   safeRecordRepositoryEvent,
   REPOSITORY_EVENTS_SCHEMA_VERSION
 } from './events.js';
@@ -187,9 +190,12 @@ export type {
   RepositoryEvent,
   RepositoryEventIndex,
   RepositoryEventType,
+  RepositoryEventBase,
+  RepositoryEventRelatedArtifact,
   RouteDecisionEvent,
   LaneTransitionEvent,
   WorkerAssignmentEvent,
-  LaneOutcomeEvent,
-  ImprovementCandidateEvent
+  ExecutionOutcomeEvent,
+  ImprovementSignalEvent,
+  RepositoryEventLookupOptions
 } from './events.js';

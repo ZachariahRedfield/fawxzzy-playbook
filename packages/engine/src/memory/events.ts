@@ -8,17 +8,44 @@ const INDEX_PATH = [...MEMORY_ROOT, 'index.json'] as const;
 
 export const REPOSITORY_EVENTS_SCHEMA_VERSION = '1.0' as const;
 
-export type RepositoryEventType = 'route_decision' | 'lane_transition' | 'worker_assignment' | 'lane_outcome' | 'improvement_candidate';
+export type RepositoryEventType =
+  | 'route_decision'
+  | 'lane_transition'
+  | 'worker_assignment'
+  | 'execution_outcome'
+  | 'improvement_signal'
+  | 'lane_outcome'
+  | 'improvement_candidate';
+
+export type RepositoryEventPayload = Record<string, unknown>;
+
+export type RepositoryEventRelatedArtifact = {
+  path: string;
+  kind?: string;
+};
 
 export type RepositoryEventBase = {
   schemaVersion: typeof REPOSITORY_EVENTS_SCHEMA_VERSION;
   event_type: RepositoryEventType;
   event_id: string;
   timestamp: string;
+  subsystem: 'repository_memory' | 'knowledge_lifecycle';
+  subject: string;
+  related_artifacts: RepositoryEventRelatedArtifact[];
+  payload: RepositoryEventPayload;
+  run_id?: string;
 };
 
 export type RouteDecisionEvent = RepositoryEventBase & {
   event_type: 'route_decision';
+  subsystem: 'repository_memory';
+  subject: string;
+  payload: {
+    task_text: string;
+    task_family: string;
+    route_id: string;
+    confidence: number;
+  };
   task_text: string;
   task_family: string;
   route_id: string;
@@ -27,6 +54,14 @@ export type RouteDecisionEvent = RepositoryEventBase & {
 
 export type LaneTransitionEvent = RepositoryEventBase & {
   event_type: 'lane_transition';
+  subsystem: 'repository_memory';
+  subject: string;
+  payload: {
+    lane_id: string;
+    from_state: string;
+    to_state: string;
+    reason?: string;
+  };
   lane_id: string;
   from_state: string;
   to_state: string;
@@ -35,33 +70,67 @@ export type LaneTransitionEvent = RepositoryEventBase & {
 
 export type WorkerAssignmentEvent = RepositoryEventBase & {
   event_type: 'worker_assignment';
+  subsystem: 'repository_memory';
+  subject: string;
+  payload: {
+    lane_id: string;
+    worker_id: string;
+    assignment_status: 'assigned' | 'blocked' | 'skipped';
+    assigned_prompt?: string;
+  };
   lane_id: string;
   worker_id: string;
   assignment_status: 'assigned' | 'blocked' | 'skipped';
   assigned_prompt?: string;
 };
 
-export type LaneOutcomeEvent = RepositoryEventBase & {
-  event_type: 'lane_outcome';
+export type ExecutionOutcomeEvent = RepositoryEventBase & {
+  event_type: 'execution_outcome';
+  subsystem: 'repository_memory';
+  subject: string;
+  payload: {
+    lane_id: string;
+    outcome: 'success' | 'failure' | 'blocked' | 'partial';
+    summary: string;
+  };
   lane_id: string;
   outcome: 'success' | 'failure' | 'blocked' | 'partial';
   summary: string;
 };
 
-export type ImprovementCandidateEvent = RepositoryEventBase & {
-  event_type: 'improvement_candidate';
+export type ImprovementSignalEvent = RepositoryEventBase & {
+  event_type: 'improvement_signal';
+  subsystem: 'knowledge_lifecycle';
+  subject: string;
+  payload: {
+    candidate_id: string;
+    source: string;
+    summary: string;
+    confidence: number;
+  };
   candidate_id: string;
   source: string;
   summary: string;
-  confidence?: number;
+  confidence: number;
+};
+
+
+export type LaneOutcomeLegacyEvent = Omit<ExecutionOutcomeEvent, 'event_type'> & {
+  event_type: 'lane_outcome';
+};
+
+export type ImprovementCandidateLegacyEvent = Omit<ImprovementSignalEvent, 'event_type'> & {
+  event_type: 'improvement_candidate';
 };
 
 export type RepositoryEvent =
   | RouteDecisionEvent
   | LaneTransitionEvent
   | WorkerAssignmentEvent
-  | LaneOutcomeEvent
-  | ImprovementCandidateEvent;
+  | ExecutionOutcomeEvent
+  | ImprovementSignalEvent
+  | LaneOutcomeLegacyEvent
+  | ImprovementCandidateLegacyEvent;
 
 export type RepositoryEventIndex = {
   schemaVersion: typeof REPOSITORY_EVENTS_SCHEMA_VERSION;
@@ -123,11 +192,13 @@ const emptyIndex = (): RepositoryEventIndex => ({
   generatedAt: new Date(0).toISOString(),
   total_events: 0,
   by_event_type: {
-    improvement_candidate: { count: 0, latest_timestamp: null },
-    lane_outcome: { count: 0, latest_timestamp: null },
+    execution_outcome: { count: 0, latest_timestamp: null },
+    improvement_signal: { count: 0, latest_timestamp: null },
     lane_transition: { count: 0, latest_timestamp: null },
     route_decision: { count: 0, latest_timestamp: null },
-    worker_assignment: { count: 0, latest_timestamp: null }
+    worker_assignment: { count: 0, latest_timestamp: null },
+    lane_outcome: { count: 0, latest_timestamp: null },
+    improvement_candidate: { count: 0, latest_timestamp: null }
   }
 });
 
@@ -175,7 +246,12 @@ const allocateEventPath = (repoRoot: string, eventType: RepositoryEventType, tim
   throw new Error('playbook memory events: unable to allocate append-only event id');
 };
 
-const appendEvent = <T extends { event_type: RepositoryEventType; timestamp?: string }>(repoRoot: string, event: T): RepositoryEvent => {
+type RepositoryEventInput = Omit<RepositoryEventBase, 'schemaVersion' | 'event_id' | 'timestamp'> & {
+  timestamp?: string;
+  [key: string]: unknown;
+};
+
+const appendEvent = (repoRoot: string, event: RepositoryEventInput): RepositoryEvent => {
   const timestamp = ensureTimestamp(event.timestamp);
   const { eventId, eventPath } = allocateEventPath(repoRoot, event.event_type, timestamp, event);
 
@@ -210,15 +286,27 @@ export const recordRouteDecision = (
   repoRoot: string,
   input: {
     timestamp?: string;
+    run_id?: string;
     task_text: string;
     task_family: string;
     route_id: string;
     confidence: number;
+    related_artifacts?: RepositoryEventRelatedArtifact[];
   }
 ): RouteDecisionEvent =>
   appendEvent(repoRoot, {
     event_type: 'route_decision',
     ...(input.timestamp ? { timestamp: input.timestamp } : {}),
+    ...(input.run_id ? { run_id: input.run_id } : {}),
+    subsystem: 'repository_memory',
+    subject: input.route_id,
+    related_artifacts: [...(input.related_artifacts ?? [])],
+    payload: {
+      task_text: input.task_text,
+      task_family: input.task_family,
+      route_id: input.route_id,
+      confidence: Number(input.confidence.toFixed(6))
+    },
     task_text: input.task_text,
     task_family: input.task_family,
     route_id: input.route_id,
@@ -229,15 +317,27 @@ export const recordLaneTransition = (
   repoRoot: string,
   input: {
     timestamp?: string;
+    run_id?: string;
     lane_id: string;
     from_state: string;
     to_state: string;
     reason?: string;
+    related_artifacts?: RepositoryEventRelatedArtifact[];
   }
 ): LaneTransitionEvent =>
   appendEvent(repoRoot, {
     event_type: 'lane_transition',
     ...(input.timestamp ? { timestamp: input.timestamp } : {}),
+    ...(input.run_id ? { run_id: input.run_id } : {}),
+    subsystem: 'repository_memory',
+    subject: input.lane_id,
+    related_artifacts: [...(input.related_artifacts ?? [])],
+    payload: {
+      lane_id: input.lane_id,
+      from_state: input.from_state,
+      to_state: input.to_state,
+      ...(input.reason ? { reason: input.reason } : {})
+    },
     lane_id: input.lane_id,
     from_state: input.from_state,
     to_state: input.to_state,
@@ -248,56 +348,144 @@ export const recordWorkerAssignment = (
   repoRoot: string,
   input: {
     timestamp?: string;
+    run_id?: string;
     lane_id: string;
     worker_id: string;
     assignment_status: 'assigned' | 'blocked' | 'skipped';
     assigned_prompt?: string;
+    related_artifacts?: RepositoryEventRelatedArtifact[];
   }
 ): WorkerAssignmentEvent =>
   appendEvent(repoRoot, {
     event_type: 'worker_assignment',
     ...(input.timestamp ? { timestamp: input.timestamp } : {}),
+    ...(input.run_id ? { run_id: input.run_id } : {}),
+    subsystem: 'repository_memory',
+    subject: input.lane_id,
+    related_artifacts: [...(input.related_artifacts ?? [])],
+    payload: {
+      lane_id: input.lane_id,
+      worker_id: input.worker_id,
+      assignment_status: input.assignment_status,
+      ...(input.assigned_prompt ? { assigned_prompt: input.assigned_prompt } : {})
+    },
     lane_id: input.lane_id,
     worker_id: input.worker_id,
     assignment_status: input.assignment_status,
     ...(input.assigned_prompt ? { assigned_prompt: input.assigned_prompt } : {})
   }) as WorkerAssignmentEvent;
 
-export const recordLaneOutcome = (
+export const recordExecutionOutcome = (
   repoRoot: string,
   input: {
     timestamp?: string;
+    run_id?: string;
     lane_id: string;
     outcome: 'success' | 'failure' | 'blocked' | 'partial';
     summary: string;
+    related_artifacts?: RepositoryEventRelatedArtifact[];
   }
-): LaneOutcomeEvent =>
+): ExecutionOutcomeEvent =>
   appendEvent(repoRoot, {
-    event_type: 'lane_outcome',
+    event_type: 'execution_outcome',
     ...(input.timestamp ? { timestamp: input.timestamp } : {}),
+    ...(input.run_id ? { run_id: input.run_id } : {}),
+    subsystem: 'repository_memory',
+    subject: input.lane_id,
+    related_artifacts: [...(input.related_artifacts ?? [])],
+    payload: {
+      lane_id: input.lane_id,
+      outcome: input.outcome,
+      summary: input.summary
+    },
     lane_id: input.lane_id,
     outcome: input.outcome,
     summary: input.summary
-  }) as LaneOutcomeEvent;
+  }) as ExecutionOutcomeEvent;
 
-export const recordImprovementCandidate = (
+export const recordImprovementSignal = (
   repoRoot: string,
   input: {
     timestamp?: string;
+    run_id?: string;
     candidate_id: string;
     source: string;
     summary: string;
     confidence?: number;
+    related_artifacts?: RepositoryEventRelatedArtifact[];
   }
-): ImprovementCandidateEvent =>
+): ImprovementSignalEvent =>
   appendEvent(repoRoot, {
-    event_type: 'improvement_candidate',
+    event_type: 'improvement_signal',
     ...(input.timestamp ? { timestamp: input.timestamp } : {}),
+    ...(input.run_id ? { run_id: input.run_id } : {}),
+    subsystem: 'knowledge_lifecycle',
+    subject: input.candidate_id,
+    related_artifacts: [...(input.related_artifacts ?? [])],
+    payload: {
+      candidate_id: input.candidate_id,
+      source: input.source,
+      summary: input.summary,
+      ...(typeof input.confidence === 'number' ? { confidence: Number(input.confidence.toFixed(6)) } : {})
+    },
     candidate_id: input.candidate_id,
     source: input.source,
     summary: input.summary,
-    ...(typeof input.confidence === 'number' ? { confidence: Number(input.confidence.toFixed(6)) } : {})
-  }) as ImprovementCandidateEvent;
+    confidence: typeof input.confidence === 'number' ? Number(input.confidence.toFixed(6)) : 0
+  }) as ImprovementSignalEvent;
+
+export type RepositoryEventLookupOptions = {
+  eventType?: RepositoryEventType;
+  subsystem?: RepositoryEventBase['subsystem'];
+  subject?: string;
+  runId?: string;
+  order?: 'asc' | 'desc';
+  limit?: number;
+};
+
+const sortEvents = (events: RepositoryEvent[], order: 'asc' | 'desc'): RepositoryEvent[] => {
+  const sorted = [...events].sort((left, right) => {
+    const timestampDelta = compareTimestamp(left.timestamp, right.timestamp);
+    if (timestampDelta !== 0) {
+      return timestampDelta;
+    }
+
+    return left.event_id.localeCompare(right.event_id);
+  });
+
+  return order === 'desc' ? sorted.reverse() : sorted;
+};
+
+export const readRepositoryEvents = (repoRoot: string, options: RepositoryEventLookupOptions = {}): RepositoryEvent[] => {
+  const eventsDir = path.join(repoRoot, ...EVENTS_DIR);
+  if (!fs.existsSync(eventsDir)) {
+    return [];
+  }
+
+  const events = fs
+    .readdirSync(eventsDir)
+    .filter((entry) => entry.endsWith('.json'))
+    .sort((left, right) => left.localeCompare(right))
+    .map((entry) => readJsonIfExists<RepositoryEvent>(path.join(eventsDir, entry)))
+    .filter((entry): entry is RepositoryEvent => Boolean(entry))
+    .filter((entry) => (options.eventType ? entry.event_type === options.eventType : true))
+    .filter((entry) => (options.subsystem ? entry.subsystem === options.subsystem : true))
+    .filter((entry) => (options.subject ? entry.subject === options.subject : true))
+    .filter((entry) => (options.runId ? entry.run_id === options.runId : true));
+
+  const sorted = sortEvents(events, options.order ?? 'asc');
+  if (typeof options.limit === 'number' && options.limit >= 0) {
+    return sorted.slice(0, options.limit);
+  }
+
+  return sorted;
+};
+
+export const recordLaneOutcome = recordExecutionOutcome;
+export const recordImprovementCandidate = recordImprovementSignal;
+
+export type LaneOutcomeEvent = ExecutionOutcomeEvent | LaneOutcomeLegacyEvent;
+export type ImprovementCandidateEvent = ImprovementSignalEvent | ImprovementCandidateLegacyEvent;
 
 export const safeRecordRepositoryEvent = (callback: () => void): void => {
   try {

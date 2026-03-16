@@ -359,3 +359,25 @@ Runtime responsibilities:
 - emit deterministic telemetry signals to `.playbook/process-telemetry.json`
 
 Execution artifact contract (`.playbook/execution-state.json`) stores run-level status, lane runtime state, and worker metadata so execution remains auditable and deterministic across invocations.
+
+
+## Repository memory normalized event schema
+
+Repository memory operational events now use one canonical envelope for deterministic indexing and later compaction/promotion:
+
+- `event_id`, `event_type`, `timestamp`
+- `subsystem`, `subject`, `related_artifacts`
+- `payload` (event-specific body)
+- optional `run_id`
+
+Operational event types in this normalized stream:
+
+- `route_decision`
+- `lane_transition`
+- `worker_assignment`
+- `execution_outcome`
+- `improvement_signal`
+
+Rule: operational memory must use one event schema.
+Pattern: normalized event stream enables deterministic replay/query/compaction workflows.
+Failure mode: memory shape drift fragments retrieval and promotion quality.

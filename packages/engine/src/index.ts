@@ -180,7 +180,10 @@ export {
   recordLaneTransition,
   recordWorkerAssignment,
   recordLaneOutcome,
+  recordExecutionOutcome,
   recordImprovementCandidate,
+  recordImprovementSignal,
+  readRepositoryEvents,
   safeRecordRepositoryEvent,
   REPOSITORY_EVENTS_SCHEMA_VERSION
 } from './memory/index.js';
@@ -189,11 +192,14 @@ export type {
   RepositoryEvent,
   RepositoryEventIndex,
   RepositoryEventType,
+  RepositoryEventBase,
+  RepositoryEventRelatedArtifact,
+  RepositoryEventLookupOptions,
   RouteDecisionEvent,
   LaneTransitionEvent,
   WorkerAssignmentEvent,
-  LaneOutcomeEvent,
-  ImprovementCandidateEvent
+  ExecutionOutcomeEvent,
+  ImprovementSignalEvent
 } from './memory/events.js';
 export { lookupMemoryEventTimeline, lookupMemoryCandidateKnowledge, lookupPromotedMemoryKnowledge, expandMemoryProvenance } from './memory/inspection.js';
 export type { MemoryTimelineLookupOptions, MemoryCandidateLookupOptions, MemoryKnowledgeLookupOptions, ExpandedMemoryProvenance } from './memory/inspection.js';
