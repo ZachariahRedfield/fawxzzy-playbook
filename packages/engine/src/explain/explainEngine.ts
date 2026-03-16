@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { readRepositoryGraph, summarizeGraphNeighborhood, type GraphNeighborhoodSummary } from '../graph/repoGraph.js';
 import { explainArtifactFromArchitecture, explainCommandFromArchitecture, explainSubsystemFromArchitecture } from '../architecture/introspection.js';
 import { queryRepositoryIndex } from '../query/repoQuery.js';
@@ -124,6 +126,25 @@ export type ArtifactExplanation = ExplainMemoryFields & {
   purpose: string;
   upstreamSubsystem: string | null;
   downstreamConsumers: string[];
+  cycleState?: CycleStateArtifactExplanation;
+};
+
+type CycleStateStepExplanation = {
+  name: string;
+  status: 'success' | 'failure';
+  duration_ms: number;
+};
+
+type CycleStateArtifactExplanation = {
+  artifactType: 'cycle-state';
+  cycle_version: number;
+  repo: string;
+  cycle_id: string;
+  started_at: string;
+  result: 'success' | 'failed';
+  failed_step?: string;
+  steps: CycleStateStepExplanation[];
+  artifacts_written: string[];
 };
 
 export type UnknownExplanation = ExplainMemoryFields & {
@@ -374,6 +395,7 @@ const explainCommand = (projectRoot: string, target: string): CommandExplanation
 
 const explainArtifact = (projectRoot: string, target: string): ArtifactExplanation => {
   const details = explainArtifactFromArchitecture(projectRoot, target);
+  const cycleState = explainCycleStateArtifact(projectRoot, target) ?? undefined;
   return {
     type: 'artifact',
     resolvedTarget: {
@@ -387,7 +409,43 @@ const explainArtifact = (projectRoot: string, target: string): ArtifactExplanati
     ownerSubsystem: details.lineage.ownerSubsystem,
     purpose: details.subsystem.purpose,
     upstreamSubsystem: details.lineage.upstreamSubsystem,
-    downstreamConsumers: details.lineage.downstreamConsumers
+    downstreamConsumers: details.lineage.downstreamConsumers,
+    ...(cycleState ? { cycleState } : {})
+  };
+};
+
+const explainCycleStateArtifact = (projectRoot: string, target: string): CycleStateArtifactExplanation | null => {
+  if (target !== '.playbook/cycle-state.json') {
+    return null;
+  }
+
+  const targetPath = path.join(projectRoot, target);
+  if (!fs.existsSync(targetPath)) {
+    throw new Error(`playbook explain artifact: missing artifact "${target}".`);
+  }
+
+  const parsed = JSON.parse(fs.readFileSync(targetPath, 'utf8')) as Record<string, unknown>;
+  const steps = Array.isArray(parsed.steps)
+    ? parsed.steps.map((step) => {
+        const candidate = step as Record<string, unknown>;
+        return {
+          name: String(candidate.name),
+          status: candidate.status === 'failure' ? 'failure' : 'success',
+          duration_ms: Number(candidate.duration_ms)
+        } as CycleStateStepExplanation;
+      })
+    : [];
+
+  return {
+    artifactType: 'cycle-state',
+    cycle_version: Number(parsed.cycle_version),
+    repo: String(parsed.repo),
+    cycle_id: String(parsed.cycle_id),
+    started_at: String(parsed.started_at),
+    result: parsed.result === 'failed' ? 'failed' : 'success',
+    ...(typeof parsed.failed_step === 'string' ? { failed_step: parsed.failed_step } : {}),
+    steps,
+    artifacts_written: Array.isArray(parsed.artifacts_written) ? parsed.artifacts_written.map((entry) => String(entry)) : []
   };
 };
 

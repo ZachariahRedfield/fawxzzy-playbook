@@ -52,6 +52,10 @@ const toOutput = (target: string, explanation: ExplainTargetResult): ExplainOutp
       upstreamSubsystem: explanation.upstreamSubsystem,
       downstreamConsumers: explanation.downstreamConsumers
     };
+
+    if (explanation.cycleState) {
+      payload.cycle_state = explanation.cycleState;
+    }
   }
 
   if (explanation.type === 'subsystem') {
@@ -224,6 +228,38 @@ const printText = (target: string, explanation: ExplainTargetResult): void => {
   if (explanation.type === 'artifact') {
     console.log(`Artifact: ${explanation.artifact}`);
     console.log('');
+
+    if (explanation.cycleState) {
+      const cycleState = explanation.cycleState;
+      console.log('Artifact type: cycle-state');
+      console.log('');
+      console.log(`Cycle ID: ${cycleState.cycle_id}`);
+      console.log(`Started at: ${cycleState.started_at}`);
+      console.log(`Result: ${cycleState.result}`);
+      if (cycleState.failed_step) {
+        console.log(`Failed step: ${cycleState.failed_step}`);
+      }
+      console.log('');
+      console.log('Steps');
+      if (cycleState.steps.length === 0) {
+        console.log('- none');
+      } else {
+        for (const step of cycleState.steps) {
+          console.log(`- ${step.name}: ${step.status} (${step.duration_ms}ms)`);
+        }
+      }
+      console.log('');
+      console.log('Artifacts written');
+      if (cycleState.artifacts_written.length === 0) {
+        console.log('- none');
+      } else {
+        for (const artifact of cycleState.artifacts_written) {
+          console.log(`- ${artifact}`);
+        }
+      }
+      return;
+    }
+
     console.log('Owner Subsystem:');
     console.log(explanation.ownerSubsystem);
     console.log('');

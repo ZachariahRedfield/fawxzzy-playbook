@@ -109,8 +109,8 @@ const writeArchitectureRegistry = (repo: string): void => {
           {
             name: 'execution_supervisor',
             purpose: 'Run workers and monitor execution',
-            commands: ['execute'],
-            artifacts: ['.playbook/execution-state.json'],
+            commands: ['execute', 'cycle'],
+            artifacts: ['.playbook/execution-state.json', '.playbook/cycle-state.json'],
             upstream: ['orchestration_planner'],
             downstream: ['telemetry_learning', 'lane_lifecycle', 'worker_coordination']
           }
@@ -454,6 +454,113 @@ describe('runExplain', () => {
     logSpy.mockRestore();
   });
 
+
+  it('explains cycle-state artifacts in JSON mode preserving step order and failed step', async () => {
+    const repo = createRepo('playbook-cli-explain-cycle-artifact-json');
+    writeArchitectureRegistry(repo);
+    fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+    fs.writeFileSync(
+      path.join(repo, '.playbook', 'cycle-state.json'),
+      JSON.stringify(
+        {
+          cycle_version: 1,
+          repo,
+          cycle_id: 'cycle-123',
+          started_at: '2026-01-01T00:00:00.000Z',
+          steps: [
+            { name: 'verify', status: 'success', duration_ms: 1 },
+            { name: 'route', status: 'failure', duration_ms: 2 }
+          ],
+          artifacts_written: ['.playbook/execution-plan.json', '.playbook/cycle-state.json'],
+          result: 'failed',
+          failed_step: 'route'
+        },
+        null,
+        2
+      )
+    );
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runExplain(repo, ['artifact', '.playbook/cycle-state.json'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.explanation.cycle_state).toMatchObject({
+      artifactType: 'cycle-state',
+      cycle_id: 'cycle-123',
+      result: 'failed',
+      failed_step: 'route',
+      artifacts_written: ['.playbook/execution-plan.json', '.playbook/cycle-state.json']
+    });
+    expect(payload.explanation.cycle_state.steps.map((step: { name: string }) => step.name)).toEqual(['verify', 'route']);
+
+    logSpy.mockRestore();
+  });
+
+  it('explains successful cycle-state artifacts without failed_step', async () => {
+    const repo = createRepo('playbook-cli-explain-cycle-artifact-success');
+    writeArchitectureRegistry(repo);
+    fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+    fs.writeFileSync(
+      path.join(repo, '.playbook', 'cycle-state.json'),
+      JSON.stringify(
+        {
+          cycle_version: 1,
+          repo,
+          cycle_id: 'cycle-124',
+          started_at: '2026-01-01T00:00:00.000Z',
+          steps: [{ name: 'verify', status: 'success', duration_ms: 1 }],
+          artifacts_written: ['.playbook/cycle-state.json'],
+          result: 'success'
+        },
+        null,
+        2
+      )
+    );
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runExplain(repo, ['artifact', '.playbook/cycle-state.json'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.explanation.cycle_state.result).toBe('success');
+    expect(payload.explanation.cycle_state).not.toHaveProperty('failed_step');
+
+    logSpy.mockRestore();
+  });
+
+  it('renders cycle-state artifact summaries in text mode', async () => {
+    const repo = createRepo('playbook-cli-explain-cycle-artifact-text');
+    writeArchitectureRegistry(repo);
+    fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+    fs.writeFileSync(
+      path.join(repo, '.playbook', 'cycle-state.json'),
+      JSON.stringify(
+        {
+          cycle_version: 1,
+          repo,
+          cycle_id: 'cycle-125',
+          started_at: '2026-01-01T00:00:00.000Z',
+          steps: [{ name: 'verify', status: 'success', duration_ms: 12 }],
+          artifacts_written: ['.playbook/cycle-state.json'],
+          result: 'success'
+        },
+        null,
+        2
+      )
+    );
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runExplain(repo, ['artifact', '.playbook/cycle-state.json'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const lines = logSpy.mock.calls.map((call) => String(call[0]));
+    expect(lines).toContain('Artifact type: cycle-state');
+    expect(lines).toContain('Cycle ID: cycle-125');
+    expect(lines).toContain('- verify: success (12ms)');
+
+    logSpy.mockRestore();
+  });
   it('fails when target argument is missing', async () => {
     const repo = createRepo('playbook-cli-explain-args');
     writeRepoIndex(repo);

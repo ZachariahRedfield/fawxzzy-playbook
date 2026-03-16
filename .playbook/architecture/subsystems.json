@@ -95,10 +95,12 @@
       "name": "execution_supervisor",
       "purpose": "Run workers and monitor execution",
       "commands": [
-        "execute"
+        "execute",
+        "cycle"
       ],
       "artifacts": [
-        ".playbook/execution-state.json"
+        ".playbook/execution-state.json",
+        ".playbook/cycle-state.json"
       ],
       "upstream": [
         "orchestration_planner"
