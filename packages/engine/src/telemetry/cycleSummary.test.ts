@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { summarizeCycleTelemetry } from './cycleSummary.js';
+import { summarizeCycleRegressions, summarizeCycleTelemetry } from './cycleSummary.js';
 
 describe('cycle telemetry summary', () => {
   it('computes deterministic summary metrics from governed cycle history', () => {
@@ -129,5 +129,78 @@ describe('cycle telemetry summary', () => {
       failed_step: 'telemetry',
       duration_ms: 100
     });
+  });
+});
+
+
+describe('cycle regression summary', () => {
+  it('degrades safely when history is missing', () => {
+    const summary = summarizeCycleRegressions({});
+
+    expect(summary.regression_detected).toBe(false);
+    expect(summary.regression_reasons).toEqual([
+      'insufficient_history: need >=6 cycles for comparison windows (current=0)'
+    ]);
+    expect(summary.comparison_window.sufficient_history).toBe(false);
+  });
+
+  it('detects success-rate regression across deterministic windows', () => {
+    const summary = summarizeCycleRegressions({
+      cycleHistory: {
+        history_version: 1,
+        repo: '/repo',
+        cycles: [
+          { cycle_id: 'c1', started_at: '2026-03-16T06:00:00.000Z', result: 'failed', failed_step: 'execute', duration_ms: 200 },
+          { cycle_id: 'c2', started_at: '2026-03-16T05:00:00.000Z', result: 'failed', failed_step: 'execute', duration_ms: 220 },
+          { cycle_id: 'c3', started_at: '2026-03-16T04:00:00.000Z', result: 'failed', failed_step: 'verify', duration_ms: 230 },
+          { cycle_id: 'c4', started_at: '2026-03-16T03:00:00.000Z', result: 'success', duration_ms: 150 },
+          { cycle_id: 'c5', started_at: '2026-03-16T02:00:00.000Z', result: 'success', duration_ms: 160 },
+          { cycle_id: 'c6', started_at: '2026-03-16T01:00:00.000Z', result: 'success', duration_ms: 170 }
+        ]
+      }
+    });
+
+    expect(summary.regression_detected).toBe(true);
+    expect(summary.regression_reasons.some((reason) => reason.startsWith('success_rate_drop:'))).toBe(true);
+  });
+
+  it('detects duration regression across deterministic windows', () => {
+    const summary = summarizeCycleRegressions({
+      cycleHistory: {
+        history_version: 1,
+        repo: '/repo',
+        cycles: [
+          { cycle_id: 'c1', started_at: '2026-03-16T06:00:00.000Z', result: 'success', duration_ms: 400 },
+          { cycle_id: 'c2', started_at: '2026-03-16T05:00:00.000Z', result: 'success', duration_ms: 450 },
+          { cycle_id: 'c3', started_at: '2026-03-16T04:00:00.000Z', result: 'success', duration_ms: 500 },
+          { cycle_id: 'c4', started_at: '2026-03-16T03:00:00.000Z', result: 'success', duration_ms: 100 },
+          { cycle_id: 'c5', started_at: '2026-03-16T02:00:00.000Z', result: 'success', duration_ms: 110 },
+          { cycle_id: 'c6', started_at: '2026-03-16T01:00:00.000Z', result: 'success', duration_ms: 120 }
+        ]
+      }
+    });
+
+    expect(summary.regression_detected).toBe(true);
+    expect(summary.regression_reasons.some((reason) => reason.startsWith('duration_increase:'))).toBe(true);
+  });
+
+  it('detects repeated failed-step concentration in recent failures', () => {
+    const summary = summarizeCycleRegressions({
+      cycleHistory: {
+        history_version: 1,
+        repo: '/repo',
+        cycles: [
+          { cycle_id: 'c1', started_at: '2026-03-16T06:00:00.000Z', result: 'failed', failed_step: 'execute', duration_ms: 200 },
+          { cycle_id: 'c2', started_at: '2026-03-16T05:00:00.000Z', result: 'failed', failed_step: 'execute', duration_ms: 210 },
+          { cycle_id: 'c3', started_at: '2026-03-16T04:00:00.000Z', result: 'failed', failed_step: 'execute', duration_ms: 220 },
+          { cycle_id: 'c4', started_at: '2026-03-16T03:00:00.000Z', result: 'failed', failed_step: 'plan', duration_ms: 200 },
+          { cycle_id: 'c5', started_at: '2026-03-16T02:00:00.000Z', result: 'success', duration_ms: 180 },
+          { cycle_id: 'c6', started_at: '2026-03-16T01:00:00.000Z', result: 'failed', failed_step: 'route', duration_ms: 190 }
+        ]
+      }
+    });
+
+    expect(summary.regression_detected).toBe(true);
+    expect(summary.regression_reasons.some((reason) => reason.startsWith('failed_step_concentration:'))).toBe(true);
   });
 });

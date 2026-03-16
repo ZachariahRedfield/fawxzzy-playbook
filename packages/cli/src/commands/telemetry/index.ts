@@ -9,6 +9,7 @@ import {
   summarizeLaneOutcomeScores,
   summarizeStructuralTelemetry,
   summarizeCycleTelemetry,
+  summarizeCycleRegressions,
   type LearningStateSnapshotArtifact,
   type LearningCompactionArtifact,
   type OutcomeTelemetryArtifact,
@@ -28,6 +29,36 @@ type TelemetryCommandOptions = {
   format: 'text' | 'json';
   quiet: boolean;
   help?: boolean;
+};
+
+type CycleTelemetryOutput = ReturnType<typeof summarizeCycleTelemetry> & {
+  regression_detected: boolean;
+  regression_reasons: string[];
+  comparison_window: {
+    window_size: number;
+    minimum_cycles_required: number;
+    recent_cycles: number;
+    prior_cycles: number;
+    sufficient_history: boolean;
+  };
+  recent_summary: {
+    cycles_total: number;
+    cycles_success: number;
+    cycles_failed: number;
+    success_rate: number;
+    average_duration_ms: number;
+    dominant_failed_step: string | null;
+    dominant_failed_step_share: number;
+  };
+  prior_summary: {
+    cycles_total: number;
+    cycles_success: number;
+    cycles_failed: number;
+    success_rate: number;
+    average_duration_ms: number;
+    dominant_failed_step: string | null;
+    dominant_failed_step_share: number;
+  };
 };
 
 const OUTCOME_TELEMETRY_PATH = ['.playbook', 'outcome-telemetry.json'] as const;
@@ -135,8 +166,8 @@ export const runTelemetry = async (
     printCommandHelp({
       usage: 'playbook telemetry <subcommand> [options]',
       description: 'Inspect deterministic telemetry artifacts and cross-run learning summaries.',
-      options: ['outcomes                  Inspect .playbook/outcome-telemetry.json', 'process                   Inspect .playbook/process-telemetry.json', 'learning-state            Show compacted deterministic learning snapshot', 'learning                  Compact cross-run learning signals and write artifact', 'summary                   Show combined deterministic telemetry summary', 'cycle                     Show cycle runtime summary from governed cycle artifacts', 'commands                  Show command-quality summary for core execution commands', '--json                    Alias for --format=json', '--format <text|json>      Output format', '--quiet                   Suppress success output in text mode', '--help                    Show help'],
-      artifacts: ['.playbook/outcome-telemetry.json (read)', '.playbook/process-telemetry.json (read)', '.playbook/task-execution-profile.json (optional read)', '.playbook/telemetry/command-quality.json (read for commands)', '.playbook/cycle-history.json (read for cycle)', '.playbook/cycle-state.json (optional read for cycle)', '.playbook/learning-compaction.json (write for learning)']
+      options: ['outcomes                  Inspect .playbook/outcome-telemetry.json', 'process                   Inspect .playbook/process-telemetry.json', 'learning-state            Show compacted deterministic learning snapshot', 'learning                  Compact cross-run learning signals and write artifact', 'summary                   Show combined deterministic telemetry summary', 'cycle                     Show cycle runtime summary from governed cycle artifacts', '  --detect-regressions      Add deterministic cycle regression warnings from governed cycle evidence', 'commands                  Show command-quality summary for core execution commands', '--json                    Alias for --format=json', '--format <text|json>      Output format', '--quiet                   Suppress success output in text mode', '--help                    Show help'],
+      artifacts: ['.playbook/outcome-telemetry.json (read)', '.playbook/process-telemetry.json (read)', '.playbook/task-execution-profile.json (optional read)', '.playbook/telemetry/command-quality.json (read for commands)', '.playbook/cycle-history.json (read for cycle)', '.playbook/cycle-state.json (optional read for cycle)', '.playbook/cycle-history.json (read for cycle regression detection)', '.playbook/learning-compaction.json (write for learning)']
     });
     const exitCode = options.help || hasHelpFlag(args) ? ExitCode.Success : ExitCode.Failure;
     tracker.finish({ inputsSummary: `subcommand=${subcommand ?? 'none'}`, successStatus: exitCode === ExitCode.Success ? 'success' : 'failure', warningsCount: exitCode === ExitCode.Success ? 0 : 1 });
@@ -283,6 +314,7 @@ export const runTelemetry = async (
 
 
   if (subcommand === 'cycle') {
+    const detectRegressions = args.includes('--detect-regressions');
     const cycleHistory = readJsonArtifact<CycleHistoryArtifact>(cwd, CYCLE_HISTORY_PATH);
     const cycleState = readJsonArtifact<CycleStateArtifact>(cwd, CYCLE_STATE_PATH);
 
@@ -290,9 +322,18 @@ export const runTelemetry = async (
       cycleHistory,
       cycleState
     });
+    const regression = summarizeCycleRegressions({ cycleHistory });
+    const cycleOutput: CycleTelemetryOutput = {
+      ...summary,
+      regression_detected: regression.regression_detected,
+      regression_reasons: regression.regression_reasons,
+      comparison_window: regression.comparison_window,
+      recent_summary: regression.recent_summary,
+      prior_summary: regression.prior_summary
+    };
 
     if (options.format === 'json') {
-      emitJsonOutput({ cwd, command: 'telemetry', payload: summary });
+      emitJsonOutput({ cwd, command: 'telemetry', payload: cycleOutput });
       tracker.finish({
         inputsSummary: 'subcommand=cycle',
         artifactsRead: ['.playbook/cycle-history.json', '.playbook/cycle-state.json'],
@@ -310,6 +351,18 @@ export const runTelemetry = async (
       console.log(`Success rate: ${summary.success_rate}`);
       console.log(`Average duration (ms): ${summary.average_duration_ms}`);
       console.log(`Most common failed step: ${summary.most_common_failed_step ?? 'none'}`);
+      if (detectRegressions) {
+        if (!cycleOutput.comparison_window.sufficient_history) {
+          console.log(`Regression detection: open question (insufficient history; need >=${cycleOutput.comparison_window.minimum_cycles_required}, current=${summary.cycles_total})`);
+        } else if (cycleOutput.regression_detected) {
+          console.log('Regression detection: warning');
+          for (const reason of cycleOutput.regression_reasons) {
+            console.log(`- ${reason}`);
+          }
+        } else {
+          console.log('Regression detection: no regression flags in current evidence window');
+        }
+      }
       console.log('Failure distribution:');
       const failureEntries = Object.entries(summary.failure_distribution);
       if (failureEntries.length === 0) {
