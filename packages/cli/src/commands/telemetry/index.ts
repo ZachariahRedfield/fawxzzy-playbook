@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {
+  buildCommandQualitySummaryArtifact,
   deriveLearningStateSnapshot,
   generateLearningCompactionArtifact,
   normalizeOutcomeTelemetryArtifact,
@@ -14,6 +15,7 @@ import {
   type TaskExecutionProfileArtifact,
   writeLearningCompactionArtifact
 } from '@zachariahredfield/playbook-engine';
+import type { CommandExecutionQualityArtifact } from '@zachariahredfield/playbook-core';
 import { emitJsonOutput } from '../../lib/jsonArtifact.js';
 import { ExitCode } from '../../lib/cliContract.js';
 import { emitCommandFailure, hasHelpFlag, printCommandHelp } from '../../lib/commandSurface.js';
@@ -28,6 +30,7 @@ type TelemetryCommandOptions = {
 const OUTCOME_TELEMETRY_PATH = ['.playbook', 'outcome-telemetry.json'] as const;
 const PROCESS_TELEMETRY_PATH = ['.playbook', 'process-telemetry.json'] as const;
 const TASK_EXECUTION_PROFILE_PATH = ['.playbook', 'task-execution-profile.json'] as const;
+const COMMAND_QUALITY_PATH = ['.playbook', 'telemetry', 'command-quality.json'] as const;
 
 const readJsonArtifact = <T>(cwd: string, segments: readonly string[]): T | undefined => {
   const artifactPath = path.join(cwd, ...segments);
@@ -104,6 +107,17 @@ const renderTextLearningCompaction = (artifact: LearningCompactionArtifact): voi
   console.log(`Confidence: ${artifact.summary.confidence}`);
 };
 
+
+const renderTextCommandQualitySummary = (artifact: ReturnType<typeof buildCommandQualitySummaryArtifact>): void => {
+  console.log('Command-quality summary');
+  console.log('───────────────────────');
+  console.log(`Generated at: ${artifact.generatedAt}`);
+  console.log('command | runs | success_rate | avg_duration_ms | avg_confidence | warnings_rate | open_questions_rate');
+  for (const command of artifact.commands) {
+    console.log(`${command.command_name} | ${command.total_runs} | ${command.success_rate} | ${command.average_duration_ms} | ${command.average_confidence_score} | ${command.warnings_rate} | ${command.open_questions_rate}`);
+  }
+};
+
 export const runTelemetry = async (
   cwd: string,
   args: string[],
@@ -116,8 +130,8 @@ export const runTelemetry = async (
     printCommandHelp({
       usage: 'playbook telemetry <subcommand> [options]',
       description: 'Inspect deterministic telemetry artifacts and cross-run learning summaries.',
-      options: ['outcomes                  Inspect .playbook/outcome-telemetry.json', 'process                   Inspect .playbook/process-telemetry.json', 'learning-state            Show compacted deterministic learning snapshot', 'learning                  Compact cross-run learning signals and write artifact', 'summary                   Show combined deterministic telemetry summary', '--json                    Alias for --format=json', '--format <text|json>      Output format', '--quiet                   Suppress success output in text mode', '--help                    Show help'],
-      artifacts: ['.playbook/outcome-telemetry.json (read)', '.playbook/process-telemetry.json (read)', '.playbook/task-execution-profile.json (optional read)', '.playbook/learning-compaction.json (write for learning)']
+      options: ['outcomes                  Inspect .playbook/outcome-telemetry.json', 'process                   Inspect .playbook/process-telemetry.json', 'learning-state            Show compacted deterministic learning snapshot', 'learning                  Compact cross-run learning signals and write artifact', 'summary                   Show combined deterministic telemetry summary', 'commands                  Show command-quality summary for core execution commands', '--json                    Alias for --format=json', '--format <text|json>      Output format', '--quiet                   Suppress success output in text mode', '--help                    Show help'],
+      artifacts: ['.playbook/outcome-telemetry.json (read)', '.playbook/process-telemetry.json (read)', '.playbook/task-execution-profile.json (optional read)', '.playbook/telemetry/command-quality.json (read for commands)', '.playbook/learning-compaction.json (write for learning)']
     });
     const exitCode = options.help || hasHelpFlag(args) ? ExitCode.Success : ExitCode.Failure;
     tracker.finish({ inputsSummary: `subcommand=${subcommand ?? 'none'}`, successStatus: exitCode === ExitCode.Success ? 'success' : 'failure', warningsCount: exitCode === ExitCode.Success ? 0 : 1 });
@@ -299,10 +313,40 @@ export const runTelemetry = async (
     return ExitCode.Success;
   }
 
+
+  if (subcommand === 'commands') {
+    const commandQualityArtifact = readJsonArtifact<CommandExecutionQualityArtifact>(cwd, COMMAND_QUALITY_PATH);
+    if (!commandQualityArtifact) {
+      const exitCode = emitCommandFailure('telemetry', options, {
+        summary: 'Telemetry commands failed: missing command-quality telemetry artifact.',
+        findingId: 'telemetry.commands.missing-artifact',
+        message: 'Missing required artifact: .playbook/telemetry/command-quality.json.',
+        nextActions: ['Run core execution commands and retry `playbook telemetry commands`.']
+      });
+      tracker.finish({ inputsSummary: 'subcommand=commands', artifactsRead: ['.playbook/telemetry/command-quality.json'], successStatus: 'failure', warningsCount: 1 });
+      return exitCode;
+    }
+
+    const summary = buildCommandQualitySummaryArtifact(commandQualityArtifact);
+
+    if (options.format === 'json') {
+      emitJsonOutput({ cwd, command: 'telemetry', payload: summary });
+      tracker.finish({ inputsSummary: 'subcommand=commands', artifactsRead: ['.playbook/telemetry/command-quality.json'], successStatus: 'success' });
+      return ExitCode.Success;
+    }
+
+    if (!options.quiet) {
+      renderTextCommandQualitySummary(summary);
+    }
+
+    tracker.finish({ inputsSummary: 'subcommand=commands', artifactsRead: ['.playbook/telemetry/command-quality.json'], successStatus: 'success' });
+    return ExitCode.Success;
+  }
+
   const exitCode = emitCommandFailure('telemetry', options, {
     summary: 'Telemetry failed: unsupported subcommand.',
     findingId: 'telemetry.subcommand.unsupported',
-    message: 'Unsupported subcommand. Use outcomes|process|learning-state|learning|summary.',
+    message: 'Unsupported subcommand. Use outcomes|process|learning-state|learning|summary|commands.',
     nextActions: ['Run `playbook telemetry --help` for supported command surfaces.']
   });
   tracker.finish({ inputsSummary: `subcommand=${subcommand}`, successStatus: 'failure', warningsCount: 1 });

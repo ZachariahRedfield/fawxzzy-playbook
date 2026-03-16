@@ -3,6 +3,8 @@ import {
   type CommandExecutionQualityArtifact,
   type CommandExecutionQualityRecord,
   type CommandExecutionQualitySummary,
+  type CommandQualitySummaryArtifact,
+  type CommandQualitySummaryRow,
   type CommandSuccessStatus
 } from '@zachariahredfield/playbook-core';
 import { readJsonIfExists, writeDeterministicJsonAtomic } from '../learning/io.js';
@@ -97,6 +99,52 @@ export const normalizeCommandExecutionQualityArtifact = (
     summary: summarizeCommandExecutionQuality(records)
   };
 };
+
+
+export const COMMAND_QUALITY_SUMMARY_COMMANDS = ['verify', 'route', 'orchestrate', 'execute', 'telemetry', 'improve'] as const;
+
+const summarizeCommandRows = (
+  commandName: string,
+  records: CommandExecutionQualityRecord[]
+): CommandQualitySummaryRow => {
+  const totalRuns = records.length;
+  const successRuns = records.filter((record) => record.success_status === 'success').length;
+  const failureRuns = records.filter((record) => record.success_status === 'failure').length;
+  const partialRuns = records.filter((record) => record.success_status === 'partial').length;
+  const totalDuration = records.reduce((sum, record) => sum + record.duration_ms, 0);
+  const totalConfidence = records.reduce((sum, record) => sum + record.confidence_score, 0);
+  const warningRuns = records.filter((record) => record.warnings_count > 0).length;
+  const openQuestionRuns = records.filter((record) => record.open_questions_count > 0).length;
+  const downstreamRuns = records.filter((record) => record.downstream_artifacts_produced.length > 0).length;
+
+  return {
+    command_name: commandName,
+    total_runs: totalRuns,
+    success_rate: totalRuns === 0 ? 0 : round4(successRuns / totalRuns),
+    average_duration_ms: totalRuns === 0 ? 0 : Math.round(totalDuration / totalRuns),
+    average_confidence_score: totalRuns === 0 ? 0 : round4(totalConfidence / totalRuns),
+    warnings_rate: totalRuns === 0 ? 0 : round4(warningRuns / totalRuns),
+    open_questions_rate: totalRuns === 0 ? 0 : round4(openQuestionRuns / totalRuns),
+    downstream_artifact_frequency: totalRuns === 0 ? 0 : round4(downstreamRuns / totalRuns),
+    failure_rate: totalRuns === 0 ? 0 : round4(failureRuns / totalRuns),
+    partial_failure_rate: totalRuns === 0 ? 0 : round4(partialRuns / totalRuns)
+  };
+};
+
+export const summarizeCommandQualityByCommand = (
+  artifact: CommandExecutionQualityArtifact
+): CommandQualitySummaryRow[] => COMMAND_QUALITY_SUMMARY_COMMANDS
+  .map((commandName) => summarizeCommandRows(commandName, artifact.records.filter((record) => record.command_name === commandName)));
+
+export const buildCommandQualitySummaryArtifact = (
+  artifact: CommandExecutionQualityArtifact
+): CommandQualitySummaryArtifact => ({
+  schemaVersion: COMMAND_EXECUTION_QUALITY_SCHEMA_VERSION,
+  kind: 'command-quality-summary',
+  generatedAt: artifact.generatedAt,
+  sourceArtifact: COMMAND_EXECUTION_QUALITY_RELATIVE_PATH,
+  commands: summarizeCommandQualityByCommand(artifact)
+});
 
 export const readCommandExecutionQualityArtifact = (repoRoot: string): CommandExecutionQualityArtifact => {
   const artifactPath = path.join(repoRoot, COMMAND_EXECUTION_QUALITY_RELATIVE_PATH);

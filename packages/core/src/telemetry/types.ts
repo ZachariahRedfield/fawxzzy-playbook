@@ -51,3 +51,24 @@ export interface CommandExecutionQualityArtifact {
   records: CommandExecutionQualityRecord[];
   summary: CommandExecutionQualitySummary;
 }
+
+export interface CommandQualitySummaryRow {
+  command_name: string;
+  total_runs: number;
+  success_rate: number;
+  average_duration_ms: number;
+  average_confidence_score: number;
+  warnings_rate: number;
+  open_questions_rate: number;
+  downstream_artifact_frequency: number;
+  failure_rate: number;
+  partial_failure_rate: number;
+}
+
+export interface CommandQualitySummaryArtifact {
+  schemaVersion: '1.0';
+  kind: 'command-quality-summary';
+  generatedAt: string;
+  sourceArtifact: '.playbook/telemetry/command-quality.json';
+  commands: CommandQualitySummaryRow[];
+}

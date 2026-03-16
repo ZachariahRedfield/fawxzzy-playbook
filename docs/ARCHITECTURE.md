@@ -113,6 +113,8 @@ Core execution commands (`verify`, `route`, `orchestrate`, `execute`, `telemetry
 
 This keeps command-level self-observation complete across execution surfaces and avoids partial observability bias in downstream learning and improvement analysis.
 
+`playbook telemetry commands` now provides deterministic operator/automation summaries sourced from `.playbook/telemetry/command-quality.json`, exposing stable per-command rates for success/failure/partial outcomes, average duration/confidence, warning/open-question frequency, and downstream artifact frequency across `verify`, `route`, `orchestrate`, `execute`, `telemetry`, and `improve`.
+
 ## Router accuracy telemetry feedback loop
 
 Routing quality is treated as a measurable architecture contract inside `routing_engine` + `telemetry_learning`.
