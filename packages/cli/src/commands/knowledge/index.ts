@@ -4,6 +4,7 @@ import { runKnowledgeInspect } from './inspect.js';
 import { runKnowledgeList } from './list.js';
 import { runKnowledgeProvenance } from './provenance.js';
 import { runKnowledgeQuery } from './query.js';
+import { runKnowledgePortability } from './portability.js';
 import { printKnowledgeHelp, type KnowledgeCommandOptions } from './shared.js';
 import { runKnowledgeStale } from './stale.js';
 import { runKnowledgeTimeline } from './timeline.js';
@@ -17,6 +18,35 @@ const renderText = (subcommand: string, payload: Record<string, unknown>): strin
   if (subcommand === 'provenance') {
     const provenance = payload.provenance as { evidence?: unknown[]; relatedRecords?: unknown[] } | undefined;
     return `Resolved provenance for ${String(payload.id)} (${provenance?.evidence?.length ?? 0} evidence records, ${provenance?.relatedRecords?.length ?? 0} related records).`;
+  }
+
+  if (subcommand === 'portability') {
+    const portability = payload.portability as Array<Record<string, unknown>> | undefined;
+    if (!portability || portability.length === 0) {
+      return 'No portability records found.';
+    }
+
+    return portability
+      .map(
+        (entry) =>
+          `Pattern: ${String(entry.pattern_id)}
+
+Source Repo:
+${String(entry.source_repo)}
+
+Portability Score:
+${String(entry.portability_score)}
+
+Evidence Runs:
+${String(entry.evidence_runs)}
+
+Compatible Subsystems:
+${((entry.compatible_subsystems as unknown[] | undefined) ?? []).map(String).join('\n')}
+
+Risk Signals:
+${((entry.risk_signals as unknown[] | undefined) ?? []).map(String).join('\n')}`
+      )
+      .join('\n\n---\n\n');
   }
 
   const knowledge = payload.knowledge as unknown[] | undefined;
@@ -51,8 +81,11 @@ export const runKnowledge = async (cwd: string, args: string[], options: Knowled
       if (subcommand === 'stale') {
         return runKnowledgeStale(cwd, args);
       }
+      if (subcommand === 'portability') {
+        return runKnowledgePortability(cwd);
+      }
 
-      throw new Error('playbook knowledge: unsupported subcommand. Use list, query, inspect, timeline, provenance, or stale.');
+      throw new Error('playbook knowledge: unsupported subcommand. Use list, query, inspect, timeline, provenance, stale, or portability.');
     })();
 
     if (options.format === 'json') {

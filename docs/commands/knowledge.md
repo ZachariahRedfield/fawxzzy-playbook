@@ -39,6 +39,16 @@ Resolve direct evidence and related-record lineage for one knowledge record.
 
 List stale candidates plus retired and superseded promoted knowledge.
 
+### `knowledge portability`
+
+Inspect deterministic cross-repo pattern portability scoring evidence, including:
+
+- `source_repo`
+- `portability_score`
+- `evidence_runs`
+- `compatible_subsystems`
+- `risk_signals`
+
 ## Examples
 
 ```bash
@@ -47,6 +57,8 @@ pnpm playbook knowledge query --type candidate --json
 pnpm playbook knowledge inspect <id> --json
 pnpm playbook knowledge provenance <id> --json
 pnpm playbook knowledge stale --json
+pnpm playbook knowledge portability
+pnpm playbook knowledge portability --json
 ```
 
 ## Guarantees

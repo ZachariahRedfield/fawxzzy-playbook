@@ -7,6 +7,7 @@ const knowledgeInspect = vi.fn();
 const knowledgeTimeline = vi.fn();
 const knowledgeProvenance = vi.fn();
 const knowledgeStale = vi.fn();
+const readCrossRepoPatternsArtifact = vi.fn();
 
 vi.mock('@zachariahredfield/playbook-engine', () => ({
   knowledgeList,
@@ -14,7 +15,8 @@ vi.mock('@zachariahredfield/playbook-engine', () => ({
   knowledgeInspect,
   knowledgeTimeline,
   knowledgeProvenance,
-  knowledgeStale
+  knowledgeStale,
+  readCrossRepoPatternsArtifact
 }));
 
 describe('runKnowledge', () => {
@@ -92,4 +94,131 @@ describe('runKnowledge', () => {
     expect(payload.command).toBe('knowledge-provenance');
     logSpy.mockRestore();
   });
+
+  it('supports portability with deterministic text output when artifact exists', async () => {
+    const { runKnowledge } = await import('./knowledge.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    readCrossRepoPatternsArtifact.mockReturnValue({
+      schemaVersion: '1.0',
+      kind: 'cross-repo-patterns',
+      generatedAt: '2026-01-01T00:00:00.000Z',
+      repositories: [
+        {
+          id: 'ZachariahRedfield/playbook',
+          repoPath: '/tmp/playbook',
+          patternCount: 1,
+          patterns: [
+            {
+              pattern_id: 'lane-split-validation',
+              attractor: 0.81,
+              fitness: 0.84,
+              strength: 0.83,
+              instance_count: 7,
+              governance_stable: true
+            }
+          ]
+        }
+      ],
+      aggregates: [
+        {
+          pattern_id: 'lane-split-validation',
+          repo_count: 7,
+          instance_count: 18,
+          mean_attractor: 0.81,
+          mean_fitness: 0.84,
+          portability_score: 0.82,
+          outcome_consistency: 0.79,
+          instance_diversity: 0.9,
+          governance_stability: 0.89
+        }
+      ]
+    });
+
+    const exitCode = await runKnowledge('/repo', ['portability'], { format: 'text', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+
+    const rendered = String(logSpy.mock.calls[0]?.[0]);
+    expect(rendered).toContain('Pattern: lane-split-validation');
+    expect(rendered).toContain('Source Repo:\nZachariahRedfield/playbook');
+    expect(rendered).toContain('Portability Score:\n0.82');
+    expect(rendered).toContain('Evidence Runs:\n7');
+    expect(rendered).toContain('Compatible Subsystems:\nrouting_engine');
+    expect(rendered).toContain('Risk Signals:\ndependency mismatch');
+
+    logSpy.mockRestore();
+  });
+
+  it('returns failure for portability when cross-repo artifact is missing', async () => {
+    const { runKnowledge } = await import('./knowledge.js');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    readCrossRepoPatternsArtifact.mockImplementation(() => {
+      throw new Error('playbook patterns: missing artifact at .playbook/cross-repo-patterns.json. Run "playbook patterns cross-repo" first.');
+    });
+
+    const exitCode = await runKnowledge('/repo', ['portability'], { format: 'text', quiet: false });
+    expect(exitCode).toBe(ExitCode.Failure);
+    expect(String(errorSpy.mock.calls[0]?.[0])).toContain('missing artifact at .playbook/cross-repo-patterns.json');
+
+    errorSpy.mockRestore();
+  });
+
+  it('emits machine-readable portability json shape', async () => {
+    const { runKnowledge } = await import('./knowledge.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    readCrossRepoPatternsArtifact.mockReturnValue({
+      schemaVersion: '1.0',
+      kind: 'cross-repo-patterns',
+      generatedAt: '2026-01-01T00:00:00.000Z',
+      repositories: [
+        {
+          id: 'ZachariahRedfield/playbook',
+          repoPath: '/tmp/playbook',
+          patternCount: 1,
+          patterns: [
+            {
+              pattern_id: 'lane-split-validation',
+              attractor: 0.81,
+              fitness: 0.84,
+              strength: 0.83,
+              instance_count: 7,
+              governance_stable: true
+            }
+          ]
+        }
+      ],
+      aggregates: [
+        {
+          pattern_id: 'lane-split-validation',
+          repo_count: 7,
+          instance_count: 18,
+          mean_attractor: 0.81,
+          mean_fitness: 0.84,
+          portability_score: 0.82,
+          outcome_consistency: 0.79,
+          instance_diversity: 0.9,
+          governance_stability: 0.89
+        }
+      ]
+    });
+
+    const exitCode = await runKnowledge('/repo', ['portability'], { format: 'json', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.command).toBe('knowledge-portability');
+    expect(payload.portability[0]).toEqual({
+      pattern_id: 'lane-split-validation',
+      source_repo: 'ZachariahRedfield/playbook',
+      portability_score: 0.82,
+      evidence_runs: 7,
+      compatible_subsystems: ['routing_engine'],
+      risk_signals: ['dependency mismatch']
+    });
+
+    logSpy.mockRestore();
+  });
+
 });

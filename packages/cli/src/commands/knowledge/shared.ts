@@ -23,6 +23,7 @@ Subcommands:
   timeline                        Show the knowledge timeline
   provenance <id>                 Show provenance and related evidence for one record
   stale                           Show stale, retired, and superseded records
+  portability                     Inspect cross-repo portability scoring evidence
 
 Options:
   --type <type>                Filter by type (evidence|candidate|promoted|superseded)
