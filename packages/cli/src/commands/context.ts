@@ -10,6 +10,10 @@ type ContextResult = {
     artifact: '.playbook/repo-index.json';
     commands: string[];
   };
+  controlPlaneArtifacts: {
+    policyEvaluation: '.playbook/policy-evaluation.json';
+    policyApplyResult: '.playbook/policy-apply-result.json';
+  };
   cli: {
     commands: string[];
   };
@@ -23,6 +27,10 @@ const buildContextResult = (): ContextResult => ({
   repositoryIntelligence: {
     artifact: '.playbook/repo-index.json',
     commands: ['index', 'query', 'ask', 'explain']
+  },
+  controlPlaneArtifacts: {
+    policyEvaluation: '.playbook/policy-evaluation.json',
+    policyApplyResult: '.playbook/policy-apply-result.json'
   },
   cli: {
     commands: listRegisteredCommands().map((entry) => entry.name)
@@ -41,6 +49,10 @@ const printText = (result: ContextResult): void => {
   console.log('Repository Intelligence');
   console.log(`Artifact: ${result.repositoryIntelligence.artifact}`);
   console.log(`Commands: ${result.repositoryIntelligence.commands.join(', ')}`);
+  console.log('');
+  console.log('Control Plane Artifacts');
+  console.log(`Policy evaluation: ${result.controlPlaneArtifacts.policyEvaluation}`);
+  console.log(`Policy apply result: ${result.controlPlaneArtifacts.policyApplyResult}`);
   console.log('');
   console.log('CLI Commands');
   for (const command of result.cli.commands) {

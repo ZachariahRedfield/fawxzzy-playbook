@@ -45,6 +45,10 @@
         "producer": "policy"
       },
       {
+        "path": ".playbook/policy-apply-result.json",
+        "producer": "apply"
+      },
+      {
         "path": ".playbook/repo-graph.json",
         "producer": "index"
       },
@@ -177,6 +181,11 @@
         "id": "policy-evaluation",
         "version": "1.0",
         "path": "packages/contracts/src/policy-evaluation.schema.json"
+      },
+      {
+        "id": "policy-apply-result",
+        "version": "1.0",
+        "path": "packages/contracts/src/policy-apply-result.schema.json"
       },
       {
         "id": "lane-state",

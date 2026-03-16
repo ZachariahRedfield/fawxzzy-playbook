@@ -27,6 +27,8 @@ export type AiContract = {
     artifactLocations: {
       events: '.playbook/memory/events';
       candidates: '.playbook/memory/candidates.json';
+      policyEvaluation: '.playbook/policy-evaluation.json';
+      policyApplyResult: '.playbook/policy-apply-result.json';
       promotedKnowledge: [
         '.playbook/memory/knowledge/decisions.json',
         '.playbook/memory/knowledge/patterns.json',
@@ -55,6 +57,8 @@ const defaultMemoryContract = (): AiContract['memory'] => ({
   artifactLocations: {
     events: '.playbook/memory/events',
     candidates: '.playbook/memory/candidates.json',
+    policyEvaluation: '.playbook/policy-evaluation.json',
+    policyApplyResult: '.playbook/policy-apply-result.json',
     promotedKnowledge: [
       '.playbook/memory/knowledge/decisions.json',
       '.playbook/memory/knowledge/patterns.json',
@@ -229,6 +233,14 @@ export const validateAiContract = (value: unknown): AiContract => {
           (artifactLocationsRecord
             ? ensureString(artifactLocationsRecord.candidates, 'memory.artifactLocations.candidates')
             : defaultMemory.artifactLocations.candidates) as '.playbook/memory/candidates.json',
+        policyEvaluation:
+          (artifactLocationsRecord
+            ? ensureString(artifactLocationsRecord.policyEvaluation, 'memory.artifactLocations.policyEvaluation')
+            : defaultMemory.artifactLocations.policyEvaluation) as '.playbook/policy-evaluation.json',
+        policyApplyResult:
+          (artifactLocationsRecord
+            ? ensureString(artifactLocationsRecord.policyApplyResult, 'memory.artifactLocations.policyApplyResult')
+            : defaultMemory.artifactLocations.policyApplyResult) as '.playbook/policy-apply-result.json',
         promotedKnowledge:
           (artifactLocationsRecord
             ? ensureStringArray(

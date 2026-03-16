@@ -19,6 +19,10 @@ describe('runAiContext', () => {
     expect(repo.architecture).toBe('modular-monolith');
     expect(repo.localCliPreferred).toBe(true);
 
+    const controlPlaneArtifacts = payload.controlPlaneArtifacts as Record<string, unknown>;
+    expect(controlPlaneArtifacts.policyEvaluation).toBe('.playbook/policy-evaluation.json');
+    expect(controlPlaneArtifacts.policyApplyResult).toBe('.playbook/policy-apply-result.json');
+
     const operatingLadder = payload.operatingLadder as Record<string, unknown>;
     expect(operatingLadder.preferredCommandOrder).toEqual([
       'ai-context',

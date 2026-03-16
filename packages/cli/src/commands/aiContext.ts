@@ -16,6 +16,10 @@ type AiContextResult = {
     available: boolean;
     commands: string[];
   };
+  controlPlaneArtifacts: {
+    policyEvaluation: '.playbook/policy-evaluation.json';
+    policyApplyResult: '.playbook/policy-apply-result.json';
+  };
   operatingLadder: {
     preferredCommandOrder: [
       'ai-context',
@@ -69,6 +73,10 @@ const buildAiContextResult = (cwd: string): AiContextResult => {
       artifact: '.playbook/repo-index.json',
       available: fs.existsSync(indexFile),
       commands: ['index', 'query', 'deps', 'ask', 'explain']
+    },
+    controlPlaneArtifacts: {
+      policyEvaluation: '.playbook/policy-evaluation.json',
+      policyApplyResult: '.playbook/policy-apply-result.json'
     },
     operatingLadder: {
       preferredCommandOrder: [
@@ -133,6 +141,10 @@ const printText = (result: AiContextResult): void => {
   console.log(`Artifact: ${result.repositoryIntelligence.artifact}`);
   console.log(`Available: ${result.repositoryIntelligence.available ? 'yes' : 'no'}`);
   console.log(`Commands: ${result.repositoryIntelligence.commands.join(', ')}`);
+  console.log('');
+  console.log('Control Plane Artifacts');
+  console.log(`Policy evaluation: ${result.controlPlaneArtifacts.policyEvaluation}`);
+  console.log(`Policy apply result: ${result.controlPlaneArtifacts.policyApplyResult}`);
   console.log('');
   console.log('AI Operating Ladder');
   console.log(result.operatingLadder.preferredCommandOrder.join(' -> '));

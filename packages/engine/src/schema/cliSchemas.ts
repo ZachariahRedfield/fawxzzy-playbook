@@ -380,7 +380,7 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
     title: 'PlaybookContextOutput',
     type: 'object',
     additionalProperties: false,
-    required: ['schemaVersion', 'command', 'architecture', 'workflow', 'repositoryIntelligence', 'cli'],
+    required: ['schemaVersion', 'command', 'architecture', 'workflow', 'repositoryIntelligence', 'controlPlaneArtifacts', 'cli'],
     properties: {
       schemaVersion: { type: 'string' },
       command: { const: 'context' },
@@ -403,6 +403,15 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
             minItems: 4,
             maxItems: 4
           }
+        }
+      },
+      controlPlaneArtifacts: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['policyEvaluation', 'policyApplyResult'],
+        properties: {
+          policyEvaluation: { const: '.playbook/policy-evaluation.json' },
+          policyApplyResult: { const: '.playbook/policy-apply-result.json' }
         }
       },
       cli: {
@@ -490,10 +499,12 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
               artifactLocations: {
                 type: 'object',
                 additionalProperties: false,
-                required: ['events', 'candidates', 'promotedKnowledge'],
+                required: ['events', 'candidates', 'policyEvaluation', 'policyApplyResult', 'promotedKnowledge'],
                 properties: {
                   events: { const: '.playbook/memory/events' },
                   candidates: { const: '.playbook/memory/candidates.json' },
+                  policyEvaluation: { const: '.playbook/policy-evaluation.json' },
+                  policyApplyResult: { const: '.playbook/policy-apply-result.json' },
                   promotedKnowledge: {
                     type: 'array',
                     prefixItems: [
@@ -1484,6 +1495,7 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
       'command',
       'repo',
       'repositoryIntelligence',
+      'controlPlaneArtifacts',
       'operatingLadder',
       'productCommands',
       'guidance'
@@ -1514,6 +1526,15 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
             minItems: 5,
             maxItems: 5
           }
+        }
+      },
+      controlPlaneArtifacts: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['policyEvaluation', 'policyApplyResult'],
+        properties: {
+          policyEvaluation: { const: '.playbook/policy-evaluation.json' },
+          policyApplyResult: { const: '.playbook/policy-apply-result.json' }
         }
       },
       operatingLadder: {

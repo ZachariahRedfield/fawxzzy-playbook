@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/policy-apply-result.schema.json",
+  "title": "PlaybookPolicyApplyResult",
+  "description": "Deterministic policy apply execution result artifact for governed mutation-capable control-plane runs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "executed",
+    "skipped_requires_review",
+    "skipped_blocked",
+    "failed_execution",
+    "summary"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "kind": {
+      "const": "policy-apply-result"
+    },
+    "executed": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PolicyApplyResultEntry"
+      }
+    },
+    "skipped_requires_review": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PolicyApplyResultEntry"
+      }
+    },
+    "skipped_blocked": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PolicyApplyResultEntry"
+      }
+    },
+    "failed_execution": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PolicyApplyFailureEntry"
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "executed",
+        "skipped_requires_review",
+        "skipped_blocked",
+        "failed_execution",
+        "total"
+      ],
+      "properties": {
+        "executed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped_requires_review": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped_blocked": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed_execution": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "$defs": {
+    "PolicyApplyResultEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal_id",
+        "decision",
+        "reason"
+      ],
+      "properties": {
+        "proposal_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "safe",
+            "requires_review",
+            "blocked"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "PolicyApplyFailureEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal_id",
+        "decision",
+        "reason",
+        "error"
+      ],
+      "properties": {
+        "proposal_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "safe",
+            "requires_review",
+            "blocked"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "error": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

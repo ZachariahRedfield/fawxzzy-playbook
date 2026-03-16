@@ -21,6 +21,10 @@ describe('runContext', () => {
     expect(repositoryIntelligence.artifact).toBe('.playbook/repo-index.json');
     expect(repositoryIntelligence.commands).toEqual(['index', 'query', 'ask', 'explain']);
 
+    const controlPlaneArtifacts = payload.controlPlaneArtifacts as Record<string, unknown>;
+    expect(controlPlaneArtifacts.policyEvaluation).toBe('.playbook/policy-evaluation.json');
+    expect(controlPlaneArtifacts.policyApplyResult).toBe('.playbook/policy-apply-result.json');
+
     const cli = payload.cli as Record<string, unknown>;
     expect(Array.isArray(cli.commands)).toBe(true);
     expect(cli.commands).toContain('context');

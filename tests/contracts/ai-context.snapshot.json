@@ -17,6 +17,10 @@
       "explain"
     ]
   },
+  "controlPlaneArtifacts": {
+    "policyEvaluation": ".playbook/policy-evaluation.json",
+    "policyApplyResult": ".playbook/policy-apply-result.json"
+  },
   "operatingLadder": {
     "preferredCommandOrder": [
       "ai-context",

@@ -30,6 +30,7 @@ describe('runContracts', () => {
     expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('repository-events');
     expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('cycle-state');
     expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('cycle-history');
+    expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('policy-apply-result');
   });
 
   it('keeps schema registration identifiers and paths stable', async () => {
@@ -63,6 +64,7 @@ describe('runContracts', () => {
         { id: 'learning-state', version: '1.0', path: 'packages/contracts/src/learning-state.schema.json' },
         { id: 'improvement-candidates', version: '1.0', path: 'packages/contracts/src/improvement-candidates.schema.json' },
         { id: 'policy-evaluation', version: '1.0', path: 'packages/contracts/src/policy-evaluation.schema.json' },
+        { id: 'policy-apply-result', version: '1.0', path: 'packages/contracts/src/policy-apply-result.schema.json' },
         { id: 'lane-state', version: '1.0', path: 'packages/contracts/src/lane-state.schema.json' },
         { id: 'worker-assignments', version: '1.0', path: 'packages/contracts/src/worker-assignments.schema.json' },
         { id: 'repository-events', version: '1.0', path: 'packages/contracts/src/repository-events.schema.json' },

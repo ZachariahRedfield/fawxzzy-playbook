@@ -64,6 +64,10 @@ const toOutput = (target: string, explanation: ExplainTargetResult): ExplainOutp
     if (explanation.policyEvaluation) {
       payload.policy_evaluation = explanation.policyEvaluation;
     }
+
+    if (explanation.policyApplyResult) {
+      payload.policy_apply_result = explanation.policyApplyResult;
+    }
   }
 
   if (explanation.type === 'subsystem') {
@@ -284,6 +288,36 @@ const printText = (target: string, explanation: ExplainTargetResult): void => {
           console.log(`- ${cycle.cycle_id}: ${cycle.result}, started_at=${cycle.started_at}, duration_ms=${cycle.duration_ms}${failedSuffix}`);
         }
       }
+      return;
+    }
+
+    if (explanation.policyApplyResult) {
+      const policyApplyResult = explanation.policyApplyResult;
+      console.log('Execution result summary');
+      console.log('');
+      console.log(`Executed: ${policyApplyResult.summary.executed}`);
+      console.log(`Skipped (requires review): ${policyApplyResult.summary.skipped_requires_review}`);
+      console.log(`Skipped (blocked): ${policyApplyResult.summary.skipped_blocked}`);
+      console.log(`Failed execution: ${policyApplyResult.summary.failed_execution}`);
+      console.log(`Total: ${policyApplyResult.summary.total}`);
+      console.log('');
+
+      const printProposalList = (heading: string, entries: Array<{ proposal_id: string }>): void => {
+        console.log(heading);
+        if (entries.length === 0) {
+          console.log('- none');
+        } else {
+          for (const entry of entries) {
+            console.log(`- ${entry.proposal_id}`);
+          }
+        }
+        console.log('');
+      };
+
+      printProposalList('Executed proposals:', policyApplyResult.executed);
+      printProposalList('Skipped (requires review):', policyApplyResult.skipped_requires_review);
+      printProposalList('Skipped (blocked):', policyApplyResult.skipped_blocked);
+      printProposalList('Failed execution:', policyApplyResult.failed_execution);
       return;
     }
 

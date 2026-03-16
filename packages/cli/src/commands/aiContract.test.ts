@@ -28,6 +28,8 @@ describe('runAiContract', () => {
     const artifactLocations = memory.artifactLocations as Record<string, unknown>;
     expect(artifactLocations.events).toBe('.playbook/memory/events');
     expect(artifactLocations.candidates).toBe('.playbook/memory/candidates.json');
+    expect(artifactLocations.policyEvaluation).toBe('.playbook/policy-evaluation.json');
+    expect(artifactLocations.policyApplyResult).toBe('.playbook/policy-apply-result.json');
     expect(artifactLocations.promotedKnowledge).toEqual([
       '.playbook/memory/knowledge/decisions.json',
       '.playbook/memory/knowledge/patterns.json',

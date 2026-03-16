@@ -112,7 +112,7 @@ describe('runSchema', () => {
 
     const memoryProps = memorySchema.properties as Record<string, unknown>;
     const artifactLocations = memoryProps.artifactLocations as Record<string, unknown>;
-    expect((artifactLocations.required as string[])).toEqual(['events', 'candidates', 'promotedKnowledge']);
+    expect((artifactLocations.required as string[])).toEqual(['events', 'candidates', 'policyEvaluation', 'policyApplyResult', 'promotedKnowledge']);
 
     const retrieval = memoryProps.retrieval as Record<string, unknown>;
     expect((retrieval.required as string[])).toEqual(['requireProvenance', 'provenanceFields']);

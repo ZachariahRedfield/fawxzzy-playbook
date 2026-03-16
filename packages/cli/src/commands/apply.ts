@@ -4,6 +4,7 @@ import * as engine from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 import { writeJsonArtifactAbsolute } from '../lib/jsonArtifact.js';
 import { loadVerifyRules } from '../lib/loadVerifyRules.js';
+import { warn } from '../lib/output.js';
 import {
   buildPlanRemediation,
   deriveVerifyFailureFacts,
@@ -285,6 +286,84 @@ const loadPolicyEvaluationArtifact = (cwd: string): engine.PolicyEvaluationEntry
   });
 };
 
+
+const byProposalId = <T extends { proposal_id: string }>(left: T, right: T): number => left.proposal_id.localeCompare(right.proposal_id);
+
+export const validatePolicyApplyResultArtifact = (artifact: PolicyApplyResultArtifact): string[] => {
+  const errors: string[] = [];
+
+  if (artifact.schemaVersion !== '1.0') {
+    errors.push('schemaVersion must be "1.0"');
+  }
+  if (artifact.kind !== 'policy-apply-result') {
+    errors.push('kind must be "policy-apply-result"');
+  }
+
+  const validateEntry = (entry: PolicyApplyResultEntry | PolicyApplyFailureEntry, field: string): void => {
+    if (typeof entry.proposal_id !== 'string' || entry.proposal_id.length === 0) {
+      errors.push(`${field}[].proposal_id must be a non-empty string`);
+    }
+    if (!['safe', 'requires_review', 'blocked'].includes(entry.decision)) {
+      errors.push(`${field}[].decision must be one of safe, requires_review, blocked`);
+    }
+    if (typeof entry.reason !== 'string' || entry.reason.length === 0) {
+      errors.push(`${field}[].reason must be a non-empty string`);
+    }
+  };
+
+  for (const [field, list] of [
+    ['executed', artifact.executed],
+    ['skipped_requires_review', artifact.skipped_requires_review],
+    ['skipped_blocked', artifact.skipped_blocked]
+  ] as const) {
+    if (!Array.isArray(list)) {
+      errors.push(`${field} must be an array`);
+      continue;
+    }
+
+    for (const entry of list) {
+      validateEntry(entry, field);
+    }
+
+    const sortedIds = [...list].map((entry) => entry.proposal_id).sort((left, right) => left.localeCompare(right));
+    const currentIds = list.map((entry) => entry.proposal_id);
+    if (sortedIds.join('\u0000') !== currentIds.join('\u0000')) {
+      errors.push(`${field} must be deterministically ordered by proposal_id`);
+    }
+  }
+
+  if (!Array.isArray(artifact.failed_execution)) {
+    errors.push('failed_execution must be an array');
+  } else {
+    for (const entry of artifact.failed_execution) {
+      validateEntry(entry, 'failed_execution');
+      if (typeof entry.error !== 'string' || entry.error.length === 0) {
+        errors.push('failed_execution[].error must be a non-empty string');
+      }
+    }
+
+    const sortedIds = [...artifact.failed_execution].map((entry) => entry.proposal_id).sort((left, right) => left.localeCompare(right));
+    const currentIds = artifact.failed_execution.map((entry) => entry.proposal_id);
+    if (sortedIds.join('\u0000') !== currentIds.join('\u0000')) {
+      errors.push('failed_execution must be deterministically ordered by proposal_id');
+    }
+  }
+
+  if (!artifact.summary || typeof artifact.summary !== 'object') {
+    errors.push('summary must be an object');
+  } else {
+    const summary = artifact.summary;
+    for (const field of ['executed', 'skipped_requires_review', 'skipped_blocked', 'failed_execution', 'total'] as const) {
+      const value = summary[field];
+      if (!Number.isInteger(value) || value < 0) {
+        errors.push(`summary.${field} must be a non-negative integer`);
+      }
+    }
+  }
+
+  return errors;
+};
+
 const executeSafePolicyProposal = (cwd: string, proposal: engine.PolicyEvaluationEntry): string | null => {
   const candidatesPath = path.resolve(cwd, '.playbook/improvement-candidates.json');
 
@@ -335,26 +414,36 @@ const runPolicyApply = (cwd: string): PolicyApplyJsonResult => {
     executed.push(safeProposal);
   }
 
+  const deterministicExecuted = [...executed].sort(byProposalId);
+  const deterministicSkippedRequiresReview = [...preflight.requires_review].sort(byProposalId);
+  const deterministicSkippedBlocked = [...preflight.blocked].sort(byProposalId);
+  const deterministicFailedExecution = [...failedExecution].sort(byProposalId);
+
   const resultArtifact: PolicyApplyResultArtifact = {
     schemaVersion: '1.0',
     kind: 'policy-apply-result',
-    executed,
-    skipped_requires_review: preflight.requires_review,
-    skipped_blocked: preflight.blocked,
-    failed_execution: failedExecution,
+    executed: deterministicExecuted,
+    skipped_requires_review: deterministicSkippedRequiresReview,
+    skipped_blocked: deterministicSkippedBlocked,
+    failed_execution: deterministicFailedExecution,
     summary: {
-      executed: executed.length,
-      skipped_requires_review: preflight.requires_review.length,
-      skipped_blocked: preflight.blocked.length,
-      failed_execution: failedExecution.length,
+      executed: deterministicExecuted.length,
+      skipped_requires_review: deterministicSkippedRequiresReview.length,
+      skipped_blocked: deterministicSkippedBlocked.length,
+      failed_execution: deterministicFailedExecution.length,
       total: preflight.summary.total
     }
   };
 
+  const validationErrors = validatePolicyApplyResultArtifact(resultArtifact);
+  if (validationErrors.length > 0) {
+    warn(`playbook apply --policy: warning: policy-apply-result artifact failed schema validation: ${validationErrors.join('; ')}`);
+  }
+
   const resultArtifactPath = path.resolve(cwd, POLICY_APPLY_RESULT_RELATIVE_PATH);
   writeJsonArtifactAbsolute(resultArtifactPath, resultArtifact as Record<string, unknown>, 'apply', { envelope: false });
 
-  const exitCode = failedExecution.length > 0 ? ExitCode.Failure : ExitCode.Success;
+  const exitCode = deterministicFailedExecution.length > 0 ? ExitCode.Failure : ExitCode.Success;
   return {
     ...resultArtifact,
     schemaVersion: '1.0',

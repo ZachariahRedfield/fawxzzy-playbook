@@ -129,6 +129,7 @@ export type ArtifactExplanation = ExplainMemoryFields & {
   cycleState?: CycleStateArtifactExplanation;
   cycleHistory?: CycleHistoryArtifactExplanation;
   policyEvaluation?: PolicyEvaluationArtifactExplanation;
+  policyApplyResult?: PolicyApplyResultArtifactExplanation;
 };
 
 type CycleStateStepExplanation = {
@@ -183,6 +184,34 @@ type PolicyEvaluationArtifactExplanation = {
     total: number;
   };
   evaluations: PolicyEvaluationEntryExplanation[];
+};
+
+
+type PolicyApplyResultEntryExplanation = {
+  proposal_id: string;
+  decision: 'safe' | 'requires_review' | 'blocked';
+  reason: string;
+};
+
+type PolicyApplyFailedEntryExplanation = PolicyApplyResultEntryExplanation & {
+  error: string;
+};
+
+type PolicyApplyResultArtifactExplanation = {
+  artifactType: 'policy-apply-result';
+  schemaVersion: string;
+  kind: string;
+  summary: {
+    executed: number;
+    skipped_requires_review: number;
+    skipped_blocked: number;
+    failed_execution: number;
+    total: number;
+  };
+  executed: PolicyApplyResultEntryExplanation[];
+  skipped_requires_review: PolicyApplyResultEntryExplanation[];
+  skipped_blocked: PolicyApplyResultEntryExplanation[];
+  failed_execution: PolicyApplyFailedEntryExplanation[];
 };
 
 export type UnknownExplanation = ExplainMemoryFields & {
@@ -435,9 +464,10 @@ const explainArtifact = (projectRoot: string, target: string): ArtifactExplanati
   const cycleState = explainCycleStateArtifact(projectRoot, target) ?? undefined;
   const cycleHistory = explainCycleHistoryArtifact(projectRoot, target) ?? undefined;
   const policyEvaluation = explainPolicyEvaluationArtifact(projectRoot, target) ?? undefined;
+  const policyApplyResult = explainPolicyApplyResultArtifact(projectRoot, target) ?? undefined;
 
-  if (cycleState || cycleHistory || policyEvaluation) {
-    const policyArtifactOnly = Boolean(policyEvaluation) && !cycleState && !cycleHistory;
+  if (cycleState || cycleHistory || policyEvaluation || policyApplyResult) {
+    const policyArtifactOnly = (Boolean(policyEvaluation) || Boolean(policyApplyResult)) && !cycleState && !cycleHistory;
     return {
       type: 'artifact',
       resolvedTarget: {
@@ -454,7 +484,8 @@ const explainArtifact = (projectRoot: string, target: string): ArtifactExplanati
       downstreamConsumers: policyArtifactOnly ? ['change_bridge'] : ['telemetry_learning', 'lane_lifecycle', 'worker_coordination'],
       ...(cycleState ? { cycleState } : {}),
       ...(cycleHistory ? { cycleHistory } : {}),
-      ...(policyEvaluation ? { policyEvaluation } : {})
+      ...(policyEvaluation ? { policyEvaluation } : {}),
+      ...(policyApplyResult ? { policyApplyResult } : {})
     };
   }
 
@@ -584,6 +615,64 @@ const explainPolicyEvaluationArtifact = (projectRoot: string, target: string): P
       total: Number(summaryCandidate.total ?? evaluations.length)
     },
     evaluations
+  };
+};
+
+
+const explainPolicyApplyResultArtifact = (projectRoot: string, target: string): PolicyApplyResultArtifactExplanation | null => {
+  if (target !== '.playbook/policy-apply-result.json') {
+    return null;
+  }
+
+  const targetPath = path.join(projectRoot, target);
+  if (!fs.existsSync(targetPath)) {
+    throw new Error(`playbook explain artifact: missing artifact "${target}".`);
+  }
+
+  const parsed = JSON.parse(fs.readFileSync(targetPath, 'utf8')) as Record<string, unknown>;
+  const summaryCandidate = (parsed.summary ?? {}) as Record<string, unknown>;
+
+  const toEntry = (value: unknown): PolicyApplyResultEntryExplanation => {
+    const candidate = value as Record<string, unknown>;
+    return {
+      proposal_id: String(candidate.proposal_id),
+      decision: candidate.decision === 'safe' || candidate.decision === 'blocked' ? candidate.decision : 'requires_review',
+      reason: String(candidate.reason)
+    };
+  };
+
+  const toFailedEntry = (value: unknown): PolicyApplyFailedEntryExplanation => {
+    const entry = toEntry(value);
+    const candidate = value as Record<string, unknown>;
+    return { ...entry, error: String(candidate.error) };
+  };
+
+  const executed = Array.isArray(parsed.executed) ? parsed.executed.map((entry) => toEntry(entry)).sort((l, r) => l.proposal_id.localeCompare(r.proposal_id)) : [];
+  const skippedRequiresReview = Array.isArray(parsed.skipped_requires_review)
+    ? parsed.skipped_requires_review.map((entry) => toEntry(entry)).sort((l, r) => l.proposal_id.localeCompare(r.proposal_id))
+    : [];
+  const skippedBlocked = Array.isArray(parsed.skipped_blocked)
+    ? parsed.skipped_blocked.map((entry) => toEntry(entry)).sort((l, r) => l.proposal_id.localeCompare(r.proposal_id))
+    : [];
+  const failedExecution = Array.isArray(parsed.failed_execution)
+    ? parsed.failed_execution.map((entry) => toFailedEntry(entry)).sort((l, r) => l.proposal_id.localeCompare(r.proposal_id))
+    : [];
+
+  return {
+    artifactType: 'policy-apply-result',
+    schemaVersion: String(parsed.schemaVersion),
+    kind: String(parsed.kind),
+    summary: {
+      executed: Number(summaryCandidate.executed ?? executed.length),
+      skipped_requires_review: Number(summaryCandidate.skipped_requires_review ?? skippedRequiresReview.length),
+      skipped_blocked: Number(summaryCandidate.skipped_blocked ?? skippedBlocked.length),
+      failed_execution: Number(summaryCandidate.failed_execution ?? failedExecution.length),
+      total: Number(summaryCandidate.total ?? executed.length + skippedRequiresReview.length + skippedBlocked.length + failedExecution.length)
+    },
+    executed,
+    skipped_requires_review: skippedRequiresReview,
+    skipped_blocked: skippedBlocked,
+    failed_execution: failedExecution
   };
 };
 

@@ -311,6 +311,48 @@ describe('runApply', () => {
     fs.rmSync(tmpRoot, { recursive: true, force: true });
   });
 
+  it('validates policy apply artifact schema shape and ordering deterministically', async () => {
+    const { validatePolicyApplyResultArtifact } = await import('./apply.js');
+
+    const errors = validatePolicyApplyResultArtifact({
+      schemaVersion: '1.0',
+      kind: 'policy-apply-result',
+      executed: [{ proposal_id: 'z', decision: 'safe', reason: 'safe z' }, { proposal_id: 'a', decision: 'safe', reason: 'safe a' }],
+      skipped_requires_review: [],
+      skipped_blocked: [],
+      failed_execution: [],
+      summary: { executed: 2, skipped_requires_review: 0, skipped_blocked: 0, failed_execution: 0, total: 2 }
+    });
+
+    expect(errors).toContain('executed must be deterministically ordered by proposal_id');
+  });
+
+  it('runs policy apply without validation warnings for valid deterministic artifacts', async () => {
+    const { runApply } = await import('./apply.js');
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-apply-policy-warning-'));
+    const playbookDir = path.join(tmpRoot, '.playbook');
+    const policyPath = path.join(playbookDir, 'policy-evaluation.json');
+    fs.mkdirSync(playbookDir, { recursive: true });
+    fs.writeFileSync(policyPath, JSON.stringify({ evaluations: [] }));
+
+    buildPolicyPreflight.mockReturnValue({
+      schemaVersion: '1.0',
+      eligible: [],
+      requires_review: [],
+      blocked: [],
+      summary: { eligible: 0, requires_review: 0, blocked: 0, total: 0 }
+    });
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const exitCode = await runApply(tmpRoot, { format: 'json', ci: false, quiet: false, policy: true });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(warnSpy).not.toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
   it('loads serialized plan tasks from --from-plan input', async () => {
     const { runApply } = await import('./apply.js');
     const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-apply-'));

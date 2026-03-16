@@ -778,6 +778,105 @@ describe('runExplain', () => {
     logSpy.mockRestore();
   });
 
+  it('fails deterministically when policy-apply-result artifact is missing', async () => {
+    const repo = createRepo('playbook-cli-explain-policy-apply-result-missing');
+    writeArchitectureRegistry(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runExplain(repo, ['artifact', '.playbook/policy-apply-result.json'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload).toEqual({
+      command: 'explain',
+      target: 'artifact .playbook/policy-apply-result.json',
+      error: 'playbook explain artifact: missing artifact ".playbook/policy-apply-result.json".'
+    });
+
+    logSpy.mockRestore();
+  });
+
+  it('explains policy-apply-result artifacts in JSON mode with deterministic ordering', async () => {
+    const repo = createRepo('playbook-cli-explain-policy-apply-result-json');
+    writeArchitectureRegistry(repo);
+    fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+    fs.writeFileSync(
+      path.join(repo, '.playbook', 'policy-apply-result.json'),
+      JSON.stringify(
+        {
+          schemaVersion: '1.0',
+          kind: 'policy-apply-result',
+          executed: [
+            { proposal_id: 'proposal-z', decision: 'safe', reason: 'safe z' },
+            { proposal_id: 'proposal-a', decision: 'safe', reason: 'safe a' }
+          ],
+          skipped_requires_review: [{ proposal_id: 'review-z', decision: 'requires_review', reason: 'review z' }],
+          skipped_blocked: [{ proposal_id: 'blocked-a', decision: 'blocked', reason: 'blocked a' }],
+          failed_execution: [{ proposal_id: 'fail-z', decision: 'safe', reason: 'safe but failed', error: 'deterministic failure' }],
+          summary: { executed: 2, skipped_requires_review: 1, skipped_blocked: 1, failed_execution: 1, total: 5 }
+        },
+        null,
+        2
+      )
+    );
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runExplain(repo, ['artifact', '.playbook/policy-apply-result.json'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.explanation.policy_apply_result.summary).toEqual({
+      executed: 2,
+      skipped_requires_review: 1,
+      skipped_blocked: 1,
+      failed_execution: 1,
+      total: 5
+    });
+    expect(payload.explanation.policy_apply_result.executed.map((entry: { proposal_id: string }) => entry.proposal_id)).toEqual([
+      'proposal-a',
+      'proposal-z'
+    ]);
+
+    logSpy.mockRestore();
+  });
+
+  it('renders policy-apply-result artifact summaries in text mode', async () => {
+    const repo = createRepo('playbook-cli-explain-policy-apply-result-text');
+    writeArchitectureRegistry(repo);
+    fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+    fs.writeFileSync(
+      path.join(repo, '.playbook', 'policy-apply-result.json'),
+      JSON.stringify(
+        {
+          schemaVersion: '1.0',
+          kind: 'policy-apply-result',
+          executed: [{ proposal_id: 'proposal-1', decision: 'safe', reason: 'safe' }],
+          skipped_requires_review: [{ proposal_id: 'proposal-2', decision: 'requires_review', reason: 'needs review' }],
+          skipped_blocked: [{ proposal_id: 'proposal-3', decision: 'blocked', reason: 'blocked' }],
+          failed_execution: [],
+          summary: { executed: 1, skipped_requires_review: 1, skipped_blocked: 1, failed_execution: 0, total: 3 }
+        },
+        null,
+        2
+      )
+    );
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runExplain(repo, ['artifact', '.playbook/policy-apply-result.json'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const lines = logSpy.mock.calls.map((call) => String(call[0]));
+    expect(lines).toContain('Execution result summary');
+    expect(lines).toContain('Executed: 1');
+    expect(lines).toContain('Skipped (requires review): 1');
+    expect(lines).toContain('Skipped (blocked): 1');
+    expect(lines).toContain('Failed execution: 0');
+    expect(lines).toContain('Executed proposals:');
+    expect(lines).toContain('- proposal-1');
+
+    logSpy.mockRestore();
+  });
+
   it('fails when target argument is missing', async () => {
     const repo = createRepo('playbook-cli-explain-args');
     writeRepoIndex(repo);

@@ -129,7 +129,7 @@ This keeps command-level self-observation complete across execution surfaces and
 
 Pattern: introduce evaluation before execution — proposals must pass deterministic policy classification before any action workflow.
 
-`playbook apply --policy` is the first mutation-capable control-plane execution step and is intentionally narrow: it consumes persisted `.playbook/policy-evaluation.json`, executes only `safe` proposals, refuses `requires_review`/`blocked`, and emits deterministic `.playbook/policy-apply-result.json` on every run for auditability (including no-op runs).
+`playbook apply --policy` is the first mutation-capable control-plane execution step and is intentionally narrow: it consumes persisted `.playbook/policy-evaluation.json`, executes only `safe` proposals, refuses `requires_review`/`blocked`, and emits deterministic `.playbook/policy-apply-result.json` on every run for auditability (including no-op runs). `.playbook/policy-apply-result.json` is now a schema-governed execution audit layer (`packages/contracts/src/policy-apply-result.schema.json`) and is explainable through `playbook explain artifact .playbook/policy-apply-result.json`.
 
 Rule: mutation-capable policy execution must consume governed policy artifacts and run only explicitly eligible (`safe`) proposals.
 
