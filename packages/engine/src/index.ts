@@ -71,6 +71,8 @@ export type { AskEngineResult } from './ask/askEngine.js';
 export { resolveDiffAskContext } from './ask/diffContext.js';
 export type { DiffAskContext } from './ask/diffContext.js';
 export { generateKnowledgeCandidatesDraft } from './learn/draft.js';
+export { LEARNING_COMPACTION_SCHEMA_VERSION, LEARNING_COMPACTION_RELATIVE_PATH, generateLearningCompactionArtifact, writeLearningCompactionArtifact } from './learning/learningCompaction.js';
+export type { LearningCompactionArtifact } from './learning/learningCompaction.js';
 export { replayMemoryToCandidates, MEMORY_CANDIDATES_RELATIVE_PATH } from './memory/replay.js';
 export { listCandidateKnowledge, loadCandidateKnowledgeById, promoteMemoryCandidate, retirePromotedKnowledge, supersedePromotedKnowledge, pruneMemoryKnowledge } from './memory/knowledge.js';
 export type { MemoryKnowledgeKind, MemoryKnowledgeEntry, MemoryKnowledgeArtifact, MemoryPromotionResult, MemoryRetireResult, MemorySupersedeResult, MemoryPruneResult } from './memory/knowledge.js';

@@ -97,6 +97,8 @@ Routing quality is treated as a measurable architecture contract inside `routing
 - Realized execution shape is captured from `.playbook/execution-state.json` and `.playbook/outcome-telemetry.json`.
 - Deterministic router-fit scoring compares planned vs realized lane parallelism, validation cost fit, execution success, and retry pressure.
 - Router accuracy metrics are persisted in `.playbook/process-telemetry.json` and folded into `.playbook/learning-state.json` for conservative routing refinement.
+- Cross-run compaction merges `.playbook/process-telemetry.json`, `.playbook/outcome-telemetry.json`, `.playbook/memory/events/*`, and `.playbook/memory/index.json` into `.playbook/learning-compaction.json` to provide stable recurring failure/success summaries before recommendation or promotion flows.
+- `playbook telemetry learning` is the deterministic compaction surface for `knowledge_lifecycle`, `repository_memory`, and `telemetry_learning`, with explicit missing-artifact degradation via `open_questions`.
 
 Rule: routing quality must be observable and scored, otherwise route strategy cannot improve deterministically.
 

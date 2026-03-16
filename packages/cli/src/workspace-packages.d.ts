@@ -250,6 +250,9 @@ declare module "@zachariahredfield/playbook-engine" {
   export const summarizeLaneOutcomeScores: (...args: any[]) => any;
   export type LearningStateSnapshotArtifact = any;
   export const deriveLearningStateSnapshot: (...args: any[]) => LearningStateSnapshotArtifact;
+  export type LearningCompactionArtifact = any;
+  export const generateLearningCompactionArtifact: (...args: any[]) => LearningCompactionArtifact;
+  export const writeLearningCompactionArtifact: (...args: any[]) => string;
   export const validateArtifacts: (...args: any[]) => any;
 
   export type ImprovementCandidatesArtifact = any;

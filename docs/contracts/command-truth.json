@@ -493,7 +493,7 @@
       "canonicalSequence": null,
       "productFacing": true,
       "machineReadable": true,
-      "example": "pnpm playbook telemetry learning-state --json"
+      "example": "pnpm playbook telemetry learning --json"
     },
     {
       "name": "upgrade",

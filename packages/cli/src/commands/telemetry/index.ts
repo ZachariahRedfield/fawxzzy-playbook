@@ -2,14 +2,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   deriveLearningStateSnapshot,
+  generateLearningCompactionArtifact,
   normalizeOutcomeTelemetryArtifact,
   normalizeProcessTelemetryArtifact,
   summarizeLaneOutcomeScores,
   summarizeStructuralTelemetry,
   type LearningStateSnapshotArtifact,
+  type LearningCompactionArtifact,
   type OutcomeTelemetryArtifact,
   type ProcessTelemetryArtifact,
-  type TaskExecutionProfileArtifact
+  type TaskExecutionProfileArtifact,
+  writeLearningCompactionArtifact
 } from '@zachariahredfield/playbook-engine';
 import { emitJsonOutput } from '../../lib/jsonArtifact.js';
 import { ExitCode } from '../../lib/cliContract.js';
@@ -43,7 +46,7 @@ const tryReadJsonArtifact = <T>(cwd: string, segments: readonly string[]): T | u
 };
 
 const printTelemetryHelp = (): void => {
-  console.log(`Usage: playbook telemetry <subcommand> [--json]\n\nSubcommands:\n  outcomes                     Inspect .playbook/outcome-telemetry.json\n  process                      Inspect .playbook/process-telemetry.json\n  learning-state               Show compacted deterministic learning snapshot\n  summary                      Show combined deterministic telemetry summary`);
+  console.log(`Usage: playbook telemetry <subcommand> [--json]\n\nSubcommands:\n  outcomes                     Inspect .playbook/outcome-telemetry.json\n  process                      Inspect .playbook/process-telemetry.json\n  learning-state               Show compacted deterministic learning snapshot\n  learning                     Compact cross-run learning signals and write artifact\n  summary                      Show combined deterministic telemetry summary`);
 };
 
 const renderTextOutcome = (artifact: OutcomeTelemetryArtifact): void => {
@@ -92,6 +95,21 @@ const renderTextLearningState = (artifact: LearningStateSnapshotArtifact): void 
   console.log(`Validation cost pressure: ${artifact.metrics.validation_cost_pressure}`);
   console.log(`Portability confidence: ${artifact.metrics.portability_confidence}`);
   console.log(`Overall confidence: ${artifact.confidenceSummary.overall_confidence}`);
+};
+
+const renderTextLearningCompaction = (artifact: LearningCompactionArtifact): void => {
+  console.log('Learning compaction');
+  console.log('──────────────────');
+  console.log(`Generated at: ${artifact.generatedAt}`);
+  console.log(`Summary id: ${artifact.summary.summary_id}`);
+  console.log(`Source run ids: ${artifact.summary.source_run_ids.length}`);
+  console.log(`Time window: ${artifact.summary.time_window.start} -> ${artifact.summary.time_window.end}`);
+  console.log(`Route patterns: ${artifact.summary.route_patterns.length}`);
+  console.log(`Lane patterns: ${artifact.summary.lane_patterns.length}`);
+  console.log(`Validation patterns: ${artifact.summary.validation_patterns.length}`);
+  console.log(`Recurring failures: ${artifact.summary.recurring_failures.length}`);
+  console.log(`Recurring successes: ${artifact.summary.recurring_successes.length}`);
+  console.log(`Confidence: ${artifact.summary.confidence}`);
 };
 
 export const runTelemetry = async (
@@ -195,7 +213,30 @@ export const runTelemetry = async (
     return ExitCode.Success;
   }
 
-  const message = 'playbook telemetry: unsupported subcommand. Use "playbook telemetry outcomes|process|learning-state|summary".';
+  if (subcommand === 'learning') {
+    const learningCompaction = generateLearningCompactionArtifact(cwd);
+    writeLearningCompactionArtifact(cwd, learningCompaction);
+
+    if (options.format === 'json') {
+      emitJsonOutput({ cwd, command: 'telemetry', payload: learningCompaction });
+      return ExitCode.Success;
+    }
+
+    if (!options.quiet) {
+      renderTextLearningCompaction(learningCompaction);
+      if (learningCompaction.summary.open_questions.length > 0) {
+        console.log('Open questions:');
+        for (const question of learningCompaction.summary.open_questions) {
+          console.log(`- ${question}`);
+        }
+      }
+      console.log('Artifact: .playbook/learning-compaction.json');
+    }
+
+    return ExitCode.Success;
+  }
+
+  const message = 'playbook telemetry: unsupported subcommand. Use "playbook telemetry outcomes|process|learning-state|learning|summary".';
   if (options.format === 'json') {
     console.log(JSON.stringify({ schemaVersion: '1.0', command: 'telemetry', error: message }, null, 2));
   } else {

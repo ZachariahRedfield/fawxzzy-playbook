@@ -7,6 +7,8 @@
 
 ### Added
 
+- WHAT: Implemented deterministic cross-run learning compaction for `knowledge_lifecycle`, `repository_memory`, and `telemetry_learning` by adding a compaction engine that consumes `.playbook/process-telemetry.json`, `.playbook/outcome-telemetry.json`, `.playbook/memory/events/*`, and `.playbook/memory/index.json`, emits `.playbook/learning-compaction.json`, aggregates recurring retry-heavy families/lane-shape successes/validation bottlenecks/router-fit patterns, and surfaces the artifact through `playbook telemetry learning` JSON/text output with graceful missing-artifact degradation. WHY: Enforces compaction-before-promotion so recommendation/doctrine workflows consume stable summarized evidence instead of noisy raw signal hoarding.
+
 - WHAT: Implemented stricter deterministic improvement proposal gating across `improvement_engine`, `telemetry_learning`, and `repository_memory` by adding tier metadata (`gating_tier`, `required_review`), deterministic evidence fields (`evidence_count`, `supporting_runs`, `confidence_score`), and explicit `blocking_reasons` for rejected proposals; updated `playbook improve` text/JSON output to report proposal tier, evidence summaries, confidence, and gating rationale; and added targeted tests for AUTO-SAFE, CONVERSATIONAL, GOVERNANCE, and insufficient-evidence rejection scenarios. WHY: Prevents ungated self-modification and ensures only evidence-backed proposals can be promoted according to trust-boundary sensitivity.
 
 - WHAT: Strengthened worker coordination readiness contracts by extending `workset-plan`, `lane-state`, and `worker-assignments` with explicit readiness/conflict fields (`readiness_status`, `blocking_reasons`, `conflict_surface_paths`, `shared_artifact_risk`, `assignment_confidence`) plus deterministic validation findings for overlap/ownership/dependency blocking, and updated `playbook lanes`/`playbook workers` outputs to report ready-vs-blocked lanes with conflict surfaces. WHY: Prevents hidden overlap and makes pre-execution assignment risk machine-readable before parallel worker execution.
@@ -204,6 +206,8 @@
 ## Unreleased
 
 ### Added
+
+- WHAT: Implemented deterministic cross-run learning compaction for `knowledge_lifecycle`, `repository_memory`, and `telemetry_learning` by adding a compaction engine that consumes `.playbook/process-telemetry.json`, `.playbook/outcome-telemetry.json`, `.playbook/memory/events/*`, and `.playbook/memory/index.json`, emits `.playbook/learning-compaction.json`, aggregates recurring retry-heavy families/lane-shape successes/validation bottlenecks/router-fit patterns, and surfaces the artifact through `playbook telemetry learning` JSON/text output with graceful missing-artifact degradation. WHY: Enforces compaction-before-promotion so recommendation/doctrine workflows consume stable summarized evidence instead of noisy raw signal hoarding.
 
 - feat(execution): introduce execution supervisor runtime
   - WHAT: Add the Execution Supervisor runtime subsystem, deterministic `.playbook/execution-state.json` artifact lifecycle, and new `playbook execute` command for lane execution tracking, worker coordination handoff, and execution telemetry emission.
