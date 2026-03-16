@@ -128,7 +128,15 @@ describe('runImprove', () => {
     const exitCode = await runImproveCommands(repo, { format: 'json', quiet: false });
 
     expect(exitCode).toBe(ExitCode.Success);
-    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+    const payload = logSpy.mock.calls
+      .map((call) => {
+        try {
+          return JSON.parse(String(call[0])) as Record<string, unknown>;
+        } catch {
+          return null;
+        }
+      })
+      .find((entry) => entry?.kind === 'command-improvements') as Record<string, unknown>;
     expect(payload.kind).toBe('command-improvements');
     expect(Array.isArray(payload.proposals)).toBe(true);
 

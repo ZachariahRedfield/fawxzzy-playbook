@@ -14,6 +14,14 @@ type CommandRecordSeed = {
   open_questions_count?: number;
 };
 
+type CycleSeed = {
+  cycle_id: string;
+  started_at: string;
+  result: 'success' | 'failed';
+  failed_step?: string;
+  duration_ms: number;
+};
+
 const createRepo = (): string => fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-command-proposals-'));
 
 const writeCommandQuality = (repo: string, records: CommandRecordSeed[]): void => {
@@ -46,6 +54,23 @@ const writeCommandQuality = (repo: string, records: CommandRecordSeed[]): void =
           total_warnings: records.reduce((sum, record) => sum + (record.warnings_count ?? 0), 0),
           total_open_questions: records.reduce((sum, record) => sum + (record.open_questions_count ?? 0), 0)
         }
+      },
+      null,
+      2
+    )
+  );
+};
+
+const writeCycleHistory = (repo: string, cycles: CycleSeed[]): void => {
+  const cycleHistoryPath = path.join(repo, '.playbook', 'cycle-history.json');
+  fs.mkdirSync(path.dirname(cycleHistoryPath), { recursive: true });
+  fs.writeFileSync(
+    cycleHistoryPath,
+    JSON.stringify(
+      {
+        history_version: 1,
+        repo,
+        cycles
       },
       null,
       2
@@ -126,6 +151,48 @@ describe('command improvement proposals', () => {
     const artifact = generateCommandImprovementProposals(repo, []);
     const proposal = artifact.proposals.find((entry) => entry.command_name === 'execute' && entry.issue_type === 'repeated_partial_failures');
     expect(proposal?.gating_tier).toBe('GOVERNANCE');
+
+    fs.rmSync(repo, { recursive: true, force: true });
+  });
+
+  it('keeps runtime hardening conservative with no cycle history', () => {
+    const repo = createRepo();
+
+    const artifact = generateCommandImprovementProposals(repo, []);
+    expect(artifact.runtime_hardening.proposals).toHaveLength(0);
+    expect(artifact.runtime_hardening.open_questions.some((entry) => entry.question_id === 'runtime-evidence-history-depth')).toBe(true);
+
+    fs.rmSync(repo, { recursive: true, force: true });
+  });
+
+  it('emits runtime hardening proposals for repeated failed-step evidence', () => {
+    const repo = createRepo();
+    writeCycleHistory(repo, [
+      { cycle_id: 'c1', started_at: '2026-01-07T00:00:00.000Z', result: 'failed', failed_step: 'verify', duration_ms: 5200 },
+      { cycle_id: 'c2', started_at: '2026-01-06T00:00:00.000Z', result: 'failed', failed_step: 'verify', duration_ms: 5400 },
+      { cycle_id: 'c3', started_at: '2026-01-05T00:00:00.000Z', result: 'failed', failed_step: 'plan', duration_ms: 5100 }
+    ]);
+
+    const artifact = generateCommandImprovementProposals(repo, []);
+    expect(artifact.runtime_hardening.proposals.some((entry) => entry.issue_type === 'failed_step_concentration')).toBe(true);
+    expect(artifact.runtime_hardening.proposals.some((entry) => entry.issue_type === 'repeated_verify_stage_failures')).toBe(true);
+
+    fs.rmSync(repo, { recursive: true, force: true });
+  });
+
+  it('emits open questions for sparse runtime evidence and keeps runtime proposal order deterministic', () => {
+    const repo = createRepo();
+    writeCycleHistory(repo, [
+      { cycle_id: 'c1', started_at: '2026-01-07T00:00:00.000Z', result: 'failed', failed_step: 'verify', duration_ms: 1200 }
+    ]);
+
+    const artifact = generateCommandImprovementProposals(repo, []);
+    expect(artifact.runtime_hardening.proposals).toHaveLength(0);
+    expect(artifact.runtime_hardening.open_questions.some((entry) => entry.question_id === 'runtime-regression-window-coverage')).toBe(true);
+    expect(artifact.runtime_hardening.open_questions.some((entry) => entry.question_id === 'runtime-telemetry-artifact-coverage')).toBe(true);
+
+    const proposalIds = artifact.runtime_hardening.rejected_proposals.map((entry) => entry.proposal_id);
+    expect(proposalIds).toEqual([...proposalIds].sort((left, right) => left.localeCompare(right)));
 
     fs.rmSync(repo, { recursive: true, force: true });
   });

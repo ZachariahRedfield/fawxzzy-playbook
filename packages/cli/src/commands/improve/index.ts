@@ -123,6 +123,19 @@ const renderCommandImprovementsText = (artifact: {
     rationale: string;
     proposed_improvement: string;
   }>;
+  runtime_hardening: {
+    proposals: Array<{
+      gating_tier: string;
+      proposal_id: string;
+      issue_type: string;
+      evidence_count: number;
+      supporting_runs: number;
+      rationale: string;
+      proposed_improvement: string;
+    }>;
+    rejected_proposals: Array<{ proposal_id: string; blocking_reasons: string[] }>;
+    open_questions: Array<{ question_id: string; question: string; rationale: string }>;
+  };
   rejected_proposals: Array<{ proposal_id: string; blocking_reasons: string[] }>;
 }): void => {
   console.log('Command improvement proposals (recommendation-first)');
@@ -139,6 +152,29 @@ const renderCommandImprovementsText = (artifact: {
     console.log(`  rationale: ${proposal.rationale}`);
     console.log(`  proposed improvement: ${proposal.proposed_improvement}`);
   }
+
+  if (artifact.runtime_hardening.proposals.length > 0 || artifact.runtime_hardening.open_questions.length > 0) {
+    console.log('');
+    console.log('Runtime hardening proposals (governed cycle evidence)');
+    console.log(`Accepted runtime proposals: ${artifact.runtime_hardening.proposals.length}`);
+    console.log(`Rejected runtime proposals: ${artifact.runtime_hardening.rejected_proposals.length}`);
+    for (const proposal of artifact.runtime_hardening.proposals) {
+      console.log(`- [${proposal.gating_tier}] ${proposal.proposal_id}`);
+      console.log(`  issue: ${proposal.issue_type}`);
+      console.log(`  evidence: ${proposal.evidence_count} records across ${proposal.supporting_runs} runs`);
+      console.log(`  rationale: ${proposal.rationale}`);
+      console.log(`  proposed improvement: ${proposal.proposed_improvement}`);
+    }
+
+    if (artifact.runtime_hardening.open_questions.length > 0) {
+      console.log('Open questions (conservative evidence posture)');
+      for (const entry of artifact.runtime_hardening.open_questions) {
+        console.log(`- ${entry.question_id}: ${entry.question}`);
+        console.log(`  rationale: ${entry.rationale}`);
+      }
+    }
+  }
+
 
   if (artifact.rejected_proposals.length > 0) {
     console.log('');

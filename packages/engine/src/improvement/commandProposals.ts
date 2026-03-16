@@ -6,6 +6,14 @@ import {
   COMMAND_EXECUTION_QUALITY_RELATIVE_PATH,
   normalizeCommandExecutionQualityArtifact
 } from '../telemetry/commandQuality.js';
+import {
+  summarizeCycleRegressions,
+  summarizeCycleTelemetry,
+  type CycleHistoryArtifact,
+  type CycleRegressionSummary,
+  type CycleStateArtifact,
+  type CycleTelemetrySummary
+} from '../telemetry/cycleSummary.js';
 
 export const COMMAND_IMPROVEMENTS_SCHEMA_VERSION = '1.0' as const;
 export const COMMAND_IMPROVEMENTS_RELATIVE_PATH = '.playbook/command-improvements.json' as const;
@@ -35,6 +43,29 @@ export type CommandImprovementProposal = {
 
 export type RejectedCommandImprovementProposal = CommandImprovementProposal;
 
+export type RuntimeHardeningProposalIssueType =
+  | 'failed_step_concentration'
+  | 'rising_orchestration_duration'
+  | 'repeated_verify_stage_failures';
+
+export type RuntimeHardeningProposal = {
+  proposal_id: string;
+  issue_type: RuntimeHardeningProposalIssueType;
+  evidence_count: number;
+  supporting_runs: number;
+  proposed_improvement: string;
+  rationale: string;
+  confidence_score: number;
+  gating_tier: 'CONVERSATIONAL' | 'GOVERNANCE';
+  blocking_reasons: string[];
+};
+
+export type RuntimeHardeningOpenQuestion = {
+  question_id: string;
+  question: string;
+  rationale: string;
+};
+
 export type CommandImprovementsArtifact = {
   schemaVersion: typeof COMMAND_IMPROVEMENTS_SCHEMA_VERSION;
   kind: 'command-improvements';
@@ -54,6 +85,19 @@ export type CommandImprovementsArtifact = {
     commandQualitySummariesPath: string[];
     memoryEventsPath: string;
     commandQualityAvailable: boolean;
+    cycleHistoryPath: string;
+    cycleStatePath: string;
+    cycleTelemetrySummaryPath: string;
+    cycleRegressionsPath: string;
+    cycleTelemetrySummaryAvailable: boolean;
+    cycleRegressionsAvailable: boolean;
+    cycleHistoryAvailable: boolean;
+    cycleStateAvailable: boolean;
+  };
+  runtime_hardening: {
+    proposals: RuntimeHardeningProposal[];
+    rejected_proposals: RuntimeHardeningProposal[];
+    open_questions: RuntimeHardeningOpenQuestion[];
   };
   proposals: CommandImprovementProposal[];
   rejected_proposals: RejectedCommandImprovementProposal[];
@@ -76,6 +120,8 @@ const LOW_CONFIDENCE_THRESHOLD = 0.6;
 const HIGH_WARNING_OR_OPEN_QUESTION_RATE = 1.0;
 const HIGH_LATENCY_PEER_RATIO_THRESHOLD = 1.6;
 const REPEATED_PARTIAL_FAILURE_RATE_THRESHOLD = 0.3;
+const RUNTIME_HARDENING_MINIMUM_EVIDENCE = 2;
+const VERIFY_STEP_ID = 'verify';
 
 const round4 = (value: number): number => Number(value.toFixed(4));
 const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
@@ -188,6 +234,32 @@ const compareProposal = (left: CommandImprovementProposal, right: CommandImprove
   || left.command_name.localeCompare(right.command_name)
   || left.issue_type.localeCompare(right.issue_type);
 
+const compareRuntimeHardeningProposal = (left: RuntimeHardeningProposal, right: RuntimeHardeningProposal): number =>
+  left.proposal_id.localeCompare(right.proposal_id)
+  || left.issue_type.localeCompare(right.issue_type);
+
+const readCycleTelemetryOutput = (repoRoot: string): Partial<CycleTelemetrySummary> | null => {
+  const value = readJsonIfExists<unknown>(path.join(repoRoot, '.playbook/telemetry/cycle-summary.json'));
+  if (!value || typeof value !== 'object') return null;
+  return value as Partial<CycleTelemetrySummary>;
+};
+
+const readCycleRegressionOutput = (repoRoot: string): Partial<CycleRegressionSummary> | null => {
+  const value = readJsonIfExists<unknown>(path.join(repoRoot, '.playbook/telemetry/cycle-regressions.json'));
+  if (!value || typeof value !== 'object') return null;
+  return value as Partial<CycleRegressionSummary>;
+};
+
+const addRuntimeEvidenceGating = (proposal: RuntimeHardeningProposal): RuntimeHardeningProposal => {
+  if (proposal.evidence_count >= RUNTIME_HARDENING_MINIMUM_EVIDENCE) return proposal;
+  return {
+    ...proposal,
+    blocking_reasons: [
+      `insufficient_runtime_evidence_count:${proposal.evidence_count}<${RUNTIME_HARDENING_MINIMUM_EVIDENCE}`
+    ]
+  };
+};
+
 const getCommandQualityEvents = (events: RepositoryEvent[]): CommandQualityEvent[] =>
   events.filter((event): event is CommandQualityEvent => event.event_type === 'command_quality');
 
@@ -195,6 +267,13 @@ export const generateCommandImprovementProposals = (
   repoRoot: string,
   events: RepositoryEvent[]
 ): CommandImprovementsArtifact => {
+  const cycleHistory = readJsonIfExists<CycleHistoryArtifact>(path.join(repoRoot, '.playbook/cycle-history.json'));
+  const cycleState = readJsonIfExists<CycleStateArtifact>(path.join(repoRoot, '.playbook/cycle-state.json'));
+  const cycleTelemetry = summarizeCycleTelemetry({ cycleHistory, cycleState });
+  const cycleRegression = summarizeCycleRegressions({ cycleHistory });
+  const cycleTelemetryOutput = readCycleTelemetryOutput(repoRoot);
+  const cycleRegressionOutput = readCycleRegressionOutput(repoRoot);
+
   const commandQuality = normalizeCommandExecutionQualityArtifact(
     readJsonIfExists<CommandExecutionQualityArtifact>(path.join(repoRoot, COMMAND_EXECUTION_QUALITY_RELATIVE_PATH))
   );
@@ -226,6 +305,8 @@ export const generateCommandImprovementProposals = (
     : Math.round(computedSummaries.reduce((sum, entry) => sum + entry.summary.average_duration_ms, 0) / computedSummaries.length);
 
   const proposals: CommandImprovementProposal[] = [];
+  const runtimeHardeningProposals: RuntimeHardeningProposal[] = [];
+  const runtimeHardeningOpenQuestions: RuntimeHardeningOpenQuestion[] = [];
 
   for (const entry of computedSummaries) {
     const failureRate = safeDivide(entry.summary.failure_runs, entry.summary.total_runs);
@@ -308,6 +389,78 @@ export const generateCommandImprovementProposals = (
     }
   }
 
+  const cyclesFailed = cycleTelemetry.cycles_failed;
+  const mostCommonFailedStep = cycleTelemetry.most_common_failed_step;
+  if (mostCommonFailedStep && cyclesFailed >= RUNTIME_HARDENING_MINIMUM_EVIDENCE) {
+    const failedStepCount = cycleTelemetry.failure_distribution[mostCommonFailedStep] ?? 0;
+    runtimeHardeningProposals.push(addRuntimeEvidenceGating({
+      proposal_id: `runtime_failed_step_concentration_${mostCommonFailedStep.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`,
+      issue_type: 'failed_step_concentration',
+      evidence_count: failedStepCount,
+      supporting_runs: Math.min(failedStepCount, cycleTelemetry.cycles_total),
+      proposed_improvement: `inspect repeated cycle failures at step \"${mostCommonFailedStep}\" and draft deterministic preflight checks before any automation changes`,
+      rationale: `Cycle failure distribution shows ${failedStepCount}/${cyclesFailed} failures concentrated on ${mostCommonFailedStep}.`,
+      confidence_score: round4(clamp01(0.5 + safeDivide(failedStepCount, Math.max(1, cyclesFailed)) * 0.4)),
+      gating_tier: failedStepCount >= 3 ? 'GOVERNANCE' : 'CONVERSATIONAL',
+      blocking_reasons: []
+    }));
+  }
+
+  const durationRegressionReason = cycleRegression.regression_reasons.find((reason) => reason.startsWith('duration_increase:'));
+  if (durationRegressionReason) {
+    runtimeHardeningProposals.push(addRuntimeEvidenceGating({
+      proposal_id: 'runtime_rising_orchestration_duration',
+      issue_type: 'rising_orchestration_duration',
+      evidence_count: cycleRegression.recent_summary.cycles_total,
+      supporting_runs: cycleRegression.recent_summary.cycles_total,
+      proposed_improvement: 'inspect rising cycle duration across recent windows and propose bounded stage-level profiling before runtime policy changes',
+      rationale: `Cycle regression evidence indicates sustained duration increase (${durationRegressionReason}).`,
+      confidence_score: round4(clamp01(0.55 + Math.min(0.35, safeDivide(cycleRegression.recent_summary.cycles_total, 10)))),
+      gating_tier: 'GOVERNANCE',
+      blocking_reasons: []
+    }));
+  }
+
+  const verifyFailureCount = cycleTelemetry.failure_distribution[VERIFY_STEP_ID] ?? 0;
+  if (verifyFailureCount >= RUNTIME_HARDENING_MINIMUM_EVIDENCE) {
+    runtimeHardeningProposals.push(addRuntimeEvidenceGating({
+      proposal_id: 'runtime_repeated_verify_stage_failures',
+      issue_type: 'repeated_verify_stage_failures',
+      evidence_count: verifyFailureCount,
+      supporting_runs: Math.min(verifyFailureCount, cycleTelemetry.cycles_total),
+      proposed_improvement: 'inspect repeated verify-stage failures and document deterministic guardrail checks before promoting autofix behavior',
+      rationale: `Cycle telemetry reports ${verifyFailureCount} failed cycles at verify stage.`,
+      confidence_score: round4(clamp01(0.52 + Math.min(0.38, safeDivide(verifyFailureCount, Math.max(1, cyclesFailed + 1))))),
+      gating_tier: verifyFailureCount >= 3 ? 'GOVERNANCE' : 'CONVERSATIONAL',
+      blocking_reasons: []
+    }));
+  }
+
+  if (cycleTelemetry.cycles_total < RUNTIME_HARDENING_MINIMUM_EVIDENCE) {
+    runtimeHardeningOpenQuestions.push({
+      question_id: 'runtime-evidence-history-depth',
+      question: 'Cycle history is sparse; should runtime hardening proposals remain observational until additional governed runs accumulate?',
+      rationale: `Only ${cycleTelemetry.cycles_total} cycles are available, below evidence floor ${RUNTIME_HARDENING_MINIMUM_EVIDENCE}.`
+    });
+  }
+
+
+  if (cycleTelemetryOutput === null || cycleRegressionOutput === null) {
+    runtimeHardeningOpenQuestions.push({
+      question_id: 'runtime-telemetry-artifact-coverage',
+      question: 'Cycle telemetry/regression output artifacts are incomplete; should runtime hardening remain scoped to direct governed cycle artifacts only?',
+      rationale: 'One or more optional telemetry artifacts (.playbook/telemetry/cycle-summary.json, .playbook/telemetry/cycle-regressions.json) were not available.'
+    });
+  }
+
+  if (!cycleRegression.comparison_window.sufficient_history) {
+    runtimeHardeningOpenQuestions.push({
+      question_id: 'runtime-regression-window-coverage',
+      question: 'Regression comparison windows are incomplete; should duration and concentration signals stay recommendation-only until sufficient history is available?',
+      rationale: cycleRegression.regression_reasons[0] ?? 'Regression comparison requires additional cycle history.'
+    });
+  }
+
   return {
     schemaVersion: COMMAND_IMPROVEMENTS_SCHEMA_VERSION,
     kind: 'command-improvements',
@@ -329,7 +482,20 @@ export const generateCommandImprovementProposals = (
         '.playbook/telemetry/command-quality-summaries.json'
       ],
       memoryEventsPath: '.playbook/memory/events/*',
-      commandQualityAvailable: commandQuality.records.length > 0
+      commandQualityAvailable: commandQuality.records.length > 0,
+      cycleHistoryPath: '.playbook/cycle-history.json',
+      cycleStatePath: '.playbook/cycle-state.json',
+      cycleTelemetrySummaryPath: '.playbook/telemetry/cycle-summary.json',
+      cycleRegressionsPath: '.playbook/telemetry/cycle-regressions.json',
+      cycleTelemetrySummaryAvailable: cycleTelemetryOutput !== null,
+      cycleRegressionsAvailable: cycleRegressionOutput !== null,
+      cycleHistoryAvailable: Array.isArray(cycleHistory?.cycles),
+      cycleStateAvailable: Boolean(cycleState)
+    },
+    runtime_hardening: {
+      proposals: runtimeHardeningProposals.filter((proposal) => proposal.blocking_reasons.length === 0).sort(compareRuntimeHardeningProposal),
+      rejected_proposals: runtimeHardeningProposals.filter((proposal) => proposal.blocking_reasons.length > 0).sort(compareRuntimeHardeningProposal),
+      open_questions: runtimeHardeningOpenQuestions.sort((left, right) => left.question_id.localeCompare(right.question_id))
     },
     proposals: proposals.filter((proposal) => proposal.blocking_reasons.length === 0).sort(compareProposal),
     rejected_proposals: proposals.filter((proposal) => proposal.blocking_reasons.length > 0).sort(compareProposal)

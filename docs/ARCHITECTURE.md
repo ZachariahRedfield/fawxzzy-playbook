@@ -116,7 +116,7 @@ Core execution commands (`verify`, `route`, `orchestrate`, `execute`, `telemetry
 
 `playbook cycle` is an orchestration-only wrapper over that hardened primitive sequence. It runs the existing handlers in order and persists `.playbook/cycle-state.json` as a deterministic summary artifact without introducing duplicate routing/orchestration/execution logic.
 
-`improvement_engine` now derives recommendation-first command hardening proposals from command-quality telemetry, optional command-quality summary artifacts, and normalized repository memory events. The governed result is persisted at `.playbook/command-improvements.json` and surfaced via `playbook improve commands`, with explicit evidence gating and no autonomous command mutation.
+`improvement_engine` now derives recommendation-first command hardening proposals from command-quality telemetry, optional command-quality summary artifacts, normalized repository memory events, and governed cycle runtime evidence (`.playbook/cycle-history.json`, optional `.playbook/cycle-state.json`, and optional telemetry-cycle summary/regression outputs when present). The governed result is persisted at `.playbook/command-improvements.json` and surfaced via `playbook improve commands`, with explicit evidence gating, conservative open-question output for sparse runtime signals, deterministic ordering/wording, and no autonomous command mutation.
 
 This keeps command-level self-observation complete across execution surfaces and avoids partial observability bias in downstream learning and improvement analysis.
 
