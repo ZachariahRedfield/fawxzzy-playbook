@@ -206,9 +206,14 @@
         "lane_id",
         "task_ids",
         "status",
+        "readiness_status",
         "dependency_level",
         "dependencies_satisfied",
         "blocked_reasons",
+        "blocking_reasons",
+        "conflict_surface_paths",
+        "shared_artifact_risk",
+        "assignment_confidence",
         "verification_summary",
         "merge_ready",
         "worker_ready"
@@ -236,6 +241,10 @@
             "merge_ready"
           ]
         },
+        "readiness_status": {
+          "type": "string",
+          "enum": ["ready", "blocked"]
+        },
         "dependency_level": {
           "type": "string",
           "enum": [
@@ -254,6 +263,31 @@
             "minLength": 1
           },
           "uniqueItems": true
+        },
+        "blocking_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "conflict_surface_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "shared_artifact_risk": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "assignment_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         },
         "verification_summary": {
           "type": "object",

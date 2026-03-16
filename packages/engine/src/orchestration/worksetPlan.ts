@@ -13,6 +13,11 @@ export type WorksetLane = {
   task_families: string[];
   expected_surfaces: string[];
   likely_conflict_surfaces: string[];
+  readiness_status: 'ready' | 'blocked';
+  blocking_reasons: string[];
+  conflict_surface_paths: string[];
+  shared_artifact_risk: 'low' | 'medium' | 'high';
+  assignment_confidence: number;
   dependency_level: 'low' | 'medium' | 'high';
   recommended_pr_size: 'small' | 'medium' | 'large';
   worker_ready: boolean;
@@ -41,6 +46,11 @@ export type WorksetPlanArtifact = {
   lanes: WorksetLane[];
   blocked_tasks: Array<{ task_id: string; reason: string; warnings: string[]; missing_prerequisites: string[] }>;
   dependency_edges: Array<{ from_lane_id: string; to_lane_id: string; reason: string }>;
+  validation: {
+    overlapping_file_domains: Array<{ lane_ids: string[]; surface_path: string }>;
+    conflicting_artifact_ownership: Array<{ lane_ids: string[]; artifact_path: string }>;
+    blocked_lane_dependencies: Array<{ lane_id: string; waiting_on_lane_ids: string[] }>;
+  };
   merge_risk_notes: string[];
   sourceArtifacts: {
     tasksFile: { available: boolean; artifactPath: string };
@@ -132,6 +142,27 @@ const lanePrompt = (laneId: string, laneTasks: RoutedWorksetTask[]): string => {
   return `${lines.join('\n')}\n`;
 };
 
+const riskFromConflictCount = (count: number): 'low' | 'medium' | 'high' => {
+  if (count >= 3) return 'high';
+  if (count >= 1) return 'medium';
+  return 'low';
+};
+
+const confidenceForLane = (workerReady: boolean, dependencyLevel: 'low' | 'medium' | 'high', conflictCount: number): number => {
+  const base = dependencyLevel === 'low' ? 0.94 : dependencyLevel === 'medium' ? 0.84 : 0.74;
+  const workerPenalty = workerReady ? 0 : 0.24;
+  const conflictPenalty = Math.min(0.3, conflictCount * 0.08);
+  return Number(Math.max(0.1, Math.min(0.99, base - workerPenalty - conflictPenalty)).toFixed(2));
+};
+
+const normalizeSurfacePath = (surface: string): string => surface.replace(/\*+$/g, '').replace(/\/+/g, '/').replace(/\/$/, '');
+
+const surfacesOverlap = (left: string, right: string): boolean => {
+  if (left === right) return true;
+  if (left.length === 0 || right.length === 0) return false;
+  return left.startsWith(`${right}/`) || right.startsWith(`${left}/`);
+};
+
 export const buildWorksetPlan = (cwd: string, tasks: WorksetTaskInput[], tasksFilePath: string): WorksetPlanArtifact => {
   const orderedTasks = [...tasks].sort(taskSort);
   const routed: RoutedWorksetTask[] = orderedTasks.map((task) => {
@@ -198,7 +229,7 @@ export const buildWorksetPlan = (cwd: string, tasks: WorksetTaskInput[], tasksFi
   }
 
   const lanes: WorksetLane[] = laneBuckets
-    .map((laneTasks, laneIndex) => {
+    .map((laneTasks, laneIndex): WorksetLane => {
       const lane_id = `lane-${laneIndex + 1}`;
       return {
         lane_id,
@@ -206,6 +237,11 @@ export const buildWorksetPlan = (cwd: string, tasks: WorksetTaskInput[], tasksFi
         task_families: sortUnique(laneTasks.map((task) => task.executionPlan.task_family)),
         expected_surfaces: sortUnique(laneTasks.flatMap((task) => task.executionPlan.expected_surfaces)),
         likely_conflict_surfaces: sortUnique(laneTasks.flatMap((task) => task.executionPlan.likely_conflict_surfaces)),
+        readiness_status: laneTasks.every((task) => task.executionPlan.worker_ready) ? 'ready' : 'blocked',
+        blocking_reasons: laneTasks.every((task) => task.executionPlan.worker_ready) ? [] : ['worker prerequisites are not satisfied'],
+        conflict_surface_paths: sortUnique(laneTasks.flatMap((task) => task.executionPlan.likely_conflict_surfaces)),
+        shared_artifact_risk: 'low',
+        assignment_confidence: 0,
         dependency_level: levelForLane(laneTasks),
         recommended_pr_size: sizeForLane(laneTasks),
         worker_ready: laneTasks.every((task) => task.executionPlan.worker_ready),
@@ -235,8 +271,99 @@ export const buildWorksetPlan = (cwd: string, tasks: WorksetTaskInput[], tasksFi
     }
   }
 
+  const overlapFindings = new Map<string, { lane_ids: string[]; surface_path: string }>();
+  const ownershipFindings = new Map<string, { lane_ids: string[]; artifact_path: string }>();
+  const blockedLaneDependencies = new Map<string, string[]>();
+
+  for (let leftIndex = 0; leftIndex < lanes.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < lanes.length; rightIndex += 1) {
+      const leftLane = lanes[leftIndex];
+      const rightLane = lanes[rightIndex];
+      if (!leftLane || !rightLane) continue;
+
+      for (const leftSurface of leftLane.expected_surfaces.map(normalizeSurfacePath)) {
+        for (const rightSurface of rightLane.expected_surfaces.map(normalizeSurfacePath)) {
+          if (!surfacesOverlap(leftSurface, rightSurface)) continue;
+          const key = `${leftLane.lane_id}|${rightLane.lane_id}|${leftSurface}|${rightSurface}`;
+          overlapFindings.set(key, {
+            lane_ids: [leftLane.lane_id, rightLane.lane_id].sort((a, b) => a.localeCompare(b)),
+            surface_path: leftSurface.length <= rightSurface.length ? leftSurface : rightSurface
+          });
+        }
+      }
+
+      const leftConflictSet = new Set(leftLane.likely_conflict_surfaces.map(normalizeSurfacePath));
+      const rightConflictSet = new Set(rightLane.likely_conflict_surfaces.map(normalizeSurfacePath));
+      for (const leftSurface of leftLane.expected_surfaces.map(normalizeSurfacePath)) {
+        if (rightConflictSet.has(leftSurface)) {
+          const key = `${leftLane.lane_id}|${rightLane.lane_id}|${leftSurface}`;
+          ownershipFindings.set(key, {
+            lane_ids: [leftLane.lane_id, rightLane.lane_id].sort((a, b) => a.localeCompare(b)),
+            artifact_path: leftSurface
+          });
+        }
+      }
+      for (const rightSurface of rightLane.expected_surfaces.map(normalizeSurfacePath)) {
+        if (leftConflictSet.has(rightSurface)) {
+          const key = `${leftLane.lane_id}|${rightLane.lane_id}|${rightSurface}`;
+          ownershipFindings.set(key, {
+            lane_ids: [leftLane.lane_id, rightLane.lane_id].sort((a, b) => a.localeCompare(b)),
+            artifact_path: rightSurface
+          });
+        }
+      }
+    }
+  }
+
+  const overlapList = [...overlapFindings.values()].sort((left, right) =>
+    left.surface_path === right.surface_path
+      ? left.lane_ids.join(',').localeCompare(right.lane_ids.join(','))
+      : left.surface_path.localeCompare(right.surface_path)
+  );
+  const ownershipList = [...ownershipFindings.values()].sort((left, right) =>
+    left.artifact_path === right.artifact_path
+      ? left.lane_ids.join(',').localeCompare(right.lane_ids.join(','))
+      : left.artifact_path.localeCompare(right.artifact_path)
+  );
+
+  const laneConflictCounts = new Map<string, number>();
+  for (const finding of overlapList) {
+    for (const laneId of finding.lane_ids) {
+      laneConflictCounts.set(laneId, (laneConflictCounts.get(laneId) ?? 0) + 1);
+    }
+  }
+  for (const finding of ownershipList) {
+    for (const laneId of finding.lane_ids) {
+      laneConflictCounts.set(laneId, (laneConflictCounts.get(laneId) ?? 0) + 1);
+    }
+  }
+
+  const lanesWithRisk: WorksetLane[] = lanes.map((lane): WorksetLane => {
+    const laneOverlaps = overlapList.filter((finding) => finding.lane_ids.includes(lane.lane_id)).map((finding) => finding.surface_path);
+    const laneOwnership = ownershipList
+      .filter((finding) => finding.lane_ids.includes(lane.lane_id))
+      .map((finding) => finding.artifact_path);
+    const conflictSurfacePaths = sortUnique([...lane.conflict_surface_paths, ...laneOverlaps, ...laneOwnership]);
+    const conflictCount = laneConflictCounts.get(lane.lane_id) ?? 0;
+    return {
+      ...lane,
+      conflict_surface_paths: conflictSurfacePaths,
+      shared_artifact_risk: riskFromConflictCount(conflictCount),
+      assignment_confidence: confidenceForLane(lane.worker_ready, lane.dependency_level, conflictCount),
+      readiness_status: lane.worker_ready ? 'ready' : 'blocked',
+      blocking_reasons: lane.worker_ready ? [] : ['worker prerequisites are not satisfied']
+    };
+  });
+
+  for (const edge of dependency_edges) {
+    const sourceLane = lanesWithRisk.find((lane) => lane.lane_id === edge.from_lane_id);
+    if (sourceLane?.readiness_status === 'blocked') {
+      blockedLaneDependencies.set(edge.to_lane_id, sortUnique([...(blockedLaneDependencies.get(edge.to_lane_id) ?? []), edge.from_lane_id]));
+    }
+  }
+
   const merge_risk_notes = sortUnique(
-    lanes.flatMap((lane) => lane.likely_conflict_surfaces.map((surface) => `lane ${lane.lane_id} merge risk surface: ${surface}`))
+    lanesWithRisk.flatMap((lane) => lane.conflict_surface_paths.map((surface) => `lane ${lane.lane_id} merge risk surface: ${surface}`))
   );
 
   return {
@@ -258,13 +385,20 @@ export const buildWorksetPlan = (cwd: string, tasks: WorksetTaskInput[], tasksFi
       warnings: sortUnique(task.executionPlan.warnings),
       missing_prerequisites: sortUnique(task.executionPlan.missing_prerequisites)
     })),
-    lanes,
+    lanes: lanesWithRisk,
     blocked_tasks: blockedTasks.sort((left, right) => left.task_id.localeCompare(right.task_id)),
     dependency_edges: dependency_edges.sort((left, right) =>
       left.from_lane_id === right.from_lane_id
         ? left.to_lane_id.localeCompare(right.to_lane_id)
         : left.from_lane_id.localeCompare(right.from_lane_id)
     ),
+    validation: {
+      overlapping_file_domains: overlapList,
+      conflicting_artifact_ownership: ownershipList,
+      blocked_lane_dependencies: [...blockedLaneDependencies.entries()]
+        .map(([lane_id, waiting_on_lane_ids]) => ({ lane_id, waiting_on_lane_ids }))
+        .sort((left, right) => left.lane_id.localeCompare(right.lane_id))
+    },
     merge_risk_notes,
     sourceArtifacts: {
       tasksFile: { available: true, artifactPath: tasksFilePath },

@@ -5,6 +5,8 @@
 
 ### Added
 
+- WHAT: Strengthened worker coordination readiness contracts by extending `workset-plan`, `lane-state`, and `worker-assignments` with explicit readiness/conflict fields (`readiness_status`, `blocking_reasons`, `conflict_surface_paths`, `shared_artifact_risk`, `assignment_confidence`) plus deterministic validation findings for overlap/ownership/dependency blocking, and updated `playbook lanes`/`playbook workers` outputs to report ready-vs-blocked lanes with conflict surfaces. WHY: Prevents hidden overlap and makes pre-execution assignment risk machine-readable before parallel worker execution.
+
 - WHAT: Added architecture introspection to `playbook explain` with `subsystem <name>` and `artifact <path>` targets backed by `.playbook/architecture/subsystems.json`, including deterministic missing-lookup failures and stable `--json` output contracts. WHY: Makes subsystem/artifact ownership directly explainable from the canonical registry and prevents split-brain ownership docs.
 
 - feat(execution): introduce execution supervisor runtime

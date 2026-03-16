@@ -21,11 +21,19 @@ const PROMPTS_DIR = '.playbook/prompts';
 type WorkerAssignmentEntry = {
   lane_id: string;
   status: 'assigned' | 'blocked' | 'skipped';
+  readiness_status: 'ready' | 'blocked';
   assigned_prompt: string;
+  blocking_reasons: string[];
+  conflict_surface_paths: string[];
 };
 
 type WorkerAssignmentsArtifactView = {
   lanes: WorkerAssignmentEntry[];
+  readiness_summary: {
+    ready_lanes: string[];
+    blocked_lanes: Array<{ lane_id: string; reasons: string[] }>;
+    conflict_surface_paths: string[];
+  };
   workers: unknown[];
   warnings: string[];
 };
@@ -77,6 +85,21 @@ const printText = (assignments: WorkerAssignmentsArtifactView): void => {
   console.log(`Blocked lanes: ${assignments.lanes.filter((lane) => lane.status === 'blocked').length}`);
   console.log(`Skipped lanes: ${assignments.lanes.filter((lane) => lane.status === 'skipped').length}`);
   console.log(`Workers: ${assignments.workers.length}`);
+
+  if (assignments.readiness_summary.ready_lanes.length > 0) {
+    console.log(`Ready lane IDs: ${assignments.readiness_summary.ready_lanes.join(', ')}`);
+  }
+
+  if (assignments.readiness_summary.blocked_lanes.length > 0) {
+    console.log('Blocked lane reasons:');
+    for (const blocked of assignments.readiness_summary.blocked_lanes) {
+      console.log(`- ${blocked.lane_id}: ${blocked.reasons.join('; ') || 'blocked'}`);
+    }
+  }
+
+  if (assignments.readiness_summary.conflict_surface_paths.length > 0) {
+    console.log(`Conflict surfaces: ${assignments.readiness_summary.conflict_surface_paths.join(', ')}`);
+  }
 };
 
 const printError = (options: WorkersOptions, message: string): void => {

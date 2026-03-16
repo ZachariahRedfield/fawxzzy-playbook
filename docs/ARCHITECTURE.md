@@ -136,6 +136,29 @@ The plan/execution pipeline is deterministic by contract:
 
 Deterministic JSON output is treated as a public interface for CI, tooling, and agents.
 
+## Worker coordination and lane readiness surfaces
+
+Worker coordination now uses explicit readiness and conflict-surface contracts before execution handoff.
+
+- `workset-plan` lane entries include machine-readable readiness fields:
+  - `readiness_status`
+  - `blocking_reasons`
+  - `conflict_surface_paths`
+  - `shared_artifact_risk`
+  - `assignment_confidence`
+- `workset-plan.validation` surfaces deterministic pre-execution risk findings for:
+  - overlapping file domains across lanes
+  - conflicting artifact ownership implications
+  - dependency-blocked lanes waiting on upstream completion
+- `lane-state` carries readiness status and conflict explanation forward so blocked/ready semantics remain explicit across lifecycle transitions.
+- `worker-assignments` exposes a `readiness_summary` and per-lane conflict details so `playbook workers` and `playbook workers assign` report ready lanes, blocked lanes, reasons, and conflict surfaces directly.
+
+Rule: **Parallel workers must advertise conflict surfaces before execution starts.**
+
+Pattern: **Readiness before assignment.**
+
+Failure mode: **Hidden overlap** creates merge chaos when lane conflict surfaces are implicit instead of explicit.
+
 
 ## Safe Repository Mutation Model
 

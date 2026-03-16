@@ -26,6 +26,11 @@ type LaneStateLike = {
   task_ids: string[];
   dependency_level: 'low' | 'medium' | 'high';
   worker_ready: boolean;
+  readiness_status?: 'ready' | 'blocked';
+  blocking_reasons?: string[];
+  conflict_surface_paths?: string[];
+  shared_artifact_risk?: 'low' | 'medium' | 'high';
+  assignment_confidence?: number;
 };
 
 const readJsonArtifact = <T>(cwd: string, artifactPath: string): T | undefined => {
@@ -108,9 +113,14 @@ export const runExecution = async (cwd: string, options: ExecuteOptions): Promis
         lane_id: lane.lane_id,
         task_ids: [...lane.task_ids].sort((a, b) => a.localeCompare(b)),
         status: lane.worker_ready ? 'ready' : 'blocked',
+        readiness_status: lane.readiness_status ?? (lane.worker_ready ? 'ready' : 'blocked'),
         dependency_level: lane.dependency_level,
         dependencies_satisfied: lane.worker_ready,
         blocked_reasons: lane.worker_ready ? [] : ['worker prerequisites are not satisfied'],
+        blocking_reasons: [...(lane.blocking_reasons ?? [])],
+        conflict_surface_paths: [...(lane.conflict_surface_paths ?? [])],
+        shared_artifact_risk: lane.shared_artifact_risk ?? 'low',
+        assignment_confidence: lane.assignment_confidence ?? 0.5,
         verification_summary: { status: lane.worker_ready ? 'pending' : 'blocked', required_checks: [], optional_checks: [], notes: [] },
         merge_ready: false,
         worker_ready: lane.worker_ready

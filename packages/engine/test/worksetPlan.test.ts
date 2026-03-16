@@ -14,6 +14,7 @@ describe('buildWorksetPlan', () => {
 
     expect(artifact.lanes.length).toBe(2);
     expect(artifact.blocked_tasks).toHaveLength(0);
+    expect(artifact.lanes.every((lane) => lane.readiness_status === 'ready')).toBe(true);
     expect(artifact.lanes.every((lane) => lane.codex_prompt.includes('Rule / Pattern / Failure Mode'))).toBe(true);
   });
 
@@ -69,5 +70,35 @@ describe('buildWorksetPlan', () => {
 
     expect(artifact.lanes.length).toBeGreaterThan(1);
     expect(artifact.lanes.every((lane) => lane.codex_prompt.length > 0)).toBe(true);
+  });
+
+  it('detects overlapping file domains and reports shared artifact risk', () => {
+    const artifact = buildWorksetPlan(
+      process.cwd(),
+      [
+        { task_id: 'task-docs-a', task: 'update documentation for architecture workflow' },
+        { task_id: 'task-docs-b', task: 'update docs command reference and docs examples' }
+      ],
+      './fixtures/tasks.json'
+    );
+
+    expect(Array.isArray(artifact.validation.overlapping_file_domains)).toBe(true);
+    expect(Array.isArray(artifact.validation.conflicting_artifact_ownership)).toBe(true);
+    expect(
+      artifact.lanes.every((lane) => ['low', 'medium', 'high'].includes(lane.shared_artifact_risk) && lane.assignment_confidence >= 0 && lane.assignment_confidence <= 1)
+    ).toBe(true);
+  });
+
+  it('flags blocked lane dependencies in validation', () => {
+    const artifact = buildWorksetPlan(
+      process.cwd(),
+      [
+        { task_id: 'task-unsupported', task: 'deploy kubernetes cluster' },
+        { task_id: 'task-cli', task: 'add a new cli command flag' }
+      ],
+      './fixtures/tasks.json'
+    );
+
+    expect(artifact.validation.blocked_lane_dependencies).toBeDefined();
   });
 });

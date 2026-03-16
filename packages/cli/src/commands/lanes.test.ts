@@ -48,6 +48,11 @@ describe('runLanes', () => {
           task_families: ['docs_only'],
           expected_surfaces: ['docs/README.md'],
           likely_conflict_surfaces: [],
+          readiness_status: 'ready',
+          blocking_reasons: [],
+          conflict_surface_paths: [],
+          shared_artifact_risk: 'low',
+          assignment_confidence: 0.94,
           dependency_level: 'low',
           recommended_pr_size: 'small',
           worker_ready: true,
@@ -56,6 +61,11 @@ describe('runLanes', () => {
       ],
       blocked_tasks: [],
       dependency_edges: [],
+      validation: {
+        overlapping_file_domains: [],
+        conflicting_artifact_ownership: [],
+        blocked_lane_dependencies: []
+      },
       merge_risk_notes: [],
       sourceArtifacts: {
         tasksFile: { available: true, artifactPath: './fixtures/tasks.json' },

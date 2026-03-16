@@ -7,9 +7,14 @@ export type WorkerAssignmentEntry = {
   lane_id: string;
   worker_type: string;
   status: WorkerAssignmentLaneStatus;
+  readiness_status: 'ready' | 'blocked';
   task_ids: string[];
   assigned_prompt: string;
   dependencies_satisfied: boolean;
+  blocking_reasons: string[];
+  conflict_surface_paths: string[];
+  shared_artifact_risk: 'low' | 'medium' | 'high';
+  assignment_confidence: number;
 };
 
 export type WorkerAssignmentWorker = {
@@ -25,6 +30,11 @@ export type WorkerAssignmentsArtifact = {
   proposalOnly: true;
   generatedAt: string;
   lanes: WorkerAssignmentEntry[];
+  readiness_summary: {
+    ready_lanes: string[];
+    blocked_lanes: Array<{ lane_id: string; reasons: string[] }>;
+    conflict_surface_paths: string[];
+  };
   workers: WorkerAssignmentWorker[];
   warnings: string[];
 };
@@ -77,9 +87,14 @@ export const assignWorkersToLanes = (laneState: LaneStateArtifact, worksetPlan?:
       lane_id: laneEntry.lane_id,
       worker_type,
       status,
+      readiness_status: laneEntry.readiness_status,
       task_ids: [...laneEntry.task_ids].sort((left, right) => left.localeCompare(right)),
       assigned_prompt,
-      dependencies_satisfied: laneEntry.dependencies_satisfied
+      dependencies_satisfied: laneEntry.dependencies_satisfied,
+      blocking_reasons: [...laneEntry.blocking_reasons],
+      conflict_surface_paths: [...laneEntry.conflict_surface_paths],
+      shared_artifact_risk: laneEntry.shared_artifact_risk,
+      assignment_confidence: laneEntry.assignment_confidence
     });
   }
 
@@ -102,12 +117,22 @@ export const assignWorkersToLanes = (laneState: LaneStateArtifact, worksetPlan?:
     warnings.add('no ready lanes available for assignment; blocked and dependency-gated lanes were preserved');
   }
 
+  const readinessSummary = {
+    ready_lanes: lanes.filter((lane) => lane.readiness_status === 'ready').map((lane) => lane.lane_id).sort((a, b) => a.localeCompare(b)),
+    blocked_lanes: lanes
+      .filter((lane) => lane.readiness_status === 'blocked')
+      .map((lane) => ({ lane_id: lane.lane_id, reasons: sortUnique(lane.blocking_reasons) }))
+      .sort((left, right) => left.lane_id.localeCompare(right.lane_id)),
+    conflict_surface_paths: sortUnique(lanes.flatMap((lane) => lane.conflict_surface_paths))
+  };
+
   return {
     schemaVersion: '1.0',
     kind: 'worker-assignments',
     proposalOnly: true,
     generatedAt: new Date().toISOString(),
     lanes,
+    readiness_summary: readinessSummary,
     workers,
     warnings: sortUnique([...warnings])
   };

@@ -34,6 +34,9 @@ const printText = (result: LaneStateArtifact): void => {
     console.log('Blocked lane details:');
     for (const lane of result.lanes.filter((entry: (typeof result.lanes)[number]) => entry.status === 'blocked')) {
       console.log(`- ${lane.lane_id}: ${lane.blocked_reasons.join('; ') || 'blocked'}`);
+      if (lane.conflict_surface_paths.length > 0) {
+        console.log(`  conflict surfaces: ${lane.conflict_surface_paths.join(', ')}`);
+      }
     }
   }
 };

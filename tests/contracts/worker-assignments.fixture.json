@@ -8,11 +8,21 @@
       "lane_id": "lane-1",
       "worker_type": "codex-docs",
       "status": "assigned",
+      "readiness_status": "ready",
       "task_ids": ["task-docs"],
       "assigned_prompt": ".playbook/prompts/lane-1.md",
-      "dependencies_satisfied": true
+      "dependencies_satisfied": true,
+      "blocking_reasons": [],
+      "conflict_surface_paths": [],
+      "shared_artifact_risk": "low",
+      "assignment_confidence": 0.94
     }
   ],
+  "readiness_summary": {
+    "ready_lanes": ["lane-1"],
+    "blocked_lanes": [],
+    "conflict_surface_paths": []
+  },
   "workers": [
     {
       "worker_id": "worker-1",

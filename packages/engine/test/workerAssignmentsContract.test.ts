@@ -14,9 +14,23 @@ describe('worker assignments artifact contract', () => {
       };
     };
 
-    expect(schema.required).toEqual(expect.arrayContaining(['schemaVersion', 'kind', 'proposalOnly', 'generatedAt', 'lanes', 'workers', 'warnings']));
+    expect(schema.required).toEqual(
+      expect.arrayContaining(['schemaVersion', 'kind', 'proposalOnly', 'generatedAt', 'lanes', 'readiness_summary', 'workers', 'warnings'])
+    );
     expect(schema.$defs.laneAssignment.required).toEqual(
-      expect.arrayContaining(['lane_id', 'worker_type', 'status', 'task_ids', 'assigned_prompt', 'dependencies_satisfied'])
+      expect.arrayContaining([
+        'lane_id',
+        'worker_type',
+        'status',
+        'readiness_status',
+        'task_ids',
+        'assigned_prompt',
+        'dependencies_satisfied',
+        'blocking_reasons',
+        'conflict_surface_paths',
+        'shared_artifact_risk',
+        'assignment_confidence'
+      ])
     );
 
     expect(schema.properties.kind).toEqual({ type: 'string', const: 'worker-assignments' });

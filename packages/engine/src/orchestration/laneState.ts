@@ -6,9 +6,14 @@ export type LaneStateEntry = {
   lane_id: string;
   task_ids: string[];
   status: LaneExecutionStatus;
+  readiness_status: 'ready' | 'blocked';
   dependency_level: 'low' | 'medium' | 'high';
   dependencies_satisfied: boolean;
   blocked_reasons: string[];
+  blocking_reasons: string[];
+  conflict_surface_paths: string[];
+  shared_artifact_risk: 'low' | 'medium' | 'high';
+  assignment_confidence: number;
   verification_summary: {
     status: 'pending' | 'blocked';
     required_checks: string[];
@@ -155,14 +160,20 @@ const toLaneStateEntry = (
 
   const status = determineStatus(lane, reasons, dependenciesSatisfied, override, dependencyGates);
   const verificationStatus = status === 'blocked' ? 'blocked' : 'pending';
+  const readiness_status = lane.readiness_status === 'blocked' || reasons.length > 0 || !dependenciesSatisfied ? 'blocked' : 'ready';
 
   return {
     lane_id: lane.lane_id,
     task_ids: [...lane.task_ids].sort((left, right) => left.localeCompare(right)),
     status,
+    readiness_status,
     dependency_level: lane.dependency_level,
     dependencies_satisfied: dependenciesSatisfied,
     blocked_reasons: reasons,
+    blocking_reasons: [...reasons],
+    conflict_surface_paths: [...lane.conflict_surface_paths],
+    shared_artifact_risk: lane.shared_artifact_risk,
+    assignment_confidence: lane.assignment_confidence,
     verification_summary: {
       status: verificationStatus,
       required_checks: ['pnpm -r build', 'pnpm test'],
@@ -237,8 +248,8 @@ const deriveFromOverrides = (
       return dependencyCompleted && Boolean(dependencyLane?.worker_ready);
     });
 
-    const blockedReasons: string[] = [];
-    if (!lane.worker_ready) {
+    const blockedReasons: string[] = [...lane.blocking_reasons];
+    if (!lane.worker_ready && !blockedReasons.includes('worker prerequisites are not satisfied')) {
       blockedReasons.push('worker prerequisites are not satisfied');
     }
 
@@ -251,9 +262,14 @@ const deriveFromOverrides = (
       lane_id: blockedTaskLaneId(blockedTask.task_id),
       task_ids: [blockedTask.task_id],
       status: 'blocked',
+      readiness_status: 'blocked',
       dependency_level: 'high',
       dependencies_satisfied: false,
       blocked_reasons: sortUnique([blockedTask.reason, ...blockedTask.warnings, ...blockedTask.missing_prerequisites]),
+      blocking_reasons: sortUnique([blockedTask.reason, ...blockedTask.warnings, ...blockedTask.missing_prerequisites]),
+      conflict_surface_paths: [],
+      shared_artifact_risk: 'high',
+      assignment_confidence: 0.1,
       verification_summary: {
         status: 'blocked',
         required_checks: [],

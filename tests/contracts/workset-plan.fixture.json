@@ -13,6 +13,11 @@
   "lanes": [],
   "blocked_tasks": [],
   "dependency_edges": [],
+  "validation": {
+    "overlapping_file_domains": [],
+    "conflicting_artifact_ownership": [],
+    "blocked_lane_dependencies": []
+  },
   "merge_risk_notes": [],
   "sourceArtifacts": {
     "tasksFile": {

@@ -5,7 +5,7 @@
   "description": "Deterministic proposal-only worker assignment artifact derived from lane-state readiness and dependency status.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "kind", "proposalOnly", "generatedAt", "lanes", "workers", "warnings"],
+  "required": ["schemaVersion", "kind", "proposalOnly", "generatedAt", "lanes", "readiness_summary", "workers", "warnings"],
   "properties": {
     "schemaVersion": { "type": "string", "const": "1.0" },
     "kind": { "type": "string", "const": "worker-assignments" },
@@ -19,6 +19,39 @@
       "type": "array",
       "items": { "$ref": "#/$defs/workerAssignment" }
     },
+    "readiness_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ready_lanes", "blocked_lanes", "conflict_surface_paths"],
+      "properties": {
+        "ready_lanes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "blocked_lanes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["lane_id", "reasons"],
+            "properties": {
+              "lane_id": { "type": "string", "minLength": 1 },
+              "reasons": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1 },
+                "uniqueItems": true
+              }
+            }
+          }
+        },
+        "conflict_surface_paths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
     "warnings": {
       "type": "array",
       "items": { "type": "string", "minLength": 1 },
@@ -29,18 +62,35 @@
     "laneAssignment": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["lane_id", "worker_type", "status", "task_ids", "assigned_prompt", "dependencies_satisfied"],
+      "required": [
+        "lane_id",
+        "worker_type",
+        "status",
+        "readiness_status",
+        "task_ids",
+        "assigned_prompt",
+        "dependencies_satisfied",
+        "blocking_reasons",
+        "conflict_surface_paths",
+        "shared_artifact_risk",
+        "assignment_confidence"
+      ],
       "properties": {
         "lane_id": { "type": "string", "minLength": 1 },
         "worker_type": { "type": "string", "minLength": 1 },
         "status": { "type": "string", "enum": ["assigned", "blocked", "skipped"] },
+        "readiness_status": { "type": "string", "enum": ["ready", "blocked"] },
         "task_ids": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 },
           "uniqueItems": true
         },
         "assigned_prompt": { "type": "string", "minLength": 1 },
-        "dependencies_satisfied": { "type": "boolean" }
+        "dependencies_satisfied": { "type": "boolean" },
+        "blocking_reasons": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "conflict_surface_paths": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "shared_artifact_risk": { "type": "string", "enum": ["low", "medium", "high"] },
+        "assignment_confidence": { "type": "number", "minimum": 0, "maximum": 1 }
       }
     },
     "workerAssignment": {
