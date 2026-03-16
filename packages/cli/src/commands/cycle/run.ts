@@ -31,11 +31,14 @@ type CycleStepRecord = {
 };
 
 type CycleStateArtifact = {
+  cycle_version: 1;
+  repo: string;
   cycle_id: string;
   started_at: string;
   steps: CycleStepRecord[];
   artifacts_written: string[];
-  status: 'success' | 'failure';
+  result: 'success' | 'failed';
+  failed_step?: StepName;
 };
 
 const CYCLE_STATE_PATH = '.playbook/cycle-state.json';
@@ -57,17 +60,22 @@ const nowMs = (): number => Date.now();
 const pathExists = (cwd: string, relativePath: string): boolean => fs.existsSync(path.join(cwd, relativePath));
 
 const toCycleArtifact = (
+  repo: string,
   cycleId: string,
   startedAt: string,
   steps: CycleStepRecord[],
   artifactsWritten: string[],
-  status: 'success' | 'failure'
+  result: 'success' | 'failed',
+  failedStep?: StepName
 ): CycleStateArtifact => ({
+  cycle_version: 1,
+  repo,
   cycle_id: cycleId,
   started_at: startedAt,
   steps,
   artifacts_written: artifactsWritten,
-  status
+  result,
+  ...(failedStep ? { failed_step: failedStep } : {})
 });
 
 const writeCycleState = (cwd: string, artifact: CycleStateArtifact): void => {
@@ -91,7 +99,7 @@ const printCycleText = (artifact: CycleStateArtifact, options: CycleOptions): vo
   }
 
   console.log('');
-  console.log(`Cycle status: ${artifact.status.toUpperCase()}`);
+  console.log(`Cycle status: ${artifact.result.toUpperCase()}`);
 };
 
 const runStep = async (cwd: string, step: StepName, stepRunners?: Partial<Record<StepName, (cwd: string) => Promise<number>>>): Promise<number> => {
@@ -150,7 +158,8 @@ export const runCycle = async (cwd: string, options: CycleOptions): Promise<numb
   const steps: CycleStepRecord[] = [];
   const artifactsWritten: string[] = [];
 
-  let overallStatus: 'success' | 'failure' = 'success';
+  let result: 'success' | 'failed' = 'success';
+  let failedStep: StepName | undefined;
   let failureExitCode: number | null = null;
 
   try {
@@ -169,7 +178,8 @@ export const runCycle = async (cwd: string, options: CycleOptions): Promise<numb
       }
 
       if (status === 'failure') {
-        overallStatus = 'failure';
+        result = 'failed';
+        failedStep = step;
         failureExitCode = exitCode;
         if (options.stopOnError) {
           break;
@@ -177,8 +187,8 @@ export const runCycle = async (cwd: string, options: CycleOptions): Promise<numb
       }
     }
   } catch (error) {
-    overallStatus = 'failure';
-    const artifact = toCycleArtifact(cycleId, startedAt, steps, [...new Set(artifactsWritten)], overallStatus);
+    result = 'failed';
+    const artifact = toCycleArtifact(cwd, cycleId, startedAt, steps, [...new Set(artifactsWritten)], result, failedStep);
     writeCycleState(cwd, artifact);
     tracker.finish({
       inputsSummary: `stop-on-error=${options.stopOnError ? 'true' : 'false'}`,
@@ -190,7 +200,7 @@ export const runCycle = async (cwd: string, options: CycleOptions): Promise<numb
     throw error;
   }
 
-  const artifact = toCycleArtifact(cycleId, startedAt, steps, [...new Set(artifactsWritten)], overallStatus);
+  const artifact = toCycleArtifact(cwd, cycleId, startedAt, steps, [...new Set(artifactsWritten)], result, failedStep);
   writeCycleState(cwd, artifact);
 
   if (options.format === 'json') {

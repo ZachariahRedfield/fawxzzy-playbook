@@ -6,8 +6,14 @@ import { ExitCode } from '../lib/cliContract.js';
 
 const createRepo = (name: string): string => fs.mkdtempSync(path.join(os.tmpdir(), `${name}-`));
 
-const readCycleArtifact = (repo: string): { steps: Array<{ name: string; status: string }>; status: string; artifacts_written: string[] } =>
-  JSON.parse(fs.readFileSync(path.join(repo, '.playbook', 'cycle-state.json'), 'utf8'));
+const readCycleArtifact = (repo: string): {
+  cycle_version: number;
+  repo: string;
+  steps: Array<{ name: string; status: string; duration_ms: number }>;
+  result: string;
+  failed_step?: string;
+  artifacts_written: string[];
+} => JSON.parse(fs.readFileSync(path.join(repo, '.playbook', 'cycle-state.json'), 'utf8'));
 
 const successStepRunners = {
   verify: async () => ExitCode.Success,
@@ -37,7 +43,9 @@ describe('runCycle', { timeout: 30000 }, () => {
 
     expect(code).toBe(ExitCode.Success);
     const artifact = readCycleArtifact(repo);
-    expect(artifact.status).toBe('success');
+    expect(artifact.result).toBe('success');
+    expect(artifact.cycle_version).toBe(1);
+    expect(artifact.repo).toBe(repo);
     expect(artifact.steps.map((step) => step.name)).toEqual(['verify', 'route', 'orchestrate', 'execute', 'telemetry', 'improve']);
     expect(artifact.steps.every((step) => step.status === 'success')).toBe(true);
     expect(artifact.artifacts_written).toEqual([
@@ -70,7 +78,7 @@ describe('runCycle', { timeout: 30000 }, () => {
     expect(code).toBe(ExitCode.Failure);
     expect(routeRunner).not.toHaveBeenCalled();
     const artifact = readCycleArtifact(repo);
-    expect(artifact.status).toBe('failure');
+    expect(artifact.result).toBe('failed');
     expect(artifact.steps).toHaveLength(1);
     expect(artifact.steps[0]).toMatchObject({ name: 'verify', status: 'failure' });
 
@@ -87,11 +95,13 @@ describe('runCycle', { timeout: 30000 }, () => {
     expect(code).toBe(ExitCode.Success);
     const payload = JSON.parse(String(logSpy.mock.calls.at(-1)?.[0]));
     expect(payload).toMatchObject({
+      cycle_version: 1,
+      repo,
       cycle_id: expect.any(String),
       started_at: expect.any(String),
       steps: expect.any(Array),
       artifacts_written: expect.any(Array),
-      status: 'success'
+      result: 'success'
     });
 
     logSpy.mockRestore();
@@ -127,9 +137,10 @@ describe('runCycle', { timeout: 30000 }, () => {
     expect(code).toBe(ExitCode.Failure);
     expect(telemetryRunner).not.toHaveBeenCalled();
     const artifact = readCycleArtifact(repo);
-    expect(artifact.status).toBe('failure');
+    expect(artifact.result).toBe('failed');
     expect(artifact.steps.map((step) => step.name)).toEqual(['verify', 'route', 'orchestrate', 'execute']);
     expect(artifact.steps.at(-1)).toMatchObject({ name: 'execute', status: 'failure' });
+    expect(artifact.failed_step).toBe('execute');
 
     logSpy.mockRestore();
   });
