@@ -88,6 +88,18 @@ Playbook explain supports architecture-registry-backed ownership introspection:
 
 Both commands source ownership data from `.playbook/architecture/subsystems.json` as the canonical architecture registry, return deterministic failures for missing lookups, and support `--json` machine-readable output for automation.
 
+
+## Router accuracy telemetry feedback loop
+
+Routing quality is treated as a measurable architecture contract inside `routing_engine` + `telemetry_learning`.
+
+- Planned route shape is captured from `.playbook/execution-plan.json` and `.playbook/workset-plan.json`.
+- Realized execution shape is captured from `.playbook/execution-state.json` and `.playbook/outcome-telemetry.json`.
+- Deterministic router-fit scoring compares planned vs realized lane parallelism, validation cost fit, execution success, and retry pressure.
+- Router accuracy metrics are persisted in `.playbook/process-telemetry.json` and folded into `.playbook/learning-state.json` for conservative routing refinement.
+
+Rule: routing quality must be observable and scored, otherwise route strategy cannot improve deterministically.
+
 ## CLI command architecture
 
 - CLI command handlers live in `packages/cli/src/commands/`.

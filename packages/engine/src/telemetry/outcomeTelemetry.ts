@@ -1,4 +1,4 @@
-import type { LaneOutcomeScore } from '@zachariahredfield/playbook-core';
+import type { LaneOutcomeScore, RouterAccuracyMetric } from '@zachariahredfield/playbook-core';
 
 export const OUTCOME_TELEMETRY_SCHEMA_VERSION = '1.0';
 export const PROCESS_TELEMETRY_SCHEMA_VERSION = '1.0';
@@ -77,6 +77,11 @@ export type ProcessTelemetryRecord = {
   parallel_lane_count?: number;
   over_validation_signal?: boolean;
   under_validation_signal?: boolean;
+  predicted_parallel_lanes?: number;
+  actual_parallel_lanes?: number;
+  predicted_validation_cost?: number;
+  actual_validation_cost?: number;
+  router_fit_score?: number;
   prompt_size: number;
   reasoning_scope: ProcessReasoningScope;
 };
@@ -106,6 +111,10 @@ export type ProcessTelemetrySummary = {
   average_parallel_lane_count: number;
   over_validation_signal_count: number;
   under_validation_signal_count: number;
+  router_accuracy_records: number;
+  average_router_fit_score: number;
+  average_lane_delta: number;
+  average_validation_delta: number;
 };
 
 export type ProcessTelemetryArtifact = {
@@ -200,6 +209,18 @@ const normalizeLaneOutcomeScore = (record: Partial<LaneOutcomeScore>): LaneOutco
   score: round4(Math.min(1, asNonNegativeNumber(record.score)))
 });
 
+const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
+
+const normalizeRouterMetric = (record: Partial<RouterAccuracyMetric>): RouterAccuracyMetric => ({
+  route_id: asNonEmptyString(record.route_id) ?? 'unknown-route',
+  task_family: asNonEmptyString(record.task_family) ?? 'unknown',
+  predicted_parallel_lanes: normalizePositiveInteger(record.predicted_parallel_lanes, 1) ?? 1,
+  actual_parallel_lanes: normalizePositiveInteger(record.actual_parallel_lanes, 1) ?? 1,
+  predicted_validation_cost: Math.round(asNonNegativeNumber(record.predicted_validation_cost)),
+  actual_validation_cost: Math.round(asNonNegativeNumber(record.actual_validation_cost)),
+  router_fit_score: round4(clamp01(asNonNegativeNumber(record.router_fit_score)))
+});
+
 const normalizeProcessRecord = (record: ProcessTelemetryRecord): ProcessTelemetryRecord => {
   const normalized: ProcessTelemetryRecord = {
     ...record,
@@ -262,6 +283,17 @@ const normalizeProcessRecord = (record: ProcessTelemetryRecord): ProcessTelemetr
   }
   if (typeof record.under_validation_signal === 'boolean') {
     normalized.under_validation_signal = record.under_validation_signal;
+  }
+
+  const normalizedRouterMetric = normalizeRouterMetric(record);
+  if (record.router_fit_score !== undefined) {
+    normalized.predicted_parallel_lanes = normalizedRouterMetric.predicted_parallel_lanes;
+    normalized.actual_parallel_lanes = normalizedRouterMetric.actual_parallel_lanes;
+    normalized.predicted_validation_cost = normalizedRouterMetric.predicted_validation_cost;
+    normalized.actual_validation_cost = normalizedRouterMetric.actual_validation_cost;
+    normalized.router_fit_score = normalizedRouterMetric.router_fit_score;
+    normalized.route_id = normalized.route_id ?? normalizedRouterMetric.route_id;
+    normalized.task_family = normalized.task_family ?? normalizedRouterMetric.task_family;
   }
 
   return normalized;
@@ -390,6 +422,26 @@ export const summarizeProcessTelemetry = (records: ProcessTelemetryRecord[]): Pr
   const averageParallelLaneCount =
     records.length === 0 ? 0 : records.reduce((sum, record) => sum + (record.parallel_lane_count ?? 1), 0) / records.length;
 
+  const routerAccuracyRecords = records.filter((record) => typeof record.router_fit_score === 'number');
+  const averageRouterFitScore =
+    routerAccuracyRecords.length === 0
+      ? 0
+      : routerAccuracyRecords.reduce((sum, record) => sum + (record.router_fit_score ?? 0), 0) / routerAccuracyRecords.length;
+  const averageLaneDelta =
+    routerAccuracyRecords.length === 0
+      ? 0
+      : routerAccuracyRecords.reduce(
+          (sum, record) => sum + Math.abs((record.predicted_parallel_lanes ?? 1) - (record.actual_parallel_lanes ?? 1)),
+          0
+        ) / routerAccuracyRecords.length;
+  const averageValidationDelta =
+    routerAccuracyRecords.length === 0
+      ? 0
+      : routerAccuracyRecords.reduce(
+          (sum, record) => sum + Math.abs((record.predicted_validation_cost ?? 0) - (record.actual_validation_cost ?? 0)),
+          0
+        ) / routerAccuracyRecords.length;
+
   return {
     total_records: records.length,
     total_task_duration_ms: totalTaskDurationMs,
@@ -414,7 +466,11 @@ export const summarizeProcessTelemetry = (records: ProcessTelemetryRecord[]): Pr
     actual_merge_conflict_count: records.filter((record) => record.actual_merge_conflict).length,
     average_parallel_lane_count: round4(averageParallelLaneCount),
     over_validation_signal_count: records.filter((record) => record.over_validation_signal).length,
-    under_validation_signal_count: records.filter((record) => record.under_validation_signal).length
+    under_validation_signal_count: records.filter((record) => record.under_validation_signal).length,
+    router_accuracy_records: routerAccuracyRecords.length,
+    average_router_fit_score: round4(averageRouterFitScore),
+    average_lane_delta: round4(averageLaneDelta),
+    average_validation_delta: round4(averageValidationDelta)
   };
 };
 

@@ -209,15 +209,18 @@ export const deriveLearningStateSnapshot = (input: DeriveLearningStateInput): Le
           return sum + clamp01(recordScore);
         }, 0) / recordsWithRouteSignals.length;
 
+  const observedRouterFitScore = process?.summary.average_router_fit_score ?? 0;
+  const effectiveObservedRouterFitScore = observedRouterFitScore > 0 ? observedRouterFitScore : routeFitEvidenceScore;
   const routerFitScore =
     totalProcessRecords === 0
       ? 0
       : round4(
           clamp01(
-            routeFitEvidenceScore * 0.55 +
+            routeFitEvidenceScore * 0.4 +
               smallestSufficientRouteScore * 0.2 +
               parallelSafetyRealized * 0.1 +
-              (1 - validationCostPressure) * 0.15
+              (1 - validationCostPressure) * 0.15 +
+              effectiveObservedRouterFitScore * 0.15
           )
         );
 

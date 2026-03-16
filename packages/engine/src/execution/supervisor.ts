@@ -11,11 +11,14 @@ import {
   type ProcessTelemetryRecord
 } from '../telemetry/outcomeTelemetry.js';
 import { computeLaneOutcomeScore } from '../telemetry/laneScoring.js';
+import { computeRouterAccuracyMetric } from '../telemetry/routerAccuracy.js';
 import type { LaneRuntime, LaneRuntimeState } from '@zachariahredfield/playbook-core';
 
 const EXECUTION_STATE_PATH = '.playbook/execution-state.json';
 const PROCESS_TELEMETRY_PATH = '.playbook/process-telemetry.json';
 const OUTCOME_TELEMETRY_PATH = '.playbook/outcome-telemetry.json';
+const EXECUTION_PLAN_PATH = '.playbook/execution-plan.json';
+const WORKSET_PLAN_PATH = '.playbook/workset-plan.json';
 
 export type WorkerResult = {
   status: 'completed' | 'failed';
@@ -81,13 +84,28 @@ const deterministicIso = (input: string, minSeconds = 0): string => {
 const laneStartTimestamp = (runId: string, laneId: string): string => deterministicIso(`${runId}:${laneId}:start`);
 const laneFinishTimestamp = (runId: string, laneId: string): string => deterministicIso(`${runId}:${laneId}:finish`, 60);
 
+
+const tryReadArtifact = <T>(repoRoot: string, relativePath: string): T | undefined => {
+  const artifactPath = path.join(repoRoot, relativePath);
+  if (!fs.existsSync(artifactPath)) {
+    return undefined;
+  }
+
+  return JSON.parse(fs.readFileSync(artifactPath, 'utf8')) as T;
+};
+
 const toDurationMs = (startedAt?: string, finishedAt?: string): number => {
   if (!startedAt || !finishedAt) return 0;
   const duration = Date.parse(finishedAt) - Date.parse(startedAt);
   return Number.isFinite(duration) && duration > 0 ? duration : 0;
 };
 
-const emitSignalRecords = (repoRoot: string, laneId: string, signalValues: { laneExecutionDurationMs: number; workerSuccessRate: number; retryPressure: number }): void => {
+const emitSignalRecords = (
+  repoRoot: string,
+  laneId: string,
+  signalValues: { laneExecutionDurationMs: number; workerSuccessRate: number; retryPressure: number },
+  routerAccuracyMetric?: ReturnType<typeof computeRouterAccuracyMetric>
+): void => {
   const telemetryPath = path.join(repoRoot, PROCESS_TELEMETRY_PATH);
   const existing: ProcessTelemetryArtifact = fs.existsSync(telemetryPath)
     ? (JSON.parse(fs.readFileSync(telemetryPath, 'utf8')) as ProcessTelemetryArtifact)
@@ -120,7 +138,11 @@ const emitSignalRecords = (repoRoot: string, laneId: string, signalValues: { lan
           actual_merge_conflict_count: 0,
           average_parallel_lane_count: 0,
           over_validation_signal_count: 0,
-          under_validation_signal_count: 0
+          under_validation_signal_count: 0,
+          router_accuracy_records: 0,
+          average_router_fit_score: 0,
+          average_lane_delta: 0,
+          average_validation_delta: 0
         }
       };
 
@@ -135,6 +157,15 @@ const emitSignalRecords = (repoRoot: string, laneId: string, signalValues: { lan
     retry_count: signalValues.retryPressure,
     merge_conflict_risk: value,
     first_pass_success: signalValues.workerSuccessRate >= 1,
+    ...(routerAccuracyMetric
+      ? {
+          predicted_parallel_lanes: routerAccuracyMetric.predicted_parallel_lanes,
+          actual_parallel_lanes: routerAccuracyMetric.actual_parallel_lanes,
+          predicted_validation_cost: routerAccuracyMetric.predicted_validation_cost,
+          actual_validation_cost: routerAccuracyMetric.actual_validation_cost,
+          router_fit_score: routerAccuracyMetric.router_fit_score
+        }
+      : {}),
     prompt_size: 0,
     reasoning_scope: 'narrow'
   });
@@ -265,8 +296,27 @@ export async function recordWorkerResult(laneId: string, workerId: string, resul
     retryPressure: Math.max(0, Math.trunc(result.retries ?? 0))
   };
 
-  emitSignalRecords(repoRoot, laneId, scoreSignals);
   emitLaneOutcomeScore(repoRoot, laneId, scoreSignals);
+
+  const executionPlan = tryReadArtifact<any>(repoRoot, EXECUTION_PLAN_PATH);
+  const worksetPlan = tryReadArtifact<any>(repoRoot, WORKSET_PLAN_PATH);
+  const executionState = tryReadArtifact<any>(repoRoot, EXECUTION_STATE_PATH);
+  const outcomeTelemetry = tryReadArtifact<OutcomeTelemetryArtifact>(repoRoot, OUTCOME_TELEMETRY_PATH);
+  const processTelemetry = tryReadArtifact<ProcessTelemetryArtifact>(repoRoot, PROCESS_TELEMETRY_PATH);
+
+  const routerAccuracyMetric =
+    executionPlan && worksetPlan && executionState && outcomeTelemetry
+      ? computeRouterAccuracyMetric({
+          laneId,
+          executionPlan,
+          worksetPlan,
+          executionState,
+          outcomeTelemetry,
+          processTelemetry
+        })
+      : undefined;
+
+  emitSignalRecords(repoRoot, laneId, scoreSignals, routerAccuracyMetric);
 
   writeExecutionState(repoRoot, execution);
 }

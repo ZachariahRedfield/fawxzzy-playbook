@@ -71,6 +71,10 @@ const renderTextProcess = (artifact: ProcessTelemetryArtifact): void => {
   console.log(`Total retry count: ${artifact.summary.total_retry_count}`);
   console.log(`First-pass success count: ${artifact.summary.first_pass_success_count}`);
   console.log(`Average merge conflict risk: ${artifact.summary.average_merge_conflict_risk}`);
+  console.log(`Router accuracy records: ${artifact.summary.router_accuracy_records}`);
+  console.log(`Average router fit score: ${artifact.summary.average_router_fit_score}`);
+  console.log(`Average lane delta: ${artifact.summary.average_lane_delta}`);
+  console.log(`Average validation delta: ${artifact.summary.average_validation_delta}`);
 };
 
 
@@ -180,6 +184,8 @@ export const runTelemetry = async (
       console.log(`Generated at: ${summary.generatedAt}`);
       console.log(`Outcome records: ${summary.outcomes.total_records}`);
       console.log(`Process records: ${summary.process.total_records}`);
+      console.log(`Router fit score (avg): ${summary.process.average_router_fit_score}`);
+      console.log(`Router lane delta (avg): ${summary.process.average_lane_delta}`);
       if ('lane_scores' in summary) {
         console.log(`Lane score records: ${summary.lane_scores.total_records}`);
         console.log(`Lane score average: ${summary.lane_scores.average_score}`);

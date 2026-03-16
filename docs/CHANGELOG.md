@@ -1,5 +1,6 @@
 # Changelog
 
+- WHAT: Added deterministic router-accuracy telemetry across `routing_engine` and `telemetry_learning`, including planned-vs-realized comparison of execution/workset/state/outcome artifacts, a router-fit scoring module, persisted route metrics in process telemetry, and surfaced router accuracy in `playbook telemetry` text/JSON outputs with focused fit-scenario tests. WHY: Makes routing quality measurable so Playbook can learn whether orchestration fragmentation and validation strategy were correct.
 - WHAT: Implemented Phase 8 Router Lane 1 with additive deterministic `execution-plan` contract/schema and upgraded `pnpm playbook route` to emit/write proposal-only execution plans at `.playbook/execution-plan.json` with explicit task-family route metadata, validation bundles, source artifact availability, and warnings. WHY: Adds task-specific routing inspection that remains non-mutating while preserving deterministic governance boundaries.
 ## Unreleased
 

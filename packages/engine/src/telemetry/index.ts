@@ -23,3 +23,11 @@ export type {
 export type { DeriveLearningStateInput, LearningStateSnapshotArtifact } from './learningState.js';
 
 export { computeLaneOutcomeScore, summarizeLaneOutcomeScores } from './laneScoring.js';
+
+export {
+  computeDeterministicRouterFitScore,
+  computeRouterAccuracyMetric,
+  summarizeRouterAccuracy
+} from './routerAccuracy.js';
+
+export type { RouterAccuracyComputationInput } from './routerAccuracy.js';
