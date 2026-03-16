@@ -6,6 +6,7 @@
 - Normalized command-surface contracts for `verify`, `route`, `orchestrate`, `execute`, `telemetry`, and `improve` around side-effect-free help, deterministic missing-artifact failures, stable JSON/text semantics, and explicit owned-artifact declarations.
 - Added shared command-surface helpers for help rendering and standardized deterministic failure envelopes.
 - Added focused tests for `--help`, missing prerequisites, and stable JSON error/result structure across the normalized command set.
+- Extended command-quality telemetry coverage so `verify`, `route`, `orchestrate`, `execute`, `telemetry`, and `improve` all emit deterministic command-quality records and repository memory `command_execution` events with stable append-safe artifacts.
 
 # Changelog
 

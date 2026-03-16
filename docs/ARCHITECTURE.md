@@ -106,6 +106,13 @@ Portability scoring remains recommendation-first and now has an explicit recalib
 - Recalibration never rewrites prior portability scores; it emits explicit `recommended_adjustment` guidance and preserves original score inspectability.
 - Sparse evidence is treated conservatively and emitted as open questions to prevent static-confidence illusions.
 
+
+## Command-quality telemetry coverage
+
+Core execution commands (`verify`, `route`, `orchestrate`, `execute`, `telemetry`, `improve`) emit deterministic command-quality records to `.playbook/telemetry/command-quality.json` and append repository-memory `command_execution` events that capture command name, run id, artifact IO, duration, and completion status.
+
+This keeps command-level self-observation complete across execution surfaces and avoids partial observability bias in downstream learning and improvement analysis.
+
 ## Router accuracy telemetry feedback loop
 
 Routing quality is treated as a measurable architecture contract inside `routing_engine` + `telemetry_learning`.

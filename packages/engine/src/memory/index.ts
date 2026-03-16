@@ -181,6 +181,7 @@ export {
   recordExecutionOutcome,
   recordImprovementCandidate,
   recordImprovementSignal,
+  recordCommandExecution,
   recordCommandQuality,
   queryRepositoryEvents,
   listRecentRouteDecisions,
@@ -203,6 +204,7 @@ export type {
   WorkerAssignmentEvent,
   ExecutionOutcomeEvent,
   ImprovementSignalEvent,
+  CommandExecutionEvent,
   CommandQualityEvent,
   RepositoryEventLookupOptions,
   RepositoryEventQueryOptions

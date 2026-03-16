@@ -245,6 +245,7 @@ export {
   recordExecutionOutcome,
   recordImprovementCandidate,
   recordImprovementSignal,
+  recordCommandExecution,
   recordCommandQuality,
   queryRepositoryEvents,
   listRecentRouteDecisions,

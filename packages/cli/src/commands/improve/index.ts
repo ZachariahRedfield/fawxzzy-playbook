@@ -8,6 +8,7 @@ import {
 import { emitJsonOutput } from '../../lib/jsonArtifact.js';
 import { ExitCode } from '../../lib/cliContract.js';
 import { emitCommandFailure, printCommandHelp } from '../../lib/commandSurface.js';
+import { createCommandQualityTracker } from '../../lib/commandQuality.js';
 
 type ImproveOptions = {
   format: 'text' | 'json';
@@ -112,11 +113,21 @@ export const runImprove = async (cwd: string, options: ImproveOptions): Promise<
     return ExitCode.Success;
   }
 
+  const tracker = createCommandQualityTracker(cwd, 'improve');
+
   const artifact = generateImprovementCandidates(cwd);
   writeImprovementCandidatesArtifact(cwd, artifact);
 
   if (options.format === 'json') {
     emitJsonOutput({ cwd, command: 'improve', payload: artifact });
+    tracker.finish({
+      inputsSummary: 'mode=generate',
+      artifactsWritten: ['.playbook/improvement-candidates.json'],
+      downstreamArtifactsProduced: ['.playbook/improvement-candidates.json'],
+      successStatus: 'success',
+      warningsCount: artifact.rejected_candidates.length,
+      openQuestionsCount: artifact.open_questions?.length ?? 0
+    });
     return ExitCode.Success;
   }
 
@@ -125,6 +136,14 @@ export const runImprove = async (cwd: string, options: ImproveOptions): Promise<
     printConversationPrompts(artifact);
   }
 
+  tracker.finish({
+    inputsSummary: 'mode=generate',
+    artifactsWritten: ['.playbook/improvement-candidates.json'],
+    downstreamArtifactsProduced: ['.playbook/improvement-candidates.json'],
+    successStatus: 'success',
+    warningsCount: artifact.rejected_candidates.length,
+    openQuestionsCount: artifact.open_questions?.length ?? 0
+  });
   return ExitCode.Success;
 };
 
@@ -134,10 +153,17 @@ export const runImproveApplySafe = async (cwd: string, options: ImproveOptions):
     return ExitCode.Success;
   }
 
+  const tracker = createCommandQualityTracker(cwd, 'improve-apply-safe');
+
   const artifact = applyAutoSafeImprovements(cwd);
 
   if (options.format === 'json') {
     emitJsonOutput({ cwd, command: 'improve-apply-safe', payload: artifact });
+    tracker.finish({
+      inputsSummary: 'mode=apply-safe',
+      successStatus: 'success',
+      warningsCount: artifact.pending_conversation.length + artifact.pending_governance.length
+    });
     return ExitCode.Success;
   }
 
@@ -149,6 +175,11 @@ export const runImproveApplySafe = async (cwd: string, options: ImproveOptions):
     console.log(`Pending governance: ${artifact.pending_governance.length}`);
   }
 
+  tracker.finish({
+    inputsSummary: 'mode=apply-safe',
+    successStatus: 'success',
+    warningsCount: artifact.pending_conversation.length + artifact.pending_governance.length
+  });
   return ExitCode.Success;
 };
 
@@ -158,33 +189,41 @@ export const runImproveApprove = async (cwd: string, proposalId: string | undefi
     return ExitCode.Success;
   }
 
+  const tracker = createCommandQualityTracker(cwd, 'improve-approve');
+
   if (!proposalId) {
-    return emitCommandFailure('improve-approve', options, {
+    const exitCode = emitCommandFailure('improve-approve', options, {
       summary: 'Improve approve failed: missing proposal id.',
       findingId: 'improve.approve.proposal-id.required',
       message: 'Missing required argument: <proposal_id>.',
       nextActions: ['Run `playbook improve approve <proposal_id>` with a deterministic proposal identifier.']
     });
+    tracker.finish({ inputsSummary: 'missing proposal id', successStatus: 'failure', warningsCount: 1 });
+    return exitCode;
   }
 
   try {
     const artifact = approveGovernanceImprovement(cwd, proposalId);
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'improve-approve', payload: artifact });
+      tracker.finish({ inputsSummary: `proposal=${proposalId}`, successStatus: 'success' });
       return ExitCode.Success;
     }
 
     if (!options.quiet) {
       console.log(`Approved governance improvement: ${proposalId}`);
     }
+    tracker.finish({ inputsSummary: `proposal=${proposalId}`, successStatus: 'success' });
     return ExitCode.Success;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error while approving governance improvement.';
-    return emitCommandFailure('improve-approve', options, {
+    const exitCode = emitCommandFailure('improve-approve', options, {
       summary: 'Improve approve failed: approval operation did not complete.',
       findingId: 'improve.approve.failed',
       message,
       nextActions: ['Validate proposal id exists in .playbook/improvement-candidates.json and retry.']
     });
+    tracker.finish({ inputsSummary: `proposal=${proposalId}`, successStatus: 'failure', warningsCount: 1 });
+    return exitCode;
   }
 };

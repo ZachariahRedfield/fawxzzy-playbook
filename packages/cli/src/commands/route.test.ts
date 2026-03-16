@@ -10,6 +10,7 @@ const compileCodexPrompt = vi.fn();
 const recordRouteDecision = vi.fn();
 const safeRecordRepositoryEvent = vi.fn((callback: () => void) => callback());
 const appendCommandExecutionQualityRecord = vi.fn();
+const recordCommandExecution = vi.fn();
 const recordCommandQuality = vi.fn();
 
 vi.mock('@zachariahredfield/playbook-engine', () => ({
@@ -19,6 +20,7 @@ vi.mock('@zachariahredfield/playbook-engine', () => ({
   recordRouteDecision,
   safeRecordRepositoryEvent,
   appendCommandExecutionQualityRecord,
+  recordCommandExecution,
   recordCommandQuality
 }));
 

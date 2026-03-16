@@ -1,5 +1,6 @@
 import {
   appendCommandExecutionQualityRecord,
+  recordCommandExecution,
   recordCommandQuality,
   safeRecordRepositoryEvent} from '@zachariahredfield/playbook-engine';
 type CommandSuccessStatus = 'success' | 'failure' | 'partial';
@@ -48,6 +49,16 @@ export const createCommandQualityTracker = (cwd: string, commandName: string): C
       });
 
       safeRecordRepositoryEvent(() => {
+        recordCommandExecution(cwd, {
+          run_id: runId,
+          command_name: commandName,
+          success_status: input.successStatus,
+          duration_ms: durationMs,
+          artifacts_read: artifactsRead,
+          artifacts_written: artifactsWritten,
+          related_artifacts: [{ path: '.playbook/telemetry/command-quality.json', kind: 'command_quality' }]
+        });
+
         recordCommandQuality(cwd, {
           run_id: runId,
           command_name: commandName,
