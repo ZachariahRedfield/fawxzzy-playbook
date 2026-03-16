@@ -3,33 +3,18 @@ import type { PortabilityConfidenceRecalibrationSummary } from '@zachariahredfie
 import { readJsonIfExists, writeDeterministicJsonAtomic } from './io.js';
 import { LEARNING_COMPACTION_RELATIVE_PATH, type LearningCompactionArtifact } from './learningCompaction.js';
 import { PATTERN_PORTABILITY_RELATIVE_PATH, type PatternPortabilityArtifact } from './patternPortability.js';
+import { PORTABILITY_OUTCOMES_RELATIVE_PATH, readPortabilityOutcomesArtifact, type PortabilityOutcomesArtifact } from './portabilityOutcomes.js';
 
 export const PORTABILITY_CONFIDENCE_SCHEMA_VERSION = '1.0' as const;
 export const PORTABILITY_CONFIDENCE_RELATIVE_PATH = '.playbook/portability-confidence.json' as const;
 
 const CROSS_REPO_PATTERNS_RELATIVE_PATH = '.playbook/cross-repo-patterns.json' as const;
-const PORTABILITY_OUTCOMES_RELATIVE_PATH = '.playbook/portability-outcomes.json' as const;
 
 type CrossRepoPatternsArtifact = {
   generatedAt?: string;
   aggregates?: Array<{ pattern_id?: string; portability_score?: number }>;
 };
 
-type PortabilityOutcomeRecord = {
-  source_pattern_family?: string;
-  pattern_family?: string;
-  pattern_id?: string;
-  source_repo?: string;
-  target_repo?: string;
-  outcome?: 'success' | 'failure' | 'partial' | 'blocked';
-  success?: boolean;
-};
-
-type PortabilityOutcomesArtifact = {
-  generatedAt?: string;
-  outcomes?: PortabilityOutcomeRecord[];
-  records?: PortabilityOutcomeRecord[];
-};
 
 export type PortabilityConfidenceArtifact = {
   schemaVersion: typeof PORTABILITY_CONFIDENCE_SCHEMA_VERSION;
@@ -66,17 +51,11 @@ const derivePatternFamily = (value: string): string => {
   return normalized || 'unknown-family';
 };
 
-const parseOutcomeSuccess = (record: PortabilityOutcomeRecord): boolean | undefined => {
-  if (typeof record.success === 'boolean') {
-    return record.success;
-  }
-
-  if (!record.outcome) {
-    return undefined;
-  }
-
-  if (record.outcome === 'success') return true;
-  if (record.outcome === 'failure' || record.outcome === 'blocked') return false;
+const parseOutcomeSuccess = (record: PortabilityOutcomesArtifact['outcomes'][number]): boolean | undefined => {
+  if (record.observed_outcome === 'successful') return true;
+  if (record.observed_outcome === 'unsuccessful') return false;
+  if (record.decision_status === 'rejected') return false;
+  if (record.adoption_status === 'adopted' && record.decision_status === 'accepted') return true;
   return undefined;
 };
 
@@ -121,7 +100,7 @@ export const generatePortabilityConfidenceArtifact = (repoRoot: string): Portabi
   }
 
   const crossRepoPatterns = readJsonIfExists<CrossRepoPatternsArtifact>(path.join(repoRoot, CROSS_REPO_PATTERNS_RELATIVE_PATH));
-  const portabilityOutcomes = readJsonIfExists<PortabilityOutcomesArtifact>(path.join(repoRoot, PORTABILITY_OUTCOMES_RELATIVE_PATH));
+  const portabilityOutcomes = readPortabilityOutcomesArtifact(repoRoot);
   const learningCompaction = readJsonIfExists<LearningCompactionArtifact>(path.join(repoRoot, LEARNING_COMPACTION_RELATIVE_PATH));
 
   const crossRepoPortability = new Map<string, number>();
@@ -130,11 +109,11 @@ export const generatePortabilityConfidenceArtifact = (repoRoot: string): Portabi
     crossRepoPortability.set(aggregate.pattern_id, clamp01(aggregate.portability_score));
   }
 
-  const outcomes = portabilityOutcomes?.outcomes ?? portabilityOutcomes?.records ?? [];
+  const outcomes = portabilityOutcomes?.outcomes ?? [];
 
   const outcomeByGroup = new Map<string, { total: number; success: number }>();
   for (const record of outcomes) {
-    const family = record.source_pattern_family ?? record.pattern_family ?? (record.pattern_id ? derivePatternFamily(record.pattern_id) : 'unknown-family');
+    const family = record.pattern_id ? derivePatternFamily(record.pattern_id) : 'unknown-family';
     const sourceRepo = record.source_repo ?? 'unknown-source';
     const targetRepo = record.target_repo ?? 'unknown-target';
     const success = parseOutcomeSuccess(record);
