@@ -8,6 +8,7 @@ const knowledgeTimeline = vi.fn();
 const knowledgeProvenance = vi.fn();
 const knowledgeStale = vi.fn();
 const readCrossRepoPatternsArtifact = vi.fn();
+const readPortabilityOutcomesArtifact = vi.fn();
 
 vi.mock('@zachariahredfield/playbook-engine', () => ({
   knowledgeList,
@@ -16,7 +17,8 @@ vi.mock('@zachariahredfield/playbook-engine', () => ({
   knowledgeTimeline,
   knowledgeProvenance,
   knowledgeStale,
-  readCrossRepoPatternsArtifact
+  readCrossRepoPatternsArtifact,
+  readPortabilityOutcomesArtifact
 }));
 
 const crossRepoArtifactFixture = () => ({
@@ -161,6 +163,7 @@ describe('runKnowledge', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
     readCrossRepoPatternsArtifact.mockReturnValue(crossRepoArtifactFixture());
+    readPortabilityOutcomesArtifact.mockReturnValue({ outcomes: [] });
 
     const exitCode = await runKnowledge('/repo', ['portability'], { format: 'text', quiet: false });
     expect(exitCode).toBe(ExitCode.Success);
@@ -181,6 +184,7 @@ describe('runKnowledge', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
     readCrossRepoPatternsArtifact.mockReturnValue(crossRepoArtifactFixture());
+    readPortabilityOutcomesArtifact.mockReturnValue({ outcomes: [] });
 
     let exitCode = await runKnowledge('/repo', ['portability', '--view', 'recommendations'], { format: 'text', quiet: false });
     expect(exitCode).toBe(ExitCode.Success);
@@ -196,8 +200,9 @@ describe('runKnowledge', () => {
     exitCode = await runKnowledge('/repo', ['portability', '--view', 'outcomes'], { format: 'text', quiet: false });
     expect(exitCode).toBe(ExitCode.Success);
     rendered = String(logSpy.mock.calls[0]?.[0]);
+    expect(rendered).toContain('Decision Status: proposed');
     expect(rendered).toContain('Adoption Status: adopted');
-    expect(rendered).toContain('Observed Outcome: positive');
+    expect(rendered).toContain('Observed Outcome: successful');
     expect(rendered).toContain('Sample Size: 7');
 
     logSpy.mockClear();
@@ -231,6 +236,7 @@ describe('runKnowledge', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
     readCrossRepoPatternsArtifact.mockReturnValue(crossRepoArtifactFixture());
+    readPortabilityOutcomesArtifact.mockReturnValue({ outcomes: [] });
 
     let exitCode = await runKnowledge('/repo', ['portability'], { format: 'json', quiet: false });
     expect(exitCode).toBe(ExitCode.Success);
@@ -269,8 +275,9 @@ describe('runKnowledge', () => {
       source_repo: 'source/repo',
       target_repo: 'target/repo',
       initial_portability_score: 0.82,
+      decision_status: 'proposed',
       adoption_status: 'adopted',
-      observed_outcome: 'positive',
+      observed_outcome: 'successful',
       sample_size: 7
     });
 

@@ -95,6 +95,7 @@ Portability scoring remains recommendation-first and now has an explicit recalib
 
 - Base portability evidence remains append-only in `.playbook/pattern-portability.json`.
 - Cross-repo priors from `.playbook/cross-repo-patterns.json` and transfer outcomes from `.playbook/portability-outcomes.json` are combined into governed recalibration summaries at `.playbook/portability-confidence.json`.
+- Portability outcome records in `.playbook/portability-outcomes.json` now capture deterministic recommendation trace fields (`recommendation_id`, `pattern_id`, `source_repo`, `target_repo`, `decision_status`, optional decision/adoption/outcome metadata, `timestamp`) and are append-safe with stable ordering for downstream telemetry-learning and repository-memory summaries.
 - Recalibration never rewrites prior portability scores; it emits explicit `recommended_adjustment` guidance and preserves original score inspectability.
 - Sparse evidence is treated conservatively and emitted as open questions to prevent static-confidence illusions.
 

@@ -14,7 +14,7 @@ const writeJson = (repoRoot: string, relativePath: string, value: unknown): void
 
 const writeBaseArtifacts = (repoRoot: string, overrides?: {
   confidenceScores?: number[];
-  outcomes?: Array<{ family: string; source: string; target: string; outcome: 'success' | 'failure' }>;
+  outcomes?: Array<{ family: string; source: string; target: string; outcome: 'successful' | 'unsuccessful' | 'inconclusive' }>;
 }): void => {
   const confidenceScores = overrides?.confidenceScores ?? [0.7];
   const outcomes = overrides?.outcomes ?? [];
@@ -84,11 +84,15 @@ const writeBaseArtifacts = (repoRoot: string, overrides?: {
   writeJson(repoRoot, '.playbook/portability-outcomes.json', {
     generatedAt: '2026-06-02T00:00:00.000Z',
     outcomes: outcomes.map((outcome, idx) => ({
+      recommendation_id: `recommendation-${idx}`,
+      pattern_id: `router_over_fragmented_${outcome.family}`,
       source_pattern_family: outcome.family,
       source_repo: outcome.source,
       target_repo: outcome.target,
-      outcome: outcome.outcome,
-      id: `outcome-${idx}`
+      decision_status: outcome.outcome === 'unsuccessful' ? 'rejected' : 'accepted',
+      adoption_status: outcome.outcome === 'successful' ? 'adopted' : 'reviewed',
+      observed_outcome: outcome.outcome,
+      timestamp: `2026-06-02T00:00:0${idx}.000Z`
     }))
   });
 };
@@ -99,10 +103,10 @@ describe('portability confidence recalibration', () => {
     writeBaseArtifacts(repo, {
       confidenceScores: [0.6, 0.62],
       outcomes: [
-        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'success' },
-        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'success' },
-        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'success' },
-        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'success' }
+        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'successful' },
+        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'successful' },
+        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'successful' },
+        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'successful' }
       ]
     });
 
@@ -117,10 +121,10 @@ describe('portability confidence recalibration', () => {
     writeBaseArtifacts(repo, {
       confidenceScores: [0.8],
       outcomes: [
-        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'failure' },
-        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'failure' },
-        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'failure' },
-        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'failure' }
+        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'unsuccessful' },
+        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'unsuccessful' },
+        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'unsuccessful' },
+        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'unsuccessful' }
       ]
     });
 
@@ -134,7 +138,7 @@ describe('portability confidence recalibration', () => {
     const repo = createRepo();
     writeBaseArtifacts(repo, {
       confidenceScores: [0.82],
-      outcomes: [{ family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'success' }]
+      outcomes: [{ family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'successful' }]
     });
 
     const artifact = generatePortabilityConfidenceArtifact(repo);
@@ -149,10 +153,10 @@ describe('portability confidence recalibration', () => {
     writeBaseArtifacts(repo, {
       confidenceScores: [0.7],
       outcomes: [
-        { family: 'telemetry_learning', source: 'repo-z', target: 'repo-y', outcome: 'failure' },
-        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'success' },
-        { family: 'telemetry_learning', source: 'repo-z', target: 'repo-y', outcome: 'success' },
-        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'failure' }
+        { family: 'telemetry_learning', source: 'repo-z', target: 'repo-y', outcome: 'unsuccessful' },
+        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'successful' },
+        { family: 'telemetry_learning', source: 'repo-z', target: 'repo-y', outcome: 'successful' },
+        { family: 'knowledge_lifecycle', source: 'repo-a', target: 'repo-b', outcome: 'unsuccessful' }
       ]
     });
 

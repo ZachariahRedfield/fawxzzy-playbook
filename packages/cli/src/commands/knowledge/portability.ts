@@ -1,6 +1,27 @@
-import { readCrossRepoPatternsArtifact } from '@zachariahredfield/playbook-engine';
+import {
+  readCrossRepoPatternsArtifact,
+  readPortabilityOutcomesArtifact
+} from '@zachariahredfield/playbook-engine';
+
+
 
 type PortabilityRiskSignal = 'dependency mismatch' | 'outcome volatility' | 'low instance diversity' | 'governance instability';
+
+
+type RecordedPortabilityOutcome = {
+  recommendation_id: string;
+  pattern_id: string;
+  source_repo: string;
+  target_repo: string;
+  decision_status: 'proposed' | 'reviewed' | 'accepted' | 'rejected' | 'superseded';
+  decision_reason?: string;
+  adoption_status?: 'proposed' | 'reviewed' | 'accepted' | 'rejected' | 'adopted' | 'superseded';
+  observed_outcome?: 'successful' | 'unsuccessful' | 'inconclusive';
+  outcome_confidence?: number;
+  timestamp: string;
+};
+
+type PortabilityOutcomesArtifact = { outcomes: RecordedPortabilityOutcome[] };
 
 type PortabilityRecord = {
   pattern_id: string;
@@ -21,12 +42,17 @@ type PortabilityRecommendationRecord = {
 };
 
 type PortabilityOutcomeRecord = {
+  recommendation_id: string;
   pattern: string;
   source_repo: string;
   target_repo: string;
   initial_portability_score: number;
-  adoption_status: 'adopted' | 'trial' | 'deferred';
-  observed_outcome: 'positive' | 'mixed' | 'negative';
+  decision_status: 'proposed' | 'reviewed' | 'accepted' | 'rejected' | 'superseded';
+  decision_reason?: string;
+  adoption_status?: 'proposed' | 'reviewed' | 'accepted' | 'rejected' | 'adopted' | 'superseded';
+  observed_outcome?: 'successful' | 'unsuccessful' | 'inconclusive';
+  outcome_confidence?: number;
+  timestamp: string;
   sample_size: number;
 };
 
@@ -58,7 +84,6 @@ type CrossRepoPatternsArtifact = {
   aggregates: CrossRepoAggregate[];
   repositories: CrossRepoRepository[];
   portability_recommendations?: PortabilityRecommendationRecord[];
-  portability_outcomes?: PortabilityOutcomeRecord[];
   portability_recalibration?: PortabilityRecalibrationRecord[];
 };
 
@@ -167,12 +192,12 @@ const deriveRecommendations = (artifact: CrossRepoPatternsArtifact): Portability
 
 const classifyOutcome = (portabilityScore: number): PortabilityOutcomeRecord['observed_outcome'] => {
   if (portabilityScore >= 0.8) {
-    return 'positive';
+    return 'successful';
   }
   if (portabilityScore >= 0.6) {
-    return 'mixed';
+    return 'inconclusive';
   }
-  return 'negative';
+  return 'unsuccessful';
 };
 
 const classifyAdoption = (portabilityScore: number): PortabilityOutcomeRecord['adoption_status'] => {
@@ -180,23 +205,54 @@ const classifyAdoption = (portabilityScore: number): PortabilityOutcomeRecord['a
     return 'adopted';
   }
   if (portabilityScore >= 0.6) {
-    return 'trial';
+    return 'accepted';
   }
-  return 'deferred';
+  return 'reviewed';
 };
 
-const deriveOutcomes = (artifact: CrossRepoPatternsArtifact, recommendations: PortabilityRecommendationRecord[]): PortabilityOutcomeRecord[] => {
-  if (Array.isArray(artifact.portability_outcomes)) {
-    return [...artifact.portability_outcomes];
+const deriveOutcomesFromArtifact = (
+  artifact: PortabilityOutcomesArtifact,
+  recommendations: PortabilityRecommendationRecord[]
+): PortabilityOutcomeRecord[] => {
+  const recommendationMap = new Map(recommendations.map((entry) => [`${entry.pattern}::${entry.source_repo}::${entry.target_repo}`, entry]));
+
+  return artifact.outcomes.map((outcome) => {
+    const recommendation = recommendationMap.get(`${outcome.pattern_id}::${outcome.source_repo}::${outcome.target_repo}`);
+
+    return {
+      recommendation_id: outcome.recommendation_id,
+      pattern: outcome.pattern_id,
+      source_repo: outcome.source_repo,
+      target_repo: outcome.target_repo,
+      initial_portability_score: recommendation?.initial_portability_score ?? 0,
+      decision_status: outcome.decision_status,
+      ...(outcome.decision_reason ? { decision_reason: outcome.decision_reason } : {}),
+      ...(outcome.adoption_status ? { adoption_status: outcome.adoption_status } : {}),
+      ...(outcome.observed_outcome ? { observed_outcome: outcome.observed_outcome } : {}),
+      ...(typeof outcome.outcome_confidence === 'number' ? { outcome_confidence: outcome.outcome_confidence } : {}),
+      timestamp: outcome.timestamp,
+      sample_size: recommendation?.evidence_count ?? 0
+    };
+  });
+};
+
+const deriveOutcomes = (cwd: string, recommendations: PortabilityRecommendationRecord[]): PortabilityOutcomeRecord[] => {
+  const recorded = readPortabilityOutcomesArtifact(cwd) as PortabilityOutcomesArtifact;
+  if (recorded.outcomes.length > 0) {
+    return deriveOutcomesFromArtifact(recorded, recommendations);
   }
 
-  return recommendations.map((recommendation) => ({
+  return recommendations.map((recommendation, idx) => ({
+    recommendation_id: `${recommendation.pattern}:${recommendation.source_repo}:${recommendation.target_repo}:${idx}`,
     pattern: recommendation.pattern,
     source_repo: recommendation.source_repo,
     target_repo: recommendation.target_repo,
     initial_portability_score: recommendation.initial_portability_score,
+    decision_status: 'proposed',
     adoption_status: classifyAdoption(recommendation.initial_portability_score),
     observed_outcome: classifyOutcome(recommendation.initial_portability_score),
+    outcome_confidence: recommendation.initial_portability_score,
+    timestamp: '1970-01-01T00:00:00.000Z',
     sample_size: recommendation.evidence_count
   }));
 };
@@ -210,7 +266,8 @@ const deriveRecalibration = (artifact: CrossRepoPatternsArtifact, outcomes: Port
 
   return outcomes.map((outcome) => {
     const aggregate = aggregateByPattern.get(outcome.pattern);
-    const outcomeMultiplier = outcome.observed_outcome === 'positive' ? 1 : outcome.observed_outcome === 'mixed' ? 0.92 : 0.8;
+    const outcomeMultiplier =
+      outcome.observed_outcome === 'successful' ? 1 : outcome.observed_outcome === 'inconclusive' ? 0.92 : 0.8;
     const consistency = aggregate?.outcome_consistency ?? 0.5;
     const adjusted = clamp(outcome.initial_portability_score * 0.65 + consistency * 0.35 * outcomeMultiplier);
 
@@ -270,7 +327,7 @@ export const runKnowledgePortability = (
     };
   }
 
-  const outcomes = deriveOutcomes(artifact, recommendations);
+  const outcomes = deriveOutcomes(cwd, recommendations);
   if (view === 'outcomes') {
     return {
       schemaVersion: '1.0',

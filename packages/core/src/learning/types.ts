@@ -67,3 +67,22 @@ export interface PortabilityConfidenceRecalibrationSummary {
   sample_size: number;
   open_questions: string[];
 }
+
+export type PortabilityDecisionStatus = 'proposed' | 'reviewed' | 'accepted' | 'rejected' | 'superseded';
+
+export type PortabilityAdoptionStatus = 'proposed' | 'reviewed' | 'accepted' | 'rejected' | 'adopted' | 'superseded';
+
+export type PortabilityObservedOutcome = 'successful' | 'unsuccessful' | 'inconclusive';
+
+export interface PortabilityOutcomeTelemetryRecord {
+  recommendation_id: string;
+  pattern_id: string;
+  source_repo: string;
+  target_repo: string;
+  decision_status: PortabilityDecisionStatus;
+  decision_reason?: string;
+  adoption_status?: PortabilityAdoptionStatus;
+  observed_outcome?: PortabilityObservedOutcome;
+  outcome_confidence?: number;
+  timestamp: string;
+}

@@ -66,12 +66,17 @@ const renderPortabilityOutcomesText = (payload: Record<string, unknown>): string
   return outcomes
     .map(
       (entry) =>
-        `Pattern: ${String(entry.pattern)}
+        `Recommendation ID: ${String(entry.recommendation_id)}
+Pattern: ${String(entry.pattern)}
 Source Repo: ${String(entry.source_repo)}
 Target Repo: ${String(entry.target_repo)}
 Initial Portability Score: ${String(entry.initial_portability_score)}
-Adoption Status: ${String(entry.adoption_status)}
-Observed Outcome: ${String(entry.observed_outcome)}
+Decision Status: ${String(entry.decision_status)}
+Decision Reason: ${String(entry.decision_reason ?? 'n/a')}
+Adoption Status: ${String(entry.adoption_status ?? 'n/a')}
+Observed Outcome: ${String(entry.observed_outcome ?? 'n/a')}
+Outcome Confidence: ${String(entry.outcome_confidence ?? 'n/a')}
+Timestamp: ${String(entry.timestamp)}
 Sample Size: ${String(entry.sample_size)}`
     )
     .join('\n\n---\n\n');
