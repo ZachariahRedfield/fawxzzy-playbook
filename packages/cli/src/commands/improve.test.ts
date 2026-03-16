@@ -111,9 +111,12 @@ describe('runImprove', () => {
     expect(candidates.some((candidate) => ['AUTO-SAFE', 'CONVERSATIONAL', 'GOVERNANCE'].includes(candidate.gating_tier))).toBe(true);
     expect(candidates.every((candidate) => typeof candidate.confidence_score === 'number')).toBe(true);
     expect(Array.isArray(payload.rejected_candidates)).toBe(true);
+    expect((payload.doctrine as Record<string, unknown>).kind).toBe('knowledge-doctrine-promotions');
 
     const artifactPath = path.join(repo, '.playbook', 'improvement-candidates.json');
     expect(fs.existsSync(artifactPath)).toBe(true);
+    expect(fs.existsSync(path.join(repo, '.playbook', 'knowledge-candidates.json'))).toBe(true);
+    expect(fs.existsSync(path.join(repo, '.playbook', 'knowledge-promotions.json'))).toBe(true);
 
     logSpy.mockRestore();
     fs.rmSync(repo, { recursive: true, force: true });

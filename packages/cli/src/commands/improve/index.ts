@@ -1,8 +1,11 @@
 import {
   applyAutoSafeImprovements,
   approveGovernanceImprovement,
+  generateDoctrinePromotionArtifact,
   generateImprovementCandidates,
+  writeDoctrinePromotionArtifacts,
   writeImprovementCandidatesArtifact,
+  type DoctrinePromotionArtifact,
   type ImprovementCandidatesArtifact
 } from '@zachariahredfield/playbook-engine';
 import { emitJsonOutput } from '../../lib/jsonArtifact.js';
@@ -13,7 +16,7 @@ type ImproveOptions = {
   quiet: boolean;
 };
 
-const renderText = (artifact: ImprovementCandidatesArtifact): void => {
+const renderText = (artifact: ImprovementCandidatesArtifact, doctrine: DoctrinePromotionArtifact): void => {
   console.log('Improvement candidates');
   console.log('──────────────────────');
   console.log(`Generated at: ${artifact.generatedAt}`);
@@ -55,6 +58,14 @@ const renderText = (artifact: ImprovementCandidatesArtifact): void => {
       console.log(`  why gated: ${rejected.blocking_reasons.join(', ')}`);
     }
   }
+
+
+  console.log('');
+  console.log('Doctrine lifecycle proposals');
+  console.log(`- candidate: ${doctrine.summary.candidate}`);
+  console.log(`- compacted: ${doctrine.summary.compacted}`);
+  console.log(`- promoted: ${doctrine.summary.promoted}`);
+  console.log(`- retired: ${doctrine.summary.retired}`);
 };
 
 const printConversationPrompts = (artifact: ImprovementCandidatesArtifact): void => {
@@ -70,14 +81,16 @@ const printConversationPrompts = (artifact: ImprovementCandidatesArtifact): void
 export const runImprove = async (cwd: string, options: ImproveOptions): Promise<number> => {
   const artifact = generateImprovementCandidates(cwd);
   writeImprovementCandidatesArtifact(cwd, artifact);
+  const doctrine = generateDoctrinePromotionArtifact(cwd, artifact);
+  writeDoctrinePromotionArtifacts(cwd, doctrine);
 
   if (options.format === 'json') {
-    emitJsonOutput({ cwd, command: 'improve', payload: artifact });
+    emitJsonOutput({ cwd, command: 'improve', payload: { ...artifact, doctrine } });
     return ExitCode.Success;
   }
 
   if (!options.quiet) {
-    renderText(artifact);
+    renderText(artifact, doctrine);
     printConversationPrompts(artifact);
   }
 

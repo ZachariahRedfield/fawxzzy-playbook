@@ -205,6 +205,9 @@ export { lookupMemoryEventTimeline, lookupMemoryCandidateKnowledge, lookupPromot
 export type { MemoryTimelineLookupOptions, MemoryCandidateLookupOptions, MemoryKnowledgeLookupOptions, ExpandedMemoryProvenance } from './memory/inspection.js';
 export type { DocsAuditResult, DocsAuditFinding, DocsAuditStatus, DocsAuditLevel } from './docs/audit.js';
 
+export { generateDoctrinePromotionArtifact, writeDoctrinePromotionArtifacts, KNOWLEDGE_CANDIDATES_RELATIVE_PATH, KNOWLEDGE_PROMOTIONS_RELATIVE_PATH } from './knowledge/doctrinePromotion.js';
+export type { DoctrinePromotionArtifact } from './knowledge/doctrinePromotion.js';
+
 export { buildContractRegistry } from './contracts/contractRegistry.js';
 export type { ContractRegistryPayload } from './contracts/contractRegistry.js';
 

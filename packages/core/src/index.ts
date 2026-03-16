@@ -125,6 +125,8 @@ export type {
   KnowledgeSummary,
   KnowledgeTimelineOptions
 } from './knowledge/types.js';
+export { doctrineGatingTiers, doctrineLifecycleStages } from './knowledge/doctrine-types.js';
+export type { DoctrineGatingTier, DoctrineLifecycleStage, DoctrinePromotionCandidate } from './knowledge/doctrine-types.js';
 export type {
   ArchitectureAuditCheck,
   ArchitectureAuditCheckContext,

@@ -257,6 +257,9 @@ declare module "@zachariahredfield/playbook-engine" {
   export type ImprovementGovernanceApprovalArtifact = any;
   export const generateImprovementCandidates: (...args: any[]) => ImprovementCandidatesArtifact;
   export const writeImprovementCandidatesArtifact: (...args: any[]) => string;
+  export type DoctrinePromotionArtifact = any;
+  export const generateDoctrinePromotionArtifact: (...args: any[]) => DoctrinePromotionArtifact;
+  export const writeDoctrinePromotionArtifacts: (...args: any[]) => void;
   export const applyAutoSafeImprovements: (...args: any[]) => ImprovementActionArtifact;
   export const approveGovernanceImprovement: (...args: any[]) => ImprovementGovernanceApprovalArtifact;
 

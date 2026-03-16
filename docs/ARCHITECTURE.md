@@ -381,3 +381,35 @@ Operational event types in this normalized stream:
 Rule: operational memory must use one event schema.
 Pattern: normalized event stream enables deterministic replay/query/compaction workflows.
 Failure mode: memory shape drift fragments retrieval and promotion quality.
+
+## Doctrine promotion pipeline (deterministic, recommendation-first)
+
+`knowledge_lifecycle`, `improvement_engine`, and `repository_memory` now participate in a deterministic doctrine promotion pipeline that remains governance-aware and recommendation-first.
+
+Pipeline inputs:
+
+- compacted learning summary (`.playbook/learning-state.json`)
+- router/improvement recommendations (`.playbook/improvement-candidates.json`)
+- normalized repository memory evidence (`.playbook/memory/events/*.json`)
+
+Persisted outputs:
+
+- `.playbook/knowledge-candidates.json`
+- `.playbook/knowledge-promotions.json`
+
+Each doctrine promotion candidate is emitted with explicit promotion metadata:
+
+- `candidate_id`
+- `source_evidence`
+- `related_runs`
+- `related_artifacts`
+- `pattern_family`
+- `confidence_score`
+- `lifecycle_stage` (`candidate | compacted | promoted | retired`)
+- `promotion_rationale`
+- `retirement_rationale`
+- `gating_tier` (`AUTO-SAFE | CONVERSATIONAL | GOVERNANCE`)
+
+Rule: durable knowledge must be evidence-promoted and lifecycle-governed.
+Pattern: explicit transitions reduce premature doctrine crystallization.
+Failure mode: promoting low-signal patterns too early degrades governance quality and brittle doctrine accrues.
