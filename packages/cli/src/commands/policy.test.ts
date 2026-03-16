@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ExitCode } from '../lib/cliContract.js';
 import { listRegisteredCommands } from './index.js';
 import { runPolicy } from './policy.js';
+import { validatePolicyEvaluationArtifact } from './policy/index.js';
 
 const createRepo = (): string => fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-policy-cli-'));
 
@@ -85,5 +86,38 @@ describe('runPolicy', () => {
     const command = listRegisteredCommands().find((entry) => entry.name === 'policy');
     expect(command).toBeDefined();
     expect(command?.description).toContain('Evaluate improvement proposals');
+  });
+
+  it('detects schema-shape violations for policy evaluation artifacts', () => {
+    const errors = validatePolicyEvaluationArtifact({
+      schemaVersion: '1.0',
+      kind: 'policy-evaluation',
+      generatedAt: '2026-01-01T00:00:00.000Z',
+      proposalOnly: true,
+      nonAutonomous: true,
+      sourceArtifacts: {
+        improvementCandidatesPath: '.playbook/improvement-candidates.json',
+        cycleHistoryPath: '.playbook/cycle-history.json',
+        improvementCandidatesAvailable: true,
+        cycleHistoryAvailable: false
+      },
+      summary: { safe: 1, requires_review: 0, blocked: 0, total: 1 },
+      evaluations: [
+        {
+          proposal_id: 'zeta',
+          decision: 'safe',
+          reason: 'ok',
+          evidence: {}
+        },
+        {
+          proposal_id: 'alpha',
+          decision: 'safe',
+          reason: 'ok',
+          evidence: {}
+        }
+      ]
+    });
+
+    expect(errors).toContain('evaluations must be deterministically ordered by proposal_id');
   });
 });

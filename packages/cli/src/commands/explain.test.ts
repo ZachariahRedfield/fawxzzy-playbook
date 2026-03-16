@@ -662,6 +662,122 @@ describe('runExplain', () => {
     logSpy.mockRestore();
   });
 
+  it('fails deterministically when policy-evaluation artifact is missing', async () => {
+    const repo = createRepo('playbook-cli-explain-policy-evaluation-missing');
+    writeArchitectureRegistry(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runExplain(repo, ['artifact', '.playbook/policy-evaluation.json'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload).toEqual({
+      command: 'explain',
+      target: 'artifact .playbook/policy-evaluation.json',
+      error: 'playbook explain artifact: missing artifact ".playbook/policy-evaluation.json".'
+    });
+
+    logSpy.mockRestore();
+  });
+
+  it('explains policy-evaluation artifacts in JSON mode with deterministic evaluation order', async () => {
+    const repo = createRepo('playbook-cli-explain-policy-evaluation-json');
+    writeArchitectureRegistry(repo);
+    fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+    fs.writeFileSync(
+      path.join(repo, '.playbook', 'policy-evaluation.json'),
+      JSON.stringify(
+        {
+          schemaVersion: '1.0',
+          kind: 'policy-evaluation',
+          generatedAt: '2026-01-01T00:00:00.000Z',
+          summary: { safe: 1, requires_review: 1, blocked: 0, total: 2 },
+          evaluations: [
+            {
+              proposal_id: 'proposal-z',
+              decision: 'requires_review',
+              reason: 'Requires review for governance reasons.',
+              evidence: { signals: ['impact_scope:broad'] }
+            },
+            {
+              proposal_id: 'proposal-a',
+              decision: 'safe',
+              reason: 'Strong evidence.',
+              evidence: { signals: ['evidence_strength:high'] }
+            }
+          ]
+        },
+        null,
+        2
+      )
+    );
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runExplain(repo, ['artifact', '.playbook/policy-evaluation.json'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.explanation.policy_evaluation).toMatchObject({
+      artifactType: 'policy-evaluation',
+      schemaVersion: '1.0',
+      kind: 'policy-evaluation',
+      summary: { safe: 1, requires_review: 1, blocked: 0, total: 2 }
+    });
+    expect(payload.explanation.policy_evaluation.evaluations.map((entry: { proposal_id: string }) => entry.proposal_id)).toEqual([
+      'proposal-a',
+      'proposal-z'
+    ]);
+
+    logSpy.mockRestore();
+  });
+
+  it('renders policy-evaluation artifact summaries in text mode', async () => {
+    const repo = createRepo('playbook-cli-explain-policy-evaluation-text');
+    writeArchitectureRegistry(repo);
+    fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+    fs.writeFileSync(
+      path.join(repo, '.playbook', 'policy-evaluation.json'),
+      JSON.stringify(
+        {
+          schemaVersion: '1.0',
+          kind: 'policy-evaluation',
+          summary: { safe: 1, requires_review: 0, blocked: 1, total: 2 },
+          evaluations: [
+            {
+              proposal_id: 'proposal-1',
+              decision: 'safe',
+              reason: 'strong evidence',
+              evidence: { signals: ['evidence_strength:high'] }
+            },
+            {
+              proposal_id: 'proposal-2',
+              decision: 'blocked',
+              reason: 'insufficient evidence',
+              evidence: { signals: ['evidence_strength:low'] }
+            }
+          ]
+        },
+        null,
+        2
+      )
+    );
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runExplain(repo, ['artifact', '.playbook/policy-evaluation.json'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const lines = logSpy.mock.calls.map((call) => String(call[0]));
+    expect(lines).toContain('Policy evaluation summary');
+    expect(lines).toContain('Safe: 1');
+    expect(lines).toContain('Requires review: 0');
+    expect(lines).toContain('Blocked: 1');
+    expect(lines).toContain('Proposal proposal-1 → safe');
+    expect(lines).toContain('Reason: strong evidence');
+    expect(lines).toContain('Evidence signals: evidence_strength:high');
+
+    logSpy.mockRestore();
+  });
+
   it('fails when target argument is missing', async () => {
     const repo = createRepo('playbook-cli-explain-args');
     writeRepoIndex(repo);

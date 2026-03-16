@@ -128,6 +128,7 @@ export type ArtifactExplanation = ExplainMemoryFields & {
   downstreamConsumers: string[];
   cycleState?: CycleStateArtifactExplanation;
   cycleHistory?: CycleHistoryArtifactExplanation;
+  policyEvaluation?: PolicyEvaluationArtifactExplanation;
 };
 
 type CycleStateStepExplanation = {
@@ -161,6 +162,27 @@ type CycleHistoryArtifactExplanation = {
   history_version: number;
   repo: string;
   cycles: CycleHistoryEntryExplanation[];
+};
+
+type PolicyEvaluationEntryExplanation = {
+  proposal_id: string;
+  decision: 'safe' | 'requires_review' | 'blocked';
+  reason: string;
+  evidence?: Record<string, unknown>;
+};
+
+type PolicyEvaluationArtifactExplanation = {
+  artifactType: 'policy-evaluation';
+  schemaVersion: string;
+  kind: string;
+  generatedAt?: string;
+  summary: {
+    safe: number;
+    requires_review: number;
+    blocked: number;
+    total: number;
+  };
+  evaluations: PolicyEvaluationEntryExplanation[];
 };
 
 export type UnknownExplanation = ExplainMemoryFields & {
@@ -412,8 +434,10 @@ const explainCommand = (projectRoot: string, target: string): CommandExplanation
 const explainArtifact = (projectRoot: string, target: string): ArtifactExplanation => {
   const cycleState = explainCycleStateArtifact(projectRoot, target) ?? undefined;
   const cycleHistory = explainCycleHistoryArtifact(projectRoot, target) ?? undefined;
+  const policyEvaluation = explainPolicyEvaluationArtifact(projectRoot, target) ?? undefined;
 
-  if (cycleState || cycleHistory) {
+  if (cycleState || cycleHistory || policyEvaluation) {
+    const policyArtifactOnly = Boolean(policyEvaluation) && !cycleState && !cycleHistory;
     return {
       type: 'artifact',
       resolvedTarget: {
@@ -424,12 +448,13 @@ const explainArtifact = (projectRoot: string, target: string): ArtifactExplanati
         matched: true
       },
       artifact: target,
-      ownerSubsystem: 'execution_supervisor',
-      purpose: 'Run workers and monitor execution',
-      upstreamSubsystem: 'orchestration_planner',
-      downstreamConsumers: ['telemetry_learning', 'lane_lifecycle', 'worker_coordination'],
+      ownerSubsystem: policyArtifactOnly ? 'improvement_engine' : 'execution_supervisor',
+      purpose: policyArtifactOnly ? 'Governed policy evaluation for proposal-only execution safety checks' : 'Run workers and monitor execution',
+      upstreamSubsystem: policyArtifactOnly ? 'telemetry_learning' : 'orchestration_planner',
+      downstreamConsumers: policyArtifactOnly ? ['change_bridge'] : ['telemetry_learning', 'lane_lifecycle', 'worker_coordination'],
       ...(cycleState ? { cycleState } : {}),
-      ...(cycleHistory ? { cycleHistory } : {})
+      ...(cycleHistory ? { cycleHistory } : {}),
+      ...(policyEvaluation ? { policyEvaluation } : {})
     };
   }
 
@@ -516,6 +541,49 @@ const explainCycleHistoryArtifact = (projectRoot: string, target: string): Cycle
     history_version: Number(parsed.history_version),
     repo: String(parsed.repo),
     cycles
+  };
+};
+
+const explainPolicyEvaluationArtifact = (projectRoot: string, target: string): PolicyEvaluationArtifactExplanation | null => {
+  if (target !== '.playbook/policy-evaluation.json') {
+    return null;
+  }
+
+  const targetPath = path.join(projectRoot, target);
+  if (!fs.existsSync(targetPath)) {
+    throw new Error(`playbook explain artifact: missing artifact "${target}".`);
+  }
+
+  const parsed = JSON.parse(fs.readFileSync(targetPath, 'utf8')) as Record<string, unknown>;
+  const summaryCandidate = (parsed.summary ?? {}) as Record<string, unknown>;
+  const evaluations = Array.isArray(parsed.evaluations)
+    ? parsed.evaluations
+        .map((evaluation) => {
+          const candidate = evaluation as Record<string, unknown>;
+          return {
+            proposal_id: String(candidate.proposal_id),
+            decision: candidate.decision === 'safe' || candidate.decision === 'blocked' ? candidate.decision : 'requires_review',
+            reason: String(candidate.reason),
+            ...(candidate.evidence && typeof candidate.evidence === 'object' && !Array.isArray(candidate.evidence)
+              ? { evidence: candidate.evidence as Record<string, unknown> }
+              : {})
+          } as PolicyEvaluationEntryExplanation;
+        })
+        .sort((left, right) => left.proposal_id.localeCompare(right.proposal_id))
+    : [];
+
+  return {
+    artifactType: 'policy-evaluation',
+    schemaVersion: String(parsed.schemaVersion),
+    kind: String(parsed.kind),
+    ...(typeof parsed.generatedAt === 'string' ? { generatedAt: parsed.generatedAt } : {}),
+    summary: {
+      safe: Number(summaryCandidate.safe ?? 0),
+      requires_review: Number(summaryCandidate.requires_review ?? 0),
+      blocked: Number(summaryCandidate.blocked ?? 0),
+      total: Number(summaryCandidate.total ?? evaluations.length)
+    },
+    evaluations
   };
 };
 

@@ -125,6 +125,8 @@ This keeps command-level self-observation complete across execution surfaces and
 
 `playbook policy evaluate` adds a read-only governance classification layer over improve proposals. It consumes governed proposal metadata and runtime evidence (`.playbook/improvement-candidates.json`, optional cycle regression evidence from `.playbook/cycle-history.json`) and deterministically classifies each proposal as `safe`, `requires_review`, or `blocked` without executing remediation.
 
+`.playbook/policy-evaluation.json` is now treated as a first-class control-plane artifact: schema-governed (`packages/contracts/src/policy-evaluation.schema.json`), registered in contract surfaces, deterministically ordered by `proposal_id`, non-fatally validated at write time, and explainable through `playbook explain artifact .playbook/policy-evaluation.json` (summary counts, per-proposal decision/reason, and evidence signals when present).
+
 Pattern: introduce evaluation before execution — proposals must pass deterministic policy classification before any action workflow.
 
 ## Router accuracy telemetry feedback loop
@@ -462,4 +464,3 @@ Playbook now includes a deterministic, recommendation-first doctrine pipeline th
 - Artifact: `.playbook/knowledge-promotions.json`
 - Lifecycle stages: `candidate -> compacted -> promoted -> retired`
 - Governance behavior: governance-tier promotion remains gated and never mutates doctrine autonomously.
-

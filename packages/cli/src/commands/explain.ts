@@ -60,6 +60,10 @@ const toOutput = (target: string, explanation: ExplainTargetResult): ExplainOutp
     if (explanation.cycleHistory) {
       payload.cycle_history = explanation.cycleHistory;
     }
+
+    if (explanation.policyEvaluation) {
+      payload.policy_evaluation = explanation.policyEvaluation;
+    }
   }
 
   if (explanation.type === 'subsystem') {
@@ -279,6 +283,37 @@ const printText = (target: string, explanation: ExplainTargetResult): void => {
           const failedSuffix = cycle.failed_step ? `, failed_step=${cycle.failed_step}` : '';
           console.log(`- ${cycle.cycle_id}: ${cycle.result}, started_at=${cycle.started_at}, duration_ms=${cycle.duration_ms}${failedSuffix}`);
         }
+      }
+      return;
+    }
+
+    if (explanation.policyEvaluation) {
+      const policyEvaluation = explanation.policyEvaluation;
+      console.log('Policy evaluation summary');
+      console.log('');
+      console.log(`Safe: ${policyEvaluation.summary.safe}`);
+      console.log(`Requires review: ${policyEvaluation.summary.requires_review}`);
+      console.log(`Blocked: ${policyEvaluation.summary.blocked}`);
+      console.log(`Total: ${policyEvaluation.summary.total}`);
+      console.log('');
+
+      if (policyEvaluation.evaluations.length === 0) {
+        console.log('No policy proposals evaluated.');
+        return;
+      }
+
+      for (const evaluation of policyEvaluation.evaluations) {
+        console.log(`Proposal ${evaluation.proposal_id} → ${evaluation.decision}`);
+        console.log(`Reason: ${evaluation.reason}`);
+        if (evaluation.evidence && Object.keys(evaluation.evidence).length > 0) {
+          const evidenceSignals = Array.isArray(evaluation.evidence.signals)
+            ? evaluation.evidence.signals.map((entry: unknown) => String(entry)).join(', ')
+            : null;
+          if (evidenceSignals) {
+            console.log(`Evidence signals: ${evidenceSignals}`);
+          }
+        }
+        console.log('');
       }
       return;
     }

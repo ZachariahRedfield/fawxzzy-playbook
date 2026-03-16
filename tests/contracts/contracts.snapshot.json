@@ -41,6 +41,10 @@
         "producer": "cycle"
       },
       {
+        "path": ".playbook/policy-evaluation.json",
+        "producer": "policy"
+      },
+      {
         "path": ".playbook/repo-graph.json",
         "producer": "index"
       },
@@ -168,6 +172,11 @@
         "id": "improvement-candidates",
         "version": "1.0",
         "path": "packages/contracts/src/improvement-candidates.schema.json"
+      },
+      {
+        "id": "policy-evaluation",
+        "version": "1.0",
+        "path": "packages/contracts/src/policy-evaluation.schema.json"
       },
       {
         "id": "lane-state",

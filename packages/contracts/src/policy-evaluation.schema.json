@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/policy-evaluation.schema.json",
+  "title": "PlaybookPolicyEvaluation",
+  "description": "Deterministic policy evaluation artifact used for proposal-only policy gating prior to apply execution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "summary",
+    "evaluations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "kind": {
+      "const": "policy-evaluation"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "proposalOnly": {
+      "type": "boolean"
+    },
+    "nonAutonomous": {
+      "type": "boolean"
+    },
+    "sourceArtifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "improvementCandidatesPath",
+        "cycleHistoryPath",
+        "improvementCandidatesAvailable",
+        "cycleHistoryAvailable"
+      ],
+      "properties": {
+        "improvementCandidatesPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cycleHistoryPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "improvementCandidatesAvailable": {
+          "type": "boolean"
+        },
+        "cycleHistoryAvailable": {
+          "type": "boolean"
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "safe",
+        "requires_review",
+        "blocked",
+        "total"
+      ],
+      "properties": {
+        "safe": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requires_review": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocked": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "evaluations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PolicyEvaluationEntry"
+      }
+    }
+  },
+  "$defs": {
+    "PolicyEvaluationEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal_id",
+        "decision",
+        "reason"
+      ],
+      "properties": {
+        "proposal_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "safe",
+            "requires_review",
+            "blocked"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

@@ -62,6 +62,7 @@ describe('runContracts', () => {
         { id: 'outcome-telemetry', version: '1.0', path: 'packages/contracts/src/outcome-telemetry.schema.json' },
         { id: 'learning-state', version: '1.0', path: 'packages/contracts/src/learning-state.schema.json' },
         { id: 'improvement-candidates', version: '1.0', path: 'packages/contracts/src/improvement-candidates.schema.json' },
+        { id: 'policy-evaluation', version: '1.0', path: 'packages/contracts/src/policy-evaluation.schema.json' },
         { id: 'lane-state', version: '1.0', path: 'packages/contracts/src/lane-state.schema.json' },
         { id: 'worker-assignments', version: '1.0', path: 'packages/contracts/src/worker-assignments.schema.json' },
         { id: 'repository-events', version: '1.0', path: 'packages/contracts/src/repository-events.schema.json' },
