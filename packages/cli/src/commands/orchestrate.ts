@@ -3,6 +3,7 @@ import path from 'node:path';
 import { compileOrchestratorArtifacts, recordLaneTransition, safeRecordRepositoryEvent } from '@zachariahredfield/playbook-engine';
 import { emitResult, ExitCode } from '../lib/cliContract.js';
 import { printCommandHelp } from '../lib/commandSurface.js';
+import { createCommandQualityTracker } from '../lib/commandQuality.js';
 
 type OrchestrateArtifactFormat = 'md' | 'json' | 'both';
 
@@ -50,6 +51,8 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
     return ExitCode.Success;
   }
 
+  const tracker = createCommandQualityTracker(cwd, 'orchestrate');
+
   const tasksFile = options.tasksFile?.trim();
   if (tasksFile) {
     const tasksPath = path.resolve(cwd, tasksFile);
@@ -64,6 +67,7 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
         findings: [{ id: 'orchestrate.tasks-file.missing', level: 'error', message: `Missing tasks file: ${tasksFile}` }],
         nextActions: ['Run `playbook orchestrate --tasks-file <path>` with a valid JSON file.']
       });
+      tracker.finish({ inputsSummary: `tasks-file=${tasksFile}`, artifactsRead: [tasksFile], successStatus: 'failure', warningsCount: 1 });
       return ExitCode.Failure;
     }
 
@@ -81,6 +85,7 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
         findings: [{ id: 'orchestrate.tasks-file.parse-error', level: 'error', message: `Unable to parse JSON tasks file: ${tasksFile}` }],
         nextActions: ['Ensure the tasks file is valid JSON and retry.']
       });
+      tracker.finish({ inputsSummary: `tasks-file=${tasksFile}`, artifactsRead: [tasksFile], successStatus: 'failure', warningsCount: 1 });
       return ExitCode.Failure;
     }
 
@@ -97,6 +102,7 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
         findings: [{ id: 'orchestrate.tasks-file.invalid', level: 'error', message: 'Expected [{ task_id, task }] or { tasks: [...] }.' }],
         nextActions: ['Ensure each task includes deterministic task_id and task fields.']
       });
+      tracker.finish({ inputsSummary: `tasks-file=${tasksFile}`, artifactsRead: [tasksFile], successStatus: 'failure', warningsCount: 1 });
       return ExitCode.Failure;
     }
 
@@ -114,6 +120,7 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
         findings: [{ id: 'orchestrate.workset.unavailable', level: 'error', message: 'Missing engine export: buildWorksetPlan' }],
         nextActions: ['Rebuild workspace packages and retry.']
       });
+      tracker.finish({ inputsSummary: `tasks-file=${tasksFile}`, artifactsRead: [tasksFile], successStatus: 'failure', warningsCount: 1 });
       return ExitCode.Failure;
     }
 
@@ -130,6 +137,7 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
         findings: [{ id: 'orchestrate.lane-state.unavailable', level: 'error', message: 'Missing engine export: deriveLaneState' }],
         nextActions: ['Rebuild workspace packages and retry.']
       });
+      tracker.finish({ inputsSummary: `tasks-file=${tasksFile}`, artifactsRead: [tasksFile], successStatus: 'failure', warningsCount: 1 });
       return ExitCode.Failure;
     }
 
@@ -186,6 +194,14 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
         `Review ${LANE_STATE_PATH} for deterministic lane readiness before any execution handoff.`
       ]
     });
+    tracker.finish({
+      inputsSummary: `tasks-file=${tasksFile}`,
+      artifactsRead: [tasksFile],
+      artifactsWritten: [WORKSET_PLAN_PATH, LANE_STATE_PATH],
+      downstreamArtifactsProduced: [WORKSET_PLAN_PATH, LANE_STATE_PATH],
+      successStatus: laneState.blocked_lanes.length > 0 ? 'partial' : 'success',
+      warningsCount: worksetPlan.warnings.length + laneState.blocked_lanes.length
+    });
 
     return laneState.blocked_lanes.length > 0 ? ExitCode.Failure : ExitCode.Success;
   }
@@ -208,6 +224,7 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
       ],
       nextActions: ['Run `playbook orchestrate --goal "<goal>"` or `playbook orchestrate --tasks-file <path>`.']
     });
+    tracker.finish({ inputsSummary: 'goal=missing', successStatus: 'failure', warningsCount: 1 });
 
     return ExitCode.Failure;
   }
@@ -263,6 +280,14 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
         : []),
       ...(artifactIncludesJson ? [`Review ${path.relative(cwd, compilation.artifact.orchestratorPath)} lane contracts.`] : [])
     ]
+  });
+
+  tracker.finish({
+    inputsSummary: `goal=${goal}`,
+    artifactsWritten: [path.join(path.relative(cwd, compilation.outputDir), 'orchestrator-contract.json').replace(/\\/g, '/')],
+    downstreamArtifactsProduced: [compilation.relativeOutputDir],
+    successStatus: compilation.contract.warnings.length > 0 ? 'partial' : 'success',
+    warningsCount: compilation.contract.warnings.length
   });
 
   return ExitCode.Success;

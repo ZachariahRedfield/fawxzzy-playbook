@@ -3,6 +3,7 @@ import path from 'node:path';
 import { assignWorkersToLanes, type WorksetPlanArtifact } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../../lib/cliContract.js';
 import { emitCommandFailure, printCommandHelp } from '../../lib/commandSurface.js';
+import { createCommandQualityTracker } from '../../lib/commandQuality.js';
 
 const WORKSET_PLAN_PATH = '.playbook/workset-plan.json';
 const EXECUTION_STATE_PATH = '.playbook/execution-state.json';
@@ -73,14 +74,19 @@ export const runExecution = async (cwd: string, options: ExecuteOptions): Promis
     return ExitCode.Success;
   }
 
-  const worksetPlan = readJsonArtifact<WorksetPlanArtifact>(cwd, WORKSET_PLAN_PATH);
+  const tracker = createCommandQualityTracker(cwd, 'execute');
+
+  try {
+    const worksetPlan = readJsonArtifact<WorksetPlanArtifact>(cwd, WORKSET_PLAN_PATH);
   if (!worksetPlan) {
-    return emitCommandFailure('execute', options, {
+    const exitCode = emitCommandFailure('execute', options, {
       summary: `Execution failed: missing prerequisite artifact ${WORKSET_PLAN_PATH}.`,
       findingId: 'execute.workset-plan.missing',
       message: `Missing required artifact: ${WORKSET_PLAN_PATH}.`,
       nextActions: ['Run `playbook orchestrate --tasks-file <path>` or `playbook orchestrate --goal "<goal>"` before execute.']
     });
+    tracker.finish({ inputsSummary: 'missing workset plan', artifactsRead: [WORKSET_PLAN_PATH], successStatus: 'failure', warningsCount: 1 });
+    return exitCode;
   }
 
   const engineModule = (await import('@zachariahredfield/playbook-engine')) as unknown as ExecutionModule;
@@ -165,12 +171,38 @@ export const runExecution = async (cwd: string, options: ExecuteOptions): Promis
         2
       )
     );
-    return status === 'SUCCESS' ? ExitCode.Success : ExitCode.Failure;
+    const exitCode = status === 'SUCCESS' ? ExitCode.Success : ExitCode.Failure;
+    tracker.finish({
+      inputsSummary: `lanes=${worksetPlan.lanes.length}`,
+      artifactsRead: [WORKSET_PLAN_PATH],
+      artifactsWritten: [EXECUTION_STATE_PATH],
+      downstreamArtifactsProduced: [EXECUTION_STATE_PATH],
+      successStatus: exitCode === ExitCode.Success ? 'success' : 'partial'
+    });
+    return exitCode;
   }
 
   if (!options.quiet) {
     renderText(run.runId, lanes, status);
   }
 
-  return status === 'SUCCESS' ? ExitCode.Success : ExitCode.Failure;
+  const exitCode = status === 'SUCCESS' ? ExitCode.Success : ExitCode.Failure;
+  tracker.finish({
+    inputsSummary: `lanes=${worksetPlan.lanes.length}`,
+    artifactsRead: [WORKSET_PLAN_PATH],
+    artifactsWritten: [EXECUTION_STATE_PATH],
+    downstreamArtifactsProduced: [EXECUTION_STATE_PATH],
+    successStatus: exitCode === ExitCode.Success ? 'success' : 'partial'
+  });
+  return exitCode;
+  } catch (error) {
+    tracker.finish({
+      inputsSummary: 'execution runtime failure',
+      artifactsRead: [WORKSET_PLAN_PATH],
+      artifactsWritten: [EXECUTION_STATE_PATH],
+      successStatus: 'failure',
+      warningsCount: 1
+    });
+    throw error;
+  }
 };

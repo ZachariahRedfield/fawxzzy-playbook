@@ -17,6 +17,7 @@ import {
 import { emitJsonOutput } from '../../lib/jsonArtifact.js';
 import { ExitCode } from '../../lib/cliContract.js';
 import { emitCommandFailure, hasHelpFlag, printCommandHelp } from '../../lib/commandSurface.js';
+import { createCommandQualityTracker } from '../../lib/commandQuality.js';
 
 type TelemetryCommandOptions = {
   format: 'text' | 'json';
@@ -108,6 +109,7 @@ export const runTelemetry = async (
   args: string[],
   options: TelemetryCommandOptions
 ): Promise<number> => {
+  const tracker = createCommandQualityTracker(cwd, 'telemetry');
   const subcommand = args.find((arg) => !arg.startsWith('-'));
 
   if (options.help || !subcommand || hasHelpFlag(args)) {
@@ -117,24 +119,29 @@ export const runTelemetry = async (
       options: ['outcomes                  Inspect .playbook/outcome-telemetry.json', 'process                   Inspect .playbook/process-telemetry.json', 'learning-state            Show compacted deterministic learning snapshot', 'learning                  Compact cross-run learning signals and write artifact', 'summary                   Show combined deterministic telemetry summary', '--json                    Alias for --format=json', '--format <text|json>      Output format', '--quiet                   Suppress success output in text mode', '--help                    Show help'],
       artifacts: ['.playbook/outcome-telemetry.json (read)', '.playbook/process-telemetry.json (read)', '.playbook/task-execution-profile.json (optional read)', '.playbook/learning-compaction.json (write for learning)']
     });
-    return options.help || hasHelpFlag(args) ? ExitCode.Success : ExitCode.Failure;
+    const exitCode = options.help || hasHelpFlag(args) ? ExitCode.Success : ExitCode.Failure;
+    tracker.finish({ inputsSummary: `subcommand=${subcommand ?? 'none'}`, successStatus: exitCode === ExitCode.Success ? 'success' : 'failure', warningsCount: exitCode === ExitCode.Success ? 0 : 1 });
+    return exitCode;
   }
 
   if (subcommand === 'outcomes') {
     const rawOutcomeArtifact = readJsonArtifact<OutcomeTelemetryArtifact>(cwd, OUTCOME_TELEMETRY_PATH);
     if (!rawOutcomeArtifact) {
-      return emitCommandFailure('telemetry', options, {
+      const exitCode = emitCommandFailure('telemetry', options, {
         summary: 'Telemetry failed: missing prerequisite outcome telemetry artifact.',
         findingId: 'telemetry.outcomes.missing-artifact',
         message: 'Missing required artifact: .playbook/outcome-telemetry.json.',
         nextActions: ['Run workflows that emit outcome telemetry and retry `playbook telemetry outcomes`.']
       });
+      tracker.finish({ inputsSummary: 'subcommand=outcomes', artifactsRead: ['.playbook/outcome-telemetry.json'], successStatus: 'failure', warningsCount: 1 });
+      return exitCode;
     }
 
     const outcomeArtifact = normalizeOutcomeTelemetryArtifact(rawOutcomeArtifact);
 
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'telemetry', payload: outcomeArtifact });
+      tracker.finish({ inputsSummary: 'subcommand=outcomes', artifactsRead: ['.playbook/outcome-telemetry.json'], successStatus: 'success' });
       return ExitCode.Success;
     }
 
@@ -142,24 +149,28 @@ export const runTelemetry = async (
       renderTextOutcome(outcomeArtifact);
     }
 
+    tracker.finish({ inputsSummary: 'subcommand=outcomes', artifactsRead: ['.playbook/outcome-telemetry.json'], successStatus: 'success' });
     return ExitCode.Success;
   }
 
   if (subcommand === 'process') {
     const rawProcessArtifact = readJsonArtifact<ProcessTelemetryArtifact>(cwd, PROCESS_TELEMETRY_PATH);
     if (!rawProcessArtifact) {
-      return emitCommandFailure('telemetry', options, {
+      const exitCode = emitCommandFailure('telemetry', options, {
         summary: 'Telemetry failed: missing prerequisite process telemetry artifact.',
         findingId: 'telemetry.process.missing-artifact',
         message: 'Missing required artifact: .playbook/process-telemetry.json.',
         nextActions: ['Run workflows that emit process telemetry and retry `playbook telemetry process`.']
       });
+      tracker.finish({ inputsSummary: 'subcommand=process', artifactsRead: ['.playbook/process-telemetry.json'], successStatus: 'failure', warningsCount: 1 });
+      return exitCode;
     }
 
     const processArtifact = normalizeProcessTelemetryArtifact(rawProcessArtifact);
 
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'telemetry', payload: processArtifact });
+      tracker.finish({ inputsSummary: 'subcommand=process', artifactsRead: ['.playbook/process-telemetry.json'], successStatus: 'success' });
       return ExitCode.Success;
     }
 
@@ -167,6 +178,7 @@ export const runTelemetry = async (
       renderTextProcess(processArtifact);
     }
 
+    tracker.finish({ inputsSummary: 'subcommand=process', artifactsRead: ['.playbook/process-telemetry.json'], successStatus: 'success' });
     return ExitCode.Success;
   }
 
@@ -182,6 +194,12 @@ export const runTelemetry = async (
 
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'telemetry', payload: learningState });
+      tracker.finish({
+        inputsSummary: 'subcommand=learning-state',
+        artifactsRead: ['.playbook/outcome-telemetry.json', '.playbook/process-telemetry.json', '.playbook/task-execution-profile.json'],
+        successStatus: 'success',
+        openQuestionsCount: learningState.confidenceSummary.open_questions.length
+      });
       return ExitCode.Success;
     }
 
@@ -195,6 +213,12 @@ export const runTelemetry = async (
       }
     }
 
+    tracker.finish({
+      inputsSummary: 'subcommand=learning-state',
+      artifactsRead: ['.playbook/outcome-telemetry.json', '.playbook/process-telemetry.json', '.playbook/task-execution-profile.json'],
+      successStatus: 'success',
+      openQuestionsCount: learningState.confidenceSummary.open_questions.length
+    });
     return ExitCode.Success;
   }
 
@@ -202,18 +226,21 @@ export const runTelemetry = async (
     const outcomeArtifact = readJsonArtifact<OutcomeTelemetryArtifact>(cwd, OUTCOME_TELEMETRY_PATH);
     const processArtifact = readJsonArtifact<ProcessTelemetryArtifact>(cwd, PROCESS_TELEMETRY_PATH);
     if (!outcomeArtifact || !processArtifact) {
-      return emitCommandFailure('telemetry', options, {
+      const exitCode = emitCommandFailure('telemetry', options, {
         summary: 'Telemetry summary failed: missing prerequisite telemetry artifacts.',
         findingId: 'telemetry.summary.missing-artifact',
         message: `Missing required artifacts: ${!outcomeArtifact ? '.playbook/outcome-telemetry.json' : ''}${!outcomeArtifact && !processArtifact ? ', ' : ''}${!processArtifact ? '.playbook/process-telemetry.json' : ''}.`,
         nextActions: ['Run workflows that emit telemetry artifacts and retry `playbook telemetry summary`.']
       });
+      tracker.finish({ inputsSummary: 'subcommand=summary', artifactsRead: ['.playbook/outcome-telemetry.json', '.playbook/process-telemetry.json'], successStatus: 'failure', warningsCount: 1 });
+      return exitCode;
     }
 
     const summary = summarizeStructuralTelemetry(outcomeArtifact, processArtifact);
 
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'telemetry', payload: summary });
+      tracker.finish({ inputsSummary: 'subcommand=summary', artifactsRead: ['.playbook/outcome-telemetry.json', '.playbook/process-telemetry.json'], successStatus: 'success' });
       return ExitCode.Success;
     }
 
@@ -231,6 +258,7 @@ export const runTelemetry = async (
       }
     }
 
+    tracker.finish({ inputsSummary: 'subcommand=summary', artifactsRead: ['.playbook/outcome-telemetry.json', '.playbook/process-telemetry.json'], successStatus: 'success' });
     return ExitCode.Success;
   }
 
@@ -240,6 +268,13 @@ export const runTelemetry = async (
 
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'telemetry', payload: learningCompaction });
+      tracker.finish({
+        inputsSummary: 'subcommand=learning',
+        artifactsWritten: ['.playbook/learning-compaction.json'],
+        downstreamArtifactsProduced: ['.playbook/learning-compaction.json'],
+        successStatus: 'success',
+        openQuestionsCount: learningCompaction.summary.open_questions.length
+      });
       return ExitCode.Success;
     }
 
@@ -254,13 +289,22 @@ export const runTelemetry = async (
       console.log('Artifact: .playbook/learning-compaction.json');
     }
 
+    tracker.finish({
+      inputsSummary: 'subcommand=learning',
+      artifactsWritten: ['.playbook/learning-compaction.json'],
+      downstreamArtifactsProduced: ['.playbook/learning-compaction.json'],
+      successStatus: 'success',
+      openQuestionsCount: learningCompaction.summary.open_questions.length
+    });
     return ExitCode.Success;
   }
 
-  return emitCommandFailure('telemetry', options, {
+  const exitCode = emitCommandFailure('telemetry', options, {
     summary: 'Telemetry failed: unsupported subcommand.',
     findingId: 'telemetry.subcommand.unsupported',
     message: 'Unsupported subcommand. Use outcomes|process|learning-state|learning|summary.',
     nextActions: ['Run `playbook telemetry --help` for supported command surfaces.']
   });
+  tracker.finish({ inputsSummary: `subcommand=${subcommand}`, successStatus: 'failure', warningsCount: 1 });
+  return exitCode;
 };

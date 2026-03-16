@@ -15,6 +15,7 @@ export type RepositoryEventType =
   | 'worker_assignment'
   | 'execution_outcome'
   | 'improvement_signal'
+  | 'command_execution'
   | 'command_quality'
   | 'lane_outcome'
   | 'improvement_candidate';
@@ -149,6 +150,7 @@ export type RepositoryEvent =
   | WorkerAssignmentEvent
   | ExecutionOutcomeEvent
   | ImprovementSignalEvent
+  | CommandExecutionEvent
   | CommandQualityEvent
   | LaneOutcomeLegacyEvent
   | ImprovementCandidateLegacyEvent;
@@ -158,6 +160,24 @@ export type RepositoryEventIndex = {
   generatedAt: string;
   total_events: number;
   by_event_type: Record<RepositoryEventType, { count: number; latest_timestamp: string | null }>;
+};
+
+export type CommandExecutionEvent = RepositoryEventBase & {
+  event_type: 'command_execution';
+  subsystem: 'repository_memory';
+  subject: string;
+  payload: {
+    command_name: string;
+    success_status: 'success' | 'failure' | 'partial';
+    duration_ms: number;
+    artifacts_read: string[];
+    artifacts_written: string[];
+  };
+  command_name: string;
+  success_status: 'success' | 'failure' | 'partial';
+  duration_ms: number;
+  artifacts_read: string[];
+  artifacts_written: string[];
 };
 
 const canonicalize = (value: unknown): unknown => {
@@ -217,6 +237,7 @@ const emptyIndex = (): RepositoryEventIndex => ({
     lane_transition: { count: 0, latest_timestamp: null },
     route_decision: { count: 0, latest_timestamp: null },
     worker_assignment: { count: 0, latest_timestamp: null },
+    command_execution: { count: 0, latest_timestamp: null },
     command_quality: { count: 0, latest_timestamp: null },
     lane_outcome: { count: 0, latest_timestamp: null },
     improvement_candidate: { count: 0, latest_timestamp: null }
@@ -489,6 +510,40 @@ export const recordCommandQuality = (
     warnings_count: Math.max(0, Math.trunc(input.warnings_count)),
     open_questions_count: Math.max(0, Math.trunc(input.open_questions_count))
   }) as CommandQualityEvent;
+
+export const recordCommandExecution = (
+  repoRoot: string,
+  input: {
+    timestamp?: string;
+    run_id?: string;
+    command_name: string;
+    success_status: 'success' | 'failure' | 'partial';
+    duration_ms: number;
+    artifacts_read: string[];
+    artifacts_written: string[];
+    related_artifacts?: RepositoryEventRelatedArtifact[];
+  }
+): CommandExecutionEvent =>
+  appendEvent(repoRoot, {
+    event_type: 'command_execution',
+    ...(input.timestamp ? { timestamp: input.timestamp } : {}),
+    ...(input.run_id ? { run_id: input.run_id } : {}),
+    subsystem: 'repository_memory',
+    subject: input.command_name,
+    related_artifacts: [...(input.related_artifacts ?? [])],
+    payload: {
+      command_name: input.command_name,
+      success_status: input.success_status,
+      duration_ms: Math.max(0, Math.trunc(input.duration_ms)),
+      artifacts_read: [...input.artifacts_read].sort((left, right) => left.localeCompare(right)),
+      artifacts_written: [...input.artifacts_written].sort((left, right) => left.localeCompare(right))
+    },
+    command_name: input.command_name,
+    success_status: input.success_status,
+    duration_ms: Math.max(0, Math.trunc(input.duration_ms)),
+    artifacts_read: [...input.artifacts_read].sort((left, right) => left.localeCompare(right)),
+    artifacts_written: [...input.artifacts_written].sort((left, right) => left.localeCompare(right))
+  }) as CommandExecutionEvent;
 
 export type RepositoryEventLookupOptions = {
   eventType?: RepositoryEventType;
