@@ -1,6 +1,7 @@
 import * as engine from '@zachariahredfield/playbook-engine';
 import { buildResult, emitResult, ExitCode } from '../lib/cliContract.js';
 import { emitJsonOutput } from '../lib/jsonArtifact.js';
+import { printCommandHelp } from '../lib/commandSurface.js';
 import { loadVerifyRules } from '../lib/loadVerifyRules.js';
 
 export type VerifyReport = {
@@ -53,8 +54,18 @@ const resolveRunId = (cwd: string, requestedRunId: string | undefined): string =
 
 export const runVerify = async (
   cwd: string,
-  options: { format: 'text' | 'json'; ci: boolean; quiet: boolean; explain: boolean; policy: boolean; outFile?: string; runId?: string }
+  options: { format: 'text' | 'json'; ci: boolean; quiet: boolean; explain: boolean; policy: boolean; outFile?: string; runId?: string; help?: boolean }
 ): Promise<number> => {
+  if (options.help) {
+    printCommandHelp({
+      usage: 'playbook verify [options]',
+      description: 'Verify repository governance rules and optional policy gating.',
+      options: ['--policy                   Enable policy mode for configured policy rules', '--ci                       CI mode summary in text output', '--explain                  Show why findings matter and remediation in text mode', '--out <path>               Write JSON artifact envelope for verify result', '--run-id <id>              Attach verify step to an existing execution run', '--json                     Alias for --format=json', '--format <text|json>       Output format', '--quiet                    Suppress success output in text mode', '--help                     Show help'],
+      artifacts: ['.playbook/findings*.json (optional via --out)', '.playbook/execution/runs/** (session runtime state)']
+    });
+    return ExitCode.Success;
+  }
+
   const verifyRules = await loadVerifyRules(cwd);
   const report = await collectVerifyReport(cwd);
 

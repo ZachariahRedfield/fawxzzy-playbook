@@ -1,3 +1,12 @@
+
+## Unreleased
+
+### CLI
+
+- Normalized command-surface contracts for `verify`, `route`, `orchestrate`, `execute`, `telemetry`, and `improve` around side-effect-free help, deterministic missing-artifact failures, stable JSON/text semantics, and explicit owned-artifact declarations.
+- Added shared command-surface helpers for help rendering and standardized deterministic failure envelopes.
+- Added focused tests for `--help`, missing prerequisites, and stable JSON error/result structure across the normalized command set.
+
 # Changelog
 
 - WHAT: Normalized repository memory operational events to a canonical deterministic schema (`event_id`, `event_type`, `timestamp`, `subsystem`, `subject`, `related_artifacts`, `payload`, optional `run_id`) across route decisions, lane transitions, worker assignments, execution outcomes, and improvement signals; added normalized event readers and deterministic ordering/index tests. WHY: Prevents memory-shape drift and establishes a stable event stream for future compaction and knowledge promotion workflows.

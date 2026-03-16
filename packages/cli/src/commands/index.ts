@@ -134,7 +134,8 @@ const commandRunners: Record<string, (context: CommandContext) => Promise<Comman
       quiet,
       policy: parseFlag(commandArgs, '--policy'),
       outFile: parseOptionValue(commandArgs, '--out'),
-      runId: parseOptionValue(commandArgs, '--run-id')
+      runId: parseOptionValue(commandArgs, '--run-id'),
+      help: parseFlag(commandArgs, '--help') || parseFlag(commandArgs, '-h')
     });
   },
   plan: async ({ cwd, commandArgs, ci, format, quiet }) => {
@@ -189,7 +190,8 @@ const commandRunners: Record<string, (context: CommandContext) => Promise<Comman
       tasksFile: parseOptionValue(commandArgs, '--tasks-file'),
       lanes,
       outDir: parseOptionValue(commandArgs, '--out') ?? '.playbook/orchestrator',
-      artifactFormat: parseOrchestrateArtifactFormat(commandArgs, format)
+      artifactFormat: parseOrchestrateArtifactFormat(commandArgs, format),
+      help: parseFlag(commandArgs, '--help') || parseFlag(commandArgs, '-h')
     });
   },
   apply: async ({ cwd, commandArgs, ci, format, quiet }) => {
@@ -301,22 +303,27 @@ const commandRunners: Record<string, (context: CommandContext) => Promise<Comman
   },
   telemetry: async ({ cwd, commandArgs, format, quiet }) => {
     const { runTelemetry } = await import('./telemetry.js');
-    return runTelemetry(cwd, commandArgs, { format, quiet });
+    return runTelemetry(cwd, commandArgs, {
+      format,
+      quiet,
+      help: parseFlag(commandArgs, '--help') || parseFlag(commandArgs, '-h')
+    });
   },
   improve: async ({ cwd, commandArgs, format, quiet }) => {
     const { runImprove, runImproveApplySafe, runImproveApprove } = await import('./improve.js');
+    const help = parseFlag(commandArgs, '--help') || parseFlag(commandArgs, '-h');
     const subcommand = commandArgs.find((arg) => !arg.startsWith('-'));
 
     if (subcommand === 'apply-safe') {
-      return runImproveApplySafe(cwd, { format, quiet });
+      return runImproveApplySafe(cwd, { format, quiet, help });
     }
 
     if (subcommand === 'approve') {
       const proposalId = commandArgs.find((arg, index) => index > commandArgs.indexOf('approve') && !arg.startsWith('-'));
-      return runImproveApprove(cwd, proposalId, { format, quiet });
+      return runImproveApprove(cwd, proposalId, { format, quiet, help });
     }
 
-    return runImprove(cwd, { format, quiet });
+    return runImprove(cwd, { format, quiet, help });
   },
   agent: async ({ cwd, commandArgs, format, quiet }) => {
     const { runAgent } = await import('./agent.js');
@@ -384,7 +391,7 @@ const commandRunners: Record<string, (context: CommandContext) => Promise<Comman
   },
   route: async ({ cwd, commandArgs, format, quiet }) => {
     const { runRoute } = await import('./route.js');
-    return runRoute(cwd, commandArgs, { format, quiet, codexPrompt: parseFlag(commandArgs, '--codex-prompt') });
+    return runRoute(cwd, commandArgs, { format, quiet, codexPrompt: parseFlag(commandArgs, '--codex-prompt'), help: parseFlag(commandArgs, '--help') || parseFlag(commandArgs, '-h') });
   },
   query: async ({ cwd, commandArgs, format, quiet }) => {
     const { runQuery } = await import('./query.js');

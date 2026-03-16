@@ -16,27 +16,19 @@ import {
 } from '@zachariahredfield/playbook-engine';
 import { emitJsonOutput } from '../../lib/jsonArtifact.js';
 import { ExitCode } from '../../lib/cliContract.js';
+import { emitCommandFailure, hasHelpFlag, printCommandHelp } from '../../lib/commandSurface.js';
 
 type TelemetryCommandOptions = {
   format: 'text' | 'json';
   quiet: boolean;
+  help?: boolean;
 };
 
 const OUTCOME_TELEMETRY_PATH = ['.playbook', 'outcome-telemetry.json'] as const;
 const PROCESS_TELEMETRY_PATH = ['.playbook', 'process-telemetry.json'] as const;
 const TASK_EXECUTION_PROFILE_PATH = ['.playbook', 'task-execution-profile.json'] as const;
 
-const readJsonArtifact = <T>(cwd: string, segments: readonly string[], artifactLabel: string): T => {
-  const artifactPath = path.join(cwd, ...segments);
-  if (!fs.existsSync(artifactPath)) {
-    throw new Error(`playbook telemetry: missing ${artifactLabel} artifact at ${segments.join('/')}.`);
-  }
-
-  return JSON.parse(fs.readFileSync(artifactPath, 'utf8')) as T;
-};
-
-
-const tryReadJsonArtifact = <T>(cwd: string, segments: readonly string[]): T | undefined => {
+const readJsonArtifact = <T>(cwd: string, segments: readonly string[]): T | undefined => {
   const artifactPath = path.join(cwd, ...segments);
   if (!fs.existsSync(artifactPath)) {
     return undefined;
@@ -45,9 +37,8 @@ const tryReadJsonArtifact = <T>(cwd: string, segments: readonly string[]): T | u
   return JSON.parse(fs.readFileSync(artifactPath, 'utf8')) as T;
 };
 
-const printTelemetryHelp = (): void => {
-  console.log(`Usage: playbook telemetry <subcommand> [--json]\n\nSubcommands:\n  outcomes                     Inspect .playbook/outcome-telemetry.json\n  process                      Inspect .playbook/process-telemetry.json\n  learning-state               Show compacted deterministic learning snapshot\n  learning                     Compact cross-run learning signals and write artifact\n  summary                      Show combined deterministic telemetry summary`);
-};
+
+const tryReadJsonArtifact = readJsonArtifact;
 
 const renderTextOutcome = (artifact: OutcomeTelemetryArtifact): void => {
   console.log('Outcome telemetry');
@@ -119,15 +110,28 @@ export const runTelemetry = async (
 ): Promise<number> => {
   const subcommand = args.find((arg) => !arg.startsWith('-'));
 
-  if (!subcommand || args.includes('--help') || args.includes('-h')) {
-    printTelemetryHelp();
-    return subcommand ? ExitCode.Success : ExitCode.Failure;
+  if (options.help || !subcommand || hasHelpFlag(args)) {
+    printCommandHelp({
+      usage: 'playbook telemetry <subcommand> [options]',
+      description: 'Inspect deterministic telemetry artifacts and cross-run learning summaries.',
+      options: ['outcomes                  Inspect .playbook/outcome-telemetry.json', 'process                   Inspect .playbook/process-telemetry.json', 'learning-state            Show compacted deterministic learning snapshot', 'learning                  Compact cross-run learning signals and write artifact', 'summary                   Show combined deterministic telemetry summary', '--json                    Alias for --format=json', '--format <text|json>      Output format', '--quiet                   Suppress success output in text mode', '--help                    Show help'],
+      artifacts: ['.playbook/outcome-telemetry.json (read)', '.playbook/process-telemetry.json (read)', '.playbook/task-execution-profile.json (optional read)', '.playbook/learning-compaction.json (write for learning)']
+    });
+    return options.help || hasHelpFlag(args) ? ExitCode.Success : ExitCode.Failure;
   }
 
   if (subcommand === 'outcomes') {
-    const outcomeArtifact = normalizeOutcomeTelemetryArtifact(
-      readJsonArtifact<OutcomeTelemetryArtifact>(cwd, OUTCOME_TELEMETRY_PATH, 'outcome telemetry')
-    );
+    const rawOutcomeArtifact = readJsonArtifact<OutcomeTelemetryArtifact>(cwd, OUTCOME_TELEMETRY_PATH);
+    if (!rawOutcomeArtifact) {
+      return emitCommandFailure('telemetry', options, {
+        summary: 'Telemetry failed: missing prerequisite outcome telemetry artifact.',
+        findingId: 'telemetry.outcomes.missing-artifact',
+        message: 'Missing required artifact: .playbook/outcome-telemetry.json.',
+        nextActions: ['Run workflows that emit outcome telemetry and retry `playbook telemetry outcomes`.']
+      });
+    }
+
+    const outcomeArtifact = normalizeOutcomeTelemetryArtifact(rawOutcomeArtifact);
 
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'telemetry', payload: outcomeArtifact });
@@ -142,9 +146,17 @@ export const runTelemetry = async (
   }
 
   if (subcommand === 'process') {
-    const processArtifact = normalizeProcessTelemetryArtifact(
-      readJsonArtifact<ProcessTelemetryArtifact>(cwd, PROCESS_TELEMETRY_PATH, 'process telemetry')
-    );
+    const rawProcessArtifact = readJsonArtifact<ProcessTelemetryArtifact>(cwd, PROCESS_TELEMETRY_PATH);
+    if (!rawProcessArtifact) {
+      return emitCommandFailure('telemetry', options, {
+        summary: 'Telemetry failed: missing prerequisite process telemetry artifact.',
+        findingId: 'telemetry.process.missing-artifact',
+        message: 'Missing required artifact: .playbook/process-telemetry.json.',
+        nextActions: ['Run workflows that emit process telemetry and retry `playbook telemetry process`.']
+      });
+    }
+
+    const processArtifact = normalizeProcessTelemetryArtifact(rawProcessArtifact);
 
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'telemetry', payload: processArtifact });
@@ -187,8 +199,17 @@ export const runTelemetry = async (
   }
 
   if (subcommand === 'summary') {
-    const outcomeArtifact = readJsonArtifact<OutcomeTelemetryArtifact>(cwd, OUTCOME_TELEMETRY_PATH, 'outcome telemetry');
-    const processArtifact = readJsonArtifact<ProcessTelemetryArtifact>(cwd, PROCESS_TELEMETRY_PATH, 'process telemetry');
+    const outcomeArtifact = readJsonArtifact<OutcomeTelemetryArtifact>(cwd, OUTCOME_TELEMETRY_PATH);
+    const processArtifact = readJsonArtifact<ProcessTelemetryArtifact>(cwd, PROCESS_TELEMETRY_PATH);
+    if (!outcomeArtifact || !processArtifact) {
+      return emitCommandFailure('telemetry', options, {
+        summary: 'Telemetry summary failed: missing prerequisite telemetry artifacts.',
+        findingId: 'telemetry.summary.missing-artifact',
+        message: `Missing required artifacts: ${!outcomeArtifact ? '.playbook/outcome-telemetry.json' : ''}${!outcomeArtifact && !processArtifact ? ', ' : ''}${!processArtifact ? '.playbook/process-telemetry.json' : ''}.`,
+        nextActions: ['Run workflows that emit telemetry artifacts and retry `playbook telemetry summary`.']
+      });
+    }
+
     const summary = summarizeStructuralTelemetry(outcomeArtifact, processArtifact);
 
     if (options.format === 'json') {
@@ -236,11 +257,10 @@ export const runTelemetry = async (
     return ExitCode.Success;
   }
 
-  const message = 'playbook telemetry: unsupported subcommand. Use "playbook telemetry outcomes|process|learning-state|learning|summary".';
-  if (options.format === 'json') {
-    console.log(JSON.stringify({ schemaVersion: '1.0', command: 'telemetry', error: message }, null, 2));
-  } else {
-    console.error(message);
-  }
-  return ExitCode.Failure;
+  return emitCommandFailure('telemetry', options, {
+    summary: 'Telemetry failed: unsupported subcommand.',
+    findingId: 'telemetry.subcommand.unsupported',
+    message: 'Unsupported subcommand. Use outcomes|process|learning-state|learning|summary.',
+    nextActions: ['Run `playbook telemetry --help` for supported command surfaces.']
+  });
 };

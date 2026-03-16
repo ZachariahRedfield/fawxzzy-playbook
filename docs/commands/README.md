@@ -154,6 +154,15 @@ If docs and implementation disagree, treat implementation as source of truth and
 
 Command reference: [`pnpm playbook docs audit`](docs.md).
 
+## Execution command-surface normalization (verify / route / orchestrate / execute / telemetry / improve)
+
+These command surfaces now align on deterministic behavior for:
+
+- side-effect-free `--help`
+- stable JSON failure envelopes for command-surface/missing-artifact errors
+- explicit owned artifact declarations in command help/docs
+- consistent text/JSON semantic alignment for success and failure states
+
 ## Learn draft (`pnpm playbook learn draft`)
 
 `pnpm playbook learn draft` generates deterministic knowledge-candidate drafts from local git diff context plus indexed repository intelligence.

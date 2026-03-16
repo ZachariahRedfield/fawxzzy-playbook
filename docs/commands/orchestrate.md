@@ -22,6 +22,12 @@ pnpm playbook orchestrate \
   --format both
 ```
 
+## Command-surface guarantees
+
+- `--help` is side-effect free and does not generate orchestration artifacts.
+- Missing or invalid `--tasks-file` inputs fail deterministically with stable JSON/text semantics.
+- Artifact ownership is explicit: goal mode writes `.playbook/orchestrator/**`; tasks-file mode writes `.playbook/workset-plan.json` and `.playbook/lane-state.json`.
+
 ## Flags
 
 - `--goal <string>` (required when `--tasks-file` is not set)

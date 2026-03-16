@@ -142,6 +142,22 @@ describe('runImprove', () => {
   });
 });
 
+
+
+  it('returns deterministic failure when approve is missing proposal id', async () => {
+    const repo = createRepo();
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runImproveApprove(repo, undefined, { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.command).toBe('improve-approve');
+    expect(payload.findings[0].id).toBe('improve.approve.proposal-id.required');
+
+    logSpy.mockRestore();
+  });
+
 describe('command registry', () => {
   it('registers improve command', () => {
     const command = listRegisteredCommands().find((entry) => entry.name === 'improve');

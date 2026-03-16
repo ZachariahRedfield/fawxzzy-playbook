@@ -11,11 +11,13 @@ import {
   safeRecordRepositoryEvent
 } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
+import { emitCommandFailure, printCommandHelp } from '../lib/commandSurface.js';
 
 type RouteOptions = {
   format: 'text' | 'json';
   quiet: boolean;
   codexPrompt: boolean;
+  help?: boolean;
 };
 
 type RouteOutput = {
@@ -133,10 +135,24 @@ const printText = (payload: RouteOutput, options: RouteOptions): void => {
 };
 
 export const runRoute = async (cwd: string, commandArgs: string[], options: RouteOptions): Promise<number> => {
+  if (options.help) {
+    printCommandHelp({
+      usage: 'playbook route <task> [options]',
+      description: 'Classify task routing and emit a deterministic proposal execution plan.',
+      options: ['--codex-prompt             Include compiled Codex worker prompt', '--json                     Alias for --format=json', '--format <text|json>       Output format', '--quiet                    Suppress success output in text mode', '--help                     Show help'],
+      artifacts: [EXECUTION_PLAN_PATH]
+    });
+    return ExitCode.Success;
+  }
+
   const task = extractTask(commandArgs);
   if (!task) {
-    console.error('playbook route: missing required <task> argument');
-    return ExitCode.Failure;
+    return emitCommandFailure('route', options, {
+      summary: 'Route failed: missing required task argument.',
+      findingId: 'route.task.required',
+      message: 'Missing required argument: <task>.',
+      nextActions: ['Run `playbook route "<task>"` with a deterministic task statement.']
+    });
   }
 
   const decision = routeTask(cwd, task);

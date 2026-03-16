@@ -6,6 +6,28 @@ import { ExitCode } from '../lib/cliContract.js';
 import { runOrchestrate } from './orchestrate.js';
 
 describe('runOrchestrate', () => {
+
+
+  it('prints help side-effect-free', async () => {
+    const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-orchestrate-help-'));
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runOrchestrate(repoDir, {
+      format: 'text',
+      quiet: false,
+      lanes: 3,
+      outDir: '.playbook/orchestrator',
+      artifactFormat: 'both',
+      help: true
+    });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('Usage: playbook orchestrate (--goal <goal> | --tasks-file <path>) [options]');
+    expect(fs.existsSync(path.join(repoDir, '.playbook', 'workset-plan.json'))).toBe(false);
+
+    logSpy.mockRestore();
+  });
+
   it('fails deterministically when --goal is missing', async () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 

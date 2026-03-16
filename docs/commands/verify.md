@@ -23,3 +23,10 @@ Runs deterministic governance rule checks and reports policy findings.
 - JSON output uses a stable response envelope (`schemaVersion`, `command`, `ok`, `exitCode`).
 - Findings are deterministic and sorted for machine consumption.
 - Policy failures return exit code `3`.
+
+
+## Command-surface guarantees
+
+- `--help` is side-effect free and does not run verification or write artifacts.
+- Missing-input and command-surface failures emit the standard deterministic CLI result envelope in `--json` mode.
+- Owned artifacts are explicit: optional `--out` findings artifact plus execution run-state attachments when run metadata is present.

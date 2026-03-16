@@ -19,6 +19,36 @@ vi.mock('@zachariahredfield/playbook-engine', () => ({
 }));
 
 describe('runRoute', () => {
+
+
+  it('returns deterministic failure for missing task argument', async () => {
+    const { runRoute } = await import('./route.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runRoute('/repo', [], { format: 'json', quiet: false, codexPrompt: false });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.command).toBe('route');
+    expect(payload.findings[0].id).toBe('route.task.required');
+
+    logSpy.mockRestore();
+  });
+
+  it('prints help without writing artifacts', async () => {
+    const { runRoute } = await import('./route.js');
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-route-help-'));
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runRoute(repo, ['--help'], { format: 'text', quiet: false, codexPrompt: false, help: true });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('Usage: playbook route <task> [options]');
+    expect(fs.existsSync(path.join(repo, '.playbook', 'execution-plan.json'))).toBe(false);
+
+    logSpy.mockRestore();
+  });
+
   it('emits deterministic json route output with execution plan proposal', async () => {
     const { runRoute } = await import('./route.js');
     const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-route-'));

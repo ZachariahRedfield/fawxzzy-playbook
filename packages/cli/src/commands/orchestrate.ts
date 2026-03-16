@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { compileOrchestratorArtifacts, recordLaneTransition, safeRecordRepositoryEvent } from '@zachariahredfield/playbook-engine';
 import { emitResult, ExitCode } from '../lib/cliContract.js';
+import { printCommandHelp } from '../lib/commandSurface.js';
 
 type OrchestrateArtifactFormat = 'md' | 'json' | 'both';
 
@@ -13,6 +14,7 @@ type OrchestrateOptions = {
   lanes: number;
   outDir: string;
   artifactFormat: OrchestrateArtifactFormat;
+  help?: boolean;
 };
 
 const WORKSET_PLAN_PATH = '.playbook/workset-plan.json';
@@ -38,6 +40,16 @@ const parseTasksInput = (raw: unknown): WorksetTaskInput[] | undefined => {
 };
 
 export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): Promise<number> => {
+  if (options.help) {
+    printCommandHelp({
+      usage: 'playbook orchestrate (--goal <goal> | --tasks-file <path>) [options]',
+      description: 'Generate deterministic orchestration artifacts from a goal or tasks-file workset.',
+      options: ['--goal <string>            Orchestration goal when tasks-file is not provided', '--tasks-file <path>        JSON tasks input [{task_id,task}] or {tasks:[...]}', '--lanes <n>                Number of parallel lanes (default: 3)', '--out-dir <path>           Output directory for orchestration artifacts', '--format <md|json|both>    Artifact format for goal-mode orchestration', '--json                     Alias for --format=json output', '--quiet                    Suppress success output in text mode', '--help                     Show help'],
+      artifacts: [WORKSET_PLAN_PATH + ' (write for tasks-file mode)', LANE_STATE_PATH + ' (write for tasks-file mode)', '.playbook/orchestrator/** (write for goal mode)']
+    });
+    return ExitCode.Success;
+  }
+
   const tasksFile = options.tasksFile?.trim();
   if (tasksFile) {
     const tasksPath = path.resolve(cwd, tasksFile);
@@ -55,7 +67,23 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
       return ExitCode.Failure;
     }
 
-    const parsed = JSON.parse(fs.readFileSync(tasksPath, 'utf8')) as { tasks?: unknown } | unknown;
+    let parsed: { tasks?: unknown } | unknown;
+    try {
+      parsed = JSON.parse(fs.readFileSync(tasksPath, 'utf8')) as { tasks?: unknown } | unknown;
+    } catch {
+      emitResult({
+        format: options.format,
+        quiet: options.quiet,
+        command: 'orchestrate',
+        ok: false,
+        exitCode: ExitCode.Failure,
+        summary: 'Orchestration failed: tasks file is not valid JSON.',
+        findings: [{ id: 'orchestrate.tasks-file.parse-error', level: 'error', message: `Unable to parse JSON tasks file: ${tasksFile}` }],
+        nextActions: ['Ensure the tasks file is valid JSON and retry.']
+      });
+      return ExitCode.Failure;
+    }
+
     const tasks = parseTasksInput((parsed as { tasks?: unknown })?.tasks ?? parsed);
 
     if (!tasks) {

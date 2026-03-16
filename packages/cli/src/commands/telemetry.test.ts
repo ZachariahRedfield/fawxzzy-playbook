@@ -322,6 +322,35 @@ describe('runTelemetry', () => {
   });
 });
 
+
+
+  it('shows help side-effect-free', async () => {
+    const repo = createRepo('playbook-telemetry-help');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runTelemetry(repo, ['--help'], { format: 'text', quiet: false, help: true });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('Usage: playbook telemetry <subcommand> [options]');
+    expect(fs.existsSync(path.join(repo, '.playbook', 'learning-compaction.json'))).toBe(false);
+
+    logSpy.mockRestore();
+  });
+
+  it('returns deterministic missing-artifact failure for outcomes', async () => {
+    const repo = createRepo('playbook-telemetry-missing');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runTelemetry(repo, ['outcomes'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.command).toBe('telemetry');
+    expect(payload.findings[0].id).toBe('telemetry.outcomes.missing-artifact');
+
+    logSpy.mockRestore();
+  });
+
 describe('command registry', () => {
   it('registers the telemetry command', () => {
     const command = listRegisteredCommands().find((entry) => entry.name === 'telemetry');

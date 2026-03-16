@@ -84,6 +84,22 @@ describe('runExecution', () => {
     logSpy.mockRestore();
   });
 
+
+
+  it('returns deterministic missing artifact failure when workset plan is absent', async () => {
+    const repo = createRepo('playbook-cli-execute-missing');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const code = await runExecution(repo, { format: 'json', quiet: false });
+
+    expect(code).toBe(ExitCode.Failure);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.command).toBe('execute');
+    expect(payload.findings[0].id).toBe('execute.workset-plan.missing');
+
+    logSpy.mockRestore();
+  });
+
   it('runs deterministic supervisor flow and writes execution-state', async () => {
     const repo = createRepo('playbook-cli-execute');
     writeWorksetPlan(repo);

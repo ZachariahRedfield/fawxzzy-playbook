@@ -7,10 +7,21 @@ import {
 } from '@zachariahredfield/playbook-engine';
 import { emitJsonOutput } from '../../lib/jsonArtifact.js';
 import { ExitCode } from '../../lib/cliContract.js';
+import { emitCommandFailure, printCommandHelp } from '../../lib/commandSurface.js';
 
 type ImproveOptions = {
   format: 'text' | 'json';
   quiet: boolean;
+  help?: boolean;
+};
+
+const printImproveHelp = (): void => {
+  printCommandHelp({
+    usage: 'playbook improve [apply-safe|approve <proposal_id>] [options]',
+    description: 'Generate, apply, and approve deterministic improvement proposals.',
+    options: ['apply-safe                Apply auto-safe improvement proposals', 'approve <proposal_id>      Approve governance-gated proposal', '--json                     Alias for --format=json', '--format <text|json>       Output format', '--quiet                    Suppress success output in text mode', '--help                     Show help'],
+    artifacts: ['.playbook/improvement-candidates.json (write/read)', '.playbook/improvement-approvals.json (write for approve)']
+  });
 };
 
 const renderText = (artifact: ImprovementCandidatesArtifact): void => {
@@ -96,6 +107,11 @@ const printConversationPrompts = (artifact: ImprovementCandidatesArtifact): void
 };
 
 export const runImprove = async (cwd: string, options: ImproveOptions): Promise<number> => {
+  if (options.help) {
+    printImproveHelp();
+    return ExitCode.Success;
+  }
+
   const artifact = generateImprovementCandidates(cwd);
   writeImprovementCandidatesArtifact(cwd, artifact);
 
@@ -113,6 +129,11 @@ export const runImprove = async (cwd: string, options: ImproveOptions): Promise<
 };
 
 export const runImproveApplySafe = async (cwd: string, options: ImproveOptions): Promise<number> => {
+  if (options.help) {
+    printImproveHelp();
+    return ExitCode.Success;
+  }
+
   const artifact = applyAutoSafeImprovements(cwd);
 
   if (options.format === 'json') {
@@ -132,14 +153,18 @@ export const runImproveApplySafe = async (cwd: string, options: ImproveOptions):
 };
 
 export const runImproveApprove = async (cwd: string, proposalId: string | undefined, options: ImproveOptions): Promise<number> => {
+  if (options.help) {
+    printImproveHelp();
+    return ExitCode.Success;
+  }
+
   if (!proposalId) {
-    const message = 'playbook improve approve: missing <proposal_id>.';
-    if (options.format === 'json') {
-      emitJsonOutput({ cwd, command: 'improve-approve', payload: { error: message } });
-    } else {
-      console.error(message);
-    }
-    return ExitCode.Failure;
+    return emitCommandFailure('improve-approve', options, {
+      summary: 'Improve approve failed: missing proposal id.',
+      findingId: 'improve.approve.proposal-id.required',
+      message: 'Missing required argument: <proposal_id>.',
+      nextActions: ['Run `playbook improve approve <proposal_id>` with a deterministic proposal identifier.']
+    });
   }
 
   try {
@@ -155,11 +180,11 @@ export const runImproveApprove = async (cwd: string, proposalId: string | undefi
     return ExitCode.Success;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error while approving governance improvement.';
-    if (options.format === 'json') {
-      emitJsonOutput({ cwd, command: 'improve-approve', payload: { error: message } });
-    } else {
-      console.error(message);
-    }
-    return ExitCode.Failure;
+    return emitCommandFailure('improve-approve', options, {
+      summary: 'Improve approve failed: approval operation did not complete.',
+      findingId: 'improve.approve.failed',
+      message,
+      nextActions: ['Validate proposal id exists in .playbook/improvement-candidates.json and retry.']
+    });
   }
 };

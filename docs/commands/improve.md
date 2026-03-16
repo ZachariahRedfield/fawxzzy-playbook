@@ -7,7 +7,17 @@ Generate deterministic improvement candidates from repository memory events and 
 ```bash
 pnpm playbook improve
 pnpm playbook improve --json
+pnpm playbook improve apply-safe --json
+pnpm playbook improve approve <proposal_id> --json
 ```
+
+## Subcommands
+
+- `improve` — generate candidates and write deterministic artifacts.
+- `improve apply-safe` — apply auto-safe proposals only.
+- `improve approve <proposal_id>` — apply explicit human approval for governance-gated candidates.
+
+All improve surfaces support side-effect-free `--help` and deterministic JSON failure envelopes for missing/invalid approval inputs.
 
 ## Inputs
 

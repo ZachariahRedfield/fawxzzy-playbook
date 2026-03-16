@@ -54,6 +54,21 @@ describe('runVerify policy mode', () => {
     ]);
   });
 
+
+
+  it('prints help without invoking verify engine', async () => {
+    const { runVerify } = await import('./verify.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runVerify('/repo', { format: 'text', ci: false, quiet: false, explain: false, policy: false, help: true });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(verifyRepo).not.toHaveBeenCalled();
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('Usage: playbook verify [options]');
+
+    logSpy.mockRestore();
+  });
+
   it('returns policy failure when configured policy rule is violated', async () => {
     const { runVerify } = await import('./verify.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);

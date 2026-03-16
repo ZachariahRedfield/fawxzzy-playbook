@@ -12,6 +12,12 @@ pnpm playbook route "update command docs"
 pnpm playbook route "update command docs" --codex-prompt
 ```
 
+## Command-surface guarantees
+
+- `--help` is side-effect free and does not write `.playbook/execution-plan.json`.
+- Missing `<task>` emits a deterministic error envelope in `--json` mode.
+- Successful runs always write `.playbook/execution-plan.json` and print a stable route payload.
+
 ## Output contract
 
 Routing returns command metadata plus an `executionPlan` payload and writes:
