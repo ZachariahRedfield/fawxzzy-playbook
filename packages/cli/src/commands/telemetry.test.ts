@@ -523,6 +523,55 @@ it('returns safe deterministic empty cycle telemetry when history artifact is mi
   logSpy.mockRestore();
 });
 
+it('includes latest_cycle_state when history is missing but cycle-state exists', async () => {
+  const repo = createRepo('playbook-telemetry-cycle-state-only');
+  fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+  fs.writeFileSync(
+    path.join(repo, '.playbook', 'cycle-state.json'),
+    JSON.stringify(
+      {
+        cycle_version: 1,
+        repo,
+        cycle_id: 'cycle-state-only',
+        started_at: '2026-03-16T00:00:00.000Z',
+        result: 'success',
+        steps: [
+          { name: 'verify', status: 'success', duration_ms: 20 },
+          { name: 'plan', status: 'success', duration_ms: 30 }
+        ],
+        artifacts_written: ['.playbook/cycle-state.json']
+      },
+      null,
+      2
+    )
+  );
+  const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+  const exitCode = await runTelemetry(repo, ['cycle'], { format: 'json', quiet: false });
+
+  expect(exitCode).toBe(ExitCode.Success);
+  const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+  expect(payload).toEqual({
+    cycles_total: 0,
+    cycles_success: 0,
+    cycles_failed: 0,
+    success_rate: 0,
+    average_duration_ms: 0,
+    most_common_failed_step: null,
+    failure_distribution: {},
+    recent_cycles: [],
+    latest_cycle_state: {
+      cycle_id: 'cycle-state-only',
+      started_at: '2026-03-16T00:00:00.000Z',
+      result: 'success',
+      duration_ms: 50
+    }
+  });
+
+  logSpy.mockRestore();
+});
+
+
 describe('command registry', () => {
   it('registers the telemetry command', () => {
     const command = listRegisteredCommands().find((entry) => entry.name === 'telemetry');

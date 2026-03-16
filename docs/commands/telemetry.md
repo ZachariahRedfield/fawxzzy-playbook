@@ -60,7 +60,7 @@ This command is evidence-only: it does **not** recompute cycle orchestration sta
 - most common failed step
 - deterministic failure distribution by `failed_step`
 - recent cycle entries (newest first)
-- optional `latest_cycle_state` summary when cycle-state exists
+- optional `latest_cycle_state` summary when cycle-state exists (including state-only repos where history is absent)
 
 ### JSON mode
 

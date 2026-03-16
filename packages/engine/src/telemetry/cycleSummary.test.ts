@@ -67,6 +67,40 @@ describe('cycle telemetry summary', () => {
     });
   });
 
+
+  it('surfaces latest cycle-state even when history is absent', () => {
+    const summary = summarizeCycleTelemetry({
+      cycleState: {
+        cycle_version: 1,
+        repo: '/repo',
+        cycle_id: 'cycle-state-only',
+        started_at: '2026-03-16T00:00:00.000Z',
+        result: 'success',
+        steps: [
+          { name: 'verify', status: 'success', duration_ms: 20 },
+          { name: 'plan', status: 'success', duration_ms: 30 }
+        ]
+      }
+    });
+
+    expect(summary).toEqual({
+      cycles_total: 0,
+      cycles_success: 0,
+      cycles_failed: 0,
+      success_rate: 0,
+      average_duration_ms: 0,
+      most_common_failed_step: null,
+      failure_distribution: {},
+      recent_cycles: [],
+      latest_cycle_state: {
+        cycle_id: 'cycle-state-only',
+        started_at: '2026-03-16T00:00:00.000Z',
+        result: 'success',
+        duration_ms: 50
+      }
+    });
+  });
+
   it('includes latest cycle-state snapshot when present', () => {
     const summary = summarizeCycleTelemetry({
       cycleHistory: {

@@ -562,6 +562,24 @@ describe('runExplain', () => {
     logSpy.mockRestore();
   });
 
+  it('fails deterministically when cycle-history artifact is missing', async () => {
+    const repo = createRepo('playbook-cli-explain-cycle-history-missing');
+    writeArchitectureRegistry(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runExplain(repo, ['artifact', '.playbook/cycle-history.json'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload).toEqual({
+      command: 'explain',
+      target: 'artifact .playbook/cycle-history.json',
+      error: 'playbook explain artifact: missing artifact ".playbook/cycle-history.json".'
+    });
+
+    logSpy.mockRestore();
+  });
+
   it('explains cycle-history artifacts in JSON mode', async () => {
     const repo = createRepo('playbook-cli-explain-cycle-history-json');
     writeArchitectureRegistry(repo);

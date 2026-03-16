@@ -155,6 +155,9 @@ export const summarizeCycleTelemetry = (input: {
     }))
   };
 
+  // Empty-history contract: latest cycle-state is surfaced whenever the state
+  // artifact exists, even if cycle-history is absent. History-derived metrics
+  // remain zeroed from the missing history artifact.
   if (input.cycleState) {
     summary.latest_cycle_state = toLatestStateSummary(input.cycleState);
   }
