@@ -519,6 +519,41 @@ it('returns safe deterministic empty cycle telemetry when history artifact is mi
     failure_distribution: {},
     recent_cycles: []
   });
+  expect(payload).not.toHaveProperty('latest_cycle_state');
+
+  logSpy.mockRestore();
+});
+
+it('omits latest_cycle_state when cycle-state artifact is missing', async () => {
+  const repo = createRepo('playbook-telemetry-cycle-history-only');
+  fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+  fs.writeFileSync(
+    path.join(repo, '.playbook', 'cycle-history.json'),
+    JSON.stringify(
+      {
+        history_version: 1,
+        repo,
+        cycles: [
+          {
+            cycle_id: 'cycle-history-only',
+            started_at: '2026-03-16T00:00:00.000Z',
+            result: 'success',
+            duration_ms: 25
+          }
+        ]
+      },
+      null,
+      2
+    )
+  );
+  const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+  const exitCode = await runTelemetry(repo, ['cycle'], { format: 'json', quiet: false });
+
+  expect(exitCode).toBe(ExitCode.Success);
+  const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+  expect(payload.cycles_total).toBe(1);
+  expect(payload).not.toHaveProperty('latest_cycle_state');
 
   logSpy.mockRestore();
 });
