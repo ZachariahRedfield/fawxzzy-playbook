@@ -55,3 +55,15 @@ export interface PatternPortabilityScore {
   governance_risk: number;
   confidence_score: number;
 }
+
+export interface PortabilityConfidenceRecalibrationSummary {
+  source_pattern_family: string;
+  source_repo: string;
+  target_repo: string;
+  prior_confidence_average: number;
+  realized_success_rate: number;
+  recalibrated_confidence: number;
+  recommended_adjustment: number;
+  sample_size: number;
+  open_questions: string[];
+}

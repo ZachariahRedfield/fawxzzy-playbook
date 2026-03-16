@@ -89,6 +89,15 @@ Playbook explain supports architecture-registry-backed ownership introspection:
 Both commands source ownership data from `.playbook/architecture/subsystems.json` as the canonical architecture registry, return deterministic failures for missing lookups, and support `--json` machine-readable output for automation.
 
 
+## Portability confidence recalibration loop
+
+Portability scoring remains recommendation-first and now has an explicit recalibration stage across `knowledge_lifecycle`, `telemetry_learning`, and `improvement_engine`.
+
+- Base portability evidence remains append-only in `.playbook/pattern-portability.json`.
+- Cross-repo priors from `.playbook/cross-repo-patterns.json` and transfer outcomes from `.playbook/portability-outcomes.json` are combined into governed recalibration summaries at `.playbook/portability-confidence.json`.
+- Recalibration never rewrites prior portability scores; it emits explicit `recommended_adjustment` guidance and preserves original score inspectability.
+- Sparse evidence is treated conservatively and emitted as open questions to prevent static-confidence illusions.
+
 ## Router accuracy telemetry feedback loop
 
 Routing quality is treated as a measurable architecture contract inside `routing_engine` + `telemetry_learning`.
