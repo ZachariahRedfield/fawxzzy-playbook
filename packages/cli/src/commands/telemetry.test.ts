@@ -219,6 +219,75 @@ const writeTelemetryArtifacts = (repo: string): void => {
     )
   );
 
+
+  fs.mkdirSync(path.join(repo, '.playbook', 'telemetry'), { recursive: true });
+  fs.writeFileSync(
+    path.join(repo, '.playbook', 'telemetry', 'command-quality.json'),
+    JSON.stringify(
+      {
+        schemaVersion: '1.0',
+        kind: 'command-execution-quality',
+        generatedAt: '2026-03-16T01:00:00.000Z',
+        records: [
+          {
+            command_name: 'verify',
+            run_id: 'cq-1',
+            recorded_at: '2026-03-16T00:00:00.000Z',
+            inputs_summary: 'ci=true',
+            artifacts_read: ['playbook.config.json'],
+            artifacts_written: ['.playbook/findings.json'],
+            success_status: 'success',
+            duration_ms: 100,
+            warnings_count: 0,
+            open_questions_count: 0,
+            confidence_score: 0.9,
+            downstream_artifacts_produced: ['.playbook/findings.json']
+          },
+          {
+            command_name: 'verify',
+            run_id: 'cq-2',
+            recorded_at: '2026-03-16T00:01:00.000Z',
+            inputs_summary: 'ci=false',
+            artifacts_read: ['playbook.config.json'],
+            artifacts_written: [],
+            success_status: 'failure',
+            duration_ms: 300,
+            warnings_count: 1,
+            open_questions_count: 1,
+            confidence_score: 0.3,
+            downstream_artifacts_produced: []
+          },
+          {
+            command_name: 'route',
+            run_id: 'cq-3',
+            recorded_at: '2026-03-16T00:02:00.000Z',
+            inputs_summary: 'task=docs',
+            artifacts_read: [],
+            artifacts_written: ['.playbook/execution-plan.json'],
+            success_status: 'partial',
+            duration_ms: 200,
+            warnings_count: 1,
+            open_questions_count: 1,
+            confidence_score: 0.5,
+            downstream_artifacts_produced: ['.playbook/execution-plan.json']
+          }
+        ],
+        summary: {
+          total_runs: 3,
+          success_runs: 1,
+          failure_runs: 1,
+          partial_runs: 1,
+          average_duration_ms: 200,
+          average_confidence_score: 0.5667,
+          total_warnings: 2,
+          total_open_questions: 2
+        }
+      },
+      null,
+      2
+    )
+  );
+
   fs.writeFileSync(
     path.join(repo, '.playbook', 'memory', 'index.json'),
     JSON.stringify(
@@ -358,4 +427,38 @@ describe('command registry', () => {
     expect(command).toBeDefined();
     expect(command?.description).toBe('Inspect deterministic repository/process telemetry and compact cross-run learning summaries');
   });
+});
+
+
+it('prints command-quality summary as json with stable shape', async () => {
+  const repo = createRepo('playbook-telemetry-commands-json');
+  writeTelemetryArtifacts(repo);
+  const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+  const exitCode = await runTelemetry(repo, ['commands'], { format: 'json', quiet: false });
+
+  expect(exitCode).toBe(ExitCode.Success);
+  const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+  expect(payload.kind).toBe('command-quality-summary');
+  const commands = payload.commands as Array<Record<string, unknown>>;
+  expect(commands.map((entry) => entry.command_name)).toEqual(['verify', 'route', 'orchestrate', 'execute', 'telemetry', 'improve']);
+  expect(commands[0]?.success_rate).toBe(0.5);
+  expect(commands[3]?.total_runs).toBe(0);
+
+  logSpy.mockRestore();
+});
+
+it('returns deterministic missing-artifact failure for commands', async () => {
+  const repo = createRepo('playbook-telemetry-commands-missing');
+  fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+  const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+  const exitCode = await runTelemetry(repo, ['commands'], { format: 'json', quiet: false });
+
+  expect(exitCode).toBe(ExitCode.Failure);
+  const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+  expect(payload.command).toBe('telemetry');
+  expect(payload.findings[0].id).toBe('telemetry.commands.missing-artifact');
+
+  logSpy.mockRestore();
 });

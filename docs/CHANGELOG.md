@@ -3,6 +3,7 @@
 
 ### CLI
 
+- Added deterministic `playbook telemetry commands` summaries that aggregate existing command-quality telemetry into stable per-command health metrics for `verify`, `route`, `orchestrate`, `execute`, `telemetry`, and `improve` in both text and JSON modes, including sparse-evidence zero-value rows and deterministic ordering.
 - Normalized command-surface contracts for `verify`, `route`, `orchestrate`, `execute`, `telemetry`, and `improve` around side-effect-free help, deterministic missing-artifact failures, stable JSON/text semantics, and explicit owned-artifact declarations.
 - Added shared command-surface helpers for help rendering and standardized deterministic failure envelopes.
 - Added focused tests for `--help`, missing prerequisites, and stable JSON error/result structure across the normalized command set.

@@ -8,6 +8,7 @@ declare module "@zachariahredfield/playbook-core" {
   export const formatJson: (...args: any[]) => Promise<any>;
   export const runArchitectureAudit: (...args: any[]) => any;
   export const loadArchitecture: (...args: any[]) => any;
+  export type CommandExecutionQualityArtifact = any;
 }
 
 declare module "@zachariahredfield/playbook-node" {
@@ -230,6 +231,7 @@ declare module "@zachariahredfield/playbook-engine" {
   export const recordLaneOutcome: (...args: any[]) => any;
   export const recordImprovementCandidate: (...args: any[]) => any;
   export const appendCommandExecutionQualityRecord: (...args: any[]) => any;
+  export const buildCommandQualitySummaryArtifact: (...args: any[]) => any;
   export const recordCommandExecution: (...args: any[]) => any;
   export const recordCommandQuality: (...args: any[]) => any;
   export type TaskExecutionProfileArtifact = any;

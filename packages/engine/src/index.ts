@@ -586,4 +586,4 @@ export * from './telemetry/index.js';
 export { validateArtifacts } from "./architecture/validateArtifacts.js";
 export type { ArchitectureValidationResult, ValidateArtifactsOptions } from "./architecture/validateArtifacts.js";
 
-export { appendCommandExecutionQualityRecord, readCommandExecutionQualityArtifact, summarizeCommandExecutionQuality } from './telemetry/commandQuality.js';
+export { appendCommandExecutionQualityRecord, readCommandExecutionQualityArtifact, summarizeCommandExecutionQuality, summarizeCommandQualityByCommand, buildCommandQualitySummaryArtifact, COMMAND_QUALITY_SUMMARY_COMMANDS } from './telemetry/commandQuality.js';
