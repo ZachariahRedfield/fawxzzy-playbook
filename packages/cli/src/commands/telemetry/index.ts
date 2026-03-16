@@ -16,6 +16,7 @@ import {
 } from '@zachariahredfield/playbook-engine';
 import { emitJsonOutput } from '../../lib/jsonArtifact.js';
 import { ExitCode } from '../../lib/cliContract.js';
+import { recordCommandQualitySignal } from '../../lib/commandQuality.js';
 
 type TelemetryCommandOptions = {
   format: 'text' | 'json';
@@ -117,44 +118,58 @@ export const runTelemetry = async (
   args: string[],
   options: TelemetryCommandOptions
 ): Promise<number> => {
+  const startedAt = Date.now();
   const subcommand = args.find((arg) => !arg.startsWith('-'));
+
+  const emit = (
+    status: 'success' | 'failure' | 'partial',
+    warningsCount: number,
+    openQuestionsCount: number,
+    confidenceScore: number,
+    artifactsRead: string[] = [],
+    artifactsWritten: string[] = []
+  ): void => {
+    recordCommandQualitySignal({
+      cwd,
+      commandName: 'telemetry',
+      runId: `telemetry:${subcommand ?? 'none'}`,
+      inputsSummary: `subcommand=${subcommand ?? '<none>'}`,
+      artifactsRead,
+      artifactsWritten,
+      successStatus: status,
+      durationMs: Date.now() - startedAt,
+      warningsCount,
+      openQuestionsCount,
+      confidenceScore,
+      downstreamArtifactsProduced: artifactsWritten
+    });
+  };
 
   if (!subcommand || args.includes('--help') || args.includes('-h')) {
     printTelemetryHelp();
+    emit(subcommand ? 'success' : 'failure', 0, subcommand ? 0 : 1, subcommand ? 1 : 0);
     return subcommand ? ExitCode.Success : ExitCode.Failure;
   }
 
   if (subcommand === 'outcomes') {
-    const outcomeArtifact = normalizeOutcomeTelemetryArtifact(
-      readJsonArtifact<OutcomeTelemetryArtifact>(cwd, OUTCOME_TELEMETRY_PATH, 'outcome telemetry')
-    );
-
+    const outcomeArtifact = normalizeOutcomeTelemetryArtifact(readJsonArtifact<OutcomeTelemetryArtifact>(cwd, OUTCOME_TELEMETRY_PATH, 'outcome telemetry'));
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'telemetry', payload: outcomeArtifact });
-      return ExitCode.Success;
-    }
-
-    if (!options.quiet) {
+    } else if (!options.quiet) {
       renderTextOutcome(outcomeArtifact);
     }
-
+    emit('success', 0, 0, 0.95, ['.playbook/outcome-telemetry.json']);
     return ExitCode.Success;
   }
 
   if (subcommand === 'process') {
-    const processArtifact = normalizeProcessTelemetryArtifact(
-      readJsonArtifact<ProcessTelemetryArtifact>(cwd, PROCESS_TELEMETRY_PATH, 'process telemetry')
-    );
-
+    const processArtifact = normalizeProcessTelemetryArtifact(readJsonArtifact<ProcessTelemetryArtifact>(cwd, PROCESS_TELEMETRY_PATH, 'process telemetry'));
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'telemetry', payload: processArtifact });
-      return ExitCode.Success;
-    }
-
-    if (!options.quiet) {
+    } else if (!options.quiet) {
       renderTextProcess(processArtifact);
     }
-
+    emit('success', 0, 0, 0.95, ['.playbook/process-telemetry.json']);
     return ExitCode.Success;
   }
 
@@ -162,27 +177,17 @@ export const runTelemetry = async (
     const outcomeArtifact = tryReadJsonArtifact<OutcomeTelemetryArtifact>(cwd, OUTCOME_TELEMETRY_PATH);
     const processArtifact = tryReadJsonArtifact<ProcessTelemetryArtifact>(cwd, PROCESS_TELEMETRY_PATH);
     const taskExecutionProfile = tryReadJsonArtifact<TaskExecutionProfileArtifact>(cwd, TASK_EXECUTION_PROFILE_PATH);
-    const learningState = deriveLearningStateSnapshot({
-      outcomeTelemetry: outcomeArtifact,
-      processTelemetry: processArtifact,
-      taskExecutionProfile
-    });
-
+    const learningState = deriveLearningStateSnapshot({ outcomeTelemetry: outcomeArtifact, processTelemetry: processArtifact, taskExecutionProfile });
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'telemetry', payload: learningState });
-      return ExitCode.Success;
-    }
-
-    if (!options.quiet) {
+    } else if (!options.quiet) {
       renderTextLearningState(learningState);
       if (learningState.confidenceSummary.open_questions.length > 0) {
         console.log('Open questions:');
-        for (const question of learningState.confidenceSummary.open_questions) {
-          console.log(`- ${question}`);
-        }
+        for (const question of learningState.confidenceSummary.open_questions) console.log(`- ${question}`);
       }
     }
-
+    emit('success', 0, learningState.confidenceSummary.open_questions.length, learningState.confidenceSummary.overall_confidence, ['.playbook/outcome-telemetry.json', '.playbook/process-telemetry.json', '.playbook/task-execution-profile.json']);
     return ExitCode.Success;
   }
 
@@ -190,13 +195,9 @@ export const runTelemetry = async (
     const outcomeArtifact = readJsonArtifact<OutcomeTelemetryArtifact>(cwd, OUTCOME_TELEMETRY_PATH, 'outcome telemetry');
     const processArtifact = readJsonArtifact<ProcessTelemetryArtifact>(cwd, PROCESS_TELEMETRY_PATH, 'process telemetry');
     const summary = summarizeStructuralTelemetry(outcomeArtifact, processArtifact);
-
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'telemetry', payload: summary });
-      return ExitCode.Success;
-    }
-
-    if (!options.quiet) {
+    } else if (!options.quiet) {
       console.log('Telemetry summary');
       console.log('─────────────────');
       console.log(`Generated at: ${summary.generatedAt}`);
@@ -209,30 +210,24 @@ export const runTelemetry = async (
         console.log(`Lane score average: ${summary.lane_scores.average_score}`);
       }
     }
-
+    emit('success', 0, 0, 0.9, ['.playbook/outcome-telemetry.json', '.playbook/process-telemetry.json']);
     return ExitCode.Success;
   }
 
   if (subcommand === 'learning') {
     const learningCompaction = generateLearningCompactionArtifact(cwd);
     writeLearningCompactionArtifact(cwd, learningCompaction);
-
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'telemetry', payload: learningCompaction });
-      return ExitCode.Success;
-    }
-
-    if (!options.quiet) {
+    } else if (!options.quiet) {
       renderTextLearningCompaction(learningCompaction);
       if (learningCompaction.summary.open_questions.length > 0) {
         console.log('Open questions:');
-        for (const question of learningCompaction.summary.open_questions) {
-          console.log(`- ${question}`);
-        }
+        for (const question of learningCompaction.summary.open_questions) console.log(`- ${question}`);
       }
       console.log('Artifact: .playbook/learning-compaction.json');
     }
-
+    emit('success', 0, learningCompaction.summary.open_questions.length, learningCompaction.summary.confidence, ['.playbook/outcome-telemetry.json', '.playbook/process-telemetry.json', '.playbook/memory/index.json'], ['.playbook/learning-compaction.json']);
     return ExitCode.Success;
   }
 
@@ -242,5 +237,6 @@ export const runTelemetry = async (
   } else {
     console.error(message);
   }
+  emit('failure', 1, 1, 0);
   return ExitCode.Failure;
 };

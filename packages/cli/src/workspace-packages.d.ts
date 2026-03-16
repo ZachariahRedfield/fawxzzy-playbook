@@ -229,6 +229,8 @@ declare module "@zachariahredfield/playbook-engine" {
   export const recordWorkerAssignment: (...args: any[]) => any;
   export const recordLaneOutcome: (...args: any[]) => any;
   export const recordImprovementCandidate: (...args: any[]) => any;
+  export const recordCommandExecutionQuality: (...args: any[]) => any;
+  export const recordCommandQualityTelemetrySafe: (...args: any[]) => void;
   export type TaskExecutionProfileArtifact = any;
   export type ExecutionPlanArtifact = any;
 

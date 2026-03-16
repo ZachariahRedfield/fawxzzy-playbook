@@ -11,6 +11,7 @@ import {
   safeRecordRepositoryEvent
 } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
+import { recordCommandQualitySignal } from '../lib/commandQuality.js';
 
 type RouteOptions = {
   format: 'text' | 'json';
@@ -133,9 +134,13 @@ const printText = (payload: RouteOutput, options: RouteOptions): void => {
 };
 
 export const runRoute = async (cwd: string, commandArgs: string[], options: RouteOptions): Promise<number> => {
+  const startedAt = Date.now();
   const task = extractTask(commandArgs);
   if (!task) {
     console.error('playbook route: missing required <task> argument');
+    recordCommandQualitySignal({
+      cwd, commandName: 'route', runId: 'route-missing-task', inputsSummary: 'task=<missing>', successStatus: 'failure', durationMs: Date.now() - startedAt, warningsCount: 1, openQuestionsCount: 1, confidenceScore: 0
+    });
     return ExitCode.Failure;
   }
 
@@ -176,7 +181,22 @@ export const runRoute = async (cwd: string, commandArgs: string[], options: Rout
 
   if (options.format === 'json') {
     console.log(JSON.stringify(output, null, 2));
-    return decision.route === 'unsupported' ? ExitCode.Failure : ExitCode.Success;
+    const unsupported = decision.route === 'unsupported';
+    recordCommandQualitySignal({
+      cwd,
+      commandName: 'route',
+      runId: executionPlan.route_id,
+      inputsSummary: `task=${task}` ,
+      artifactsRead: [TASK_EXECUTION_PROFILE_PATH, LEARNING_STATE_PATH],
+      artifactsWritten: [EXECUTION_PLAN_PATH],
+      successStatus: unsupported ? 'failure' : 'success',
+      durationMs: Date.now() - startedAt,
+      warningsCount: executionPlan.warnings.length,
+      openQuestionsCount: executionPlan.open_questions.length,
+      confidenceScore: executionPlan.route_confidence,
+      downstreamArtifactsProduced: [EXECUTION_PLAN_PATH]
+    });
+    return unsupported ? ExitCode.Failure : ExitCode.Success;
   }
 
   if (!options.quiet) {
@@ -189,8 +209,37 @@ export const runRoute = async (cwd: string, commandArgs: string[], options: Rout
     if (output.executionPlan.missing_prerequisites.length > 0) {
       console.error(`Next steps: provide ${output.executionPlan.missing_prerequisites.join(', ')} and retry.`);
     }
+    recordCommandQualitySignal({
+      cwd,
+      commandName: 'route',
+      runId: executionPlan.route_id,
+      inputsSummary: `task=${task}` ,
+      artifactsRead: [TASK_EXECUTION_PROFILE_PATH, LEARNING_STATE_PATH],
+      artifactsWritten: [EXECUTION_PLAN_PATH],
+      successStatus: 'failure',
+      durationMs: Date.now() - startedAt,
+      warningsCount: executionPlan.warnings.length,
+      openQuestionsCount: executionPlan.open_questions.length + executionPlan.missing_prerequisites.length,
+      confidenceScore: executionPlan.route_confidence,
+      downstreamArtifactsProduced: [EXECUTION_PLAN_PATH]
+    });
     return ExitCode.Failure;
   }
+
+  recordCommandQualitySignal({
+    cwd,
+    commandName: 'route',
+    runId: executionPlan.route_id,
+    inputsSummary: `task=${task}` ,
+    artifactsRead: [TASK_EXECUTION_PROFILE_PATH, LEARNING_STATE_PATH],
+    artifactsWritten: [EXECUTION_PLAN_PATH],
+    successStatus: 'success',
+    durationMs: Date.now() - startedAt,
+    warningsCount: executionPlan.warnings.length,
+    openQuestionsCount: executionPlan.open_questions.length,
+    confidenceScore: executionPlan.route_confidence,
+    downstreamArtifactsProduced: [EXECUTION_PLAN_PATH]
+  });
 
   return ExitCode.Success;
 };

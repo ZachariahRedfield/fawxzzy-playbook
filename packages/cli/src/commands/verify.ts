@@ -2,6 +2,7 @@ import * as engine from '@zachariahredfield/playbook-engine';
 import { buildResult, emitResult, ExitCode } from '../lib/cliContract.js';
 import { emitJsonOutput } from '../lib/jsonArtifact.js';
 import { loadVerifyRules } from '../lib/loadVerifyRules.js';
+import { recordCommandQualitySignal } from '../lib/commandQuality.js';
 
 export type VerifyReport = {
   ok: boolean;
@@ -54,7 +55,8 @@ const resolveRunId = (cwd: string, requestedRunId: string | undefined): string =
 export const runVerify = async (
   cwd: string,
   options: { format: 'text' | 'json'; ci: boolean; quiet: boolean; explain: boolean; policy: boolean; outFile?: string; runId?: string }
-): Promise<number> => {
+) : Promise<number> => {
+  const startedAt = Date.now();
   const verifyRules = await loadVerifyRules(cwd);
   const report = await collectVerifyReport(cwd);
 
@@ -140,6 +142,20 @@ export const runVerify = async (
 
   if (options.format === 'text' && !options.ci && !options.explain && !inPolicyMode) {
     console.log(engine.formatHuman(report));
+    recordCommandQualitySignal({
+      cwd,
+      commandName: 'verify',
+      runId,
+      inputsSummary: inPolicyMode ? 'policy-mode=true' : 'policy-mode=false',
+      artifactsRead: [],
+      artifactsWritten: [runArtifactPath, ...(options.outFile ? [options.outFile] : [])],
+      successStatus: ok ? 'success' : 'failure',
+      durationMs: Date.now() - startedAt,
+      warningsCount: report.warnings.length,
+      openQuestionsCount: report.failures.length,
+      confidenceScore: ok ? 0.9 : 0.35,
+      downstreamArtifactsProduced: [runArtifactPath]
+    });
     return exitCode;
   }
 
@@ -147,6 +163,20 @@ export const runVerify = async (
     if (!options.quiet || !ok) {
       console.log(ok ? 'playbook verify: PASS' : 'playbook verify: FAIL');
     }
+    recordCommandQualitySignal({
+      cwd,
+      commandName: 'verify',
+      runId,
+      inputsSummary: inPolicyMode ? 'policy-mode=true' : 'policy-mode=false',
+      artifactsRead: [],
+      artifactsWritten: [runArtifactPath, ...(options.outFile ? [options.outFile] : [])],
+      successStatus: ok ? 'success' : 'failure',
+      durationMs: Date.now() - startedAt,
+      warningsCount: report.warnings.length,
+      openQuestionsCount: report.failures.length,
+      confidenceScore: ok ? 0.9 : 0.35,
+      downstreamArtifactsProduced: [runArtifactPath]
+    });
     return exitCode;
   }
 
@@ -184,6 +214,21 @@ export const runVerify = async (
     quiet: options.quiet,
     explain: options.explain,
     ...resultPayload
+  });
+
+  recordCommandQualitySignal({
+    cwd,
+    commandName: 'verify',
+    runId,
+    inputsSummary: inPolicyMode ? 'policy-mode=true' : 'policy-mode=false',
+    artifactsRead: [],
+    artifactsWritten: [runArtifactPath, ...(options.outFile ? [options.outFile] : [])],
+    successStatus: ok ? 'success' : 'failure',
+    durationMs: Date.now() - startedAt,
+    warningsCount: report.warnings.length,
+    openQuestionsCount: report.failures.length,
+    confidenceScore: ok ? 0.9 : 0.35,
+    downstreamArtifactsProduced: [runArtifactPath]
   });
 
   return exitCode;

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { assignWorkersToLanes, type WorksetPlanArtifact } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../../lib/cliContract.js';
+import { recordCommandQualitySignal } from '../../lib/commandQuality.js';
 
 const WORKSET_PLAN_PATH = '.playbook/workset-plan.json';
 const EXECUTION_STATE_PATH = '.playbook/execution-state.json';
@@ -74,8 +75,10 @@ const printExecuteHelp = (): void => {
 };
 
 export const runExecution = async (cwd: string, options: ExecuteOptions): Promise<number> => {
+  const startedAt = Date.now();
   if (options.help) {
     printExecuteHelp();
+    recordCommandQualitySignal({ cwd, commandName: 'execute', runId: 'execute-help', inputsSummary: 'help=true', successStatus: 'success', durationMs: Date.now() - startedAt, confidenceScore: 1 });
     return ExitCode.Success;
   }
 
@@ -87,6 +90,7 @@ export const runExecution = async (cwd: string, options: ExecuteOptions): Promis
     } else {
       console.error(message);
     }
+    recordCommandQualitySignal({ cwd, commandName: 'execute', runId: 'execute-no-workset', inputsSummary: 'workset=missing', artifactsRead: [WORKSET_PLAN_PATH], successStatus: 'failure', durationMs: Date.now() - startedAt, warningsCount: 1, openQuestionsCount: 1, confidenceScore: 0.2 });
     return ExitCode.Failure;
   }
 
@@ -172,12 +176,43 @@ export const runExecution = async (cwd: string, options: ExecuteOptions): Promis
         2
       )
     );
-    return status === 'SUCCESS' ? ExitCode.Success : ExitCode.Failure;
+    const ok = status === 'SUCCESS';
+    recordCommandQualitySignal({
+      cwd,
+      commandName: 'execute',
+      runId: run.runId,
+      inputsSummary: `lanes=${lanes.length}`,
+      artifactsRead: [WORKSET_PLAN_PATH],
+      artifactsWritten: [EXECUTION_STATE_PATH],
+      successStatus: ok ? 'success' : 'partial',
+      durationMs: Date.now() - startedAt,
+      warningsCount: orderedAssignments.filter((lane) => lane.status !== 'assigned').length,
+      openQuestionsCount: orderedAssignments.filter((lane) => lane.status !== 'assigned').length,
+      confidenceScore: ok ? 0.85 : 0.5,
+      downstreamArtifactsProduced: [EXECUTION_STATE_PATH]
+    });
+    return ok ? ExitCode.Success : ExitCode.Failure;
   }
 
   if (!options.quiet) {
     renderText(run.runId, lanes, status);
   }
 
-  return status === 'SUCCESS' ? ExitCode.Success : ExitCode.Failure;
+  const ok = status === 'SUCCESS';
+  recordCommandQualitySignal({
+    cwd,
+    commandName: 'execute',
+    runId: run.runId,
+    inputsSummary: `lanes=${lanes.length}`,
+    artifactsRead: [WORKSET_PLAN_PATH],
+    artifactsWritten: [EXECUTION_STATE_PATH],
+    successStatus: ok ? 'success' : 'partial',
+    durationMs: Date.now() - startedAt,
+    warningsCount: orderedAssignments.filter((lane) => lane.status !== 'assigned').length,
+    openQuestionsCount: orderedAssignments.filter((lane) => lane.status !== 'assigned').length,
+    confidenceScore: ok ? 0.85 : 0.5,
+    downstreamArtifactsProduced: [EXECUTION_STATE_PATH]
+  });
+
+  return ok ? ExitCode.Success : ExitCode.Failure;
 };

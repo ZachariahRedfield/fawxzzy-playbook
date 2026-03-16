@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { compileOrchestratorArtifacts, recordLaneTransition, safeRecordRepositoryEvent } from '@zachariahredfield/playbook-engine';
 import { emitResult, ExitCode } from '../lib/cliContract.js';
+import { recordCommandQualitySignal } from '../lib/commandQuality.js';
 
 type OrchestrateArtifactFormat = 'md' | 'json' | 'both';
 
@@ -38,6 +39,7 @@ const parseTasksInput = (raw: unknown): WorksetTaskInput[] | undefined => {
 };
 
 export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): Promise<number> => {
+  const startedAt = Date.now();
   const tasksFile = options.tasksFile?.trim();
   if (tasksFile) {
     const tasksPath = path.resolve(cwd, tasksFile);
@@ -52,7 +54,10 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
         findings: [{ id: 'orchestrate.tasks-file.missing', level: 'error', message: `Missing tasks file: ${tasksFile}` }],
         nextActions: ['Run `playbook orchestrate --tasks-file <path>` with a valid JSON file.']
       });
-      return ExitCode.Failure;
+      recordCommandQualitySignal({ cwd, commandName: 'orchestrate', runId: 'orchestrate', inputsSummary: `tasks-file=${tasksFile}`, artifactsRead: [tasksFile], successStatus: 'failure', durationMs: Date.now() - startedAt, warningsCount: 1, openQuestionsCount: 1, confidenceScore: 0.2 });
+      recordCommandQualitySignal({ cwd, commandName: 'orchestrate', runId: 'orchestrate', inputsSummary: `tasks-file=${tasksFile}`, artifactsRead: [tasksFile], successStatus: 'failure', durationMs: Date.now() - startedAt, warningsCount: 1, openQuestionsCount: 1, confidenceScore: 0.2 });
+      recordCommandQualitySignal({ cwd, commandName: 'orchestrate', runId: 'orchestrate', inputsSummary: 'goal=<missing>', successStatus: 'failure', durationMs: Date.now() - startedAt, warningsCount: 1, openQuestionsCount: 1, confidenceScore: 0 });
+    return ExitCode.Failure;
     }
 
     const parsed = JSON.parse(fs.readFileSync(tasksPath, 'utf8')) as { tasks?: unknown } | unknown;
@@ -159,7 +164,22 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
       ]
     });
 
-    return laneState.blocked_lanes.length > 0 ? ExitCode.Failure : ExitCode.Success;
+    const blocked = laneState.blocked_lanes.length > 0;
+    recordCommandQualitySignal({
+      cwd,
+      commandName: 'orchestrate',
+      runId: 'orchestrate-workset',
+      inputsSummary: `tasks-file=${tasksFile}` ,
+      artifactsRead: [tasksFile],
+      artifactsWritten: [WORKSET_PLAN_PATH, LANE_STATE_PATH],
+      successStatus: blocked ? 'partial' : 'success',
+      durationMs: Date.now() - startedAt,
+      warningsCount: worksetPlan.warnings.length + laneState.warnings.length,
+      openQuestionsCount: laneState.blocked_lanes.length,
+      confidenceScore: blocked ? 0.55 : 0.85,
+      downstreamArtifactsProduced: [WORKSET_PLAN_PATH, LANE_STATE_PATH]
+    });
+    return blocked ? ExitCode.Failure : ExitCode.Success;
   }
 
   const goal = options.goal?.trim();
@@ -237,5 +257,18 @@ export const runOrchestrate = async (cwd: string, options: OrchestrateOptions): 
     ]
   });
 
+  recordCommandQualitySignal({
+    cwd,
+    commandName: 'orchestrate',
+    runId: `orchestrate:${compilation.contract.goal}`,
+    inputsSummary: `goal=${compilation.contract.goal};lanes=${compilation.contract.laneCountRequested}`,
+    artifactsWritten: [path.relative(cwd, compilation.artifact.orchestratorPath), ...compilation.artifact.lanePromptPaths.map((p) => path.relative(cwd, p))],
+    successStatus: 'success',
+    durationMs: Date.now() - startedAt,
+    warningsCount: compilation.contract.warnings.length,
+    openQuestionsCount: 0,
+    confidenceScore: 0.88,
+    downstreamArtifactsProduced: [path.relative(cwd, compilation.artifact.orchestratorPath)]
+  });
   return ExitCode.Success;
 };

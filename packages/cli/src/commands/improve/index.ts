@@ -7,6 +7,7 @@ import {
 } from '@zachariahredfield/playbook-engine';
 import { emitJsonOutput } from '../../lib/jsonArtifact.js';
 import { ExitCode } from '../../lib/cliContract.js';
+import { recordCommandQualitySignal } from '../../lib/commandQuality.js';
 
 type ImproveOptions = {
   format: 'text' | 'json';
@@ -52,37 +53,6 @@ const renderText = (artifact: ImprovementCandidatesArtifact): void => {
       console.log(`  action: ${candidate.suggested_action}`);
     }
   }
-
-  if (artifact.router_recommendations.recommendations.length > 0) {
-    console.log('');
-    console.log('Router recommendation details (proposal-only)');
-    for (const recommendation of artifact.router_recommendations.recommendations) {
-      console.log(`- [${recommendation.gating_tier}] ${recommendation.recommendation_id} (${recommendation.task_family})`);
-      console.log(`  strategy: ${recommendation.current_strategy} -> ${recommendation.recommended_strategy}`);
-      console.log(`  evidence: ${recommendation.evidence_count} events across ${recommendation.supporting_runs} runs, confidence: ${recommendation.confidence_score}`);
-      console.log(`  rationale: ${recommendation.rationale}`);
-    }
-  }
-
-  if (artifact.doctrine_promotions.transitions.length > 0) {
-    console.log('');
-    console.log('Doctrine transitions');
-    for (const transition of artifact.doctrine_promotions.transitions) {
-      console.log(`- ${transition.candidate_id}: ${transition.from_stage} -> ${transition.to_stage}`);
-      console.log(`  governance gated: ${transition.governance_gated ? 'yes' : 'no'}, approved: ${transition.approved ? 'yes' : 'no'}`);
-      console.log(`  rationale: ${transition.rationale}`);
-    }
-  }
-
-  if (artifact.rejected_candidates.length > 0) {
-    console.log('');
-    console.log('Rejected (insufficient evidence / confidence)');
-    for (const rejected of artifact.rejected_candidates) {
-      console.log(`- ${rejected.candidate_id} (${rejected.category})`);
-      console.log(`  evidence: ${rejected.evidence_count} events across ${rejected.supporting_runs} runs, confidence: ${rejected.confidence_score}`);
-      console.log(`  why gated: ${rejected.blocking_reasons.join(', ')}`);
-    }
-  }
 };
 
 const printConversationPrompts = (artifact: ImprovementCandidatesArtifact): void => {
@@ -96,31 +66,41 @@ const printConversationPrompts = (artifact: ImprovementCandidatesArtifact): void
 };
 
 export const runImprove = async (cwd: string, options: ImproveOptions): Promise<number> => {
+  const startedAt = Date.now();
   const artifact = generateImprovementCandidates(cwd);
   writeImprovementCandidatesArtifact(cwd, artifact);
 
   if (options.format === 'json') {
     emitJsonOutput({ cwd, command: 'improve', payload: artifact });
-    return ExitCode.Success;
-  }
-
-  if (!options.quiet) {
+  } else if (!options.quiet) {
     renderText(artifact);
     printConversationPrompts(artifact);
   }
+
+  recordCommandQualitySignal({
+    cwd,
+    commandName: 'improve',
+    runId: 'improve',
+    inputsSummary: 'subcommand=default',
+    artifactsWritten: ['.playbook/improvement-candidates.json'],
+    successStatus: 'success',
+    durationMs: Date.now() - startedAt,
+    warningsCount: artifact.rejected_candidates.length,
+    openQuestionsCount: artifact.rejected_candidates.length,
+    confidenceScore: 0.8,
+    downstreamArtifactsProduced: ['.playbook/improvement-candidates.json']
+  });
 
   return ExitCode.Success;
 };
 
 export const runImproveApplySafe = async (cwd: string, options: ImproveOptions): Promise<number> => {
+  const startedAt = Date.now();
   const artifact = applyAutoSafeImprovements(cwd);
 
   if (options.format === 'json') {
     emitJsonOutput({ cwd, command: 'improve-apply-safe', payload: artifact });
-    return ExitCode.Success;
-  }
-
-  if (!options.quiet) {
+  } else if (!options.quiet) {
     console.log('Applied auto-safe improvements');
     console.log('────────────────────────────');
     console.log(`Applied: ${artifact.applied.length}`);
@@ -128,10 +108,23 @@ export const runImproveApplySafe = async (cwd: string, options: ImproveOptions):
     console.log(`Pending governance: ${artifact.pending_governance.length}`);
   }
 
+  recordCommandQualitySignal({
+    cwd,
+    commandName: 'improve',
+    runId: 'improve-apply-safe',
+    inputsSummary: 'subcommand=apply-safe',
+    successStatus: 'success',
+    durationMs: Date.now() - startedAt,
+    warningsCount: artifact.pending_conversation.length + artifact.pending_governance.length,
+    openQuestionsCount: artifact.pending_governance.length,
+    confidenceScore: 0.75
+  });
+
   return ExitCode.Success;
 };
 
 export const runImproveApprove = async (cwd: string, proposalId: string | undefined, options: ImproveOptions): Promise<number> => {
+  const startedAt = Date.now();
   if (!proposalId) {
     const message = 'playbook improve approve: missing <proposal_id>.';
     if (options.format === 'json') {
@@ -139,6 +132,17 @@ export const runImproveApprove = async (cwd: string, proposalId: string | undefi
     } else {
       console.error(message);
     }
+    recordCommandQualitySignal({
+      cwd,
+      commandName: 'improve',
+      runId: 'improve-approve:missing',
+      inputsSummary: 'subcommand=approve;proposal=<missing>',
+      successStatus: 'failure',
+      durationMs: Date.now() - startedAt,
+      warningsCount: 1,
+      openQuestionsCount: 1,
+      confidenceScore: 0
+    });
     return ExitCode.Failure;
   }
 
@@ -146,12 +150,19 @@ export const runImproveApprove = async (cwd: string, proposalId: string | undefi
     const artifact = approveGovernanceImprovement(cwd, proposalId);
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'improve-approve', payload: artifact });
-      return ExitCode.Success;
-    }
-
-    if (!options.quiet) {
+    } else if (!options.quiet) {
       console.log(`Approved governance improvement: ${proposalId}`);
     }
+
+    recordCommandQualitySignal({
+      cwd,
+      commandName: 'improve',
+      runId: `improve-approve:${proposalId}`,
+      inputsSummary: `subcommand=approve;proposal=${proposalId}`,
+      successStatus: 'success',
+      durationMs: Date.now() - startedAt,
+      confidenceScore: 0.85
+    });
     return ExitCode.Success;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error while approving governance improvement.';
@@ -160,6 +171,17 @@ export const runImproveApprove = async (cwd: string, proposalId: string | undefi
     } else {
       console.error(message);
     }
+    recordCommandQualitySignal({
+      cwd,
+      commandName: 'improve',
+      runId: `improve-approve:${proposalId}`,
+      inputsSummary: `subcommand=approve;proposal=${proposalId}`,
+      successStatus: 'failure',
+      durationMs: Date.now() - startedAt,
+      warningsCount: 1,
+      openQuestionsCount: 1,
+      confidenceScore: 0.1
+    });
     return ExitCode.Failure;
   }
 };

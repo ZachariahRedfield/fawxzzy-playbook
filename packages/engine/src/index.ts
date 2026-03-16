@@ -243,6 +243,7 @@ export {
   recordWorkerAssignment,
   recordLaneOutcome,
   recordExecutionOutcome,
+  recordCommandExecutionQuality,
   recordImprovementCandidate,
   recordImprovementSignal,
   queryRepositoryEvents,
@@ -267,6 +268,7 @@ export type {
   LaneTransitionEvent,
   WorkerAssignmentEvent,
   ExecutionOutcomeEvent,
+  CommandExecutionQualityEvent,
   ImprovementSignalEvent
 } from './memory/events.js';
 export { lookupMemoryEventTimeline, lookupMemoryCandidateKnowledge, lookupPromotedMemoryKnowledge, expandMemoryProvenance } from './memory/inspection.js';

@@ -31,3 +31,20 @@ export {
 } from './routerAccuracy.js';
 
 export type { RouterAccuracyComputationInput } from './routerAccuracy.js';
+
+
+export {
+  COMMAND_QUALITY_SCHEMA_VERSION,
+  COMMAND_QUALITY_RELATIVE_PATH,
+  readCommandQualityArtifact,
+  writeCommandQualityArtifact,
+  recordCommandQualityTelemetry,
+  recordCommandQualityTelemetrySafe,
+  summarizeCommandQuality
+} from './commandQuality.js';
+
+export type {
+  CommandQualityArtifact,
+  RecordCommandExecutionQualityInput,
+  CommandQualitySummary
+} from './commandQuality.js';
