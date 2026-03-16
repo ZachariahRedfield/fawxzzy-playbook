@@ -9,7 +9,7 @@ Inspect deterministic telemetry artifacts and learning summaries.
 - `playbook telemetry learning-state`
 - `playbook telemetry learning`
 - `playbook telemetry summary`
-- `playbook telemetry cycle`
+- `playbook telemetry cycle [--detect-regressions]`
 - `playbook telemetry commands`
 
 ## `telemetry commands`
@@ -61,6 +61,7 @@ This command is evidence-only: it does **not** recompute cycle orchestration sta
 - deterministic failure distribution by `failed_step`
 - recent cycle entries (newest first)
 - optional `latest_cycle_state` summary when cycle-state exists (including state-only repos where history is absent)
+- deterministic regression detection summary derived from history windows (`recent_summary` vs `prior_summary`)
 
 ### JSON mode
 
@@ -74,5 +75,13 @@ JSON mode emits a deterministic, parseable payload with at least:
 - `most_common_failed_step`
 - `recent_cycles`
 
-Additional stable fields include `failure_distribution` and optional `latest_cycle_state`.
+Additional stable fields include `failure_distribution`, optional `latest_cycle_state`, and regression fields:
+
+- `regression_detected`
+- `regression_reasons[]`
+- `comparison_window`
+- `recent_summary`
+- `prior_summary`
+
+Use `--detect-regressions` in text mode to print concise warning/open-question wording from the same governed artifact evidence. Sparse history degrades safely with explicit insufficient-history messaging.
 

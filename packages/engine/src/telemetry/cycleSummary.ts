@@ -57,6 +57,38 @@ export type CycleTelemetrySummary = {
   };
 };
 
+export type CycleRegressionWindowSummary = {
+  cycles_total: number;
+  cycles_success: number;
+  cycles_failed: number;
+  success_rate: number;
+  average_duration_ms: number;
+  dominant_failed_step: string | null;
+  dominant_failed_step_share: number;
+};
+
+export type CycleRegressionComparisonWindow = {
+  window_size: number;
+  minimum_cycles_required: number;
+  recent_cycles: number;
+  prior_cycles: number;
+  sufficient_history: boolean;
+};
+
+export type CycleRegressionSummary = {
+  regression_detected: boolean;
+  regression_reasons: string[];
+  comparison_window: CycleRegressionComparisonWindow;
+  recent_summary: CycleRegressionWindowSummary;
+  prior_summary: CycleRegressionWindowSummary;
+};
+
+const CYCLE_REGRESSION_WINDOW_SIZE = 3;
+const SUCCESS_RATE_DROP_THRESHOLD = 0.34;
+const DURATION_INCREASE_RATIO_THRESHOLD = 1.25;
+const FAILED_STEP_DOMINANCE_SHARE_THRESHOLD = 0.75;
+const FAILED_STEP_DOMINANCE_COUNT_THRESHOLD = 2;
+
 const toRate = (numerator: number, denominator: number): number => {
   if (denominator <= 0) {
     return 0;
@@ -114,6 +146,99 @@ const toLatestStateSummary = (state: CycleStateArtifact): CycleTelemetrySummary[
     ...(state.failed_step ? { failed_step: state.failed_step } : {}),
     duration_ms: durationMs
   };
+};
+
+const summarizeRegressionWindow = (cycles: CycleHistoryRecord[]): CycleRegressionWindowSummary => {
+  const cyclesTotal = cycles.length;
+  const cyclesSuccess = cycles.filter((cycle) => cycle.result === 'success').length;
+  const failureDistribution = summarizeFailureDistribution(cycles);
+  const dominantFailedStep = mostCommonFailedStep(failureDistribution);
+  const dominantFailedStepCount = dominantFailedStep ? (failureDistribution[dominantFailedStep] ?? 0) : 0;
+  const cyclesFailed = cyclesTotal - cyclesSuccess;
+
+  return {
+    cycles_total: cyclesTotal,
+    cycles_success: cyclesSuccess,
+    cycles_failed: cyclesFailed,
+    success_rate: toRate(cyclesSuccess, cyclesTotal),
+    average_duration_ms: toAverage(cycles.map((cycle) => cycle.duration_ms)),
+    dominant_failed_step: dominantFailedStep,
+    dominant_failed_step_share: toRate(dominantFailedStepCount, cyclesFailed)
+  };
+};
+
+export const summarizeCycleRegressions = (input: {
+  cycleHistory?: CycleHistoryArtifact;
+  windowSize?: number;
+}): CycleRegressionSummary => {
+  const windowSize = input.windowSize ?? CYCLE_REGRESSION_WINDOW_SIZE;
+  const minimumCyclesRequired = windowSize * 2;
+  const cycles = [...(input.cycleHistory?.cycles ?? [])];
+
+  cycles.sort((left, right) => {
+    const delta = Date.parse(right.started_at) - Date.parse(left.started_at);
+    if (Number.isNaN(delta) || delta === 0) {
+      return left.cycle_id.localeCompare(right.cycle_id);
+    }
+
+    return delta;
+  });
+
+  const recentWindow = cycles.slice(0, windowSize);
+  const priorWindow = cycles.slice(windowSize, windowSize * 2);
+  const recentSummary = summarizeRegressionWindow(recentWindow);
+  const priorSummary = summarizeRegressionWindow(priorWindow);
+
+  const result: CycleRegressionSummary = {
+    regression_detected: false,
+    regression_reasons: [],
+    comparison_window: {
+      window_size: windowSize,
+      minimum_cycles_required: minimumCyclesRequired,
+      recent_cycles: recentWindow.length,
+      prior_cycles: priorWindow.length,
+      sufficient_history: cycles.length >= minimumCyclesRequired
+    },
+    recent_summary: recentSummary,
+    prior_summary: priorSummary
+  };
+
+  if (!result.comparison_window.sufficient_history) {
+    result.regression_reasons.push(
+      `insufficient_history: need >=${minimumCyclesRequired} cycles for comparison windows (current=${cycles.length})`
+    );
+    return result;
+  }
+
+  const successRateDrop = Number((priorSummary.success_rate - recentSummary.success_rate).toFixed(4));
+  if (successRateDrop >= SUCCESS_RATE_DROP_THRESHOLD) {
+    result.regression_reasons.push(
+      `success_rate_drop: prior=${priorSummary.success_rate}, recent=${recentSummary.success_rate}, threshold=${SUCCESS_RATE_DROP_THRESHOLD}`
+    );
+  }
+
+  const durationIncreaseRatio =
+    priorSummary.average_duration_ms <= 0
+      ? 0
+      : Number((recentSummary.average_duration_ms / priorSummary.average_duration_ms).toFixed(4));
+  if (durationIncreaseRatio >= DURATION_INCREASE_RATIO_THRESHOLD) {
+    result.regression_reasons.push(
+      `duration_increase: prior=${priorSummary.average_duration_ms}, recent=${recentSummary.average_duration_ms}, ratio=${durationIncreaseRatio}, threshold=${DURATION_INCREASE_RATIO_THRESHOLD}`
+    );
+  }
+
+  if (
+    recentSummary.dominant_failed_step &&
+    recentSummary.cycles_failed >= FAILED_STEP_DOMINANCE_COUNT_THRESHOLD &&
+    recentSummary.dominant_failed_step_share >= FAILED_STEP_DOMINANCE_SHARE_THRESHOLD
+  ) {
+    result.regression_reasons.push(
+      `failed_step_concentration: step=${recentSummary.dominant_failed_step}, share=${recentSummary.dominant_failed_step_share}, failed_cycles=${recentSummary.cycles_failed}, threshold_share=${FAILED_STEP_DOMINANCE_SHARE_THRESHOLD}`
+    );
+  }
+
+  result.regression_detected = result.regression_reasons.length > 0;
+  return result;
 };
 
 export const summarizeCycleTelemetry = (input: {

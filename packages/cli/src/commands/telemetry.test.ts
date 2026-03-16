@@ -496,6 +496,11 @@ it('summarizes cycle telemetry as json from governed cycle artifacts', async () 
   expect(payload.failure_distribution).toEqual({ execute: 1, verify: 1 });
   expect((payload.recent_cycles as Array<Record<string, unknown>>)[0]?.cycle_id).toBe('cycle-003');
   expect((payload.latest_cycle_state as Record<string, unknown>).cycle_id).toBe('cycle-003');
+  expect(payload.regression_detected).toBe(false);
+  expect(payload.regression_reasons).toEqual([
+    'insufficient_history: need >=6 cycles for comparison windows (current=3)'
+  ]);
+  expect((payload.comparison_window as Record<string, unknown>).sufficient_history).toBe(false);
 
   logSpy.mockRestore();
 });
@@ -517,7 +522,34 @@ it('returns safe deterministic empty cycle telemetry when history artifact is mi
     average_duration_ms: 0,
     most_common_failed_step: null,
     failure_distribution: {},
-    recent_cycles: []
+    recent_cycles: [],
+    regression_detected: false,
+    regression_reasons: ['insufficient_history: need >=6 cycles for comparison windows (current=0)'],
+    comparison_window: {
+      window_size: 3,
+      minimum_cycles_required: 6,
+      recent_cycles: 0,
+      prior_cycles: 0,
+      sufficient_history: false
+    },
+    recent_summary: {
+      cycles_total: 0,
+      cycles_success: 0,
+      cycles_failed: 0,
+      success_rate: 0,
+      average_duration_ms: 0,
+      dominant_failed_step: null,
+      dominant_failed_step_share: 0
+    },
+    prior_summary: {
+      cycles_total: 0,
+      cycles_success: 0,
+      cycles_failed: 0,
+      success_rate: 0,
+      average_duration_ms: 0,
+      dominant_failed_step: null,
+      dominant_failed_step_share: 0
+    }
   });
 
   logSpy.mockRestore();
@@ -565,8 +597,74 @@ it('includes latest_cycle_state when history is missing but cycle-state exists',
       started_at: '2026-03-16T00:00:00.000Z',
       result: 'success',
       duration_ms: 50
+    },
+    regression_detected: false,
+    regression_reasons: ['insufficient_history: need >=6 cycles for comparison windows (current=0)'],
+    comparison_window: {
+      window_size: 3,
+      minimum_cycles_required: 6,
+      recent_cycles: 0,
+      prior_cycles: 0,
+      sufficient_history: false
+    },
+    recent_summary: {
+      cycles_total: 0,
+      cycles_success: 0,
+      cycles_failed: 0,
+      success_rate: 0,
+      average_duration_ms: 0,
+      dominant_failed_step: null,
+      dominant_failed_step_share: 0
+    },
+    prior_summary: {
+      cycles_total: 0,
+      cycles_success: 0,
+      cycles_failed: 0,
+      success_rate: 0,
+      average_duration_ms: 0,
+      dominant_failed_step: null,
+      dominant_failed_step_share: 0
     }
   });
+
+  logSpy.mockRestore();
+});
+
+it('adds deterministic regression analysis fields for cycle telemetry', async () => {
+  const repo = createRepo('playbook-telemetry-cycle-regressions');
+  fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+  fs.writeFileSync(
+    path.join(repo, '.playbook', 'cycle-history.json'),
+    JSON.stringify(
+      {
+        history_version: 1,
+        repo,
+        cycles: [
+          { cycle_id: 'cycle-006', started_at: '2026-03-16T06:00:00.000Z', result: 'failed', failed_step: 'execute', duration_ms: 400 },
+          { cycle_id: 'cycle-005', started_at: '2026-03-16T05:00:00.000Z', result: 'failed', failed_step: 'execute', duration_ms: 420 },
+          { cycle_id: 'cycle-004', started_at: '2026-03-16T04:00:00.000Z', result: 'failed', failed_step: 'execute', duration_ms: 440 },
+          { cycle_id: 'cycle-003', started_at: '2026-03-16T03:00:00.000Z', result: 'success', duration_ms: 100 },
+          { cycle_id: 'cycle-002', started_at: '2026-03-16T02:00:00.000Z', result: 'success', duration_ms: 110 },
+          { cycle_id: 'cycle-001', started_at: '2026-03-16T01:00:00.000Z', result: 'success', duration_ms: 120 }
+        ]
+      },
+      null,
+      2
+    )
+  );
+
+  const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+  const exitCode = await runTelemetry(repo, ['cycle', '--detect-regressions'], { format: 'json', quiet: false });
+
+  expect(exitCode).toBe(ExitCode.Success);
+  const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+  expect(payload.regression_detected).toBe(true);
+  const reasons = payload.regression_reasons as string[];
+  expect(reasons.some((reason) => reason.startsWith('success_rate_drop:'))).toBe(true);
+  expect(reasons.some((reason) => reason.startsWith('duration_increase:'))).toBe(true);
+  expect(reasons.some((reason) => reason.startsWith('failed_step_concentration:'))).toBe(true);
+  expect((payload.comparison_window as Record<string, unknown>).sufficient_history).toBe(true);
 
   logSpy.mockRestore();
 });
