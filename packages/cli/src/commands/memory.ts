@@ -1,3 +1,4 @@
+import * as playbookEngine from '@zachariahredfield/playbook-engine';
 import {
   expandMemoryProvenance,
   loadCandidateKnowledgeById,
@@ -22,6 +23,7 @@ Inspect and review repository memory artifacts.
 
 Subcommands:
   events                           List episodic memory events
+  query                            Query normalized repository memory events
   candidates                       List replayed memory candidates
   knowledge                        List promoted memory knowledge
   show <id>                        Show a candidate or knowledge record by id
@@ -35,6 +37,12 @@ Options:
   --fingerprint <value>        Filter events by event fingerprint
   --limit <n>                  Limit returned events
   --order <asc|desc>           Event ordering (default desc)
+  --event-type <type>          Query filter for normalized event type
+  --subsystem <name>           Query filter for normalized event subsystem
+  --run-id <id>                Query filter for normalized run id
+  --subject <value>            Query filter for normalized subject
+  --related-artifact <path>    Query filter for normalized related artifact path
+  --view <name>                Query summary view (recent-routes|lane-transitions|worker-assignments|artifact-improvements)
   --include-stale              Include stale candidates in memory candidates
   --include-superseded         Include superseded knowledge in memory knowledge
   --reason <text>              Retirement reason override for memory retire
@@ -112,6 +120,81 @@ export const runMemory = async (cwd: string, args: string[], options: MemoryOpti
         emitJsonOutput({ cwd, command: 'memory events', payload });
       } else if (!options.quiet) {
         console.log(`Found ${payload.events.length} memory events.`);
+      }
+      return ExitCode.Success;
+    }
+
+    if (subcommand === 'query') {
+      const view = readOptionValue(args, '--view');
+      const runId = readOptionValue(args, '--run-id') ?? undefined;
+      const relatedArtifact = readOptionValue(args, '--related-artifact') ?? undefined;
+      const limit = parseIntegerOption(readOptionValue(args, '--limit'), '--limit');
+
+      const payload = {
+        schemaVersion: '1.0',
+        command: 'memory-query',
+        filters: {
+          ...(readOptionValue(args, '--event-type') ? { event_type: readOptionValue(args, '--event-type') } : {}),
+          ...(readOptionValue(args, '--subsystem') ? { subsystem: readOptionValue(args, '--subsystem') } : {}),
+          ...(readOptionValue(args, '--run-id') ? { run_id: readOptionValue(args, '--run-id') } : {}),
+          ...(readOptionValue(args, '--subject') ? { subject: readOptionValue(args, '--subject') } : {}),
+          ...(relatedArtifact ? { related_artifact: relatedArtifact } : {}),
+          order: parseOrderOption(readOptionValue(args, '--order')),
+          ...(typeof limit === 'number' ? { limit } : {})
+        },
+        view: view ?? 'events',
+        events: (() => {
+          if (!view || view === 'events') {
+            return (playbookEngine as any).queryRepositoryEvents(cwd, {
+              event_type: readOptionValue(args, '--event-type') as
+                | 'route_decision'
+                | 'lane_transition'
+                | 'worker_assignment'
+                | 'execution_outcome'
+                | 'improvement_signal'
+                | 'lane_outcome'
+                | 'improvement_candidate'
+                | undefined,
+              subsystem: readOptionValue(args, '--subsystem') as 'repository_memory' | 'knowledge_lifecycle' | undefined,
+              run_id: runId,
+              subject: readOptionValue(args, '--subject') ?? undefined,
+              related_artifact: relatedArtifact,
+              order: parseOrderOption(readOptionValue(args, '--order')),
+              limit
+            });
+          }
+
+          if (view === 'recent-routes') {
+            return (playbookEngine as any).listRecentRouteDecisions(cwd, limit ?? 10);
+          }
+
+          if (view === 'lane-transitions') {
+            if (!runId) throw new Error('playbook memory query: --run-id is required for view lane-transitions');
+            return (playbookEngine as any).listLaneTransitionsForRun(cwd, runId);
+          }
+
+          if (view === 'worker-assignments') {
+            if (!runId) throw new Error('playbook memory query: --run-id is required for view worker-assignments');
+            return (playbookEngine as any).listWorkerAssignmentsForRun(cwd, runId);
+          }
+
+          if (view === 'artifact-improvements') {
+            if (!relatedArtifact) {
+              throw new Error('playbook memory query: --related-artifact is required for view artifact-improvements');
+            }
+            return (playbookEngine as any).listImprovementSignalsForArtifact(cwd, relatedArtifact);
+          }
+
+          throw new Error(
+            'playbook memory query: invalid --view value. Use events, recent-routes, lane-transitions, worker-assignments, or artifact-improvements.'
+          );
+        })()
+      };
+
+      if (options.format === 'json') {
+        emitJsonOutput({ cwd, command: 'memory query', payload });
+      } else if (!options.quiet) {
+        console.log(`Found ${payload.events.length} repository memory events (${payload.view}).`);
       }
       return ExitCode.Success;
     }
@@ -234,7 +317,7 @@ export const runMemory = async (cwd: string, args: string[], options: MemoryOpti
       return ExitCode.Success;
     }
 
-    throw new Error('playbook memory: unsupported subcommand. Use events, candidates, knowledge, show, promote, or retire.');
+    throw new Error('playbook memory: unsupported subcommand. Use events, query, candidates, knowledge, show, promote, or retire.');
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (options.format === 'json') {

@@ -439,6 +439,17 @@ export type RepositoryEventLookupOptions = {
   subsystem?: RepositoryEventBase['subsystem'];
   subject?: string;
   runId?: string;
+  relatedArtifact?: string;
+  order?: 'asc' | 'desc';
+  limit?: number;
+};
+
+export type RepositoryEventQueryOptions = {
+  event_type?: RepositoryEventType;
+  subsystem?: RepositoryEventBase['subsystem'];
+  subject?: string;
+  run_id?: string;
+  related_artifact?: string;
   order?: 'asc' | 'desc';
   limit?: number;
 };
@@ -457,6 +468,18 @@ const sortEvents = (events: RepositoryEvent[], order: 'asc' | 'desc'): Repositor
 };
 
 export const readRepositoryEvents = (repoRoot: string, options: RepositoryEventLookupOptions = {}): RepositoryEvent[] => {
+  return queryRepositoryEvents(repoRoot, {
+    event_type: options.eventType,
+    subsystem: options.subsystem,
+    subject: options.subject,
+    run_id: options.runId,
+    related_artifact: options.relatedArtifact,
+    order: options.order,
+    limit: options.limit
+  });
+};
+
+export const queryRepositoryEvents = (repoRoot: string, options: RepositoryEventQueryOptions = {}): RepositoryEvent[] => {
   const eventsDir = path.join(repoRoot, ...EVENTS_DIR);
   if (!fs.existsSync(eventsDir)) {
     return [];
@@ -468,10 +491,15 @@ export const readRepositoryEvents = (repoRoot: string, options: RepositoryEventL
     .sort((left, right) => left.localeCompare(right))
     .map((entry) => readJsonIfExists<RepositoryEvent>(path.join(eventsDir, entry)))
     .filter((entry): entry is RepositoryEvent => Boolean(entry))
-    .filter((entry) => (options.eventType ? entry.event_type === options.eventType : true))
+    .filter((entry) => (options.event_type ? entry.event_type === options.event_type : true))
     .filter((entry) => (options.subsystem ? entry.subsystem === options.subsystem : true))
     .filter((entry) => (options.subject ? entry.subject === options.subject : true))
-    .filter((entry) => (options.runId ? entry.run_id === options.runId : true));
+    .filter((entry) => (options.run_id ? entry.run_id === options.run_id : true))
+    .filter((entry) =>
+      options.related_artifact
+        ? entry.related_artifacts.some((artifact) => artifact.path === options.related_artifact)
+        : true
+    );
 
   const sorted = sortEvents(events, options.order ?? 'asc');
   if (typeof options.limit === 'number' && options.limit >= 0) {
@@ -480,6 +508,34 @@ export const readRepositoryEvents = (repoRoot: string, options: RepositoryEventL
 
   return sorted;
 };
+
+export const listRecentRouteDecisions = (repoRoot: string, limit = 10): RouteDecisionEvent[] =>
+  queryRepositoryEvents(repoRoot, {
+    event_type: 'route_decision',
+    order: 'desc',
+    limit
+  }) as RouteDecisionEvent[];
+
+export const listLaneTransitionsForRun = (repoRoot: string, runId: string): LaneTransitionEvent[] =>
+  queryRepositoryEvents(repoRoot, {
+    event_type: 'lane_transition',
+    run_id: runId,
+    order: 'asc'
+  }) as LaneTransitionEvent[];
+
+export const listWorkerAssignmentsForRun = (repoRoot: string, runId: string): WorkerAssignmentEvent[] =>
+  queryRepositoryEvents(repoRoot, {
+    event_type: 'worker_assignment',
+    run_id: runId,
+    order: 'asc'
+  }) as WorkerAssignmentEvent[];
+
+export const listImprovementSignalsForArtifact = (repoRoot: string, artifactPath: string): ImprovementSignalEvent[] =>
+  queryRepositoryEvents(repoRoot, {
+    event_type: 'improvement_signal',
+    related_artifact: artifactPath,
+    order: 'desc'
+  }) as ImprovementSignalEvent[];
 
 export const recordLaneOutcome = recordExecutionOutcome;
 export const recordImprovementCandidate = recordImprovementSignal;

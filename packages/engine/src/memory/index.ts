@@ -181,6 +181,11 @@ export {
   recordExecutionOutcome,
   recordImprovementCandidate,
   recordImprovementSignal,
+  queryRepositoryEvents,
+  listRecentRouteDecisions,
+  listLaneTransitionsForRun,
+  listWorkerAssignmentsForRun,
+  listImprovementSignalsForArtifact,
   readRepositoryEvents,
   safeRecordRepositoryEvent,
   REPOSITORY_EVENTS_SCHEMA_VERSION
@@ -197,5 +202,6 @@ export type {
   WorkerAssignmentEvent,
   ExecutionOutcomeEvent,
   ImprovementSignalEvent,
-  RepositoryEventLookupOptions
+  RepositoryEventLookupOptions,
+  RepositoryEventQueryOptions
 } from './events.js';
