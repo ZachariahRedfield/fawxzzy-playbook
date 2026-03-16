@@ -258,6 +258,10 @@ declare module "@zachariahredfield/playbook-engine" {
   export const generateImprovementCandidates: (...args: any[]) => ImprovementCandidatesArtifact;
   export const writeImprovementCandidatesArtifact: (...args: any[]) => string;
   export const applyAutoSafeImprovements: (...args: any[]) => ImprovementActionArtifact;
+  export type RouterRecommendationsArtifact = any;
+  export const generateRouterRecommendations: (...args: any[]) => RouterRecommendationsArtifact;
+  export const writeRouterRecommendationsArtifact: (...args: any[]) => string;
+
   export const approveGovernanceImprovement: (...args: any[]) => ImprovementGovernanceApprovalArtifact;
 
   export const listRuntimeRuns: (...args: any[]) => any[];

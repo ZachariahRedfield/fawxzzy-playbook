@@ -161,6 +161,12 @@ export {
   applyAutoSafeImprovements,
   approveGovernanceImprovement
 } from './improvement/candidateEngine.js';
+export {
+  ROUTER_RECOMMENDATIONS_SCHEMA_VERSION,
+  ROUTER_RECOMMENDATIONS_RELATIVE_PATH,
+  generateRouterRecommendations,
+  writeRouterRecommendationsArtifact
+} from './improvement/routerRecommendationEngine.js';
 export type {
   ImprovementCandidateCategory,
   ImprovementTier,
@@ -171,6 +177,12 @@ export type {
   ImprovementActionArtifact,
   ImprovementGovernanceApprovalArtifact
 } from './improvement/candidateEngine.js';
+export type {
+  RouterRecommendation,
+  RouterRecommendationGatingTier,
+  RouterRecommendationsArtifact,
+  RejectedRouterRecommendation
+} from './improvement/routerRecommendationEngine.js';
 
 export {
   captureMemoryEvent,

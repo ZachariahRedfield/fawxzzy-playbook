@@ -114,6 +114,8 @@ describe('runImprove', () => {
 
     const artifactPath = path.join(repo, '.playbook', 'improvement-candidates.json');
     expect(fs.existsSync(artifactPath)).toBe(true);
+    expect(fs.existsSync(path.join(repo, '.playbook', 'router-recommendations.json'))).toBe(true);
+    expect(payload.router_recommendations).toBeDefined();
 
     logSpy.mockRestore();
     fs.rmSync(repo, { recursive: true, force: true });

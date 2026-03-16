@@ -3,17 +3,25 @@ import {
   approveGovernanceImprovement,
   generateImprovementCandidates,
   writeImprovementCandidatesArtifact,
-  type ImprovementCandidatesArtifact
+  generateRouterRecommendations,
+  writeRouterRecommendationsArtifact,
+  type ImprovementCandidatesArtifact,
+  type RouterRecommendationsArtifact
 } from '@zachariahredfield/playbook-engine';
 import { emitJsonOutput } from '../../lib/jsonArtifact.js';
 import { ExitCode } from '../../lib/cliContract.js';
+
+
+type ImproveOutputArtifact = ImprovementCandidatesArtifact & {
+  router_recommendations: RouterRecommendationsArtifact;
+};
 
 type ImproveOptions = {
   format: 'text' | 'json';
   quiet: boolean;
 };
 
-const renderText = (artifact: ImprovementCandidatesArtifact): void => {
+const renderText = (artifact: ImproveOutputArtifact): void => {
   console.log('Improvement candidates');
   console.log('──────────────────────');
   console.log(`Generated at: ${artifact.generatedAt}`);
@@ -46,6 +54,7 @@ const renderText = (artifact: ImprovementCandidatesArtifact): void => {
     console.log(`  action: ${candidate.suggested_action}`);
   }
 
+
   if (artifact.rejected_candidates.length > 0) {
     console.log('');
     console.log('Rejected (insufficient evidence / confidence)');
@@ -55,9 +64,24 @@ const renderText = (artifact: ImprovementCandidatesArtifact): void => {
       console.log(`  why gated: ${rejected.blocking_reasons.join(', ')}`);
     }
   }
+
+  console.log('');
+  console.log('Router recommendations (non-autonomous)');
+  console.log('──────────────────────────────────────');
+  console.log(`- accepted: ${artifact.router_recommendations.summary.total}`);
+  console.log(`- rejected: ${artifact.router_recommendations.summary.rejected}`);
+
+  for (const recommendation of artifact.router_recommendations.recommendations) {
+    console.log(`- [${recommendation.gating_tier}] ${recommendation.recommendation_id} (${recommendation.task_family})`);
+    console.log(`  strategy: ${recommendation.current_strategy} -> ${recommendation.recommended_strategy}`);
+    console.log(
+      `  evidence: ${recommendation.evidence_count} events across ${recommendation.supporting_runs} runs, confidence: ${recommendation.confidence_score}`
+    );
+    console.log(`  rationale: ${recommendation.rationale}`);
+  }
 };
 
-const printConversationPrompts = (artifact: ImprovementCandidatesArtifact): void => {
+const printConversationPrompts = (artifact: ImproveOutputArtifact): void => {
   const conversational = artifact.candidates.filter((candidate: { improvement_tier: string }) => candidate.improvement_tier === 'conversation');
 
   for (const candidate of conversational) {
@@ -68,8 +92,16 @@ const printConversationPrompts = (artifact: ImprovementCandidatesArtifact): void
 };
 
 export const runImprove = async (cwd: string, options: ImproveOptions): Promise<number> => {
-  const artifact = generateImprovementCandidates(cwd);
-  writeImprovementCandidatesArtifact(cwd, artifact);
+  const candidates = generateImprovementCandidates(cwd);
+  writeImprovementCandidatesArtifact(cwd, candidates);
+
+  const routerRecommendations = generateRouterRecommendations(cwd);
+  writeRouterRecommendationsArtifact(cwd, routerRecommendations);
+
+  const artifact: ImproveOutputArtifact = {
+    ...candidates,
+    router_recommendations: routerRecommendations
+  };
 
   if (options.format === 'json') {
     emitJsonOutput({ cwd, command: 'improve', payload: artifact });

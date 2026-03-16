@@ -15,3 +15,16 @@ export interface RouterAccuracyMetric {
   actual_validation_cost: number;
   router_fit_score: number;
 }
+
+
+export interface RouterRecommendation {
+  recommendation_id: string;
+  task_family: string;
+  current_strategy: string;
+  recommended_strategy: string;
+  evidence_count: number;
+  supporting_runs: number;
+  confidence_score: number;
+  rationale: string;
+  gating_tier: 'CONVERSATIONAL' | 'GOVERNANCE';
+}

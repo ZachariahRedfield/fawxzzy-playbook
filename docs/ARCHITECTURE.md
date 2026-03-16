@@ -97,6 +97,8 @@ Routing quality is treated as a measurable architecture contract inside `routing
 - Realized execution shape is captured from `.playbook/execution-state.json` and `.playbook/outcome-telemetry.json`.
 - Deterministic router-fit scoring compares planned vs realized lane parallelism, validation cost fit, execution success, and retry pressure.
 - Router accuracy metrics are persisted in `.playbook/process-telemetry.json` and folded into `.playbook/learning-state.json` for conservative routing refinement.
+- Router recommendation synthesis now reads router accuracy telemetry, lane outcome scoring, compacted learning-state evidence, and normalized repository memory events to generate deterministic recommendation artifacts at `.playbook/router-recommendations.json`.
+- Recommendations are explicitly proposal-only (`CONVERSATIONAL`/`GOVERNANCE` gating tiers) and never mutate router behavior autonomously; operators inspect evidence through `playbook improve`.
 
 Rule: routing quality must be observable and scored, otherwise route strategy cannot improve deterministically.
 
