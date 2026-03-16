@@ -48,9 +48,12 @@ Views:
   recommendations               Pattern transfer recommendations by source/target repo
   outcomes                      Adoption decisions and observed outcomes
   recalibration                 Confidence recalibration records with evidence/sample sizes
+  transfer-plans                Cross-repo transfer planning records
+  readiness                     Target-readiness assessments
+  blocked-transfers             Readiness records with unresolved blockers
 
 Options:
-  --view <view>                 Select portability view (overview|recommendations|outcomes|recalibration)
+  --view <view>                 Select portability view (overview|recommendations|outcomes|recalibration|transfer-plans|readiness|blocked-transfers)
   --json                        Print machine-readable JSON output
   --help                        Show help`);
 };

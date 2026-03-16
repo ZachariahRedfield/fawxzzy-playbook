@@ -82,6 +82,44 @@ Sample Size: ${String(entry.sample_size)}`
     .join('\n\n---\n\n');
 };
 
+
+const renderTransferPlanningText = (entry: Record<string, unknown>): string => `Pattern: ${String(entry.pattern)}
+Source Repo: ${String(entry.source_repo)}
+Target Repo: ${String(entry.target_repo)}
+Portability Confidence: ${String(entry.portability_confidence)}
+Readiness Score: ${String(entry.readiness_score ?? 'n/a')}
+Touched Subsystems: ${((entry.touched_subsystems as unknown[] | undefined) ?? []).map(String).join(', ') || 'none'}
+Required Validations: ${((entry.required_validations as unknown[] | undefined) ?? []).map(String).join(', ') || 'none'}
+Blockers: ${((entry.blockers as unknown[] | undefined) ?? []).map(String).join(', ') || 'none'}
+Open Questions: ${((entry.open_questions as unknown[] | undefined) ?? []).map(String).join(', ') || 'none'}`;
+
+const renderTransferPlansText = (payload: Record<string, unknown>): string => {
+  const records = payload.transfer_plans as Array<Record<string, unknown>> | undefined;
+  if (!records || records.length === 0) {
+    return 'No transfer plans found.';
+  }
+
+  return records.map(renderTransferPlanningText).join('\n\n---\n\n');
+};
+
+const renderReadinessText = (payload: Record<string, unknown>): string => {
+  const records = payload.readiness as Array<Record<string, unknown>> | undefined;
+  if (!records || records.length === 0) {
+    return 'No transfer readiness records found.';
+  }
+
+  return records.map(renderTransferPlanningText).join('\n\n---\n\n');
+};
+
+const renderBlockedTransfersText = (payload: Record<string, unknown>): string => {
+  const records = payload.blocked_transfers as Array<Record<string, unknown>> | undefined;
+  if (!records || records.length === 0) {
+    return 'No blocked transfers found.';
+  }
+
+  return records.map(renderTransferPlanningText).join('\n\n---\n\n');
+};
+
 const renderPortabilityRecalibrationText = (payload: Record<string, unknown>): string => {
   const recalibration = payload.recalibration as Array<Record<string, unknown>> | undefined;
   if (!recalibration || recalibration.length === 0) {
@@ -123,6 +161,15 @@ const renderText = (subcommand: string, payload: Record<string, unknown>): strin
     }
     if (command === 'knowledge-portability-recalibration') {
       return renderPortabilityRecalibrationText(payload);
+    }
+    if (command === 'knowledge-portability-transfer-plans') {
+      return renderTransferPlansText(payload);
+    }
+    if (command === 'knowledge-portability-readiness') {
+      return renderReadinessText(payload);
+    }
+    if (command === 'knowledge-portability-blocked-transfers') {
+      return renderBlockedTransfersText(payload);
     }
     return renderPortabilityText(payload);
   }

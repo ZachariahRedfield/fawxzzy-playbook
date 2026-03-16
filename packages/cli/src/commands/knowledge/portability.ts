@@ -2,7 +2,8 @@ import {
   readCrossRepoPatternsArtifact,
   readPortabilityOutcomesArtifact
 } from '@zachariahredfield/playbook-engine';
-
+import fs from 'node:fs';
+import path from 'node:path';
 
 
 type PortabilityRiskSignal = 'dependency mismatch' | 'outcome volatility' | 'low instance diversity' | 'governance instability';
@@ -66,6 +67,43 @@ type PortabilityRecalibrationRecord = {
   sample_size: number;
 };
 
+type TransferPlanRecord = {
+  pattern: string;
+  source_repo: string;
+  target_repo: string;
+  portability_confidence: number;
+  touched_subsystems: string[];
+  required_validations: string[];
+  blockers: string[];
+  open_questions: string[];
+};
+
+type TransferReadinessRecord = {
+  pattern: string;
+  source_repo: string;
+  target_repo: string;
+  portability_confidence: number;
+  readiness_score: number;
+  touched_subsystems: string[];
+  required_validations: string[];
+  blockers: string[];
+  open_questions: string[];
+};
+
+type TransferPlansArtifact = {
+  schemaVersion: '1.0';
+  kind: 'transfer-plans';
+  generatedAt: string;
+  transfer_plans: TransferPlanRecord[];
+};
+
+type TransferReadinessArtifact = {
+  schemaVersion: '1.0';
+  kind: 'transfer-readiness';
+  generatedAt: string;
+  readiness: TransferReadinessRecord[];
+};
+
 type CrossRepoAggregate = {
   pattern_id: string;
   portability_score: number;
@@ -87,9 +125,107 @@ type CrossRepoPatternsArtifact = {
   portability_recalibration?: PortabilityRecalibrationRecord[];
 };
 
-export type PortabilityView = 'overview' | 'recommendations' | 'outcomes' | 'recalibration';
+export type PortabilityView =
+  | 'overview'
+  | 'recommendations'
+  | 'outcomes'
+  | 'recalibration'
+  | 'transfer-plans'
+  | 'readiness'
+  | 'blocked-transfers';
 
 const clamp = (value: number): number => Math.max(0, Math.min(1, Number(value.toFixed(4))));
+
+const TRANSFER_PLANS_RELATIVE_PATH = '.playbook/transfer-plans.json';
+const TRANSFER_READINESS_RELATIVE_PATH = '.playbook/transfer-readiness.json';
+
+const ensureArtifactExists = (cwd: string, relativePath: string): string => {
+  const artifactPath = path.join(cwd, relativePath);
+  if (!fs.existsSync(artifactPath)) {
+    throw new Error(`playbook knowledge portability: missing artifact at ${relativePath}.`);
+  }
+  return artifactPath;
+};
+
+const asTextList = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.map((entry) => String(entry));
+};
+
+const sortTransferPlans = (records: TransferPlanRecord[]): TransferPlanRecord[] =>
+  [...records].sort(
+    (left, right) =>
+      right.portability_confidence - left.portability_confidence ||
+      left.pattern.localeCompare(right.pattern) ||
+      left.target_repo.localeCompare(right.target_repo)
+  );
+
+const readTransferPlansArtifact = (cwd: string): TransferPlansArtifact => {
+  const artifactPath = ensureArtifactExists(cwd, TRANSFER_PLANS_RELATIVE_PATH);
+  const parsed = JSON.parse(fs.readFileSync(artifactPath, 'utf8')) as Record<string, unknown>;
+  const transferPlans = Array.isArray(parsed.transfer_plans) ? parsed.transfer_plans : [];
+
+  return {
+    schemaVersion: '1.0',
+    kind: 'transfer-plans',
+    generatedAt: String(parsed.generatedAt ?? '1970-01-01T00:00:00.000Z'),
+    transfer_plans: sortTransferPlans(
+      transferPlans.map((entry: unknown) => {
+        const typed = entry as Record<string, unknown>;
+        return {
+          pattern: String(typed.pattern ?? 'unknown'),
+          source_repo: String(typed.source_repo ?? 'unknown'),
+          target_repo: String(typed.target_repo ?? 'unknown'),
+          portability_confidence: Number(typed.portability_confidence ?? 0),
+          touched_subsystems: asTextList(typed.touched_subsystems),
+          required_validations: asTextList(typed.required_validations),
+          blockers: asTextList(typed.blockers),
+          open_questions: asTextList(typed.open_questions)
+        };
+      })
+    )
+  };
+};
+
+const sortTransferReadiness = (records: TransferReadinessRecord[]): TransferReadinessRecord[] =>
+  [...records].sort(
+    (left, right) =>
+      right.readiness_score - left.readiness_score ||
+      right.portability_confidence - left.portability_confidence ||
+      left.pattern.localeCompare(right.pattern) ||
+      left.target_repo.localeCompare(right.target_repo)
+  );
+
+const readTransferReadinessArtifact = (cwd: string): TransferReadinessArtifact => {
+  const artifactPath = ensureArtifactExists(cwd, TRANSFER_READINESS_RELATIVE_PATH);
+  const parsed = JSON.parse(fs.readFileSync(artifactPath, 'utf8')) as Record<string, unknown>;
+  const readiness = Array.isArray(parsed.readiness) ? parsed.readiness : [];
+
+  return {
+    schemaVersion: '1.0',
+    kind: 'transfer-readiness',
+    generatedAt: String(parsed.generatedAt ?? '1970-01-01T00:00:00.000Z'),
+    readiness: sortTransferReadiness(
+      readiness.map((entry: unknown) => {
+        const typed = entry as Record<string, unknown>;
+        return {
+          pattern: String(typed.pattern ?? 'unknown'),
+          source_repo: String(typed.source_repo ?? 'unknown'),
+          target_repo: String(typed.target_repo ?? 'unknown'),
+          portability_confidence: Number(typed.portability_confidence ?? 0),
+          readiness_score: Number(typed.readiness_score ?? 0),
+          touched_subsystems: asTextList(typed.touched_subsystems),
+          required_validations: asTextList(typed.required_validations),
+          blockers: asTextList(typed.blockers),
+          open_questions: asTextList(typed.open_questions)
+        };
+      })
+    )
+  };
+};
 
 const inferCompatibleSubsystems = (patternId: string): string[] => {
   const tokenized = patternId.toLowerCase();
@@ -293,11 +429,11 @@ export const parsePortabilityView = (args: string[]): PortabilityView => {
     return 'overview';
   }
 
-  if (rawView === 'recommendations' || rawView === 'outcomes' || rawView === 'recalibration') {
+  if (rawView === 'recommendations' || rawView === 'outcomes' || rawView === 'recalibration' || rawView === 'transfer-plans' || rawView === 'readiness' || rawView === 'blocked-transfers') {
     return rawView;
   }
 
-  throw new Error(`playbook knowledge portability: invalid --view value "${rawView}"; expected overview, recommendations, outcomes, or recalibration`);
+  throw new Error('playbook knowledge portability: invalid --view value "' + rawView + '"; expected overview, recommendations, outcomes, recalibration, transfer-plans, readiness, or blocked-transfers');
 };
 
 export const runKnowledgePortability = (
@@ -307,7 +443,34 @@ export const runKnowledgePortability = (
   | { schemaVersion: '1.0'; command: 'knowledge-portability'; portability: PortabilityRecord[] }
   | { schemaVersion: '1.0'; command: 'knowledge-portability-recommendations'; recommendations: PortabilityRecommendationRecord[] }
   | { schemaVersion: '1.0'; command: 'knowledge-portability-outcomes'; outcomes: PortabilityOutcomeRecord[] }
-  | { schemaVersion: '1.0'; command: 'knowledge-portability-recalibration'; recalibration: PortabilityRecalibrationRecord[] } => {
+  | { schemaVersion: '1.0'; command: 'knowledge-portability-recalibration'; recalibration: PortabilityRecalibrationRecord[] }
+  | { schemaVersion: '1.0'; command: 'knowledge-portability-transfer-plans'; transfer_plans: TransferPlanRecord[] }
+  | { schemaVersion: '1.0'; command: 'knowledge-portability-readiness'; readiness: TransferReadinessRecord[] }
+  | { schemaVersion: '1.0'; command: 'knowledge-portability-blocked-transfers'; blocked_transfers: TransferReadinessRecord[] } => {
+  if (view === 'transfer-plans') {
+    return {
+      schemaVersion: '1.0',
+      command: 'knowledge-portability-transfer-plans',
+      transfer_plans: readTransferPlansArtifact(cwd).transfer_plans
+    };
+  }
+
+  if (view === 'readiness') {
+    return {
+      schemaVersion: '1.0',
+      command: 'knowledge-portability-readiness',
+      readiness: readTransferReadinessArtifact(cwd).readiness
+    };
+  }
+
+  if (view === 'blocked-transfers') {
+    return {
+      schemaVersion: '1.0',
+      command: 'knowledge-portability-blocked-transfers',
+      blocked_transfers: readTransferReadinessArtifact(cwd).readiness.filter((entry) => entry.blockers.length > 0)
+    };
+  }
+
   const artifact = readCrossRepoPatternsArtifact(cwd) as CrossRepoPatternsArtifact;
 
   if (view === 'overview') {

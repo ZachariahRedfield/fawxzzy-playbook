@@ -9,6 +9,8 @@ const knowledgeProvenance = vi.fn();
 const knowledgeStale = vi.fn();
 const readCrossRepoPatternsArtifact = vi.fn();
 const readPortabilityOutcomesArtifact = vi.fn();
+const existsSync = vi.fn();
+const readFileSync = vi.fn();
 
 vi.mock('@zachariahredfield/playbook-engine', () => ({
   knowledgeList,
@@ -19,6 +21,13 @@ vi.mock('@zachariahredfield/playbook-engine', () => ({
   knowledgeStale,
   readCrossRepoPatternsArtifact,
   readPortabilityOutcomesArtifact
+}));
+
+
+vi.mock('node:fs', () => ({
+  default: { existsSync, readFileSync },
+  existsSync,
+  readFileSync
 }));
 
 const crossRepoArtifactFixture = () => ({
@@ -81,6 +90,65 @@ const crossRepoArtifactFixture = () => ({
     }
   ]
 });
+
+const transferPlansFixture = () => ({
+  schemaVersion: '1.0',
+  kind: 'transfer-plans',
+  generatedAt: '2026-01-02T00:00:00.000Z',
+  transfer_plans: [
+    {
+      pattern: 'knowledge-contract-portability',
+      source_repo: 'source/repo',
+      target_repo: 'target/repo',
+      portability_confidence: 0.82,
+      touched_subsystems: ['bootstrap_contract_surface', 'knowledge_lifecycle'],
+      required_validations: ['pnpm -r build', 'pnpm test'],
+      blockers: [],
+      open_questions: ['Should transfer include migration doc updates?']
+    },
+    {
+      pattern: 'bootstrap-rule-normalization',
+      source_repo: 'source/repo',
+      target_repo: 'target/repo',
+      portability_confidence: 0.68,
+      touched_subsystems: ['bootstrap_contract_surface'],
+      required_validations: ['pnpm -r build'],
+      blockers: ['Owner review pending'],
+      open_questions: ['Can target repo consume updated contract field names?']
+    }
+  ]
+});
+
+const transferReadinessFixture = () => ({
+  schemaVersion: '1.0',
+  kind: 'transfer-readiness',
+  generatedAt: '2026-01-02T00:00:00.000Z',
+  readiness: [
+    {
+      pattern: 'knowledge-contract-portability',
+      source_repo: 'source/repo',
+      target_repo: 'target/repo',
+      portability_confidence: 0.82,
+      readiness_score: 0.91,
+      touched_subsystems: ['bootstrap_contract_surface', 'knowledge_lifecycle'],
+      required_validations: ['pnpm -r build', 'pnpm test'],
+      blockers: [],
+      open_questions: ['Should transfer include migration doc updates?']
+    },
+    {
+      pattern: 'bootstrap-rule-normalization',
+      source_repo: 'source/repo',
+      target_repo: 'target/repo',
+      portability_confidence: 0.68,
+      readiness_score: 0.55,
+      touched_subsystems: ['bootstrap_contract_surface'],
+      required_validations: ['pnpm -r build'],
+      blockers: ['Owner review pending'],
+      open_questions: ['Can target repo consume updated contract field names?']
+    }
+  ]
+});
+
 
 describe('runKnowledge', () => {
   it('supports list and emits json output', async () => {
@@ -213,6 +281,36 @@ describe('runKnowledge', () => {
     expect(rendered).toContain('Evidence Count: 7');
     expect(rendered).toContain('Sample Size: 7');
 
+    existsSync.mockReturnValue(true);
+    readFileSync.mockImplementation((artifactPath: string) => {
+      if (String(artifactPath).endsWith('transfer-plans.json')) {
+        return JSON.stringify(transferPlansFixture());
+      }
+      return JSON.stringify(transferReadinessFixture());
+    });
+
+    logSpy.mockClear();
+    exitCode = await runKnowledge('/repo', ['portability', '--view', 'transfer-plans'], { format: 'text', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+    rendered = String(logSpy.mock.calls[0]?.[0]);
+    expect(rendered).toContain('Pattern: knowledge-contract-portability');
+    expect(rendered).toContain('Portability Confidence: 0.82');
+    expect(rendered).toContain('Readiness Score: n/a');
+    expect(rendered).toContain('Required Validations: pnpm -r build, pnpm test');
+
+    logSpy.mockClear();
+    exitCode = await runKnowledge('/repo', ['portability', '--view', 'readiness'], { format: 'text', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+    rendered = String(logSpy.mock.calls[0]?.[0]);
+    expect(rendered).toContain('Readiness Score: 0.91');
+
+    logSpy.mockClear();
+    exitCode = await runKnowledge('/repo', ['portability', '--view', 'blocked-transfers'], { format: 'text', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+    rendered = String(logSpy.mock.calls[0]?.[0]);
+    expect(rendered).toContain('Pattern: bootstrap-rule-normalization');
+    expect(rendered).toContain('Blockers: Owner review pending');
+
     logSpy.mockRestore();
   });
 
@@ -294,6 +392,94 @@ describe('runKnowledge', () => {
       evidence_count: 7,
       sample_size: 7
     });
+
+    existsSync.mockReturnValue(true);
+    readFileSync.mockImplementation((artifactPath: string) => {
+      if (String(artifactPath).endsWith('transfer-plans.json')) {
+        return JSON.stringify(transferPlansFixture());
+      }
+      return JSON.stringify(transferReadinessFixture());
+    });
+
+    logSpy.mockClear();
+    exitCode = await runKnowledge('/repo', ['portability', '--view', 'transfer-plans'], { format: 'json', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+    payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.command).toBe('knowledge-portability-transfer-plans');
+    expect(payload.transfer_plans[0]).toMatchObject({
+      pattern: 'knowledge-contract-portability',
+      portability_confidence: 0.82
+    });
+
+    logSpy.mockClear();
+    exitCode = await runKnowledge('/repo', ['portability', '--view', 'readiness'], { format: 'json', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+    payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.command).toBe('knowledge-portability-readiness');
+    expect(payload.readiness[0]).toMatchObject({
+      pattern: 'knowledge-contract-portability',
+      readiness_score: 0.91
+    });
+
+    logSpy.mockClear();
+    exitCode = await runKnowledge('/repo', ['portability', '--view', 'blocked-transfers'], { format: 'json', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+    payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.command).toBe('knowledge-portability-blocked-transfers');
+    expect(payload.blocked_transfers).toHaveLength(1);
+    expect(payload.blocked_transfers[0]).toMatchObject({
+      pattern: 'bootstrap-rule-normalization'
+    });
+
+    logSpy.mockRestore();
+  });
+
+
+
+  it('returns deterministic missing-artifact failure for transfer planning artifacts', async () => {
+    const { runKnowledge } = await import('./knowledge.js');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    existsSync.mockReturnValue(false);
+
+    const exitCode = await runKnowledge('/repo', ['portability', '--view', 'transfer-plans'], { format: 'text', quiet: false });
+    expect(exitCode).toBe(ExitCode.Failure);
+    expect(String(errorSpy.mock.calls[0]?.[0])).toContain('missing artifact at .playbook/transfer-plans.json');
+
+    errorSpy.mockRestore();
+  });
+
+
+
+  it('keeps transfer artifact ordering deterministic for transfer-plans and readiness views', async () => {
+    const { runKnowledge } = await import('./knowledge.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    existsSync.mockReturnValue(true);
+    readFileSync.mockImplementation((artifactPath: string) => {
+      if (String(artifactPath).endsWith('transfer-plans.json')) {
+        return JSON.stringify({
+          ...transferPlansFixture(),
+          transfer_plans: [...transferPlansFixture().transfer_plans].reverse()
+        });
+      }
+
+      return JSON.stringify({
+        ...transferReadinessFixture(),
+        readiness: [...transferReadinessFixture().readiness].reverse()
+      });
+    });
+
+    let exitCode = await runKnowledge('/repo', ['portability', '--view', 'transfer-plans'], { format: 'json', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+    let payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.transfer_plans[0].pattern).toBe('knowledge-contract-portability');
+
+    logSpy.mockClear();
+    exitCode = await runKnowledge('/repo', ['portability', '--view', 'readiness'], { format: 'json', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+    payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.readiness[0].pattern).toBe('knowledge-contract-portability');
 
     logSpy.mockRestore();
   });

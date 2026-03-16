@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/transfer-plans.schema.json",
+  "title": "Transfer Plans Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "generatedAt", "transfer_plans"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "kind": { "type": "string", "const": "transfer-plans" },
+    "generatedAt": { "type": "string" },
+    "transfer_plans": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/transferPlan" }
+    }
+  },
+  "$defs": {
+    "transferPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pattern",
+        "source_repo",
+        "target_repo",
+        "portability_confidence",
+        "touched_subsystems",
+        "required_validations",
+        "blockers",
+        "open_questions"
+      ],
+      "properties": {
+        "pattern": { "type": "string" },
+        "source_repo": { "type": "string" },
+        "target_repo": { "type": "string" },
+        "portability_confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "touched_subsystems": { "type": "array", "items": { "type": "string" } },
+        "required_validations": { "type": "array", "items": { "type": "string" } },
+        "blockers": { "type": "array", "items": { "type": "string" } },
+        "open_questions": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
