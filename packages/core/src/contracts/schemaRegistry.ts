@@ -84,6 +84,7 @@ export const additiveCommandFieldSchemaRegistry: RegisteredSchemaContract[] = [
   { id: 'knowledge', version: '1.0', path: 'packages/contracts/src/knowledge.schema.json', kind: 'command-output' },
   { id: 'pattern-graph', version: '1.0', path: 'packages/contracts/src/pattern-graph.schema.json', kind: 'command-output' },
   { id: 'cross-repo-candidates', version: '1.0', path: 'packages/contracts/src/cross-repo-candidates.schema.json', kind: 'command-output' },
+  { id: 'pattern-portability', version: '1.0', path: 'packages/contracts/src/pattern-portability.schema.json', kind: 'command-output' },
   { id: 'task-execution-profile', version: '1.0', path: 'packages/contracts/src/task-execution-profile.schema.json', kind: 'command-output' },
   { id: 'execution-plan', version: '1.0', path: 'packages/contracts/src/execution-plan.schema.json', kind: 'command-output' },
   { id: 'workset-plan', version: '1.0', path: 'packages/contracts/src/workset-plan.schema.json', kind: 'command-output' },
