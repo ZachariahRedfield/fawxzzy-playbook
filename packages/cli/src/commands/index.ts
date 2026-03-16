@@ -211,6 +211,7 @@ const commandRunners: Record<string, (context: CommandContext) => Promise<Comman
       quiet,
       help: parseFlag(commandArgs, '--help') || parseFlag(commandArgs, '-h'),
       policyCheck: parseFlag(commandArgs, '--policy-check'),
+      policy: parseFlag(commandArgs, '--policy'),
       fromPlan: parseOptionValue(commandArgs, '--from-plan'),
       tasks: parseOptionValues(commandArgs, '--task'),
       runId: parseOptionValue(commandArgs, '--run-id')

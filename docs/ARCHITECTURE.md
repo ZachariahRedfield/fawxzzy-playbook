@@ -129,6 +129,12 @@ This keeps command-level self-observation complete across execution surfaces and
 
 Pattern: introduce evaluation before execution — proposals must pass deterministic policy classification before any action workflow.
 
+`playbook apply --policy` is the first mutation-capable control-plane execution step and is intentionally narrow: it consumes persisted `.playbook/policy-evaluation.json`, executes only `safe` proposals, refuses `requires_review`/`blocked`, and emits deterministic `.playbook/policy-apply-result.json` on every run for auditability (including no-op runs).
+
+Rule: mutation-capable policy execution must consume governed policy artifacts and run only explicitly eligible (`safe`) proposals.
+
+Failure mode: if execution broadens beyond explicit `safe` decisions, control-plane autonomy outpaces governance trust.
+
 ## Router accuracy telemetry feedback loop
 
 Routing quality is treated as a measurable architecture contract inside `routing_engine` + `telemetry_learning`.

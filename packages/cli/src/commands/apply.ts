@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as engine from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
+import { writeJsonArtifactAbsolute } from '../lib/jsonArtifact.js';
 import { loadVerifyRules } from '../lib/loadVerifyRules.js';
 import {
   buildPlanRemediation,
@@ -17,6 +18,7 @@ type ApplyOptions = {
   quiet: boolean;
   help?: boolean;
   policyCheck?: boolean;
+  policy?: boolean;
   fromPlan?: string;
   tasks?: string[];
   runId?: string;
@@ -78,6 +80,41 @@ type PolicyCheckJsonResult = {
   };
 };
 
+type PolicyApplyResultEntry = {
+  proposal_id: string;
+  decision: 'safe' | 'requires_review' | 'blocked';
+  reason: string;
+};
+
+type PolicyApplyFailureEntry = PolicyApplyResultEntry & {
+  error: string;
+};
+
+type PolicyApplyResultArtifact = {
+  schemaVersion: '1.0';
+  kind: 'policy-apply-result';
+  executed: PolicyApplyResultEntry[];
+  skipped_requires_review: PolicyApplyResultEntry[];
+  skipped_blocked: PolicyApplyResultEntry[];
+  failed_execution: PolicyApplyFailureEntry[];
+  summary: {
+    executed: number;
+    skipped_requires_review: number;
+    skipped_blocked: number;
+    failed_execution: number;
+    total: number;
+  };
+};
+
+type PolicyApplyJsonResult = {
+  schemaVersion: '1.0';
+  command: 'apply';
+  mode: 'policy';
+  ok: boolean;
+  exitCode: number;
+  resultArtifact: string;
+} & PolicyApplyResultArtifact;
+
 type DecodedPlanPayload = {
   text: string;
   likelyShellEncodingIssue: boolean;
@@ -86,6 +123,7 @@ type DecodedPlanPayload = {
 const UTF8_BOM = Buffer.from([0xef, 0xbb, 0xbf]);
 const UTF16LE_BOM = Buffer.from([0xff, 0xfe]);
 const UTF16BE_BOM = Buffer.from([0xfe, 0xff]);
+const POLICY_APPLY_RESULT_RELATIVE_PATH = '.playbook/policy-apply-result.json' as const;
 
 const stripLeadingBom = (text: string): string => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
 
@@ -247,6 +285,87 @@ const loadPolicyEvaluationArtifact = (cwd: string): engine.PolicyEvaluationEntry
   });
 };
 
+const executeSafePolicyProposal = (cwd: string, proposal: engine.PolicyEvaluationEntry): string | null => {
+  const candidatesPath = path.resolve(cwd, '.playbook/improvement-candidates.json');
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(fs.readFileSync(candidatesPath, 'utf8'));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return `Unable to read improvement candidates at ${candidatesPath}: ${message}. Run \`pnpm playbook improve --json\` first.`;
+  }
+
+  const normalizedPayload =
+    payload && typeof payload === 'object' && !Array.isArray(payload) && 'data' in payload
+      ? ((payload as Record<string, unknown>).data as Record<string, unknown>)
+      : (payload as Record<string, unknown>);
+  const candidates = normalizedPayload?.candidates;
+  if (!Array.isArray(candidates)) {
+    return `Invalid improvement candidates artifact at ${candidatesPath}: expected \`candidates\` array.`;
+  }
+
+  const exists = candidates.some((candidate) => {
+    if (!candidate || typeof candidate !== 'object') {
+      return false;
+    }
+
+    return (candidate as Record<string, unknown>).candidate_id === proposal.proposal_id;
+  });
+
+  if (!exists) {
+    return `No deterministic execution target found for safe proposal \`${proposal.proposal_id}\` in ${candidatesPath}.`;
+  }
+
+  return null;
+};
+
+const runPolicyApply = (cwd: string): PolicyApplyJsonResult => {
+  const preflight = engine.buildPolicyPreflight(loadPolicyEvaluationArtifact(cwd));
+  const executed: PolicyApplyResultEntry[] = [];
+  const failedExecution: PolicyApplyFailureEntry[] = [];
+
+  for (const safeProposal of preflight.eligible) {
+    const executionError = executeSafePolicyProposal(cwd, safeProposal);
+    if (executionError) {
+      failedExecution.push({ ...safeProposal, error: executionError });
+      continue;
+    }
+
+    executed.push(safeProposal);
+  }
+
+  const resultArtifact: PolicyApplyResultArtifact = {
+    schemaVersion: '1.0',
+    kind: 'policy-apply-result',
+    executed,
+    skipped_requires_review: preflight.requires_review,
+    skipped_blocked: preflight.blocked,
+    failed_execution: failedExecution,
+    summary: {
+      executed: executed.length,
+      skipped_requires_review: preflight.requires_review.length,
+      skipped_blocked: preflight.blocked.length,
+      failed_execution: failedExecution.length,
+      total: preflight.summary.total
+    }
+  };
+
+  const resultArtifactPath = path.resolve(cwd, POLICY_APPLY_RESULT_RELATIVE_PATH);
+  writeJsonArtifactAbsolute(resultArtifactPath, resultArtifact as Record<string, unknown>, 'apply', { envelope: false });
+
+  const exitCode = failedExecution.length > 0 ? ExitCode.Failure : ExitCode.Success;
+  return {
+    ...resultArtifact,
+    schemaVersion: '1.0',
+    command: 'apply',
+    mode: 'policy',
+    ok: exitCode === ExitCode.Success,
+    exitCode,
+    resultArtifact: POLICY_APPLY_RESULT_RELATIVE_PATH
+  };
+};
+
 
 
 
@@ -326,6 +445,7 @@ const printApplyHelp = (): void => {
   console.log('');
   console.log('Options:');
   console.log('  --policy-check             Read-only preflight of policy-evaluated proposal eligibility');
+  console.log('  --policy                   Controlled policy-gated execution for safe proposals only');
   console.log('  --from-plan <path>         Apply tasks from a previously saved `playbook plan --json` artifact');
   console.log('  --task <id>                Apply only selected task ID (repeatable; requires --from-plan)');
   console.log('  --json                     Alias for --format=json');
@@ -356,6 +476,9 @@ export const runApply = async (cwd: string, options: ApplyOptions): Promise<numb
   }
 
   if (options.policyCheck) {
+    if (options.policy) {
+      throw new Error('The --policy flag cannot be combined with --policy-check.');
+    }
     if (options.fromPlan) {
       throw new Error('The --policy-check flag is read-only and cannot be combined with --from-plan.');
     }
@@ -384,6 +507,31 @@ export const runApply = async (cwd: string, options: ApplyOptions): Promise<numb
     }
 
     return ExitCode.Success;
+  }
+
+  if (options.policy) {
+    if (options.fromPlan) {
+      throw new Error('The --policy flag cannot be combined with --from-plan.');
+    }
+
+    if ((options.tasks?.length ?? 0) > 0) {
+      throw new Error('The --policy flag cannot be combined with --task.');
+    }
+
+    const payload = runPolicyApply(cwd);
+    if (options.format === 'json') {
+      console.log(JSON.stringify(payload, null, 2));
+    } else if (!options.quiet) {
+      console.log('Apply policy execution (safe proposals only)');
+      console.log('──────────────────────────────────────────');
+      console.log(`Executed: ${payload.summary.executed}`);
+      console.log(`Skipped (requires_review): ${payload.summary.skipped_requires_review}`);
+      console.log(`Skipped (blocked): ${payload.summary.skipped_blocked}`);
+      console.log(`Failed execution: ${payload.summary.failed_execution}`);
+      console.log(`Result artifact: ${payload.resultArtifact}`);
+    }
+
+    return payload.exitCode;
   }
 
   const routeDecision = engine.routeTask(cwd, 'apply approved remediation plan', {

@@ -201,6 +201,116 @@ describe('runApply', () => {
     );
   });
 
+  it('fails when --policy is combined with --policy-check', async () => {
+    const { runApply } = await import('./apply.js');
+
+    await expect(runApply('/repo', { format: 'json', ci: false, quiet: false, policy: true, policyCheck: true })).rejects.toThrow(
+      'The --policy flag cannot be combined with --policy-check.'
+    );
+  });
+
+  it('fails clearly when --policy artifact is missing', async () => {
+    const { runApply } = await import('./apply.js');
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-apply-policy-missing-'));
+
+    await expect(runApply(tmpRoot, { format: 'json', ci: false, quiet: false, policy: true })).rejects.toThrow(
+      /Unable to read policy evaluation artifact at .*policy-evaluation\.json/
+    );
+    expect(applyExecutionPlan).not.toHaveBeenCalled();
+
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
+  it('writes deterministic no-op policy result when there are no safe proposals', async () => {
+    const { runApply } = await import('./apply.js');
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-apply-policy-no-safe-'));
+    const policyPath = path.join(tmpRoot, '.playbook', 'policy-evaluation.json');
+    fs.mkdirSync(path.dirname(policyPath), { recursive: true });
+    fs.writeFileSync(
+      policyPath,
+      JSON.stringify({ evaluations: [{ proposal_id: 'proposal-review', decision: 'requires_review', reason: 'needs review' }] })
+    );
+
+    buildPolicyPreflight.mockReturnValue({
+      schemaVersion: '1.0',
+      eligible: [],
+      requires_review: [{ proposal_id: 'proposal-review', decision: 'requires_review', reason: 'needs review' }],
+      blocked: [],
+      summary: { eligible: 0, requires_review: 1, blocked: 0, total: 1 }
+    });
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runApply(tmpRoot, { format: 'json', ci: false, quiet: false, policy: true });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.summary).toEqual({ executed: 0, skipped_requires_review: 1, skipped_blocked: 0, failed_execution: 0, total: 1 });
+
+    const artifact = JSON.parse(fs.readFileSync(path.join(tmpRoot, '.playbook', 'policy-apply-result.json'), 'utf8'));
+    expect(artifact).toEqual({
+      schemaVersion: '1.0',
+      kind: 'policy-apply-result',
+      executed: [],
+      skipped_requires_review: [{ proposal_id: 'proposal-review', decision: 'requires_review', reason: 'needs review' }],
+      skipped_blocked: [],
+      failed_execution: [],
+      summary: { executed: 0, skipped_requires_review: 1, skipped_blocked: 0, failed_execution: 0, total: 1 }
+    });
+
+    logSpy.mockRestore();
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
+  it('executes only safe proposals and records failed safe executions deterministically', async () => {
+    const { runApply } = await import('./apply.js');
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-apply-policy-mixed-'));
+    const playbookDir = path.join(tmpRoot, '.playbook');
+    const policyPath = path.join(playbookDir, 'policy-evaluation.json');
+    fs.mkdirSync(playbookDir, { recursive: true });
+    fs.writeFileSync(policyPath, JSON.stringify({ evaluations: [{ proposal_id: 'a', decision: 'safe', reason: 'safe a' }] }));
+    fs.writeFileSync(
+      path.join(playbookDir, 'improvement-candidates.json'),
+      JSON.stringify({ candidates: [{ candidate_id: 'safe-ok' }] })
+    );
+
+    buildPolicyPreflight.mockReturnValue({
+      schemaVersion: '1.0',
+      eligible: [
+        { proposal_id: 'safe-fail', decision: 'safe', reason: 'safe but missing candidate' },
+        { proposal_id: 'safe-ok', decision: 'safe', reason: 'safe and executable' }
+      ],
+      requires_review: [{ proposal_id: 'review-1', decision: 'requires_review', reason: 'review gate' }],
+      blocked: [{ proposal_id: 'block-1', decision: 'blocked', reason: 'blocked gate' }],
+      summary: { eligible: 2, requires_review: 1, blocked: 1, total: 4 }
+    });
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runApply(tmpRoot, { format: 'json', ci: false, quiet: false, policy: true });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload).toMatchObject({
+      schemaVersion: '1.0',
+      command: 'apply',
+      mode: 'policy',
+      ok: false,
+      exitCode: ExitCode.Failure,
+      executed: [{ proposal_id: 'safe-ok', decision: 'safe', reason: 'safe and executable' }],
+      skipped_requires_review: [{ proposal_id: 'review-1', decision: 'requires_review', reason: 'review gate' }],
+      skipped_blocked: [{ proposal_id: 'block-1', decision: 'blocked', reason: 'blocked gate' }],
+      summary: { executed: 1, skipped_requires_review: 1, skipped_blocked: 1, failed_execution: 1, total: 4 }
+    });
+    expect(payload.failed_execution).toHaveLength(1);
+    expect(payload.failed_execution[0].proposal_id).toBe('safe-fail');
+
+    const artifact = JSON.parse(fs.readFileSync(path.join(playbookDir, 'policy-apply-result.json'), 'utf8'));
+    expect(artifact.executed.map((entry: { proposal_id: string }) => entry.proposal_id)).toEqual(['safe-ok']);
+    expect(artifact.failed_execution.map((entry: { proposal_id: string }) => entry.proposal_id)).toEqual(['safe-fail']);
+
+    logSpy.mockRestore();
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
   it('loads serialized plan tasks from --from-plan input', async () => {
     const { runApply } = await import('./apply.js');
     const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-apply-'));

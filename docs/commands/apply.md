@@ -12,6 +12,8 @@ Examples:
 - `pnpm playbook apply --from-plan .playbook/plan.json --task <task-a> --task <task-b>`
 - `pnpm playbook apply --policy-check`
 - `pnpm playbook apply --policy-check --json`
+- `pnpm playbook apply --policy`
+- `pnpm playbook apply --policy --json`
 
 Contract rules:
 
@@ -40,6 +42,14 @@ Policy-gated execution preflight:
   - `requires_review` (policy decision `requires_review`)
   - `blocked` (policy decision `blocked`)
 - `--policy-check` cannot be combined with `--from-plan` or `--task`.
+
+Controlled policy-gated execution:
+
+- `--policy` consumes persisted `.playbook/policy-evaluation.json` and executes only proposals with decision `safe`.
+- `requires_review` and `blocked` proposals are always skipped and listed in deterministic result buckets.
+- `--policy` never recomputes policy and fails clearly when `.playbook/policy-evaluation.json` is missing or invalid.
+- `--policy` writes `.playbook/policy-apply-result.json` on every run (including no-op runs) with stable ordering and shape.
+- `--policy` cannot be combined with `--policy-check`, `--from-plan`, or `--task`.
 
 
 - `--from-plan` executes a previously exported `pnpm playbook plan --json` payload without recomputing intent.
@@ -134,6 +144,51 @@ pnpm playbook apply --from-plan .playbook/plan.json --json
     "skipped": 0,
     "unsupported": 0,
     "failed": 0
+  }
+}
+```
+
+## JSON example
+```bash
+pnpm playbook apply --policy --json
+```
+
+```json
+{
+  "schemaVersion": "1.0",
+  "command": "apply",
+  "mode": "policy",
+  "ok": true,
+  "exitCode": 0,
+  "resultArtifact": ".playbook/policy-apply-result.json",
+  "executed": [
+    {
+      "proposal_id": "proposal-safe",
+      "decision": "safe",
+      "reason": "Safe: strong governed evidence and narrow impact scope satisfy deterministic policy thresholds."
+    }
+  ],
+  "skipped_requires_review": [
+    {
+      "proposal_id": "proposal-review",
+      "decision": "requires_review",
+      "reason": "Requires review: repeated issues, broad impact, or regression signals require governed human validation."
+    }
+  ],
+  "skipped_blocked": [
+    {
+      "proposal_id": "proposal-blocked",
+      "decision": "blocked",
+      "reason": "Blocked: evidence is weak or confidence is below deterministic policy threshold."
+    }
+  ],
+  "failed_execution": [],
+  "summary": {
+    "executed": 1,
+    "skipped_requires_review": 1,
+    "skipped_blocked": 1,
+    "failed_execution": 0,
+    "total": 3
   }
 }
 ```

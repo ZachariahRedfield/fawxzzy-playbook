@@ -85,6 +85,7 @@ const runtimeDefaults: RuntimeDefaultArtifact[] = [
   { path: '.playbook/cycle-state.json', producer: 'cycle' },
   { path: '.playbook/cycle-history.json', producer: 'cycle' },
   { path: '.playbook/policy-evaluation.json', producer: 'policy' },
+  { path: '.playbook/policy-apply-result.json', producer: 'apply' },
   { path: '.playbook/repo-graph.json', producer: 'index' },
   { path: '.playbook/repo-index.json', producer: 'index' }
 ];
