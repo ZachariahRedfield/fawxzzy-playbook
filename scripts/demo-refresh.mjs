@@ -210,6 +210,32 @@ const runRefreshCommand = ({ demoDir, refreshCommand }) => {
     }
   });
 
+  const commandLine = [refreshCommand.command, ...refreshCommand.args];
+  const isVerifyJsonCommand = commandLine.includes('verify') && commandLine.includes('--json');
+
+  if (isVerifyJsonCommand) {
+    if (result.status !== 0) {
+      const stderr = result.stderr?.trim();
+      const stdout = result.stdout?.trim();
+      const details = [stderr, stdout].filter(Boolean).join('\n');
+      throw new Error(`Command failed (${refreshCommand.command} ${refreshCommand.args.join(' ')}):\n${details}`);
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(result.stdout ?? '{}');
+    } catch {
+      throw new Error('Invalid JSON from playbook verify');
+    }
+
+    if (parsed.ok === false) {
+      const summary = typeof parsed.summary === 'string' ? parsed.summary : 'verify reported ok=false';
+      throw new Error(`Verify failed: ${summary}`);
+    }
+
+    return;
+  }
+
   if (result.status === 0) {
     return;
   }
