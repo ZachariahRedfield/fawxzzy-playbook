@@ -64,6 +64,42 @@ describe('runObserver', () => {
     expect(String((parseJsonCall(dupRootSpy).error))).toContain('duplicate root');
   });
 
+  it('uses deterministic observer root across nested cwd invocations', async () => {
+    const homeRoot = makeTempDir();
+    fs.writeFileSync(path.join(homeRoot, 'package.json'), JSON.stringify({ name: 'playbook-e2e' }, null, 2));
+    const nestedCwd = path.join(homeRoot, 'apps', 'nested');
+    fs.mkdirSync(nestedCwd, { recursive: true });
+    const repo = path.join(homeRoot, 'repo-a');
+    fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+
+    expect(await runObserver(homeRoot, ['repo', 'add', './repo-a', '--id', 'repo-a'], { format: 'json', quiet: false })).toBe(ExitCode.Success);
+
+    const listSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    expect(await runObserver(nestedCwd, ['repo', 'list'], { format: 'json', quiet: false })).toBe(ExitCode.Success);
+    const listPayload = parseJsonCall(listSpy) as { observer_root: string; registry_path: string; repo_count: number; registry: { repos: Array<{ id: string }> } };
+    expect(listPayload.observer_root).toBe(homeRoot);
+    expect(listPayload.registry_path).toBe(path.join(homeRoot, OBSERVER_REPO_REGISTRY_RELATIVE_PATH));
+    expect(listPayload.repo_count).toBe(1);
+    expect(listPayload.registry.repos.map((entry) => entry.id)).toEqual(['repo-a']);
+  });
+
+  it('supports explicit --root override for repo commands', async () => {
+    const outerCwd = makeTempDir();
+    const observerRoot = path.join(outerCwd, 'observer-root');
+    const repo = path.join(observerRoot, 'repo-b');
+    fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+
+    expect(await runObserver(outerCwd, ['repo', 'add', './repo-b', '--id', 'repo-b', '--root', observerRoot], { format: 'json', quiet: false })).toBe(ExitCode.Success);
+
+    const listSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    expect(await runObserver(outerCwd, ['repo', 'list', '--root', observerRoot], { format: 'json', quiet: false })).toBe(ExitCode.Success);
+    const listPayload = parseJsonCall(listSpy) as { observer_root: string; registry_path: string; registry: { repos: Array<{ id: string }> } };
+    expect(listPayload.observer_root).toBe(path.resolve(observerRoot));
+    expect(listPayload.registry_path).toBe(path.join(path.resolve(observerRoot), OBSERVER_REPO_REGISTRY_RELATIVE_PATH));
+    expect(listPayload.registry.repos[0]?.id).toBe('repo-b');
+    expect(fs.existsSync(path.join(observerRoot, OBSERVER_REPO_REGISTRY_RELATIVE_PATH))).toBe(true);
+  });
+
   it('writes stable artifacts for equivalent list operations', async () => {
     const cwd = makeTempDir();
     const repoA = path.join(cwd, 'repo-a');
@@ -79,10 +115,61 @@ describe('runObserver', () => {
 
     expect(second).toBe(first);
   });
+
+  it('emits observer root metadata in serve json payload', async () => {
+    const cwd = makeTempDir();
+    const serveRoot = path.join(cwd, 'observer-home');
+    fs.mkdirSync(serveRoot, { recursive: true });
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCodePromise = runObserver(cwd, ['serve', '--port', '0', '--root', serveRoot], { format: 'json', quiet: false });
+
+    await vi.waitFor(() => {
+      expect(logSpy).toHaveBeenCalled();
+      const payload = parseJsonCall(logSpy) as { command: string; observer_root: string; registry_path: string; repo_count: number };
+      expect(payload.command).toBe('observer-serve');
+      expect(payload.observer_root).toBe(path.resolve(serveRoot));
+      expect(payload.registry_path).toBe(path.join(path.resolve(serveRoot), OBSERVER_REPO_REGISTRY_RELATIVE_PATH));
+      expect(payload.repo_count).toBe(0);
+    });
+
+    process.kill(process.pid, 'SIGTERM');
+    await expect(exitCodePromise).resolves.toBe(ExitCode.Success);
+  });
 });
 
-
 describe('observer server', () => {
+  it('loads repos from observer home root when server starts in nested cwd', async () => {
+    const homeRoot = makeTempDir();
+    fs.writeFileSync(path.join(homeRoot, 'package.json'), JSON.stringify({ name: 'playbook-home' }, null, 2));
+    const nested = path.join(homeRoot, 'tools', 'observer');
+    fs.mkdirSync(nested, { recursive: true });
+
+    const repo = path.join(homeRoot, 'repo-nested');
+    fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+    writeArtifact(repo, '.playbook/session.json', { schemaVersion: '1.0', kind: 'session' });
+
+    expect(await runObserver(homeRoot, ['repo', 'add', './repo-nested', '--id', 'repo-nested'], { format: 'json', quiet: false })).toBe(ExitCode.Success);
+
+    const server = createObserverServer(homeRoot, nested);
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+    const address = server.address();
+    expect(address).toBeTypeOf('object');
+    const port = typeof address === 'object' && address ? address.port : 0;
+
+    const repos = await fetch(`http://127.0.0.1:${port}/repos`);
+    const reposJson = await repos.json() as { observer_root: string; registry_path: string; repo_count: number; repos: Array<{ id: string }> };
+    expect(reposJson.observer_root).toBe(homeRoot);
+    expect(reposJson.registry_path).toBe(path.join(homeRoot, OBSERVER_REPO_REGISTRY_RELATIVE_PATH));
+    expect(reposJson.repo_count).toBe(1);
+    expect(reposJson.repos.map((entry) => entry.id)).toEqual(['repo-nested']);
+
+    const uiScript = await fetch(`http://127.0.0.1:${port}/ui/app.js`);
+    expect(await uiScript.text()).toContain('No repos connected in');
+
+    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  });
+
   it('serves health, repos, snapshot, repo and artifact endpoints deterministically', async () => {
     const cwd = makeTempDir();
     const repo = path.join(cwd, 'repo-a');

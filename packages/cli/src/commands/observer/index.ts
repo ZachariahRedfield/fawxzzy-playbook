@@ -81,12 +81,13 @@ const printObserverHelp = (): void => {
 Manage a deterministic local observer repo registry and read-only local API.
 
 Subcommands:
-  repo add <path> [--id <id>] [--tag <tag>]
-  repo list
-  repo remove <id>
-  serve [--host <host>] [--port <port>]
+  repo add <path> [--id <id>] [--tag <tag>] [--root <path>]
+  repo list [--root <path>]
+  repo remove <id> [--root <path>]
+  serve [--host <host>] [--port <port>] [--root <path>]
 
 Options:
+  --root <path>                Override observer home root used for registry persistence
   --json                       Print machine-readable JSON output
   --help                       Show help`);
 };
@@ -139,10 +140,45 @@ const defaultRegistry = (): ObserverRepoRegistry => ({
   repos: []
 });
 
-const registryPath = (cwd: string): string => path.join(cwd, OBSERVER_REPO_REGISTRY_RELATIVE_PATH);
+const isPlaybookHomeRoot = (candidateRoot: string): boolean => {
+  const packageJsonPath = path.join(candidateRoot, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    return false;
+  }
 
-const readRegistry = (cwd: string): ObserverRepoRegistry => {
-  const artifactPath = registryPath(cwd);
+  try {
+    const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as { name?: unknown };
+    return typeof pkg.name === 'string' && pkg.name.toLowerCase().includes('playbook');
+  } catch {
+    return false;
+  }
+};
+
+export const resolveObserverHomeRoot = (explicitRoot: string | undefined, cwd: string): string => {
+  if (explicitRoot && explicitRoot.trim().length > 0) {
+    return path.resolve(cwd, explicitRoot.trim());
+  }
+
+  let current = path.resolve(cwd);
+  while (true) {
+    if (isPlaybookHomeRoot(current)) {
+      return current;
+    }
+
+    const parent = path.dirname(current);
+    if (parent === current) {
+      break;
+    }
+    current = parent;
+  }
+
+  return path.resolve(cwd);
+};
+
+const registryPath = (observerRoot: string): string => path.join(observerRoot, OBSERVER_REPO_REGISTRY_RELATIVE_PATH);
+
+const readRegistry = (observerRoot: string): ObserverRepoRegistry => {
+  const artifactPath = registryPath(observerRoot);
   if (!fs.existsSync(artifactPath)) {
     return defaultRegistry();
   }
@@ -168,8 +204,8 @@ const readRegistry = (cwd: string): ObserverRepoRegistry => {
   });
 };
 
-const writeRegistry = (cwd: string, registry: ObserverRepoRegistry): void => {
-  writeJsonArtifactAbsolute(registryPath(cwd), normalizeRegistry(registry) as unknown as Record<string, unknown>, 'observer', { envelope: false });
+const writeRegistry = (observerRoot: string, registry: ObserverRepoRegistry): void => {
+  writeJsonArtifactAbsolute(registryPath(observerRoot), normalizeRegistry(registry) as unknown as Record<string, unknown>, 'observer', { envelope: false });
 };
 
 const emitObserverPayload = (cwd: string, options: ObserverOptions, payload: Record<string, unknown>, textMessage: string): void => {
@@ -189,7 +225,7 @@ const nonFlagPositionals = (args: string[]): string[] => {
   for (let index = 0; index < args.length; index += 1) {
     const value = args[index];
     if (value.startsWith('-')) {
-      if (value === '--id' || value === '--tag') {
+      if (value === '--id' || value === '--tag' || value === '--root' || value === '--host' || value === '--port') {
         index += 1;
       }
       continue;
@@ -203,8 +239,8 @@ const nonFlagPositionals = (args: string[]): string[] => {
 
 const readJsonFile = (targetPath: string): unknown => JSON.parse(fs.readFileSync(targetPath, 'utf8')) as unknown;
 
-const loadSnapshotArtifact = (cwd: string): Record<string, unknown> | null => {
-  const snapshotPath = path.join(cwd, OBSERVER_SNAPSHOT_RELATIVE_PATH);
+const loadSnapshotArtifact = (observerRoot: string): Record<string, unknown> | null => {
+  const snapshotPath = path.join(observerRoot, OBSERVER_SNAPSHOT_RELATIVE_PATH);
   if (!fs.existsSync(snapshotPath)) {
     return null;
   }
@@ -313,8 +349,8 @@ const findHomeRepoId = (registry: ObserverRepoRegistry, cwd: string): string | n
   return fromName?.id ?? null;
 };
 
-const addRepoToRegistry = (cwd: string, registry: ObserverRepoRegistry, input: ObserverRepoCreateInput): { repo: ObserverRepoEntry; registry: ObserverRepoRegistry } => {
-  const root = path.resolve(cwd, input.path);
+const addRepoToRegistry = (observerRoot: string, registry: ObserverRepoRegistry, input: ObserverRepoCreateInput): { repo: ObserverRepoEntry; registry: ObserverRepoRegistry } => {
+  const root = path.resolve(observerRoot, input.path);
   const rootStat = fs.existsSync(root) ? fs.statSync(root) : null;
   if (!rootStat || !rootStat.isDirectory()) {
     throw new Error(`playbook observer repo add: repository root does not exist: ${root}`);
@@ -352,18 +388,18 @@ const addRepoToRegistry = (cwd: string, registry: ObserverRepoRegistry, input: O
   };
 
   const nextRegistry = normalizeRegistry({ ...registry, repos: [...registry.repos, entry] });
-  writeRegistry(cwd, nextRegistry);
+  writeRegistry(observerRoot, nextRegistry);
   return { repo: entry, registry: nextRegistry };
 };
 
-const removeRepoFromRegistry = (cwd: string, registry: ObserverRepoRegistry, removeId: string): ObserverRepoRegistry => {
+const removeRepoFromRegistry = (observerRoot: string, registry: ObserverRepoRegistry, removeId: string): ObserverRepoRegistry => {
   const existing = registry.repos.find((repo) => repo.id === removeId);
   if (!existing) {
     throw new Error(`playbook observer repo remove: unknown id "${removeId}"`);
   }
 
   const nextRegistry = normalizeRegistry({ ...registry, repos: registry.repos.filter((repo) => repo.id !== removeId) });
-  writeRegistry(cwd, nextRegistry);
+  writeRegistry(observerRoot, nextRegistry);
   return nextRegistry;
 };
 
@@ -379,9 +415,9 @@ const buildSnapshotFromRegistry = (registry: ObserverRepoRegistry): Record<strin
 });
 
 
-const buildCrossRepoArtifact = (cwd: string, registry: ObserverRepoRegistry): CrossRepoPatternsArtifact => {
+const buildCrossRepoArtifact = (observerRoot: string, registry: ObserverRepoRegistry): CrossRepoPatternsArtifact => {
   try {
-    return readCrossRepoPatternsArtifact(cwd);
+    return readCrossRepoPatternsArtifact(observerRoot);
   } catch {
     const repos = registry.repos.map((repo) => ({ id: repo.id, repoPath: repo.root }));
     return computeCrossRepoPatternLearning(repos);
@@ -739,7 +775,7 @@ const renderRepos = async () => {
   if (!selectedRepoId && homeRepoId) selectedRepoId = homeRepoId;
   reposEl.innerHTML = '';
   if (!Array.isArray(payload.repos) || payload.repos.length === 0) {
-    reposEl.innerHTML = '<div class="empty-state">No repos connected yet. Add a repo to start observing.</div>';
+    reposEl.innerHTML = '<div class="empty-state">No repos connected in ' + escapeHtml(payload.registry_path || 'unknown-registry-path') + '.</div>';
     return payload;
   }
   for (const repo of payload.repos) {
@@ -991,10 +1027,18 @@ refreshAll();
 setInterval(refreshAll, 5000);
 `;
 
-const observerServerResponse = (cwd: string, pathname: string, searchParams: URLSearchParams): { statusCode: number; payload: Record<string, unknown> } => {
-  const registry = readRegistry(cwd);
-  const homeRepoId = findHomeRepoId(registry, cwd);
-  const base = { schemaVersion: '1.0', readOnly: true, localOnly: true };
+const observerServerResponse = (observerRoot: string, invocationCwd: string, pathname: string, searchParams: URLSearchParams): { statusCode: number; payload: Record<string, unknown> } => {
+  const registry = readRegistry(observerRoot);
+  const homeRepoId = findHomeRepoId(registry, invocationCwd);
+  const base = {
+    schemaVersion: '1.0',
+    readOnly: true,
+    localOnly: true,
+    cwd: invocationCwd,
+    observer_root: observerRoot,
+    registry_path: registryPath(observerRoot),
+    repo_count: registry.repos.length
+  };
 
   if (pathname === '/health') {
     return {
@@ -1016,12 +1060,12 @@ const observerServerResponse = (cwd: string, pathname: string, searchParams: URL
   }
 
   if (pathname === '/api/cross-repo/summary') {
-    const artifact = buildCrossRepoArtifact(cwd, registry);
+    const artifact = buildCrossRepoArtifact(observerRoot, registry);
     return { statusCode: 200, payload: { ...base, kind: 'observer-cross-repo-summary', summary: { source_repos: artifact.source_repos, candidate_count: artifact.candidate_patterns.length, comparison_count: artifact.comparisons.length } } };
   }
 
   if (pathname === '/api/cross-repo/candidates') {
-    const artifact = buildCrossRepoArtifact(cwd, registry);
+    const artifact = buildCrossRepoArtifact(observerRoot, registry);
     return { statusCode: 200, payload: { ...base, kind: 'observer-cross-repo-candidates', candidates: artifact.candidate_patterns } };
   }
 
@@ -1031,7 +1075,7 @@ const observerServerResponse = (cwd: string, pathname: string, searchParams: URL
     if (!left || !right) {
       return { statusCode: 400, payload: { ...base, kind: 'observer-server-error', error: 'missing-left-right' } };
     }
-    const artifact = buildCrossRepoArtifact(cwd, registry);
+    const artifact = buildCrossRepoArtifact(observerRoot, registry);
     const comparison = artifact.comparisons.find((entry: any) =>
       (entry.left_repo_id === left && entry.right_repo_id === right) || (entry.left_repo_id === right && entry.right_repo_id === left)
     );
@@ -1044,7 +1088,7 @@ const observerServerResponse = (cwd: string, pathname: string, searchParams: URL
   const patternMatch = /^\/api\/cross-repo\/patterns\/([^/]+)$/.exec(pathname);
   if (patternMatch) {
     const patternId = decodeURIComponent(patternMatch[1] ?? '');
-    const artifact = buildCrossRepoArtifact(cwd, registry);
+    const artifact = buildCrossRepoArtifact(observerRoot, registry);
     const pattern = artifact.candidate_patterns.find((entry: any) => entry.id === patternId);
     if (!pattern) {
       return { statusCode: 404, payload: { ...base, kind: 'observer-server-error', error: 'pattern-not-found' } };
@@ -1058,7 +1102,7 @@ const observerServerResponse = (cwd: string, pathname: string, searchParams: URL
       payload: {
         ...base,
         home_repo_id: homeRepoId,
-        snapshot: loadSnapshotArtifact(cwd) ?? buildSnapshotFromRegistry(registry),
+        snapshot: loadSnapshotArtifact(observerRoot) ?? buildSnapshotFromRegistry(registry),
         readiness: registry.repos.map((repo) => ({ id: repo.id, readiness: repoReadiness(repo) }))
       }
     };
@@ -1100,7 +1144,7 @@ const observerServerResponse = (cwd: string, pathname: string, searchParams: URL
   return { statusCode: 404, payload: { ...base, kind: 'observer-server-error', error: 'not-found' } };
 };
 
-export const createObserverServer = (cwd: string): http.Server =>
+export const createObserverServer = (observerRoot: string, invocationCwd = observerRoot): http.Server =>
   http.createServer(async (request, response) => {
     const parsedUrl = new URL(request.url ?? '/', 'http://localhost');
     if (request.method === 'GET' && (parsedUrl.pathname === '/' || parsedUrl.pathname === '/ui')) {
@@ -1126,7 +1170,7 @@ export const createObserverServer = (cwd: string): http.Server =>
           return;
         }
 
-        const result = addRepoToRegistry(cwd, readRegistry(cwd), { path: payload.path, id: payload.id, tags: Array.isArray(payload.tags) ? payload.tags.map((tag) => String(tag)) : [] });
+        const result = addRepoToRegistry(observerRoot, readRegistry(observerRoot), { path: payload.path, id: payload.id, tags: Array.isArray(payload.tags) ? payload.tags.map((tag) => String(tag)) : [] });
         writeJsonResponse(response, 200, { schemaVersion: '1.0', kind: 'observer-server-repo-add', readOnly: false, localOnly: true, repo: result.repo, registry: result.registry });
       } catch (error) {
         writeJsonResponse(response, 400, { schemaVersion: '1.0', kind: 'observer-server-error', error: error instanceof Error ? error.message : String(error), localOnly: true });
@@ -1138,7 +1182,7 @@ export const createObserverServer = (cwd: string): http.Server =>
     if (request.method === 'DELETE' && deleteRepoMatch) {
       try {
         const removedId = decodeURIComponent(deleteRepoMatch[1] ?? '');
-        const registry = removeRepoFromRegistry(cwd, readRegistry(cwd), removedId);
+        const registry = removeRepoFromRegistry(observerRoot, readRegistry(observerRoot), removedId);
         writeJsonResponse(response, 200, { schemaVersion: '1.0', kind: 'observer-server-repo-remove', readOnly: false, localOnly: true, removedId, registry });
       } catch (error) {
         writeJsonResponse(response, 404, { schemaVersion: '1.0', kind: 'observer-server-error', error: error instanceof Error ? error.message : String(error), localOnly: true });
@@ -1151,7 +1195,7 @@ export const createObserverServer = (cwd: string): http.Server =>
       return;
     }
 
-    const result = observerServerResponse(cwd, parsedUrl.pathname, parsedUrl.searchParams);
+    const result = observerServerResponse(observerRoot, invocationCwd, parsedUrl.pathname, parsedUrl.searchParams);
     writeJsonResponse(response, result.statusCode, result.payload);
   });
 
@@ -1162,6 +1206,8 @@ export const runObserver = async (cwd: string, args: string[], options: Observer
   }
 
   const [scope, action] = args;
+  const observerRoot = resolveObserverHomeRoot(readOptionValue(args, '--root') ?? undefined, cwd);
+  const resolvedRegistryPath = registryPath(observerRoot);
 
   if (scope === 'serve') {
     const requestedHost = readOptionValue(args, '--host')?.trim();
@@ -1189,7 +1235,7 @@ export const runObserver = async (cwd: string, args: string[], options: Observer
       return ExitCode.Failure;
     }
 
-    const server = createObserverServer(cwd);
+    const server = createObserverServer(observerRoot, cwd);
 
     await new Promise<void>((resolve, reject) => {
       server.once('error', reject);
@@ -1201,9 +1247,15 @@ export const runObserver = async (cwd: string, args: string[], options: Observer
 
     const address = server.address();
     const boundPort = typeof address === 'object' && address ? address.port : port;
-    const message = `Observer server listening at http://${host}:${boundPort}`;
+    const repoCount = readRegistry(observerRoot).repos.length;
+    const message = [
+      `Observer server listening at http://${host}:${boundPort}`,
+      `Observer home root: ${observerRoot}`,
+      `Registry path: ${resolvedRegistryPath}`,
+      `Loaded repos: ${repoCount}`
+    ].join('\n');
     if (options.format === 'json') {
-      emitJsonOutput({ cwd, command: 'observer', payload: { schemaVersion: '1.0', command: 'observer-serve', host, port: boundPort, readOnly: true, localOnly: true } });
+      emitJsonOutput({ cwd, command: 'observer', payload: { schemaVersion: '1.0', command: 'observer-serve', host, port: boundPort, readOnly: true, localOnly: true, observer_root: observerRoot, registry_path: resolvedRegistryPath, repo_count: repoCount } });
     } else if (!options.quiet) {
       console.log(message);
     }
@@ -1230,14 +1282,14 @@ export const runObserver = async (cwd: string, args: string[], options: Observer
     return ExitCode.Failure;
   }
 
-  const registry = readRegistry(cwd);
+  const registry = readRegistry(observerRoot);
 
   try {
     if (action === 'list') {
       emitObserverPayload(
         cwd,
         options,
-        { schemaVersion: '1.0', command: 'observer-repo-list', registry },
+        { schemaVersion: '1.0', command: 'observer-repo-list', observer_root: observerRoot, registry_path: resolvedRegistryPath, repo_count: registry.repos.length, registry },
         registry.repos.length === 0 ? 'No connected observer repositories.' : registry.repos.map((repo) => `${repo.id} ${repo.root}`).join('\n')
       );
       return ExitCode.Success;
@@ -1249,12 +1301,12 @@ export const runObserver = async (cwd: string, args: string[], options: Observer
         throw new Error('playbook observer repo add: missing <path> argument');
       }
 
-      const result = addRepoToRegistry(cwd, registry, {
+      const result = addRepoToRegistry(observerRoot, registry, {
         path: pathArg,
         id: readOptionValue(args, '--id') ?? undefined,
         tags: readOptionValues(args, '--tag')
       });
-      emitObserverPayload(cwd, options, { schemaVersion: '1.0', command: 'observer-repo-add', repo: result.repo, registry: result.registry }, `Connected observer repo ${result.repo.id}`);
+      emitObserverPayload(cwd, options, { schemaVersion: '1.0', command: 'observer-repo-add', observer_root: observerRoot, registry_path: resolvedRegistryPath, repo_count: result.registry.repos.length, repo: result.repo, registry: result.registry }, `Connected observer repo ${result.repo.id}`);
       return ExitCode.Success;
     }
 
@@ -1263,8 +1315,8 @@ export const runObserver = async (cwd: string, args: string[], options: Observer
       throw new Error('playbook observer repo remove: missing <id> argument');
     }
 
-    const nextRegistry = removeRepoFromRegistry(cwd, registry, removeId);
-    emitObserverPayload(cwd, options, { schemaVersion: '1.0', command: 'observer-repo-remove', removedId: removeId, registry: nextRegistry }, `Removed observer repo ${removeId}`);
+    const nextRegistry = removeRepoFromRegistry(observerRoot, registry, removeId);
+    emitObserverPayload(cwd, options, { schemaVersion: '1.0', command: 'observer-repo-remove', observer_root: observerRoot, registry_path: resolvedRegistryPath, repo_count: nextRegistry.repos.length, removedId: removeId, registry: nextRegistry }, `Removed observer repo ${removeId}`);
     return ExitCode.Success;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

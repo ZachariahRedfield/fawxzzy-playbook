@@ -5,17 +5,26 @@ Manage a deterministic local observer registry, thin local observer API, and loc
 ## Usage
 
 ```bash
-pnpm playbook observer repo add <path>
-pnpm playbook observer repo list --json
-pnpm playbook observer repo remove <id>
-pnpm playbook observer serve --port 4300
+pnpm playbook observer repo add <path> [--root <path>]
+pnpm playbook observer repo list --json [--root <path>]
+pnpm playbook observer repo remove <id> [--root <path>]
+pnpm playbook observer serve --port 4300 [--root <path>]
 ```
 
 ## Registry artifact
 
 The repo registry command maintains:
 
-- `.playbook/observer/repos.json`
+- `<observer-root>/.playbook/observer/repos.json`
+
+
+Observer root resolution is deterministic:
+
+1. explicit `--root <path>`
+2. nearest ancestor directory containing `package.json` with a Playbook package name
+3. fallback to current working directory
+
+This prevents split registries when commands are run from incidental nested shell directories.
 
 Contract:
 
@@ -31,6 +40,7 @@ Contract:
 - Read endpoints: `GET /health`, `GET /repos`, `GET /snapshot`, `GET /repos/:id`, `GET /repos/:id/artifacts/:kind`
 - Registry mutation endpoints (local-only, add/remove parity with CLI): `POST /repos`, `DELETE /repos/:id`
 - Responses are deterministic envelopes, and artifact state remains sourced from governed observer/runtime artifacts.
+- Startup output includes observer root metadata (`observer_root`, `registry_path`, `repo_count`) in both text and `--json` modes for debugging.
 - No artifact/runtime mutation routes are provided in v1 beyond repo registration actions.
 
 Self/home selection metadata:
