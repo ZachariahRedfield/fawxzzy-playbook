@@ -10,6 +10,10 @@
 
 ### CLI
 
+- WHAT: Hardened `scripts/prepare-cli-wrapper-runtime.mjs` so cli-wrapper runtime staging bootstraps `packages/cli/dist` by running `pnpm -C packages/cli build` when dist is missing in clean CI environments. WHY: Prevents build-order/bootstrap failures during wrapper runtime preparation without changing the self-contained packaging model.
+- Failure Mode: Self-contained packaging can still fail in CI if runtime prep assumes a prebuilt upstream dist that clean environments do not have yet.
+- Pattern: Wrapper runtime staging scripts should bootstrap their upstream build prerequisites instead of assuming prior build order.
+
 - WHAT: Added deterministic adoption work-queue planning on top of fleet readiness (`pnpm playbook status queue --json`) with a stable `fleet-adoption-work-queue` contract (`work_items`, `waves`, `grouped_actions`, `blocked_items`), observer API/UI integration (`GET /api/readiness/queue` + dashboard queue panel), and focused ordering/wave/grouping tests. WHY: Converts fleet readiness into an executable, parallel-safe queue without mutating repositories.
 - Rule: Queue output must remain read-only and deterministic for identical readiness input.
 - Pattern: Use lane-specific grouped actions to parallelize safely while preserving dependency order.

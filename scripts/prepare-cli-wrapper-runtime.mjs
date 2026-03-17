@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,7 +8,8 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..');
 const require = createRequire(import.meta.url);
 
-const cliDistDir = path.join(repoRoot, 'packages', 'cli', 'dist');
+const cliDir = path.join(repoRoot, 'packages', 'cli');
+const cliDistDir = path.join(cliDir, 'dist');
 const wrapperRuntimeDir = path.join(repoRoot, 'packages', 'cli-wrapper', 'runtime');
 const workspacePackages = [
   path.join(repoRoot, 'packages', 'core'),
@@ -24,6 +26,21 @@ const ensureExists = (target, message) => {
 };
 
 const readJson = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf8'));
+
+const run = (command, args, cwd = repoRoot) => {
+  const result = spawnSync(command, args, {
+    cwd,
+    stdio: 'inherit',
+    shell: process.platform === 'win32'
+  });
+
+  if (result.error) throw result.error;
+
+  if ((result.status ?? 1) !== 0) {
+    throw new Error(`Command failed: ${command} ${args.join(' ')}`);
+  }
+};
+
 
 const copyExternalPackage = (packageName, fromDir) => {
   if (copiedExternalPackages.has(packageName)) return;
@@ -43,7 +60,11 @@ const copyExternalPackage = (packageName, fromDir) => {
   }
 };
 
-ensureExists(cliDistDir, `Missing CLI dist at ${cliDistDir}. Run "pnpm -C packages/cli build" first.`);
+if (!fs.existsSync(cliDistDir)) {
+  run('pnpm', ['-C', cliDir, 'build']);
+}
+
+ensureExists(cliDistDir, `Missing CLI dist at ${cliDistDir} after build.`);
 
 fs.rmSync(wrapperRuntimeDir, { recursive: true, force: true });
 fs.mkdirSync(wrapperRuntimeDir, { recursive: true });
