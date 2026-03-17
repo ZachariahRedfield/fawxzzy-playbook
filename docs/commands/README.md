@@ -69,7 +69,7 @@ Do not hand-edit entries inside the managed markers.
 | `telemetry` | Inspect deterministic repository/process telemetry and compact cross-run learning summaries | utility | utility | secondary | — | Current (implemented) | `pnpm playbook telemetry learning --json` |
 | `policy` | Evaluate improvement proposals against governed runtime evidence (read-only control-plane) | canonical | governance | secondary | — | Current (implemented) | `pnpm playbook policy evaluate --json` |
 | `agent` | Read runtime control-plane records and run plan-backed dry-run previews | utility | utility | secondary | — | Current (implemented) | `pnpm playbook agent run --from-plan .playbook/plan.json --dry-run --json` |
-| `observer` | Manage deterministic local observer repo registry state | utility | utility | secondary | — | Current (implemented) | `pnpm playbook observer repo list --json` |
+| `observer` | Manage deterministic local observer registry and read-only local API server | utility | utility | secondary | — | Current (implemented) | `pnpm playbook observer serve --port 4300` |
 <!-- PLAYBOOK:DOCS_COMMAND_STATUS_END -->
 
 ## Command docs index

@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ExitCode } from '../lib/cliContract.js';
-import { runObserver, OBSERVER_REPO_REGISTRY_RELATIVE_PATH } from './observer/index.js';
+import { createObserverServer, runObserver, OBSERVER_REPO_REGISTRY_RELATIVE_PATH } from './observer/index.js';
 
 const makeTempDir = (): string => fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-observer-'));
 
@@ -72,5 +72,73 @@ describe('runObserver', () => {
     const second = fs.readFileSync(registryPath, 'utf8');
 
     expect(second).toBe(first);
+  });
+});
+
+
+describe('observer server', () => {
+  it('serves health, repos, snapshot, repo and artifact endpoints deterministically', async () => {
+    const cwd = makeTempDir();
+    const repo = path.join(cwd, 'repo-a');
+    fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+    fs.writeFileSync(path.join(repo, '.playbook', 'session.json'), JSON.stringify({ schemaVersion: '1.0', kind: 'session', id: 'session-a' }, null, 2));
+
+    expect(await runObserver(cwd, ['repo', 'add', repo, '--id', 'repo-a'], { format: 'json', quiet: false })).toBe(ExitCode.Success);
+
+    const server = createObserverServer(cwd);
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+    const address = server.address();
+    expect(address).toBeTypeOf('object');
+    const port = typeof address === 'object' && address ? address.port : 0;
+
+    const health = await fetch(`http://127.0.0.1:${port}/health`);
+    expect(health.status).toBe(200);
+    const healthJson = await health.json() as { status: string; readOnly: boolean; localOnly: boolean };
+    expect(healthJson).toMatchObject({ status: 'ok', readOnly: true, localOnly: true });
+
+    const repos = await fetch(`http://127.0.0.1:${port}/repos`);
+    expect(repos.status).toBe(200);
+    const reposJson = await repos.json() as { repos: Array<{ id: string }> };
+    expect(reposJson.repos.map((entry) => entry.id)).toEqual(['repo-a']);
+
+    const snapshot = await fetch(`http://127.0.0.1:${port}/snapshot`);
+    expect(snapshot.status).toBe(200);
+    const snapshotJson = await snapshot.json() as { snapshot: { kind: string; repos: Array<{ id: string }> } };
+    expect(snapshotJson.snapshot.kind).toBe('observer-snapshot');
+    expect(snapshotJson.snapshot.repos.map((entry) => entry.id)).toEqual(['repo-a']);
+
+    const repoResponse = await fetch(`http://127.0.0.1:${port}/repos/repo-a`);
+    expect(repoResponse.status).toBe(200);
+    const repoJson = await repoResponse.json() as { repo: { id: string } };
+    expect(repoJson.repo.id).toBe('repo-a');
+
+    const artifactResponse = await fetch(`http://127.0.0.1:${port}/repos/repo-a/artifacts/session`);
+    expect(artifactResponse.status).toBe(200);
+    const artifactJson = await artifactResponse.json() as { artifact: { kind: string; value: { kind: string } } };
+    expect(artifactJson.artifact.kind).toBe('session');
+    expect(artifactJson.artifact.value.kind).toBe('session');
+
+    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  });
+
+  it('returns 404 for missing repos and blocks mutation routes', async () => {
+    const cwd = makeTempDir();
+    const server = createObserverServer(cwd);
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+    const address = server.address();
+    expect(address).toBeTypeOf('object');
+    const port = typeof address === 'object' && address ? address.port : 0;
+
+    const missingRepo = await fetch(`http://127.0.0.1:${port}/repos/unknown`);
+    expect(missingRepo.status).toBe(404);
+    const missingRepoJson = await missingRepo.json() as { error: string };
+    expect(missingRepoJson.error).toBe('repo-not-found');
+
+    const postAttempt = await fetch(`http://127.0.0.1:${port}/repos`, { method: 'POST' });
+    expect(postAttempt.status).toBe(405);
+    const postJson = await postAttempt.json() as { error: string };
+    expect(postJson.error).toBe('method-not-allowed');
+
+    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   });
 });

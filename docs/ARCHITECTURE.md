@@ -163,6 +163,12 @@ Rule: multi-repo observation must start from explicit deterministic registry sta
 Pattern: runtime remains canonical per repo while observer indexing tracks connected repos and artifact roots.
 Failure Mode: ambient path-scanning introduces non-deterministic cross-repo visibility and erodes trust.
 
+`playbook observer serve` now adds a thin local-only (`127.0.0.1`/`localhost`) read-only API wrapper over the existing observer repo registry (`.playbook/observer/repos.json`), optional observer snapshot artifact (`.playbook/observer/snapshot.json`), and governed per-repo artifacts. v1 exposes only deterministic JSON `GET` endpoints (`/health`, `/repos`, `/snapshot`, `/repos/:id`, `/repos/:id/artifacts/:kind`) and rejects mutation methods.
+
+Rule: a Playbook server must wrap governed artifacts and commands, not replace them.
+Pattern: thin local server over canonical runtime artifacts.
+Failure Mode: if the server becomes the primary mutable state layer, CLI-first deterministic architecture drifts.
+
 ## Router accuracy telemetry feedback loop
 
 Routing quality is treated as a measurable architecture contract inside `routing_engine` + `telemetry_learning`.

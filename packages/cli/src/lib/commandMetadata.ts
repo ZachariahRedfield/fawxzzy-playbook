@@ -623,7 +623,7 @@ export const commandMetadata: CommandMetadata[] = [
   },
   {
     name: 'observer',
-    description: 'Manage deterministic local observer repo registry state',
+    description: 'Manage deterministic local observer registry and read-only local API server',
     category: 'Repository tools',
     role: 'utility',
     lifecycle: 'utility',
@@ -631,7 +631,7 @@ export const commandMetadata: CommandMetadata[] = [
     onboardingPriority: null,
     canonicalSequence: null,
     productFacing: true,
-    exampleArgs: 'observer repo list --json',
+    exampleArgs: 'observer serve --port 4300',
     machineReadable: true
   }
 ];

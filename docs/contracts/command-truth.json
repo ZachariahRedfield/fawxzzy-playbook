@@ -361,7 +361,7 @@
       "canonicalSequence": null,
       "productFacing": true,
       "machineReadable": true,
-      "example": "pnpm playbook observer repo list --json"
+      "example": "pnpm playbook observer serve --port 4300"
     },
     {
       "name": "orchestrate",

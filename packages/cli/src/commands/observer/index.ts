@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import http from 'node:http';
 import { emitJsonOutput, writeJsonArtifactAbsolute } from '../../lib/jsonArtifact.js';
 import { ExitCode } from '../../lib/cliContract.js';
 
@@ -25,16 +26,29 @@ type ObserverRepoRegistry = {
 };
 
 const OBSERVER_REPO_REGISTRY_RELATIVE_PATH = '.playbook/observer/repos.json' as const;
+const OBSERVER_SNAPSHOT_RELATIVE_PATH = '.playbook/observer/snapshot.json' as const;
+
+const OBSERVER_ARTIFACTS = [
+  { kind: 'cycle-state', relativePath: '.playbook/cycle-state.json' },
+  { kind: 'cycle-history', relativePath: '.playbook/cycle-history.json' },
+  { kind: 'policy-evaluation', relativePath: '.playbook/policy-evaluation.json' },
+  { kind: 'policy-apply-result', relativePath: '.playbook/policy-apply-result.json' },
+  { kind: 'pr-review', relativePath: '.playbook/pr-review.json' },
+  { kind: 'session', relativePath: '.playbook/session.json' }
+] as const;
+
+type ObserverArtifactKind = (typeof OBSERVER_ARTIFACTS)[number]['kind'];
 
 const printObserverHelp = (): void => {
-  console.log(`Usage: playbook observer repo <add|list|remove> [options]
+  console.log(`Usage: playbook observer <repo|serve> [options]
 
-Manage a deterministic local observer repo registry.
+Manage a deterministic local observer repo registry and read-only local API.
 
 Subcommands:
   repo add <path> [--id <id>] [--tag <tag>]
   repo list
   repo remove <id>
+  serve [--host <host>] [--port <port>]
 
 Options:
   --json                       Print machine-readable JSON output
@@ -151,6 +165,138 @@ const nonFlagPositionals = (args: string[]): string[] => {
   return values;
 };
 
+const readJsonFile = (targetPath: string): unknown => JSON.parse(fs.readFileSync(targetPath, 'utf8')) as unknown;
+
+const loadSnapshotArtifact = (cwd: string): Record<string, unknown> | null => {
+  const snapshotPath = path.join(cwd, OBSERVER_SNAPSHOT_RELATIVE_PATH);
+  if (!fs.existsSync(snapshotPath)) {
+    return null;
+  }
+
+  const value = readJsonFile(snapshotPath);
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  if (candidate.schemaVersion !== '1.0' || candidate.kind !== 'observer-snapshot') {
+    return null;
+  }
+
+  return candidate;
+};
+
+const findArtifactSpec = (kind: string): (typeof OBSERVER_ARTIFACTS)[number] | null =>
+  OBSERVER_ARTIFACTS.find((artifact) => artifact.kind === kind) ?? null;
+
+const readRepoArtifact = (repo: ObserverRepoEntry, kind: ObserverArtifactKind): { kind: ObserverArtifactKind; value: unknown | null } => {
+  const spec = findArtifactSpec(kind);
+  if (!spec) {
+    return { kind, value: null };
+  }
+
+  const artifactPath = path.join(repo.root, spec.relativePath);
+  if (!fs.existsSync(artifactPath)) {
+    return { kind, value: null };
+  }
+
+  try {
+    return { kind, value: readJsonFile(artifactPath) };
+  } catch {
+    return { kind, value: null };
+  }
+};
+
+const buildSnapshotFromRegistry = (registry: ObserverRepoRegistry): Record<string, unknown> => ({
+  schemaVersion: '1.0',
+  kind: 'observer-snapshot',
+  repos: registry.repos.map((repo) => ({
+    id: repo.id,
+    name: repo.name,
+    status: repo.status,
+    artifacts: OBSERVER_ARTIFACTS.map((artifact) => readRepoArtifact(repo, artifact.kind))
+  }))
+});
+
+const writeJsonResponse = (response: http.ServerResponse, statusCode: number, payload: Record<string, unknown>): void => {
+  response.statusCode = statusCode;
+  response.setHeader('content-type', 'application/json; charset=utf-8');
+  response.end(`${JSON.stringify(payload, null, 2)}\n`);
+};
+
+const observerServerResponse = (cwd: string, pathname: string): { statusCode: number; payload: Record<string, unknown> } => {
+  const registry = readRegistry(cwd);
+  const base = { schemaVersion: '1.0', readOnly: true, localOnly: true };
+
+  if (pathname === '/health') {
+    return {
+      statusCode: 200,
+      payload: { ...base, kind: 'observer-server-health', status: 'ok' }
+    };
+  }
+
+  if (pathname === '/repos') {
+    return {
+      statusCode: 200,
+      payload: { ...base, kind: 'observer-server-repos', repos: registry.repos }
+    };
+  }
+
+  if (pathname === '/snapshot') {
+    return {
+      statusCode: 200,
+      payload: { ...base, snapshot: loadSnapshotArtifact(cwd) ?? buildSnapshotFromRegistry(registry) }
+    };
+  }
+
+  const repoMatch = /^\/repos\/([^/]+)$/.exec(pathname);
+  if (repoMatch) {
+    const repo = registry.repos.find((entry) => entry.id === decodeURIComponent(repoMatch[1] ?? ''));
+    if (!repo) {
+      return { statusCode: 404, payload: { ...base, kind: 'observer-server-error', error: 'repo-not-found' } };
+    }
+    return { statusCode: 200, payload: { ...base, kind: 'observer-server-repo', repo } };
+  }
+
+  const artifactMatch = /^\/repos\/([^/]+)\/artifacts\/([^/]+)$/.exec(pathname);
+  if (artifactMatch) {
+    const repo = registry.repos.find((entry) => entry.id === decodeURIComponent(artifactMatch[1] ?? ''));
+    if (!repo) {
+      return { statusCode: 404, payload: { ...base, kind: 'observer-server-error', error: 'repo-not-found' } };
+    }
+
+    const artifactKind = decodeURIComponent(artifactMatch[2] ?? '');
+    const spec = findArtifactSpec(artifactKind);
+    if (!spec) {
+      return { statusCode: 404, payload: { ...base, kind: 'observer-server-error', error: 'artifact-kind-not-found' } };
+    }
+
+    return {
+      statusCode: 200,
+      payload: {
+        ...base,
+        kind: 'observer-server-artifact',
+        repoId: repo.id,
+        artifact: readRepoArtifact(repo, spec.kind)
+      }
+    };
+  }
+
+  return { statusCode: 404, payload: { ...base, kind: 'observer-server-error', error: 'not-found' } };
+};
+
+export const createObserverServer = (cwd: string): http.Server =>
+  http.createServer((request, response) => {
+    if (request.method !== 'GET') {
+      writeJsonResponse(response, 405, { schemaVersion: '1.0', kind: 'observer-server-error', error: 'method-not-allowed', readOnly: true, localOnly: true });
+      return;
+    }
+
+    const parsedUrl = new URL(request.url ?? '/', 'http://localhost');
+    const result = observerServerResponse(cwd, parsedUrl.pathname);
+    writeJsonResponse(response, result.statusCode, result.payload);
+  });
+
 export const runObserver = async (cwd: string, args: string[], options: ObserverOptions): Promise<number> => {
   if (args.includes('--help') || args.includes('-h') || args.length === 0) {
     printObserverHelp();
@@ -158,8 +304,66 @@ export const runObserver = async (cwd: string, args: string[], options: Observer
   }
 
   const [scope, action] = args;
+
+  if (scope === 'serve') {
+    const requestedHost = readOptionValue(args, '--host')?.trim();
+    const host = requestedHost && requestedHost.length > 0 ? requestedHost : '127.0.0.1';
+    const requestedPort = readOptionValue(args, '--port');
+    const parsedPort = requestedPort ? Number.parseInt(requestedPort, 10) : 4300;
+    const port = Number.isInteger(parsedPort) && parsedPort >= 0 && parsedPort <= 65535 ? parsedPort : Number.NaN;
+    if (Number.isNaN(port)) {
+      const message = 'playbook observer serve: --port must be an integer between 0 and 65535';
+      if (options.format === 'json') {
+        emitJsonOutput({ cwd, command: 'observer', payload: { schemaVersion: '1.0', command: 'observer', error: message } });
+      } else {
+        console.error(message);
+      }
+      return ExitCode.Failure;
+    }
+
+    if (host !== '127.0.0.1' && host !== 'localhost') {
+      const message = 'playbook observer serve: only local hosts are supported in v1 (127.0.0.1 or localhost).';
+      if (options.format === 'json') {
+        emitJsonOutput({ cwd, command: 'observer', payload: { schemaVersion: '1.0', command: 'observer', error: message } });
+      } else {
+        console.error(message);
+      }
+      return ExitCode.Failure;
+    }
+
+    const server = createObserverServer(cwd);
+
+    await new Promise<void>((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(port, host, () => {
+        server.off('error', reject);
+        resolve();
+      });
+    });
+
+    const address = server.address();
+    const boundPort = typeof address === 'object' && address ? address.port : port;
+    const message = `Observer server listening at http://${host}:${boundPort}`;
+    if (options.format === 'json') {
+      emitJsonOutput({ cwd, command: 'observer', payload: { schemaVersion: '1.0', command: 'observer-serve', host, port: boundPort, readOnly: true, localOnly: true } });
+    } else if (!options.quiet) {
+      console.log(message);
+    }
+
+    await new Promise<void>((resolve) => {
+      const closeServer = (): void => {
+        server.close(() => resolve());
+      };
+
+      process.once('SIGINT', closeServer);
+      process.once('SIGTERM', closeServer);
+    });
+
+    return ExitCode.Success;
+  }
+
   if (scope !== 'repo' || !['add', 'list', 'remove'].includes(action ?? '')) {
-    const message = 'playbook observer: use `playbook observer repo <add|list|remove>`.';
+    const message = 'playbook observer: use `playbook observer repo <add|list|remove>` or `playbook observer serve`.';
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'observer', payload: { schemaVersion: '1.0', command: 'observer', error: message } });
     } else {
