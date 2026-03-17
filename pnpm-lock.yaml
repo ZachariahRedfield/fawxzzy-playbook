@@ -46,11 +46,7 @@ importers:
         specifier: workspace:*
         version: link:../node
 
-  packages/cli-wrapper:
-    dependencies:
-      '@fawxzzy/playbook':
-        specifier: workspace:*
-        version: link:../cli
+  packages/cli-wrapper: {}
 
   packages/core: {}
 
