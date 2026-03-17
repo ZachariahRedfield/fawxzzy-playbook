@@ -166,6 +166,9 @@ describe('runReviewPr', () => {
     expect(payload.summary.requires_review).toBe(payload.policy.requires_review.length);
     expect(payload.summary.blocked).toBe(payload.policy.blocked.length);
 
+    const persisted = JSON.parse(fs.readFileSync(path.join(repo, '.playbook', 'pr-review.json'), 'utf8')) as Record<string, unknown>;
+    expect(persisted).toEqual(payload);
+
     logSpy.mockRestore();
   });
 
@@ -204,6 +207,11 @@ describe('runReviewPr', () => {
     expect(firstExitCode).toBe(ExitCode.Success);
     expect(secondExitCode).toBe(ExitCode.Success);
     expect(secondPayload).toBe(firstPayload);
+
+    const firstArtifact = fs.readFileSync(path.join(repo, '.playbook', 'pr-review.json'), 'utf8');
+    await runReviewPr(repo, { format: 'text', quiet: true });
+    const secondArtifact = fs.readFileSync(path.join(repo, '.playbook', 'pr-review.json'), 'utf8');
+    expect(secondArtifact).toBe(firstArtifact);
 
     logSpy.mockRestore();
   });

@@ -20,7 +20,8 @@ export type SessionEvidenceArtifactKind =
   | 'cycle-history'
   | 'proposal-candidates'
   | 'policy-evaluation'
-  | 'policy-apply-result';
+  | 'policy-apply-result'
+  | 'pr-review';
 
 export type SessionEvidenceArtifactReference = {
   path: string;
@@ -44,7 +45,7 @@ export type SessionEvidenceExecutionResult = {
 
 export type SessionEvidenceLineageReference = {
   order: number;
-  stage: 'session' | 'proposal_generation' | 'policy_evaluation' | 'execution_result';
+  stage: 'session' | 'proposal_generation' | 'policy_evaluation' | 'pr_review' | 'execution_result';
   artifact: string;
   present: boolean;
 };
@@ -89,6 +90,7 @@ const CYCLE_HISTORY_PATH = '.playbook/cycle-history.json' as const;
 const IMPROVEMENT_CANDIDATES_PATH = '.playbook/improvement-candidates.json' as const;
 const POLICY_EVALUATION_PATH = '.playbook/policy-evaluation.json' as const;
 const POLICY_APPLY_RESULT_PATH = '.playbook/policy-apply-result.json' as const;
+const PR_REVIEW_PATH = '.playbook/pr-review.json' as const;
 
 const nowIso = (): string => new Date().toISOString();
 
@@ -174,6 +176,7 @@ const buildSessionEvidenceEnvelope = (repoRoot: string, session: SessionContract
   includeArtifact(IMPROVEMENT_CANDIDATES_PATH, 'proposal-candidates');
   includeArtifact(POLICY_EVALUATION_PATH, 'policy-evaluation');
   includeArtifact(POLICY_APPLY_RESULT_PATH, 'policy-apply-result');
+  includeArtifact(PR_REVIEW_PATH, 'pr-review');
 
   if (session.selectedRunId) {
     const runArtifactPath = normalizeArtifactRef(repoRoot, path.relative(repoRoot, path.resolve(repoRoot, '.playbook', 'runs', `${session.selectedRunId}.run.json`)));
@@ -259,6 +262,7 @@ const buildSessionEvidenceEnvelope = (repoRoot: string, session: SessionContract
     { stage: 'session', artifact: SESSION_ARTIFACT_RELATIVE_PATH },
     { stage: 'proposal_generation', artifact: IMPROVEMENT_CANDIDATES_PATH },
     { stage: 'policy_evaluation', artifact: POLICY_EVALUATION_PATH },
+    { stage: 'pr_review', artifact: PR_REVIEW_PATH },
     { stage: 'execution_result', artifact: POLICY_APPLY_RESULT_PATH }
   ];
 

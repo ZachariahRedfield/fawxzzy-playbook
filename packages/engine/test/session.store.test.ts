@@ -46,6 +46,7 @@ describe('sessionStore', () => {
     fs.writeFileSync(path.join(repo, '.playbook', 'improvement-candidates.json'), JSON.stringify({ candidates: [{ candidate_id: 'proposal.alpha' }] }), 'utf8');
     fs.writeFileSync(path.join(repo, '.playbook', 'policy-evaluation.json'), JSON.stringify({ evaluations: [{ proposal_id: 'proposal.alpha', decision: 'safe', reason: 'strong evidence' }] }), 'utf8');
     fs.writeFileSync(path.join(repo, '.playbook', 'policy-apply-result.json'), JSON.stringify({ executed: [{ proposal_id: 'proposal.alpha', decision: 'safe', reason: 'applied' }], skipped_requires_review: [], skipped_blocked: [], failed_execution: [] }), 'utf8');
+    fs.writeFileSync(path.join(repo, '.playbook', 'pr-review.json'), JSON.stringify({ schemaVersion: '1.0', kind: 'pr-review', findings: [], proposals: [], policy: { safe: [], requires_review: [], blocked: [] }, summary: { findings: 0, proposals: 0, safe: 0, requires_review: 0, blocked: 0 } }), 'utf8');
 
     const session = initializeSession(repo, { selectedRunId: 'run-123' });
 
@@ -54,7 +55,8 @@ describe('sessionStore', () => {
     expect(session.evidenceEnvelope.proposal_ids).toEqual(['proposal.alpha']);
     expect(session.evidenceEnvelope.policy_decisions.map((entry) => entry.source)).toEqual(['policy-apply-result', 'policy-evaluation']);
     expect(session.evidenceEnvelope.execution_result?.executed).toEqual(['proposal.alpha']);
-    expect(session.evidenceEnvelope.lineage.map((entry) => entry.stage)).toEqual(['session', 'proposal_generation', 'policy_evaluation', 'execution_result']);
+    expect(session.evidenceEnvelope.artifacts.some((entry) => entry.path === '.playbook/pr-review.json' && entry.kind === 'pr-review')).toBe(true);
+    expect(session.evidenceEnvelope.lineage.map((entry) => entry.stage)).toEqual(['session', 'proposal_generation', 'policy_evaluation', 'pr_review', 'execution_result']);
   });
 
   it('attaches run-state and clears session artifacts', () => {

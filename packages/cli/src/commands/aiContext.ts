@@ -23,6 +23,7 @@ type AiContextResult = {
     cycleState: '.playbook/cycle-state.json';
     cycleHistory: '.playbook/cycle-history.json';
     improvementCandidates: '.playbook/improvement-candidates.json';
+    prReview: '.playbook/pr-review.json';
   };
   operatingLadder: {
     preferredCommandOrder: [
@@ -84,7 +85,8 @@ const buildAiContextResult = (cwd: string): AiContextResult => {
       session: '.playbook/session.json',
       cycleState: '.playbook/cycle-state.json',
       cycleHistory: '.playbook/cycle-history.json',
-      improvementCandidates: '.playbook/improvement-candidates.json'
+      improvementCandidates: '.playbook/improvement-candidates.json',
+    prReview: '.playbook/pr-review.json'
     },
     operatingLadder: {
       preferredCommandOrder: [
@@ -153,6 +155,11 @@ const printText = (result: AiContextResult): void => {
   console.log('Control Plane Artifacts');
   console.log(`Policy evaluation: ${result.controlPlaneArtifacts.policyEvaluation}`);
   console.log(`Policy apply result: ${result.controlPlaneArtifacts.policyApplyResult}`);
+  console.log(`Session: ${result.controlPlaneArtifacts.session}`);
+  console.log(`Cycle state: ${result.controlPlaneArtifacts.cycleState}`);
+  console.log(`Cycle history: ${result.controlPlaneArtifacts.cycleHistory}`);
+  console.log(`Improvement candidates: ${result.controlPlaneArtifacts.improvementCandidates}`);
+  console.log(`PR review: ${result.controlPlaneArtifacts.prReview}`);
   console.log('');
   console.log('AI Operating Ladder');
   console.log(result.operatingLadder.preferredCommandOrder.join(' -> '));

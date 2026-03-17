@@ -147,6 +147,10 @@ Failure mode: if execution broadens beyond explicit `safe` decisions, control-pl
 
 `.playbook/session.json` now includes an additive `evidenceEnvelope` contract as the canonical deterministic session/evidence slice for governed execution auditability. The envelope links session/run context to existing runtime/control-plane artifacts (`.playbook/cycle-state.json`, `.playbook/cycle-history.json`, `.playbook/improvement-candidates.json`, `.playbook/policy-evaluation.json`, `.playbook/policy-apply-result.json`) and preserves stable stage lineage (`session -> proposal_generation -> policy_evaluation -> execution_result`) plus proposal IDs, policy decisions, and execution result references when present.
 
+`.playbook/pr-review.json` is now a first-class governed control-plane artifact produced by `playbook review-pr` on every run. The artifact persists the existing review output contract (findings, proposals, policy grouping, and summary) with deterministic ordering, schema governance (`packages/contracts/src/pr-review.schema.json`), and explainability through `playbook explain artifact .playbook/pr-review.json` for findings/proposals/policy breakdown introspection.
+
+The session evidence envelope now references `.playbook/pr-review.json` and extends lineage ordering to `session -> proposal_generation -> policy_evaluation -> pr_review -> execution_result` so PR review evidence is explicitly auditable alongside policy and execution artifacts.
+
 Rule: every governed decision or execution step must be traceable through a deterministic evidence envelope.
 Pattern: unify existing artifacts through referenceable evidence chains before adding broader orchestration or learning layers.
 Failure Mode: runs/decisions/artifacts that remain unlinked become difficult to audit, explain, and evolve even when each artifact is individually correct.

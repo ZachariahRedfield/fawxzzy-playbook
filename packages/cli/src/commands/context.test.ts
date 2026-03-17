@@ -28,6 +28,7 @@ describe('runContext', () => {
     expect(controlPlaneArtifacts.cycleState).toBe('.playbook/cycle-state.json');
     expect(controlPlaneArtifacts.cycleHistory).toBe('.playbook/cycle-history.json');
     expect(controlPlaneArtifacts.improvementCandidates).toBe('.playbook/improvement-candidates.json');
+    expect(controlPlaneArtifacts.prReview).toBe('.playbook/pr-review.json');
 
     const cli = payload.cli as Record<string, unknown>;
     expect(Array.isArray(cli.commands)).toBe(true);

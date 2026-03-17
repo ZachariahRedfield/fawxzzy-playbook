@@ -22,7 +22,8 @@
     "session": ".playbook/session.json",
     "cycleState": ".playbook/cycle-state.json",
     "cycleHistory": ".playbook/cycle-history.json",
-    "improvementCandidates": ".playbook/improvement-candidates.json"
+    "improvementCandidates": ".playbook/improvement-candidates.json",
+    "prReview": ".playbook/pr-review.json"
   },
   "cli": {
     "commands": [

@@ -44,6 +44,8 @@ pnpm playbook review-pr --base main --json
 
 Text output is concise and summary-oriented.
 
+Every `review-pr` run also persists the same governed payload to `.playbook/pr-review.json` for auditability and downstream control-plane reuse.
+
 ## Read-only behavior
 
 - `review-pr` never applies remediation.
@@ -53,3 +55,11 @@ Text output is concise and summary-oriented.
 ## Governance note
 
 Rule: PR review must be composed from existing governed primitives, not new inference paths.
+
+## Explain integration
+
+```bash
+pnpm playbook explain artifact .playbook/pr-review.json
+```
+
+The explain surface summarizes findings, proposals, and policy breakdown from the persisted artifact.

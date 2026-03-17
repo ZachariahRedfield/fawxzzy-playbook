@@ -936,6 +936,43 @@ describe('runExplain', () => {
   });
 
 
+  it('explains pr-review artifact in text mode', async () => {
+    const repo = createRepo('playbook-cli-explain-pr-review-text');
+    writeArchitectureRegistry(repo);
+    fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+    fs.writeFileSync(
+      path.join(repo, '.playbook', 'pr-review.json'),
+      JSON.stringify(
+        {
+          schemaVersion: '1.0',
+          kind: 'pr-review',
+          findings: [{ id: 'f1' }],
+          proposals: [{ candidate_id: 'proposal-1' }],
+          policy: {
+            safe: [{ proposal_id: 'proposal-1', decision: 'safe', reason: 'deterministic evidence' }],
+            requires_review: [],
+            blocked: []
+          },
+          summary: { findings: 1, proposals: 1, safe: 1, requires_review: 0, blocked: 0 }
+        },
+        null,
+        2
+      )
+    );
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runExplain(repo, ['artifact', '.playbook/pr-review.json'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const lines = logSpy.mock.calls.map((call) => String(call[0]));
+    expect(lines).toContain('Artifact type: pr-review');
+    expect(lines).toContain('Findings: 1');
+    expect(lines).toContain('Proposals: 1');
+    expect(lines).toContain('- proposal-1: safe (deterministic evidence)');
+
+    logSpy.mockRestore();
+  });
+
   it('fails when target argument is missing', async () => {
     const repo = createRepo('playbook-cli-explain-args');
     writeRepoIndex(repo);

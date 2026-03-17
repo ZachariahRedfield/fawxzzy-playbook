@@ -26,6 +26,7 @@ describe('runAiContext', () => {
     expect(controlPlaneArtifacts.cycleState).toBe('.playbook/cycle-state.json');
     expect(controlPlaneArtifacts.cycleHistory).toBe('.playbook/cycle-history.json');
     expect(controlPlaneArtifacts.improvementCandidates).toBe('.playbook/improvement-candidates.json');
+    expect(controlPlaneArtifacts.prReview).toBe('.playbook/pr-review.json');
 
     const operatingLadder = payload.operatingLadder as Record<string, unknown>;
     expect(operatingLadder.preferredCommandOrder).toEqual([

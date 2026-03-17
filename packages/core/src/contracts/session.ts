@@ -16,7 +16,8 @@ export type SessionEvidenceArtifactKind =
   | 'cycle-history'
   | 'proposal-candidates'
   | 'policy-evaluation'
-  | 'policy-apply-result';
+  | 'policy-apply-result'
+  | 'pr-review';
 
 export type SessionEvidenceArtifactReference = {
   path: string;
@@ -40,7 +41,7 @@ export type SessionEvidenceExecutionResult = {
 
 export type SessionEvidenceLineageReference = {
   order: number;
-  stage: 'session' | 'proposal_generation' | 'policy_evaluation' | 'execution_result';
+  stage: 'session' | 'proposal_generation' | 'policy_evaluation' | 'pr_review' | 'execution_result';
   artifact: string;
   present: boolean;
 };

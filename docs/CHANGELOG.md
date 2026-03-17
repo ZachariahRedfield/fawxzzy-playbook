@@ -1,5 +1,6 @@
 ## 2026-03-16 — Docs truth-boundary canonicalization
 
+- WHAT: Formalized `.playbook/pr-review.json` as a governed control-plane artifact emitted by `pnpm playbook review-pr` on every run without changing review logic; added deterministic artifact persistence, schema contract registration (`packages/contracts/src/pr-review.schema.json`), `playbook explain artifact .playbook/pr-review.json` summaries, and session evidence envelope linkage (`pr_review` lineage stage + artifact reference) with focused CLI/contract tests. WHY: Converts previously ephemeral PR review output into an auditable, reusable, explainable control-plane artifact for higher-level automation.
 - WHAT: Clarified canonical documentation boundaries so live command truth is centralized in `docs/commands/README.md`, roadmap docs are explicitly future-intent surfaces, and stale execution-window docs are converted to archival stubs with preserved snapshots under `docs/archive/roadmap/`.
 - WHY: Reduce operator confusion and documentation drift caused by overlapping command status, planning, and transitional execution notes.
 

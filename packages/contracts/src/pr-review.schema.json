@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/pr-review.schema.json",
+  "title": "Playbook PR Review Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "findings", "proposals", "policy", "summary"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "kind": { "const": "pr-review" },
+    "findings": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "proposals": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["safe", "requires_review", "blocked"],
+      "properties": {
+        "safe": { "type": "array", "items": { "$ref": "#/$defs/PolicyEntry" } },
+        "requires_review": { "type": "array", "items": { "$ref": "#/$defs/PolicyEntry" } },
+        "blocked": { "type": "array", "items": { "$ref": "#/$defs/PolicyEntry" } }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["findings", "proposals", "safe", "requires_review", "blocked"],
+      "properties": {
+        "findings": { "type": "integer", "minimum": 0 },
+        "proposals": { "type": "integer", "minimum": 0 },
+        "safe": { "type": "integer", "minimum": 0 },
+        "requires_review": { "type": "integer", "minimum": 0 },
+        "blocked": { "type": "integer", "minimum": 0 }
+      }
+    }
+  },
+  "$defs": {
+    "PolicyEntry": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["proposal_id", "decision", "reason"],
+      "properties": {
+        "proposal_id": { "type": "string", "minLength": 1 },
+        "decision": { "enum": ["safe", "requires_review", "blocked"] },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

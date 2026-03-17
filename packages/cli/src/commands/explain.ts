@@ -69,8 +69,14 @@ const toOutput = (target: string, explanation: ExplainTargetResult): ExplainOutp
       payload.policy_apply_result = explanation.policyApplyResult;
     }
 
+
+
     if (explanation.sessionEvidenceEnvelope) {
       payload.session_evidence_envelope = explanation.sessionEvidenceEnvelope;
+    }
+
+    if (explanation.prReview) {
+      payload.pr_review = explanation.prReview;
     }
   }
 
@@ -322,6 +328,28 @@ const printText = (target: string, explanation: ExplainTargetResult): void => {
       printProposalList('Skipped (requires review):', policyApplyResult.skipped_requires_review);
       printProposalList('Skipped (blocked):', policyApplyResult.skipped_blocked);
       printProposalList('Failed execution:', policyApplyResult.failed_execution);
+      return;
+    }
+
+
+    if (explanation.prReview) {
+      const prReview = explanation.prReview;
+      console.log('Artifact type: pr-review');
+      console.log('');
+      console.log(`Findings: ${prReview.summary.findings}`);
+      console.log(`Proposals: ${prReview.summary.proposals}`);
+      console.log(`Policy safe: ${prReview.summary.safe}`);
+      console.log(`Policy requires_review: ${prReview.summary.requires_review}`);
+      console.log(`Policy blocked: ${prReview.summary.blocked}`);
+      console.log('');
+      console.log('Policy proposals');
+      if (prReview.policy.safe.length + prReview.policy.requires_review.length + prReview.policy.blocked.length === 0) {
+        console.log('- none');
+      } else {
+        for (const entry of [...prReview.policy.safe, ...prReview.policy.requires_review, ...prReview.policy.blocked]) {
+          console.log(`- ${entry.proposal_id}: ${entry.decision} (${entry.reason})`);
+        }
+      }
       return;
     }
 

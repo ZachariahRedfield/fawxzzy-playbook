@@ -408,14 +408,15 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
       controlPlaneArtifacts: {
         type: 'object',
         additionalProperties: false,
-        required: ['policyEvaluation', 'policyApplyResult', 'session', 'cycleState', 'cycleHistory', 'improvementCandidates'],
+        required: ['policyEvaluation', 'policyApplyResult', 'session', 'cycleState', 'cycleHistory', 'improvementCandidates', 'prReview'],
         properties: {
           policyEvaluation: { const: '.playbook/policy-evaluation.json' },
           policyApplyResult: { const: '.playbook/policy-apply-result.json' },
           session: { const: '.playbook/session.json' },
           cycleState: { const: '.playbook/cycle-state.json' },
           cycleHistory: { const: '.playbook/cycle-history.json' },
-          improvementCandidates: { const: '.playbook/improvement-candidates.json' }
+          improvementCandidates: { const: '.playbook/improvement-candidates.json' },
+          prReview: { const: '.playbook/pr-review.json' }
         }
       },
       cli: {
@@ -1535,14 +1536,15 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
       controlPlaneArtifacts: {
         type: 'object',
         additionalProperties: false,
-        required: ['policyEvaluation', 'policyApplyResult', 'session', 'cycleState', 'cycleHistory', 'improvementCandidates'],
+        required: ['policyEvaluation', 'policyApplyResult', 'session', 'cycleState', 'cycleHistory', 'improvementCandidates', 'prReview'],
         properties: {
           policyEvaluation: { const: '.playbook/policy-evaluation.json' },
           policyApplyResult: { const: '.playbook/policy-apply-result.json' },
           session: { const: '.playbook/session.json' },
           cycleState: { const: '.playbook/cycle-state.json' },
           cycleHistory: { const: '.playbook/cycle-history.json' },
-          improvementCandidates: { const: '.playbook/improvement-candidates.json' }
+          improvementCandidates: { const: '.playbook/improvement-candidates.json' },
+          prReview: { const: '.playbook/pr-review.json' }
         }
       },
       operatingLadder: {

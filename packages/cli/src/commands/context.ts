@@ -17,6 +17,7 @@ type ContextResult = {
     cycleState: '.playbook/cycle-state.json';
     cycleHistory: '.playbook/cycle-history.json';
     improvementCandidates: '.playbook/improvement-candidates.json';
+    prReview: '.playbook/pr-review.json';
   };
   cli: {
     commands: string[];
@@ -38,7 +39,8 @@ const buildContextResult = (): ContextResult => ({
     session: '.playbook/session.json',
     cycleState: '.playbook/cycle-state.json',
     cycleHistory: '.playbook/cycle-history.json',
-    improvementCandidates: '.playbook/improvement-candidates.json'
+    improvementCandidates: '.playbook/improvement-candidates.json',
+    prReview: '.playbook/pr-review.json'
   },
   cli: {
     commands: listRegisteredCommands().map((entry) => entry.name)
@@ -65,6 +67,7 @@ const printText = (result: ContextResult): void => {
   console.log(`Cycle state: ${result.controlPlaneArtifacts.cycleState}`);
   console.log(`Cycle history: ${result.controlPlaneArtifacts.cycleHistory}`);
   console.log(`Improvement candidates: ${result.controlPlaneArtifacts.improvementCandidates}`);
+  console.log(`PR review: ${result.controlPlaneArtifacts.prReview}`);
   console.log('');
   console.log('CLI Commands');
   for (const command of result.cli.commands) {

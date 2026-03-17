@@ -131,6 +131,7 @@ export type ArtifactExplanation = ExplainMemoryFields & {
   policyEvaluation?: PolicyEvaluationArtifactExplanation;
   policyApplyResult?: PolicyApplyResultArtifactExplanation;
   sessionEvidenceEnvelope?: SessionEvidenceEnvelopeExplanation;
+  prReview?: PrReviewArtifactExplanation;
 };
 
 type CycleStateStepExplanation = {
@@ -207,9 +208,36 @@ type SessionEvidenceArtifactReferenceExplanation = {
 
 type SessionEvidenceLineageReferenceExplanation = {
   order: number;
-  stage: 'session' | 'proposal_generation' | 'policy_evaluation' | 'execution_result';
+  stage: 'session' | 'proposal_generation' | 'policy_evaluation' | 'pr_review' | 'execution_result';
   artifact: string;
   present: boolean;
+};
+
+
+type PrReviewPolicyEntryExplanation = {
+  proposal_id: string;
+  decision: 'safe' | 'requires_review' | 'blocked';
+  reason: string;
+};
+
+type PrReviewArtifactExplanation = {
+  artifactType: 'pr-review';
+  schemaVersion: string;
+  kind: string;
+  findings: Record<string, unknown>[];
+  proposals: Record<string, unknown>[];
+  policy: {
+    safe: PrReviewPolicyEntryExplanation[];
+    requires_review: PrReviewPolicyEntryExplanation[];
+    blocked: PrReviewPolicyEntryExplanation[];
+  };
+  summary: {
+    findings: number;
+    proposals: number;
+    safe: number;
+    requires_review: number;
+    blocked: number;
+  };
 };
 
 type SessionEvidenceEnvelopeExplanation = {
@@ -262,6 +290,10 @@ export type UnknownExplanation = ExplainMemoryFields & {
 export type ExplainTargetResult = RuleExplanation | ModuleExplanation | ArchitectureExplanation | SubsystemExplanation | CommandExplanation | ArtifactExplanation | UnknownExplanation;
 
 const normalizeTarget = (target: string): string => target.trim().toLowerCase();
+
+const readRecordArray = (value: unknown): Array<Record<string, unknown>> =>
+  Array.isArray(value) ? value.filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry)) : [];
+
 
 const gatherContext = (projectRoot: string): ExplainContext => {
   const architecture = queryRepositoryIndex(projectRoot, 'architecture').result as string;
@@ -504,9 +536,10 @@ const explainArtifact = (projectRoot: string, target: string): ArtifactExplanati
   const policyEvaluation = explainPolicyEvaluationArtifact(projectRoot, target) ?? undefined;
   const policyApplyResult = explainPolicyApplyResultArtifact(projectRoot, target) ?? undefined;
   const sessionEvidenceEnvelope = explainSessionEvidenceEnvelopeArtifact(projectRoot, target) ?? undefined;
+  const prReview = explainPrReviewArtifact(projectRoot, target) ?? undefined;
 
-  if (cycleState || cycleHistory || policyEvaluation || policyApplyResult || sessionEvidenceEnvelope) {
-    const policyArtifactOnly = (Boolean(policyEvaluation) || Boolean(policyApplyResult)) && !cycleState && !cycleHistory && !sessionEvidenceEnvelope;
+  if (cycleState || cycleHistory || policyEvaluation || policyApplyResult || sessionEvidenceEnvelope || prReview) {
+    const policyArtifactOnly = (Boolean(policyEvaluation) || Boolean(policyApplyResult)) && !cycleState && !cycleHistory && !sessionEvidenceEnvelope && !prReview;
     return {
       type: 'artifact',
       resolvedTarget: {
@@ -525,7 +558,8 @@ const explainArtifact = (projectRoot: string, target: string): ArtifactExplanati
       ...(cycleHistory ? { cycleHistory } : {}),
       ...(policyEvaluation ? { policyEvaluation } : {}),
       ...(policyApplyResult ? { policyApplyResult } : {}),
-      ...(sessionEvidenceEnvelope ? { sessionEvidenceEnvelope } : {})
+      ...(sessionEvidenceEnvelope ? { sessionEvidenceEnvelope } : {}),
+      ...(prReview ? { prReview } : {})
     };
   }
 
@@ -783,7 +817,7 @@ const explainSessionEvidenceEnvelopeArtifact = (projectRoot: string, target: str
     }
 
     const stage =
-      candidate.stage === 'proposal_generation' || candidate.stage === 'policy_evaluation' || candidate.stage === 'execution_result'
+      candidate.stage === 'proposal_generation' || candidate.stage === 'policy_evaluation' || candidate.stage === 'pr_review' || candidate.stage === 'execution_result'
         ? candidate.stage
         : 'session';
 
@@ -842,6 +876,61 @@ const explainSessionEvidenceEnvelopeArtifact = (projectRoot: string, target: str
       .map((entry) => toLineage(entry))
       .filter((entry): entry is SessionEvidenceLineageReferenceExplanation => entry !== null)
       .sort((left, right) => left.order - right.order)
+  };
+};
+
+
+const explainPrReviewArtifact = (projectRoot: string, target: string): PrReviewArtifactExplanation | null => {
+  if (target !== '.playbook/pr-review.json') {
+    return null;
+  }
+
+  const targetPath = path.join(projectRoot, target);
+  if (!fs.existsSync(targetPath)) {
+    throw new Error(`playbook explain artifact: missing artifact "${target}".`);
+  }
+
+  const parsed = JSON.parse(fs.readFileSync(targetPath, 'utf8')) as Record<string, unknown>;
+
+  const toPolicyEntries = (value: unknown): PrReviewPolicyEntryExplanation[] =>
+    readRecordArray(value)
+      .map((entry) => {
+        const decision: PrReviewPolicyEntryExplanation['decision'] =
+          entry.decision === 'safe' || entry.decision === 'blocked' ? entry.decision : 'requires_review';
+        return {
+          proposal_id: String(entry.proposal_id),
+          decision,
+          reason: String(entry.reason)
+        };
+      })
+      .sort((left, right) => left.proposal_id.localeCompare(right.proposal_id));
+
+  const policyCandidate = (parsed.policy ?? {}) as Record<string, unknown>;
+  const summaryCandidate = (parsed.summary ?? {}) as Record<string, unknown>;
+  const findings = readRecordArray(parsed.findings).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+  const proposals = readRecordArray(parsed.proposals).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+  const safe = toPolicyEntries(policyCandidate.safe);
+  const requiresReview = toPolicyEntries(policyCandidate.requires_review);
+  const blocked = toPolicyEntries(policyCandidate.blocked);
+
+  return {
+    artifactType: 'pr-review',
+    schemaVersion: String(parsed.schemaVersion ?? '1.0'),
+    kind: String(parsed.kind ?? 'pr-review'),
+    findings,
+    proposals,
+    policy: {
+      safe,
+      requires_review: requiresReview,
+      blocked
+    },
+    summary: {
+      findings: Number(summaryCandidate.findings ?? findings.length),
+      proposals: Number(summaryCandidate.proposals ?? proposals.length),
+      safe: Number(summaryCandidate.safe ?? safe.length),
+      requires_review: Number(summaryCandidate.requires_review ?? requiresReview.length),
+      blocked: Number(summaryCandidate.blocked ?? blocked.length)
+    }
   };
 };
 

@@ -49,6 +49,10 @@
         "producer": "apply"
       },
       {
+        "path": ".playbook/pr-review.json",
+        "producer": "review-pr"
+      },
+      {
         "path": ".playbook/session.json",
         "producer": "session"
       },
@@ -220,6 +224,11 @@
         "id": "session-evidence-envelope",
         "version": "1.0",
         "path": "packages/contracts/src/session-evidence-envelope.schema.json"
+      },
+      {
+        "id": "pr-review",
+        "version": "1.0",
+        "path": "packages/contracts/src/pr-review.schema.json"
       },
       {
         "id": "explain.memoryKnowledge",

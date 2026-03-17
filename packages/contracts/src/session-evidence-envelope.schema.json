@@ -39,7 +39,8 @@
               "cycle-history",
               "proposal-candidates",
               "policy-evaluation",
-              "policy-apply-result"
+              "policy-apply-result",
+              "pr-review"
             ]
           },
           "present": { "type": "boolean" }
@@ -88,7 +89,7 @@
         "required": ["order", "stage", "artifact", "present"],
         "properties": {
           "order": { "type": "integer", "minimum": 1 },
-          "stage": { "enum": ["session", "proposal_generation", "policy_evaluation", "execution_result"] },
+          "stage": { "enum": ["session", "proposal_generation", "policy_evaluation", "pr_review", "execution_result"] },
           "artifact": { "type": "string", "minLength": 1 },
           "present": { "type": "boolean" }
         }
