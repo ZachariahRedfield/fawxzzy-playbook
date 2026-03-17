@@ -54,6 +54,16 @@ When `--consumer-repo` is provided, the command performs the clean-environment s
 4. canonical ladder (`verify -> plan -> apply`)
 5. required artifact assertions (`.playbook/findings.json`, `.playbook/plan.json`, `.playbook/repo-graph.json`, `.playbook/last-run.json`)
 
+## 5.1) Operational proof status tracking (required)
+
+Record each real-network proof outcome in release notes/changelog with:
+
+- producer proof result (`release asset fetch`, `tar integrity`, `canonical filename`)
+- consumer proof result against Fawxzzy Fitness (`npm install`, intentional package miss, fallback acquisition, canonical ladder, artifact assertions)
+- explicit drift callout when either side fails (producer or consumer)
+
+Fallback is only considered operationally proven when both producer and consumer checks succeed in a network-capable environment.
+
 ## 6) Push the release tag
 
 Create and push a git tag that matches the released version:
