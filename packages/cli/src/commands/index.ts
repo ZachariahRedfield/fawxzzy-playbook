@@ -291,13 +291,15 @@ const commandRunners: Record<string, (context: CommandContext) => Promise<Comman
   },
   diagram: async ({ cwd, commandArgs, format, quiet }) => {
     const { runDiagram } = await import('./diagram.js');
+    const diagramTarget = commandArgs.find((arg) => !arg.startsWith('-'));
     return runDiagram(cwd, {
       repo: parseOptionValue(commandArgs, '--repo') ?? '.',
       out: parseOptionValue(commandArgs, '--out') ?? 'docs/ARCHITECTURE_DIAGRAMS.md',
       deps: parseFlag(commandArgs, '--deps'),
       structure: parseFlag(commandArgs, '--structure'),
       format,
-      quiet
+      quiet,
+      target: diagramTarget
     });
   },
   explain: async ({ cwd, commandArgs, format, quiet }) => {

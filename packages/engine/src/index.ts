@@ -8,6 +8,8 @@ export type { AnalyzeResult, AnalyzeRecommendation, AnalyzeSeverity } from './an
 
 export { generateArchitectureDiagrams, scanRepoStructure, scanWorkspaceDeps, generateMermaidStructure, generateMermaidDeps } from './diagrams/index.js';
 export type { DiagramOptions, StructureModel, DependencyModel, MermaidDiagramResult, DiagramRunOptions, DiagramOutput } from './diagrams/index.js';
+export { generateSystemMapArtifact, writeSystemMapArtifact, SYSTEM_MAP_RELATIVE_PATH, SYSTEM_MAP_SCHEMA_VERSION } from './diagrams/systemMap.js';
+export type { SystemMapArtifact, SystemMapLayer, SystemMapNode, SystemMapEdge } from './diagrams/systemMap.js';
 
 export * from './sessions/index.js';
 

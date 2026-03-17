@@ -58,7 +58,8 @@ const OBSERVER_ARTIFACTS = [
   { kind: 'policy-evaluation', relativePath: '.playbook/policy-evaluation.json' },
   { kind: 'policy-apply-result', relativePath: '.playbook/policy-apply-result.json' },
   { kind: 'pr-review', relativePath: '.playbook/pr-review.json' },
-  { kind: 'session', relativePath: '.playbook/session.json' }
+  { kind: 'session', relativePath: '.playbook/session.json' },
+  { kind: 'system-map', relativePath: '.playbook/system-map.json' }
 ] as const;
 
 const READINESS_ARTIFACTS = [
@@ -395,6 +396,12 @@ const observerDashboardHtml = (): string => `<!doctype html>
       pre { white-space: pre-wrap; word-break: break-word; background: #0a1129; border: 1px solid #243252; padding: 10px; border-radius: 6px; max-height: 340px; overflow: auto; }
       .row { display: flex; gap: 8px; align-items: center; }
       .meta { color: #95addf; font-size: 12px; }
+      .blueprint { width: 100%; height: 420px; background: #0a1129; border: 1px solid #243252; border-radius: 6px; }
+      .layer-band { fill: #0f1734; stroke: #243252; stroke-width: 1; }
+      .node-box { fill: #15224b; stroke: #4d76d1; stroke-width: 1; rx: 6; }
+      .node-box.selected { stroke: #a5c4ff; stroke-width: 2; }
+      .edge-line { stroke: #6b8cd6; stroke-width: 1.2; marker-end: url(#arrowhead); }
+      .node-label, .layer-label { fill: #dbe5ff; font-size: 12px; }
     </style>
   </head>
   <body>
@@ -407,13 +414,14 @@ const observerDashboardHtml = (): string => `<!doctype html>
       <section>
         <div class="card"><h2 id="repoTitle">Repo Detail</h2><div id="repoDetail" class="meta">Select a repo.</div><button id="removeRepo" style="display:none">Remove repo</button></div>
         <div class="card"><h3>Artifact Detail Viewer</h3><select id="artifactKind"></select><div id="artifactPanel"></div></div>
+        <div class="card"><h3>System Blueprint</h3><div id="blueprintMeta" class="meta">Select a repo.</div><svg id="blueprintPanel" class="blueprint" viewBox="0 0 980 420" aria-label="System Blueprint"></svg></div>
       </section>
     </main>
     <script src="/ui/app.js"></script>
   </body>
 </html>`;
 
-const observerDashboardJs = (): string => `const artifactKinds = ['cycle-state','cycle-history','policy-evaluation','policy-apply-result','pr-review','session'];
+const observerDashboardJs = (): string => `const artifactKinds = ['cycle-state','cycle-history','policy-evaluation','policy-apply-result','pr-review','session','system-map'];
 const reposEl = document.getElementById('repos');
 const healthEl = document.getElementById('health');
 const repoTitleEl = document.getElementById('repoTitle');
@@ -421,7 +429,10 @@ const repoDetailEl = document.getElementById('repoDetail');
 const removeRepoEl = document.getElementById('removeRepo');
 const artifactKindEl = document.getElementById('artifactKind');
 const artifactPanelEl = document.getElementById('artifactPanel');
+const blueprintMetaEl = document.getElementById('blueprintMeta');
+const blueprintPanelEl = document.getElementById('blueprintPanel');
 let selectedRepoId = null;
+let selectedBlueprintNodeId = null;
 
 artifactKinds.forEach((kind) => {
   const option = document.createElement('option');
@@ -438,6 +449,88 @@ const getJson = async (url, init) => {
     throw new Error(json.error || 'request-failed');
   }
   return json;
+};
+
+
+const escapeHtml = (value) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+const renderSystemBlueprint = (systemMap) => {
+  if (!systemMap || !Array.isArray(systemMap.layers) || !Array.isArray(systemMap.nodes) || !Array.isArray(systemMap.edges)) {
+    blueprintMetaEl.textContent = 'System map artifact unavailable for selected repo.';
+    blueprintPanelEl.innerHTML = '';
+    return;
+  }
+
+  const layers = systemMap.layers;
+  const nodes = systemMap.nodes;
+  const edges = systemMap.edges;
+  const width = 980;
+  const height = 420;
+  const laneHeight = Math.max(48, Math.floor(height / Math.max(layers.length, 1)));
+
+  const nodeByLayer = new Map();
+  for (const layer of layers) {
+    nodeByLayer.set(layer.id, nodes.filter((node) => node.layer === layer.id).sort((a, b) => a.id.localeCompare(b.id)));
+  }
+
+  const positions = new Map();
+  for (let layerIndex = 0; layerIndex < layers.length; layerIndex += 1) {
+    const layer = layers[layerIndex];
+    const layerNodes = nodeByLayer.get(layer.id) || [];
+    const usableWidth = width - 220;
+    const spacing = layerNodes.length > 0 ? usableWidth / layerNodes.length : usableWidth;
+    for (let nodeIndex = 0; nodeIndex < layerNodes.length; nodeIndex += 1) {
+      const node = layerNodes[nodeIndex];
+      positions.set(node.id, { x: 190 + spacing * nodeIndex + 8, y: layerIndex * laneHeight + 10, layer: layer.id });
+    }
+  }
+
+  const edgeSvg = edges
+    .filter((edge) => positions.has(edge.from) && positions.has(edge.to))
+    .map((edge) => {
+      const from = positions.get(edge.from);
+      const to = positions.get(edge.to);
+      return '<line class="edge-line" x1="' + (from.x + 74) + '" y1="' + (from.y + 16) + '" x2="' + to.x + '" y2="' + (to.y + 16) + '"></line>';
+    })
+    .join('');
+
+  const layerSvg = layers
+    .map((layer, index) => {
+      const y = index * laneHeight;
+      return '<rect class="layer-band" x="0" y="' + y + '" width="980" height="' + laneHeight + '"></rect>' +
+        '<text class="layer-label" x="12" y="' + (y + 28) + '">' + escapeHtml(layer.label + ' (' + layer.id + ')') + '</text>';
+    })
+    .join('');
+
+  const nodeSvg = nodes
+    .filter((node) => positions.has(node.id))
+    .map((node) => {
+      const pos = positions.get(node.id);
+      const isSelected = selectedBlueprintNodeId === node.id;
+      return '<g data-node-id="' + escapeHtml(node.id) + '" data-layer-id="' + escapeHtml(node.layer) + '">' +
+        '<rect class="node-box' + (isSelected ? ' selected' : '') + '" x="' + pos.x + '" y="' + pos.y + '" width="148" height="32"></rect>' +
+        '<title>' + escapeHtml(node.id + ' | layer: ' + node.layer) + '</title>' +
+        '<text class="node-label" x="' + (pos.x + 8) + '" y="' + (pos.y + 21) + '">' + escapeHtml(node.id) + '</text>' +
+      '</g>';
+    })
+    .join('');
+
+  blueprintPanelEl.innerHTML =
+    '<defs><marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><polygon points="0 0, 6 3, 0 6" fill="#6b8cd6"></polygon></marker></defs>' +
+    layerSvg + edgeSvg + nodeSvg;
+
+  blueprintPanelEl.querySelectorAll('g[data-node-id]').forEach((group) => {
+    group.addEventListener('click', () => {
+      selectedBlueprintNodeId = group.getAttribute('data-node-id');
+      const layerId = group.getAttribute('data-layer-id') || 'unknown';
+      blueprintMetaEl.textContent = 'Selected node: ' + selectedBlueprintNodeId + ' (layer: ' + layerId + ')';
+      renderSystemBlueprint(systemMap);
+    });
+  });
+
+  if (!selectedBlueprintNodeId) {
+    blueprintMetaEl.textContent = 'System map loaded. Hover nodes for details; click to select.';
+  }
 };
 
 const loadHealth = async () => {
@@ -464,6 +557,8 @@ const loadRepoDetail = async () => {
     repoDetailEl.textContent = 'Select a repo.';
     removeRepoEl.style.display = 'none';
     artifactPanelEl.innerHTML = '';
+    blueprintPanelEl.innerHTML = '';
+    blueprintMetaEl.textContent = 'Select a repo.';
     return;
   }
 
@@ -479,6 +574,7 @@ const loadRepoDetail = async () => {
     format(repoPayload.repo);
   removeRepoEl.style.display = '';
   await loadArtifact();
+  await loadBlueprint();
 };
 
 const loadArtifact = async () => {
@@ -489,6 +585,24 @@ const loadArtifact = async () => {
   const kind = artifactKindEl.value;
   const artifactPayload = await getJson('/repos/' + encodeURIComponent(selectedRepoId) + '/artifacts/' + encodeURIComponent(kind));
   artifactPanelEl.innerHTML = format(artifactPayload.artifact);
+};
+
+
+const loadBlueprint = async () => {
+  if (!selectedRepoId) {
+    blueprintPanelEl.innerHTML = '';
+    blueprintMetaEl.textContent = 'Select a repo.';
+    return;
+  }
+
+  const payload = await getJson('/snapshot');
+  const repoEntry = (payload.snapshot && Array.isArray(payload.snapshot.repos))
+    ? payload.snapshot.repos.find((entry) => entry.id === selectedRepoId)
+    : null;
+  const systemMapArtifact = repoEntry && Array.isArray(repoEntry.artifacts)
+    ? repoEntry.artifacts.find((artifact) => artifact.kind === 'system-map')
+    : null;
+  renderSystemBlueprint(systemMapArtifact ? systemMapArtifact.value : null);
 };
 
 const refreshAll = async () => {

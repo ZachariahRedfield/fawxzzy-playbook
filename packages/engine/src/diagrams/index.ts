@@ -87,4 +87,6 @@ export const generateArchitectureDiagrams = (repoRoot: string, runOptions: Diagr
 export { scanRepoStructure } from './scanRepoStructure.js';
 export { scanWorkspaceDeps } from './scanWorkspaceDeps.js';
 export { generateMermaidStructure, generateMermaidDeps } from './generateMermaid.js';
+export { generateSystemMapArtifact, writeSystemMapArtifact, SYSTEM_MAP_RELATIVE_PATH, SYSTEM_MAP_SCHEMA_VERSION } from './systemMap.js';
+export type { SystemMapArtifact, SystemMapLayer, SystemMapNode, SystemMapEdge } from './systemMap.js';
 export type { DiagramOptions, StructureModel, DependencyModel, MermaidDiagramResult } from './types.js';

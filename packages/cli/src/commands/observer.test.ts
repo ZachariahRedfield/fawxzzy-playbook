@@ -214,11 +214,14 @@ describe('observer server', () => {
     expect(uiResponse.status).toBe(200);
     const uiHtml = await uiResponse.text();
     expect(uiHtml).toContain('Observer Dashboard');
+    expect(uiHtml).toContain('System Blueprint');
 
     const uiScript = await fetch(`http://127.0.0.1:${port}/ui/app.js`);
     expect(uiScript.status).toBe(200);
     const uiScriptText = await uiScript.text();
     expect(uiScriptText).toContain('setInterval(refreshAll, 5000)');
+    expect(uiScriptText).toContain("'system-map'");
+    expect(uiScriptText).toContain('renderSystemBlueprint');
 
     const repoPath = path.join(cwd, 'repo-http');
     fs.mkdirSync(repoPath, { recursive: true });

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { generateArchitectureDiagrams } from '@zachariahredfield/playbook-engine';
+import { generateArchitectureDiagrams, writeSystemMapArtifact, SYSTEM_MAP_RELATIVE_PATH } from '@zachariahredfield/playbook-engine';
 import { emitResult, ExitCode } from '../lib/cliContract.js';
 
 type DiagramOptions = {
@@ -10,10 +10,39 @@ type DiagramOptions = {
   structure: boolean;
   format: 'text' | 'json';
   quiet: boolean;
+  target?: string;
 };
 
 export const runDiagram = async (cwd: string, opts: DiagramOptions): Promise<number> => {
   const repo = path.resolve(cwd, opts.repo);
+
+  if (opts.target === 'system') {
+    const { artifactPath } = writeSystemMapArtifact(repo);
+    emitResult({
+      format: opts.format,
+      quiet: opts.quiet,
+      command: 'diagram',
+      ok: true,
+      exitCode: ExitCode.Success,
+      summary: `Generated system map artifact at ${path.relative(cwd, artifactPath)}`,
+      findings: [
+        {
+          id: 'diagram.system-map.written',
+          level: 'info',
+          message: `Wrote ${path.relative(cwd, artifactPath)}`
+        },
+        {
+          id: 'diagram.system-map.artifact',
+          level: 'info',
+          message: `Artifact path: ${SYSTEM_MAP_RELATIVE_PATH}`
+        }
+      ],
+      nextActions: []
+    });
+
+    return ExitCode.Success;
+  }
+
   const outFile = path.resolve(cwd, opts.out);
 
   const includeDeps = opts.deps || (!opts.deps && !opts.structure);

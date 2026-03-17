@@ -122,6 +122,32 @@ const writeArchitectureRegistry = (repo: string): void => {
   );
 };
 
+
+const writeSystemMapArtifact = (repo: string): void => {
+  const artifactPath = path.join(repo, '.playbook', 'system-map.json');
+  fs.mkdirSync(path.dirname(artifactPath), { recursive: true });
+  fs.writeFileSync(
+    artifactPath,
+    JSON.stringify(
+      {
+        schemaVersion: '1.0',
+        kind: 'system-map',
+        layers: [
+          { id: 'observer', label: 'Observer Layer' },
+          { id: 'runtime', label: 'Runtime Loop' }
+        ],
+        nodes: [
+          { id: 'observer-server', layer: 'observer' },
+          { id: 'cycle', layer: 'runtime' }
+        ],
+        edges: [{ from: 'observer-server', to: 'cycle' }]
+      },
+      null,
+      2
+    )
+  );
+};
+
 const writeRepoIndex = (repo: string): void => {
   const indexPath = path.join(repo, '.playbook', 'repo-index.json');
   fs.mkdirSync(path.dirname(indexPath), { recursive: true });
@@ -985,4 +1011,25 @@ describe('runExplain', () => {
 
     errorSpy.mockRestore();
   });
+
+  it('returns structured system-map details for explain artifact lookups', async () => {
+    const repo = createRepo('playbook-cli-explain-system-map-json');
+    writeArchitectureRegistry(repo);
+    writeSystemMapArtifact(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runExplain(repo, ['artifact', '.playbook/system-map.json'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.type).toBe('artifact');
+    expect(payload.explanation.systemMap.artifactType).toBe('system-map');
+    expect(payload.explanation.systemMap.nodes).toEqual([
+      { id: 'observer-server', layer: 'observer' },
+      { id: 'cycle', layer: 'runtime' }
+    ]);
+
+    logSpy.mockRestore();
+  });
+
 });

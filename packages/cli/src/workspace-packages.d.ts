@@ -297,6 +297,8 @@ declare module "@zachariahredfield/playbook-engine" {
   export const readExecutionRun: (...args: any[]) => any;
   export const getLatestMutableRun: (...args: any[]) => any;
   export const executionRunPath: (...args: any[]) => string;
+  export const writeSystemMapArtifact: (...args: any[]) => { artifactPath: string; artifact: any };
+  export const SYSTEM_MAP_RELATIVE_PATH: '.playbook/system-map.json';
 
   export const initializeSession: (...args: any[]) => any;
   export const readSession: (...args: any[]) => any;

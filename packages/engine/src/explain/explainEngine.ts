@@ -132,6 +132,7 @@ export type ArtifactExplanation = ExplainMemoryFields & {
   policyApplyResult?: PolicyApplyResultArtifactExplanation;
   sessionEvidenceEnvelope?: SessionEvidenceEnvelopeExplanation;
   prReview?: PrReviewArtifactExplanation;
+  systemMap?: SystemMapArtifactExplanation;
 };
 
 type CycleStateStepExplanation = {
@@ -238,6 +239,30 @@ type PrReviewArtifactExplanation = {
     requires_review: number;
     blocked: number;
   };
+};
+
+type SystemMapLayerExplanation = {
+  id: string;
+  label: string;
+};
+
+type SystemMapNodeExplanation = {
+  id: string;
+  layer: string;
+};
+
+type SystemMapEdgeExplanation = {
+  from: string;
+  to: string;
+};
+
+type SystemMapArtifactExplanation = {
+  artifactType: 'system-map';
+  schemaVersion: string;
+  kind: string;
+  layers: SystemMapLayerExplanation[];
+  nodes: SystemMapNodeExplanation[];
+  edges: SystemMapEdgeExplanation[];
 };
 
 type SessionEvidenceEnvelopeExplanation = {
@@ -537,9 +562,10 @@ const explainArtifact = (projectRoot: string, target: string): ArtifactExplanati
   const policyApplyResult = explainPolicyApplyResultArtifact(projectRoot, target) ?? undefined;
   const sessionEvidenceEnvelope = explainSessionEvidenceEnvelopeArtifact(projectRoot, target) ?? undefined;
   const prReview = explainPrReviewArtifact(projectRoot, target) ?? undefined;
+  const systemMap = explainSystemMapArtifact(projectRoot, target) ?? undefined;
 
-  if (cycleState || cycleHistory || policyEvaluation || policyApplyResult || sessionEvidenceEnvelope || prReview) {
-    const policyArtifactOnly = (Boolean(policyEvaluation) || Boolean(policyApplyResult)) && !cycleState && !cycleHistory && !sessionEvidenceEnvelope && !prReview;
+  if (cycleState || cycleHistory || policyEvaluation || policyApplyResult || sessionEvidenceEnvelope || prReview || systemMap) {
+    const policyArtifactOnly = (Boolean(policyEvaluation) || Boolean(policyApplyResult)) && !cycleState && !cycleHistory && !sessionEvidenceEnvelope && !prReview && !systemMap;
     return {
       type: 'artifact',
       resolvedTarget: {
@@ -559,7 +585,8 @@ const explainArtifact = (projectRoot: string, target: string): ArtifactExplanati
       ...(policyEvaluation ? { policyEvaluation } : {}),
       ...(policyApplyResult ? { policyApplyResult } : {}),
       ...(sessionEvidenceEnvelope ? { sessionEvidenceEnvelope } : {}),
-      ...(prReview ? { prReview } : {})
+      ...(prReview ? { prReview } : {}),
+      ...(systemMap ? { systemMap } : {})
     };
   }
 
@@ -933,6 +960,47 @@ const explainPrReviewArtifact = (projectRoot: string, target: string): PrReviewA
     }
   };
 };
+
+const explainSystemMapArtifact = (projectRoot: string, target: string): SystemMapArtifactExplanation | null => {
+  if (target !== '.playbook/system-map.json') {
+    return null;
+  }
+
+  const targetPath = path.join(projectRoot, target);
+  if (!fs.existsSync(targetPath)) {
+    throw new Error(`playbook explain artifact: missing artifact "${target}".`);
+  }
+
+  const parsed = JSON.parse(fs.readFileSync(targetPath, 'utf8')) as Record<string, unknown>;
+
+  const layers = readRecordArray(parsed.layers)
+    .map((layer) => ({ id: String(layer.id), label: String(layer.label) }))
+    .sort((left, right) => left.id.localeCompare(right.id));
+
+  const nodes = readRecordArray(parsed.nodes)
+    .map((node) => ({ id: String(node.id), layer: String(node.layer) }))
+    .sort((left, right) => {
+      const layerOrder = left.layer.localeCompare(right.layer);
+      return layerOrder !== 0 ? layerOrder : left.id.localeCompare(right.id);
+    });
+
+  const edges = readRecordArray(parsed.edges)
+    .map((edge) => ({ from: String(edge.from), to: String(edge.to) }))
+    .sort((left, right) => {
+      const fromOrder = left.from.localeCompare(right.from);
+      return fromOrder !== 0 ? fromOrder : left.to.localeCompare(right.to);
+    });
+
+  return {
+    artifactType: 'system-map',
+    schemaVersion: String(parsed.schemaVersion ?? '1.0'),
+    kind: String(parsed.kind ?? 'system-map'),
+    layers,
+    nodes,
+    edges
+  };
+};
+
 
 export const explainTarget = (projectRoot: string, target: string, options?: ExplainTargetOptions): ExplainTargetResult => {
   const trimmed = target.trim();
