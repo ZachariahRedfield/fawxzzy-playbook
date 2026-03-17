@@ -10,6 +10,12 @@ Playbook integration follows a **shared core + project-local Playbook state** mo
 - Runtime intelligence artifacts belong to each consumer repository.
 - Installing Playbook in another repository **does not create a fork**.
 
+Canonical package-first distribution rule:
+
+- Consumer repositories install Playbook as a repo-local dependency and run the repo-local CLI.
+- Consumer integrations must not require a globally installed `playbook` binary on PATH.
+- Optional local-checkout fallback wiring is temporary/dev-only and must not become canonical runtime behavior.
+
 Control-plane inheritance rule:
 
 - Consumer integrations inherit shared policy constraints from `docs/architecture/PLAYBOOK_CONTROL_PLANE_ARCHITECTURE.md`.
@@ -32,6 +38,7 @@ Core behavior, command contracts, and deterministic workflows are maintained ups
 
 Each consumer repository owns its own Playbook integration state and outputs, including:
 
+- repo-local Playbook CLI dependency resolution
 - project-local Playbook state
 - repository intelligence index
 - verify results
@@ -42,6 +49,21 @@ Each consumer repository owns its own Playbook integration state and outputs, in
 ### Non-fork guarantee
 
 Installing Playbook in a repository creates local integration artifacts and configuration on top of shared Playbook Core. It does **not** require copying or forking Playbook Core into the consumer repository.
+
+### Runtime resolution contract (consumer repositories)
+
+Consumer integrations should resolve the runtime in deterministic order:
+
+1. `PLAYBOOK_BIN` environment override (explicit operator/CI selection).
+2. Repo-local install (`node_modules/.bin/playbook`, including `pnpm playbook ...`).
+3. Optional development fallback to a local Playbook checkout (non-canonical and temporary/dev-only).
+4. Deterministic failure with actionable setup instructions.
+
+Failure-semantics rules:
+
+- Global PATH lookup is non-canonical and must not be required.
+- Missing runtime resolution must fail explicitly with operator guidance.
+- Consumer repos must provide one canonical operator command path; shadow wrappers that redefine Playbook behavior are not allowed.
 
 ## 2) Project-Local Playbook State
 

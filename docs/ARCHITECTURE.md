@@ -59,6 +59,7 @@ Playbook has two distinct architecture surfaces that must not be conflated:
 2. **Consumer-repo integration (project-local Playbook state):** repository-local configuration, intelligence artifacts, plans, and optional extensions generated/owned by the consuming repository.
 
 Rule: **Installing Playbook into another repository creates project-local Playbook state, not a Playbook fork by default.**
+Rule: **Consumer repositories should run Playbook from repo-local dependency installs; global PATH resolution is non-canonical.**
 
 Project-local Playbook state typically includes:
 
@@ -68,6 +69,13 @@ Project-local Playbook state typically includes:
 - repository-specific rules/extensions used by that repository.
 
 Playbook core remains shared; repository-local state remains owned by the consuming project.
+
+Deterministic consumer runtime resolution order:
+
+1. `PLAYBOOK_BIN` explicit override.
+2. Repo-local CLI install (`node_modules/.bin/playbook`, typically via `pnpm playbook ...`).
+3. Optional local checkout fallback for development-only workflows (non-canonical).
+4. Explicit actionable failure when no runtime is resolvable.
 
 ## Promotion boundary: local observations vs upstream product learnings
 
