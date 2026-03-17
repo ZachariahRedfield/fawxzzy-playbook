@@ -8,18 +8,21 @@ pnpm -r build
 pnpm test
 ```
 
-## 2) Publish from `packages/cli`
+## 2) Publish from CI on a version tag
 
-```bash
-cd packages/cli
-npm publish --access public
-```
+Tag pushes (`v*`) trigger `.github/workflows/publish-npm.yml`, which publishes the public Playbook package (`@fawxzzy/playbook`) and the internal runtime distribution set used by the CLI wrapper/fallback path.
 
-Notes:
-- The monorepo root is marked `private: true` and is not publishable.
-- The CLI package is published as `@fawxzzy/playbook`.
+## 3) Deterministic fallback artifact on each release
 
-## 3) Push the release tag
+The publish workflow now packs `packages/cli-wrapper` and uploads a deterministic release asset for CI fallback consumers:
+
+- Asset filename: `playbook-cli-<version>.tgz`
+- Example for `v0.3.77`: `playbook-cli-0.3.77.tgz`
+- Release URL shape: `https://github.com/fawxzzy/playbook/releases/download/v<version>/playbook-cli-<version>.tgz`
+
+The workflow enforces `tag version == packages/cli-wrapper package.json version` before uploading the tarball so pinned fallback URLs remain immutable and real.
+
+## 4) Push the release tag
 
 Create and push a git tag that matches the released version:
 
