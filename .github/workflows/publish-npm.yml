@@ -11,6 +11,8 @@ jobs:
     permissions:
       contents: write
       id-token: write
+    env:
+      SKIP_NPM_PUBLISH: ${{ vars.SKIP_NPM_PUBLISH || 'false' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -42,65 +44,115 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         working-directory: packages/core
         run: |
+          if [ "${SKIP_NPM_PUBLISH}" = "true" ]; then
+            echo "SKIP_NPM_PUBLISH=true; skipping npm publish for @fawxzzy/playbook-core."
+            exit 0
+          fi
           package_name="@fawxzzy/playbook-core"
           package_version="$(node -p "require('./package.json').version")"
           if npm view "${package_name}@${package_version}" version >/dev/null 2>&1; then
             echo "${package_name}@${package_version} already published; skipping publish."
             exit 0
           fi
+          set +e
           pnpm publish --access public --no-git-checks --provenance
+          publish_exit=$?
+          set -e
+          if [ "$publish_exit" -ne 0 ]; then
+            echo "::warning::${package_name}@${package_version} publish failed (exit ${publish_exit}). Fallback tarball upload will continue."
+          fi
 
       - name: Publish @fawxzzy/playbook-node
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         working-directory: packages/node
         run: |
+          if [ "${SKIP_NPM_PUBLISH}" = "true" ]; then
+            echo "SKIP_NPM_PUBLISH=true; skipping npm publish for @fawxzzy/playbook-node."
+            exit 0
+          fi
           package_name="@fawxzzy/playbook-node"
           package_version="$(node -p "require('./package.json').version")"
           if npm view "${package_name}@${package_version}" version >/dev/null 2>&1; then
             echo "${package_name}@${package_version} already published; skipping publish."
             exit 0
           fi
+          set +e
           pnpm publish --access public --no-git-checks --provenance
+          publish_exit=$?
+          set -e
+          if [ "$publish_exit" -ne 0 ]; then
+            echo "::warning::${package_name}@${package_version} publish failed (exit ${publish_exit}). Fallback tarball upload will continue."
+          fi
 
       - name: Publish @fawxzzy/playbook-engine
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         working-directory: packages/engine
         run: |
+          if [ "${SKIP_NPM_PUBLISH}" = "true" ]; then
+            echo "SKIP_NPM_PUBLISH=true; skipping npm publish for @fawxzzy/playbook-engine."
+            exit 0
+          fi
           package_name="@fawxzzy/playbook-engine"
           package_version="$(node -p "require('./package.json').version")"
           if npm view "${package_name}@${package_version}" version >/dev/null 2>&1; then
             echo "${package_name}@${package_version} already published; skipping publish."
             exit 0
           fi
+          set +e
           pnpm publish --access public --no-git-checks --provenance
+          publish_exit=$?
+          set -e
+          if [ "$publish_exit" -ne 0 ]; then
+            echo "::warning::${package_name}@${package_version} publish failed (exit ${publish_exit}). Fallback tarball upload will continue."
+          fi
 
       - name: Publish @fawxzzy/playbook-cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         working-directory: packages/cli
         run: |
+          if [ "${SKIP_NPM_PUBLISH}" = "true" ]; then
+            echo "SKIP_NPM_PUBLISH=true; skipping npm publish for @fawxzzy/playbook-cli."
+            exit 0
+          fi
           package_name="@fawxzzy/playbook-cli"
           package_version="$(node -p "require('./package.json').version")"
           if npm view "${package_name}@${package_version}" version >/dev/null 2>&1; then
             echo "${package_name}@${package_version} already published; skipping publish."
             exit 0
           fi
+          set +e
           pnpm publish --access public --no-git-checks --provenance
+          publish_exit=$?
+          set -e
+          if [ "$publish_exit" -ne 0 ]; then
+            echo "::warning::${package_name}@${package_version} publish failed (exit ${publish_exit}). Fallback tarball upload will continue."
+          fi
 
       - name: Publish @fawxzzy/playbook-cli-wrapper
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         working-directory: packages/cli-wrapper
         run: |
+          if [ "${SKIP_NPM_PUBLISH}" = "true" ]; then
+            echo "SKIP_NPM_PUBLISH=true; skipping npm publish for @fawxzzy/playbook-cli-wrapper."
+            exit 0
+          fi
           package_name="@fawxzzy/playbook-cli-wrapper"
           package_version="$(node -p "require('./package.json').version")"
           if npm view "${package_name}@${package_version}" version >/dev/null 2>&1; then
             echo "${package_name}@${package_version} already published; skipping publish."
             exit 0
           fi
+          set +e
           pnpm publish --access public --no-git-checks --provenance
+          publish_exit=$?
+          set -e
+          if [ "$publish_exit" -ne 0 ]; then
+            echo "::warning::${package_name}@${package_version} publish failed (exit ${publish_exit}). Fallback tarball upload will continue."
+          fi
 
       - name: Pack deterministic fallback tarball
         id: fallback_pack

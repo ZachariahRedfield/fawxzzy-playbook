@@ -10,6 +10,11 @@
 
 ### CLI
 
+- WHAT: Updated `.github/workflows/publish-npm.yml` so npm publish no longer blocks fallback-proof milestones: each package publish step now supports intentional skip via `SKIP_NPM_PUBLISH=true` and logs a warning when publish fails while continuing to deterministic fallback tarball pack/upload steps. WHY: Unblocks fallback acquisition proof when npm registry auth/policy gates fail (for example 2FA/token policy errors).
+- Rule: Fallback-proof workflows should not require npm registry publication when the milestone artifact is the GitHub release tarball.
+- Failure Mode: Registry auth/policy failures blocking unrelated fallback-release validation.
+- Pattern: Separate registry publication from deterministic fallback artifact publication so release-proof remains possible even when npm credentials are unavailable.
+
 - WHAT: Added a deterministic adoption/readiness contract surfaced through `pnpm playbook status --json` and Observer repo APIs/UI (lifecycle stage, fallback-proof readiness, cross-repo eligibility, blockers, and exact next command recommendations) backed by governed artifact producers instead of heuristics. WHY: Gives operators a single actionable readiness view without manual cross-command artifact interpretation.
 - WHAT: Replaced the Step 5 provenance attestation heredoc in `.github/workflows/security.yml` with a deterministic Node-based file write while preserving the existing payload fields and artifact path (`artifacts/provenance.json`). WHY: Prevents YAML-parse fragility from embedded shell heredoc indentation so the workflow remains syntactically valid and runnable.
 - Pattern: Prefer programmatic file writes over shell heredocs in GitHub Actions when embedding structured JSON inside YAML.
