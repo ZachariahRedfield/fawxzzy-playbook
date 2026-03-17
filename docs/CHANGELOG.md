@@ -1,3 +1,8 @@
+## 2026-03-16 — Docs truth-boundary canonicalization
+
+- WHAT: Clarified canonical documentation boundaries so live command truth is centralized in `docs/commands/README.md`, roadmap docs are explicitly future-intent surfaces, and stale execution-window docs are converted to archival stubs with preserved snapshots under `docs/archive/roadmap/`.
+- WHY: Reduce operator confusion and documentation drift caused by overlapping command status, planning, and transitional execution notes.
+
 - WHAT: Added deterministic `.playbook/cycle-history.json` runtime evidence tracking derived from `.playbook/cycle-state.json` (schema contract, contracts registry wiring, explain support, and append-safe cycle runtime writes with chronological ordering) plus focused tests for creation, append behavior, duration aggregation, and success/failure guards. WHY: Preserves thin cycle orchestration behavior while providing governed historical evidence for runtime analysis and telemetry without recomputing orchestration logic.
 
 ## Unreleased

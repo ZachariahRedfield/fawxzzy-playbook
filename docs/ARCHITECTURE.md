@@ -8,6 +8,16 @@ Research/theory bridge: pattern-meaning doctrine and attractor theory are captur
 
 Boundary rule: research docs describe conceptual models; architecture/runtime docs describe current or explicitly staged capability only.
 
+## Documentation truth boundaries
+
+- Live command behavior and status: `docs/commands/README.md` (authoritative operator surface).
+- Strategic sequencing and future intent: `docs/PLAYBOOK_PRODUCT_ROADMAP.md`.
+- Machine-readable delivery commitments: `docs/roadmap/ROADMAP.json`.
+- Historical/transitional planning notes: `docs/archive/` (non-authoritative for current operations).
+
+Rule: architecture documents describe current-state design and bounded staged capability, not live command inventory status.
+
+
 ## Toroidal Flow and Knowledge Compaction artifact set
 
 The Toroidal Flow + Knowledge Compaction architecture is also represented in compact reusable artifacts:

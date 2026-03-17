@@ -2,6 +2,11 @@
 
 This is the authoritative command-state snapshot for Playbook product docs.
 
+## Operator truth boundary
+
+For live command behavior/status questions, this page is the canonical operator surface.
+Roadmap and planning docs may describe sequencing intent, but they are not command-status authority.
+
 ## Command truth
 
 - The canonical operator-facing command surface is `pnpm playbook <command>`.

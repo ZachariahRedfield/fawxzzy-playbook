@@ -8,26 +8,25 @@ Playbook is not a general-purpose chat assistant. It is a contract-first runtime
 
 `ai-context -> ai-contract -> context -> index/query/explain/ask --repo-context -> verify -> plan -> apply -> verify`
 
-## Start here
+## Start here (truth boundaries first)
+
+- **Live command truth (operator source):** [Command status index](./commands/README.md)
+- **Future intent and sequencing:** [Product roadmap](./PLAYBOOK_PRODUCT_ROADMAP.md)
+- **Current architecture and runtime boundaries:** [Architecture](./ARCHITECTURE.md)
+- **Machine-readable roadmap commitments:** [Roadmap contract (`ROADMAP.json`)](./roadmap/ROADMAP.json)
+- **Unscheduled ideas:** [Improvements backlog](./roadmap/IMPROVEMENTS_BACKLOG.md)
+
+## Core references
 
 - [Repository README](../README.md)
 - [AI operating contract](../AGENTS.md)
-- [Architecture](./ARCHITECTURE.md)
-- [Command inventory](./commands/README.md)
-- [Product roadmap](./PLAYBOOK_PRODUCT_ROADMAP.md)
-- [Repository memory system architecture](./architecture/REPOSITORY_MEMORY_SYSTEM_V1.md)
-- [Replay / consolidation / promotion architecture](./architecture/REPLAY_CONSOLIDATION_AND_PROMOTION_V1.md)
-- [Structural graph + memory integration](./architecture/STRUCTURAL_GRAPH_AND_MEMORY_INTEGRATION_V1.md)
-- [Control plane / agent runtime v1](./architecture/CONTROL_PLANE_AND_AGENT_RUNTIME_V1.md)
-- [Research: Theory of Pattern Meaning](./research/THEORY_OF_PATTERN_MEANING.md)
-- [Research: Attractor Model of Meaning](./research/ATTRACTOR_MODEL_OF_MEANING.md)
-- [Architecture: Evolutionary Dynamics of Knowledge Graphs](./architecture/EVOLUTIONARY_DYNAMICS_OF_KNOWLEDGE_GRAPHS.md)
-- [Outcome learning / policy improvement v1](./architecture/OUTCOME_LEARNING_AND_POLICY_IMPROVEMENT_V1.md)
-- [Business strategy](./PLAYBOOK_BUSINESS_STRATEGY.md)
-- [Consumer integration contract](./CONSUMER_INTEGRATION_CONTRACT.md)
 - [FAQ](./FAQ.md)
-- [AI agent context](./AI_AGENT_CONTEXT.md)
 - [Onboarding demo](./ONBOARDING_DEMO.md)
-- [GitHub setup](./GITHUB_SETUP.md)
+- [Consumer integration contract](./CONSUMER_INTEGRATION_CONTRACT.md)
 
-`docs/commands/README.md` is the authoritative command-state snapshot.
+## Historical/transitional docs
+
+- Archived docs index: [docs/archive/README.md](./archive/README.md)
+- Archived roadmap snapshots: [docs/archive/roadmap/](./archive/roadmap/)
+
+Rule: canonical operator truth should live in one clearly identified surface, not overlapping docs.

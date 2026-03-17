@@ -6,6 +6,8 @@ Deterministic Repo Runtime and Trust Layer for Software Engineering
 
 Build the deterministic runtime and trust layer between humans/AI agents and real repositories.
 
+Truth-boundary note: this document captures **future intent and sequencing**. For current command implementation truth, use `docs/commands/README.md`. For machine-readable committed delivery state, use `docs/roadmap/ROADMAP.json`.
+
 ## Document job and alignment boundaries
 
 This roadmap defines strategic product direction and sequencing only.
@@ -214,7 +216,7 @@ Using a second repo too early without bounded rollout turns a proving ground int
 
 ## External Pilot Integration â€” Fawxzzy Fitness
 
-Status: **Delivered - first-class external targeting (`--repo`) and first-class one-command baseline external analysis via `playbook pilot --repo <path>`, including deterministic findings/plan artifact writes and pilot runtime cycle phase telemetry.**
+Roadmap checkpoint: first-class external targeting (`--repo`) and one-command baseline external analysis via `playbook pilot --repo <path>` are implemented; treat this section as sequencing context, not canonical live command status
 
 This roadmap slice establishes the next operator-safe migration layer for running Playbook from this repository against the primary external pilot repository while preserving legacy pilot tooling until parity is proven.
 
