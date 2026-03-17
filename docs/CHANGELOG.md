@@ -10,6 +10,9 @@
 
 ### CLI
 
+- WHAT: Realigned release fallback ownership to the canonical GitHub repository (`ZachariahRedfield/playbook`) by updating release docs/examples and making `release:fallback:proof` default to the canonical owner/repo URL shape. WHY: Eliminates producer/consumer drift where fallback proofs and pinning examples targeted a non-authoritative release path.
+- WHAT: Prepared the next clean producer release cut at `0.1.4` across workspace package versions and release docs/examples so a fresh tag (`v0.1.4`) can be published from the fixed live workflow state. WHY: Avoids reusing polluted tags and establishes a single deterministic baseline for fallback asset proofing.
+
 - WHAT: Fixed `publish-npm` release packaging so the fallback tarball pack destination resolves to repository-root `dist/release` and the rename step matches pnpm output (`fawxzzy-playbook-cli-<version>.tgz` -> `playbook-cli-<version>.tgz`). WHY: Ensures tag releases actually attach the deterministic fallback asset required by `pnpm release:fallback:proof`.
 - WHAT: Cut the next Playbook release target to `v0.1.2` across workspace package versions and release examples/docs so fallback proof commands and consumer pinning references stop pointing at the non-provisioned `v0.3.77` example. WHY: Enforces the operational rule that fallback contracts are only real when tied to an actually published release artifact.
 - WHAT: Recorded first `v0.1.2` fallback proof outcomes from this branch run: producer proof currently fails with release asset download HTTP 403 (`playbook-cli-0.1.2.tgz` unavailable) and the provided consumer path proof command fails with local path `ENOENT` (`C:\Users\zjhre\dev\fawxzzyFitness` not mounted in this environment). WHY: Makes producer/consumer proof status explicit until the tagged release is published and consumer validation is rerun in an environment with the target repo path.

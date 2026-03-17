@@ -17,8 +17,8 @@ Tag pushes (`v*`) trigger `.github/workflows/publish-npm.yml`, which publishes t
 The publish workflow now packs `packages/cli-wrapper` and uploads a deterministic release asset for CI fallback consumers:
 
 - Asset filename: `playbook-cli-<version>.tgz`
-- Example for first fixed release `v0.1.2`: `playbook-cli-0.1.2.tgz`
-- Release URL shape: `https://github.com/fawxzzy/playbook/releases/download/v<version>/playbook-cli-<version>.tgz`
+- Example for first fixed release `v0.1.4`: `playbook-cli-0.1.4.tgz`
+- Release URL shape: `https://github.com/ZachariahRedfield/playbook/releases/download/v<version>/playbook-cli-<version>.tgz`
 
 The workflow enforces `tag version == packages/cli-wrapper package.json version` before uploading the tarball so pinned fallback URLs remain immutable and real.
 
@@ -27,7 +27,7 @@ The workflow enforces `tag version == packages/cli-wrapper package.json version`
 Consumer repositories must pin `PLAYBOOK_OFFICIAL_FALLBACK_SPEC` to the exact deterministic URL:
 
 ```bash
-PLAYBOOK_OFFICIAL_FALLBACK_SPEC=@https://github.com/fawxzzy/playbook/releases/download/v0.1.2/playbook-cli-0.1.2.tgz
+PLAYBOOK_OFFICIAL_FALLBACK_SPEC=@https://github.com/ZachariahRedfield/playbook/releases/download/v0.1.4/playbook-cli-0.1.4.tgz
 ```
 
 This keeps producer (release asset) and consumer (fallback URL) ownership boundaries explicit and prevents URL/version/filename drift.
@@ -37,13 +37,13 @@ This keeps producer (release asset) and consumer (fallback URL) ownership bounda
 From this repository, run:
 
 ```bash
-pnpm release:fallback:proof --version 0.1.2 --json
+pnpm release:fallback:proof --version 0.1.4 --json
 ```
 
 Optional consumer smoke validation (for real downstream proof):
 
 ```bash
-pnpm release:fallback:proof --version 0.1.2 --consumer-repo /path/to/FawxzzyFitness --json
+pnpm release:fallback:proof --version 0.1.4 --consumer-repo /path/to/FawxzzyFitness --json
 ```
 
 When `--consumer-repo` is provided, the command performs the clean-environment sequence:
@@ -69,6 +69,6 @@ Fallback is only considered operationally proven when both producer and consumer
 Create and push a git tag that matches the released version:
 
 ```bash
-git tag v0.1.2
-git push origin v0.1.2
+git tag v0.1.4
+git push origin v0.1.4
 ```

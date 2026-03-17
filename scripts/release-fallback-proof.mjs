@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const DEFAULT_OWNER = 'fawxzzy';
+const DEFAULT_OWNER = 'ZachariahRedfield';
 const DEFAULT_REPO = 'playbook';
 
 const parseArgs = () => {
