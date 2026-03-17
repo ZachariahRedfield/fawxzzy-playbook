@@ -26,6 +26,7 @@ This framing is the core promise: deterministic evidence over ad-hoc inference, 
 Playbook uses a **shared core + project-local Playbook state** integration model:
 
 - The Playbook product (CLI/engine/contracts) is shared core.
+- Playbook is designed to be installed **per repository**, not as a required global binary.
 - Installing Playbook in a consumer repository creates **project-local Playbook state** (config, index/artifacts, plans, and repository-specific extensions), not a fork by default.
 - Repository observations stay local/private by default.
 - Reusable patterns and product improvements are promoted upstream intentionally (docs/roadmap/rules), not via hidden mutation.
@@ -74,6 +75,8 @@ pnpm playbook ignore apply --repo "<target-repo-path>" --safe-defaults
 
 
 ## Quick Start (canonical ladder)
+
+Playbook operator workflows assume a **repo-local CLI install** (for example `node_modules/.bin/playbook` via `pnpm playbook ...`), so clean machines and CI do not depend on PATH-global Playbook binaries.
 
 ### Command truth
 
@@ -132,6 +135,21 @@ pnpm playbook --repo "$TARGET_REPO_PATH" query modules --json
 ```
 
 This keeps `pnpm playbook <command>` as the canonical invocation while letting operators target external repositories deterministically from a single working checkout.
+
+### Consumer repository runtime resolution contract
+
+Consumer repositories should resolve Playbook using this deterministic order:
+
+1. `PLAYBOOK_BIN` override (explicit operator/CI choice).
+2. Repo-local installed CLI (`node_modules/.bin/playbook`, typically via `pnpm playbook ...`).
+3. Optional local-checkout development fallback (non-canonical; temporary development aid only).
+4. Explicit failure with actionable guidance.
+
+Rules:
+
+- Global PATH-based `playbook` resolution is non-canonical and must never be required for successful operation.
+- Missing runtime resolution must fail loudly with actionable setup guidance; silent PATH assumptions are not allowed.
+- Development fallbacks must remain opt-in and must not become the default runtime path.
 
 When `--repo` is set, runtime artifacts are written into the target repository under `.playbook/` (for example `repo-index.json`, `repo-graph.json`, `findings.json`, `plan.json`, and runtime cycle artifacts).
 
