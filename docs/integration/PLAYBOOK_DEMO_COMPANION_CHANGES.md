@@ -39,3 +39,8 @@ Automated commits/PRs from `scripts/demo-refresh.mjs` default to feature id:
 - `PB-V1-DEMO-REFRESH-001`
 
 `playbook-demo` delivery validation should accept this `feature_id` in commit/PR metadata.
+## Machine-readable CLI success contract
+
+- Pattern: CLI success must be determined by structured output (`exitCode` + `ok`), not stdout presence.
+- Failure Mode: Treating warnings as errors in machine-readable pipelines causes false negatives.
+
