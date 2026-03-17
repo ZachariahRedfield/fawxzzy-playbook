@@ -30,7 +30,7 @@ const emitError = (cwd: string, options: PatternsOptions, message: string): numb
 };
 
 const printHelp = (): void => {
-  console.log('playbook patterns subcommands: list | show <id> | related <id> | layers | score | top [--limit <n>] | outcomes <patternId> | doctrine-candidates | candidates [show <id>|unmatched|link|cross-repo|generalized|portability] | anti-patterns | proposals | cross-repo [--repo <path-or-slug>] | portability | generalized | repo-delta <leftRepo> <rightRepo> | promote --id <pattern-id> --decision approve|reject');
+  console.log('playbook patterns subcommands: list | show <id> | related <id> | layers | score | top [--limit <n>] | outcomes <patternId> | doctrine-candidates | candidates [show <id>|unmatched|link|cross-repo|generalized|portability] | anti-patterns | proposals | cross-repo [--repo <path-or-slug>] | portability | generalized | repo-delta --left <repoId> --right <repoId> | promote --id <pattern-id> --decision approve|reject');
 };
 
 
@@ -162,7 +162,7 @@ export const runPatterns = async (cwd: string, commandArgs: string[], options: P
     }
 
     if (subcommand === 'portability') {
-      return runPatternsPortability(cwd, options);
+      return runPatternsPortability(cwd, commandArgs, options);
     }
 
     if (subcommand === 'generalized') {
@@ -251,7 +251,7 @@ export const runPatterns = async (cwd: string, commandArgs: string[], options: P
     return emitError(
       cwd,
       options,
-      'playbook patterns: unsupported subcommand. Use list, show <id>, related <id>, layers, score, top [--limit <n>], outcomes <patternId>, doctrine-candidates, candidates [show <id>|unmatched|link|cross-repo|generalized|portability], anti-patterns, proposals, cross-repo [--repo <path-or-slug>], portability, generalized, repo-delta <leftRepo> <rightRepo>, or promote --id <pattern-id> --decision approve|reject.'
+      'playbook patterns: unsupported subcommand. Use list, show <id>, related <id>, layers, score, top [--limit <n>], outcomes <patternId>, doctrine-candidates, candidates [show <id>|unmatched|link|cross-repo|generalized|portability], anti-patterns, proposals, cross-repo [--repo <path-or-slug>], portability, generalized, repo-delta --left <repoId> --right <repoId>, or promote --id <pattern-id> --decision approve|reject.'
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
