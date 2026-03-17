@@ -33,6 +33,11 @@ Contract:
 - Responses are deterministic envelopes, and artifact state remains sourced from governed observer/runtime artifacts.
 - No artifact/runtime mutation routes are provided in v1 beyond repo registration actions.
 
+Self/home selection metadata:
+
+- `GET /repos` and `GET /snapshot` include `home_repo_id` when the connected registry contains a Playbook self repo candidate.
+- Home repo selection is deterministic and governed by observer registry data only: exact root match with current server cwd, then `self`/`home` tags, then `playbook` id/name fallback.
+
 Supported `:kind` values:
 
 - `cycle-state`
@@ -77,6 +82,21 @@ Readiness fields are available from:
 - `GET /repos` (per repo readiness object)
 - `GET /repos/:id` (repo-level readiness object)
 - `GET /snapshot` (top-level readiness summary by repo id)
+
+### Self-observation cockpit (UI)
+
+Observer UI includes a first-class **Playbook Self-Observation** panel that presents read-only summaries for the selected home repo:
+
+- repo readiness and missing-artifact guidance
+- cycle runtime loop presence (`cycle-state`, `cycle-history`)
+- control-plane evidence presence (`policy-evaluation`, `policy-apply-result`, `pr-review`, `session`)
+- derived deterministic summaries (`control-plane artifacts present`, `review loop available`, `runtime loop available`)
+- blueprint status from governed `.playbook/system-map.json` with explicit missing-artifact guidance when absent
+- observer server health status from `GET /health`
+
+Rule: Playbook should observe itself through the same governed observer model it uses for external repos.
+Pattern: One observer model, special self-view presentation.
+Failure Mode: If self-observation uses a separate hidden state path, the dashboard becomes inconsistent and harder to trust.
 
 Rule: An observer UI must distinguish registration state from actual observability state.
 Pattern: Connected repo → readiness detection → artifact observation.

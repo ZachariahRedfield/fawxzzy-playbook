@@ -192,6 +192,12 @@ Failure Mode: ambient path-scanning introduces non-deterministic cross-repo visi
 
 `playbook observer serve` now adds a thin local-only (`127.0.0.1`/`localhost`) dashboard + API wrapper over the existing observer repo registry (`.playbook/observer/repos.json`), optional observer snapshot artifact (`.playbook/observer/snapshot.json`), and governed per-repo artifacts. v1 keeps observer state canonical in CLI/runtime artifacts while exposing deterministic `GET` endpoints (`/health`, `/repos`, `/snapshot`, `/repos/:id`, `/repos/:id/artifacts/:kind`), local dashboard routes (`/`, `/ui`, `/ui/app.js`), and narrowly scoped registry mutations (`POST /repos`, `DELETE /repos/:id`) only for connect/disconnect actions.
 
+Observer now includes a first-class self-observation presentation for the Playbook repo without introducing a second model: the same repo registry/readiness/artifact APIs provide deterministic `home_repo_id` selection metadata (cwd root match, then `self|home` tags, then `playbook` id/name) and the same governed artifacts feed a specialized UI panel for runtime loop, control-plane evidence, and system-map blueprint status.
+
+Rule: Playbook should observe itself through the same governed observer model it uses for external repos.
+Pattern: one observer model, special self-view presentation.
+Failure Mode: if self-observation uses hidden or dashboard-only state, operator trust degrades because self-view diverges from governed repo evidence.
+
 Rule: observer UI/server surfaces must wrap canonical Playbook state, never become a second source of truth.
 Pattern: CLI/runtime stays canonical -> local server wraps governed artifacts/registry commands -> UI observes and renders.
 Failure Mode: if repo registration or artifact state is tracked independently in UI/server memory, observer state drifts from real Playbook runtime truth.

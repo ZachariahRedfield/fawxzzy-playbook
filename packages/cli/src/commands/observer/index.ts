@@ -296,6 +296,22 @@ const repoReadiness = (repo: ObserverRepoEntry): ObserverRepoReadiness => {
   };
 };
 
+const findHomeRepoId = (registry: ObserverRepoRegistry, cwd: string): string | null => {
+  const cwdRoot = path.resolve(cwd);
+  const fromExactRoot = registry.repos.find((repo) => path.resolve(repo.root) === cwdRoot);
+  if (fromExactRoot) {
+    return fromExactRoot.id;
+  }
+
+  const fromTags = registry.repos.find((repo) => repo.tags.some((tag) => tag === 'self' || tag === 'home'));
+  if (fromTags) {
+    return fromTags.id;
+  }
+
+  const fromName = registry.repos.find((repo) => repo.name.toLowerCase() === 'playbook' || repo.id.toLowerCase() === 'playbook');
+  return fromName?.id ?? null;
+};
+
 const addRepoToRegistry = (cwd: string, registry: ObserverRepoRegistry, input: ObserverRepoCreateInput): { repo: ObserverRepoEntry; registry: ObserverRepoRegistry } => {
   const root = path.resolve(cwd, input.path);
   const rootStat = fs.existsSync(root) ? fs.statSync(root) : null;
@@ -412,6 +428,7 @@ const observerDashboardHtml = (): string => `<!doctype html>
         <div class="card"><h3>Add Repo</h3><input id="repoPath" placeholder="/path/to/repo" /><input id="repoId" placeholder="optional-id" /><input id="repoTags" placeholder="tags comma-separated" /><button id="addRepo">Connect</button></div>
       </aside>
       <section>
+        <div class="card"><h2>Playbook Self-Observation</h2><div id="selfSummary" class="meta">Waiting for observer data.</div></div>
         <div class="card"><h2 id="repoTitle">Repo Detail</h2><div id="repoDetail" class="meta">Select a repo.</div><button id="removeRepo" style="display:none">Remove repo</button></div>
         <div class="card"><h3>Artifact Detail Viewer</h3><select id="artifactKind"></select><div id="artifactPanel"></div></div>
         <div class="card"><h3>System Blueprint</h3><div id="blueprintMeta" class="meta">Select a repo.</div><svg id="blueprintPanel" class="blueprint" viewBox="0 0 980 420" aria-label="System Blueprint"></svg></div>
@@ -431,8 +448,49 @@ const artifactKindEl = document.getElementById('artifactKind');
 const artifactPanelEl = document.getElementById('artifactPanel');
 const blueprintMetaEl = document.getElementById('blueprintMeta');
 const blueprintPanelEl = document.getElementById('blueprintPanel');
+const selfSummaryEl = document.getElementById('selfSummary');
 let selectedRepoId = null;
 let selectedBlueprintNodeId = null;
+let homeRepoId = null;
+
+const boolStatus = (value) => value ? 'present' : 'missing';
+
+const renderSelfObservation = (repoPayload, healthStatus) => {
+  if (!repoPayload || !repoPayload.repo) {
+    selfSummaryEl.innerHTML =
+      '<div><strong>Self/home repo:</strong> not connected</div>' +
+      '<div>Connect this Playbook repo to surface first-class self-observation.</div>';
+    return;
+  }
+
+  const readiness = repoPayload.readiness || {};
+  const missingArtifacts = Array.isArray(readiness.missing_artifacts) ? readiness.missing_artifacts : [];
+  const hasControlPlane = !!(readiness.policy_evaluation_present && readiness.policy_apply_result_present && readiness.pr_review_present && readiness.session_present);
+  const hasRuntimeLoop = !!(readiness.cycle_state_present && readiness.cycle_history_present);
+  const hasReviewLoop = !!(readiness.pr_review_present && readiness.policy_evaluation_present);
+  const hasBlueprint = missingArtifacts.includes('.playbook/system-map.json')
+    ? false
+    : true;
+  const blueprintGuidance = hasBlueprint
+    ? 'Blueprint available from governed artifact \`.playbook/system-map.json\`.'
+    : 'Blueprint missing. Run \`pnpm playbook diagram system\` to generate \`.playbook/system-map.json\`.';
+
+  selfSummaryEl.innerHTML =
+    '<div><strong>Self/home repo:</strong> ' + repoPayload.repo.id + '</div>' +
+    '<div><strong>Observer server health:</strong> ' + (healthStatus || 'unknown') + '</div>' +
+    '<div><strong>Readiness:</strong> ' + (readiness.readiness_state || 'unknown') + '</div>' +
+    '<div><strong>Cycle-state:</strong> ' + boolStatus(readiness.cycle_state_present) + '</div>' +
+    '<div><strong>Cycle-history:</strong> ' + boolStatus(readiness.cycle_history_present) + '</div>' +
+    '<div><strong>Policy evaluation:</strong> ' + boolStatus(readiness.policy_evaluation_present) + '</div>' +
+    '<div><strong>Policy apply result:</strong> ' + boolStatus(readiness.policy_apply_result_present) + '</div>' +
+    '<div><strong>PR review:</strong> ' + boolStatus(readiness.pr_review_present) + '</div>' +
+    '<div><strong>Session evidence:</strong> ' + boolStatus(readiness.session_present) + '</div>' +
+    '<div><strong>Control-plane artifacts present:</strong> ' + (hasControlPlane ? 'yes' : 'no') + '</div>' +
+    '<div><strong>Review loop available:</strong> ' + (hasReviewLoop ? 'yes' : 'no') + '</div>' +
+    '<div><strong>Runtime loop available:</strong> ' + (hasRuntimeLoop ? 'yes' : 'no') + '</div>' +
+    '<div><strong>Blueprint:</strong> ' + (hasBlueprint ? 'available' : 'missing') + '</div>' +
+    '<div>' + blueprintGuidance + '</div>';
+};
 
 artifactKinds.forEach((kind) => {
   const option = document.createElement('option');
@@ -536,19 +594,26 @@ const renderSystemBlueprint = (systemMap) => {
 const loadHealth = async () => {
   const health = await getJson('/health');
   healthEl.textContent = 'health: ' + health.status;
+  return health.status;
 };
 
 const renderRepos = async () => {
   const payload = await getJson('/repos');
+  homeRepoId = payload.home_repo_id || null;
+  if (!selectedRepoId && homeRepoId) {
+    selectedRepoId = homeRepoId;
+  }
   reposEl.innerHTML = '';
   for (const repo of payload.repos) {
     const item = document.createElement('div');
     item.className = 'card repo';
     const readiness = repo.readiness || { readiness_state: 'connected_only' };
-    item.innerHTML = '<strong>' + repo.id + '</strong><div class="meta">' + repo.root + '</div><div class="meta">readiness: ' + readiness.readiness_state + '</div>';
+    const isHome = homeRepoId && repo.id === homeRepoId;
+    item.innerHTML = '<strong>' + repo.id + (isHome ? ' (self/home)' : '') + '</strong><div class="meta">' + repo.root + '</div><div class="meta">readiness: ' + readiness.readiness_state + '</div>';
     item.onclick = () => { selectedRepoId = repo.id; loadRepoDetail(); };
     reposEl.appendChild(item);
   }
+  return payload;
 };
 
 const loadRepoDetail = async () => {
@@ -607,8 +672,14 @@ const loadBlueprint = async () => {
 
 const refreshAll = async () => {
   try {
-    await Promise.all([loadHealth(), renderRepos()]);
+    const [healthStatus] = await Promise.all([loadHealth(), renderRepos()]);
     await loadRepoDetail();
+    if (homeRepoId) {
+      const selfPayload = await getJson('/repos/' + encodeURIComponent(homeRepoId));
+      renderSelfObservation(selfPayload, healthStatus);
+    } else {
+      renderSelfObservation(null, healthStatus);
+    }
   } catch (error) {
     healthEl.textContent = 'error: ' + error.message;
   }
@@ -643,6 +714,7 @@ setInterval(refreshAll, 5000);
 
 const observerServerResponse = (cwd: string, pathname: string): { statusCode: number; payload: Record<string, unknown> } => {
   const registry = readRegistry(cwd);
+  const homeRepoId = findHomeRepoId(registry, cwd);
   const base = { schemaVersion: '1.0', readOnly: true, localOnly: true };
 
   if (pathname === '/health') {
@@ -658,6 +730,7 @@ const observerServerResponse = (cwd: string, pathname: string): { statusCode: nu
       payload: {
         ...base,
         kind: 'observer-server-repos',
+        home_repo_id: homeRepoId,
         repos: registry.repos.map((repo) => ({ ...repo, readiness: repoReadiness(repo) }))
       }
     };
@@ -668,6 +741,7 @@ const observerServerResponse = (cwd: string, pathname: string): { statusCode: nu
       statusCode: 200,
       payload: {
         ...base,
+        home_repo_id: homeRepoId,
         snapshot: loadSnapshotArtifact(cwd) ?? buildSnapshotFromRegistry(registry),
         readiness: registry.repos.map((repo) => ({ id: repo.id, readiness: repoReadiness(repo) }))
       }

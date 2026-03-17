@@ -105,7 +105,8 @@ describe('observer server', () => {
 
     const repos = await fetch(`http://127.0.0.1:${port}/repos`);
     expect(repos.status).toBe(200);
-    const reposJson = await repos.json() as { repos: Array<{ id: string; readiness: { readiness_state: string; session_present: boolean } }> };
+    const reposJson = await repos.json() as { home_repo_id: string | null; repos: Array<{ id: string; readiness: { readiness_state: string; session_present: boolean } }> };
+    expect(reposJson.home_repo_id).toBeNull();
     expect(reposJson.repos.map((entry) => entry.id)).toEqual(['repo-a']);
     expect(reposJson.repos[0]?.readiness.readiness_state).toBe('partially_observable');
     expect(reposJson.repos[0]?.readiness.session_present).toBe(true);
@@ -113,9 +114,11 @@ describe('observer server', () => {
     const snapshot = await fetch(`http://127.0.0.1:${port}/snapshot`);
     expect(snapshot.status).toBe(200);
     const snapshotJson = await snapshot.json() as {
+      home_repo_id: string | null;
       snapshot: { kind: string; repos: Array<{ id: string }> };
       readiness: Array<{ id: string; readiness: { readiness_state: string } }>;
     };
+    expect(snapshotJson.home_repo_id).toBeNull();
     expect(snapshotJson.snapshot.kind).toBe('observer-snapshot');
     expect(snapshotJson.snapshot.repos.map((entry) => entry.id)).toEqual(['repo-a']);
     const systemMapInSnapshot = (snapshotJson.snapshot as { repos: Array<{ artifacts?: Array<{ kind: string; value: unknown }> }> }).repos[0]?.artifacts?.find((artifact) => artifact.kind === 'system-map');
@@ -202,6 +205,44 @@ describe('observer server', () => {
     expect(uiScriptText).toContain('readiness: ');
     expect(uiScriptText).toContain('Missing artifacts:');
     expect(uiScriptText).toContain('Last artifact update:');
+    expect(uiScriptText).toContain('renderSelfObservation');
+    expect(uiScriptText).toContain('Control-plane artifacts present:</strong>');
+    expect(uiScriptText).toContain('Runtime loop available:</strong>');
+
+    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  });
+
+
+  it('selects playbook repo as self/home and reports blueprint missing guidance deterministically', async () => {
+    const cwd = makeTempDir();
+    const playbookRepo = path.join(cwd, 'playbook');
+    fs.mkdirSync(path.join(playbookRepo, '.playbook'), { recursive: true });
+
+    writeArtifact(playbookRepo, '.playbook/repo-index.json', { schemaVersion: '1.0', kind: 'repo-index' });
+    writeArtifact(playbookRepo, '.playbook/cycle-state.json', { schemaVersion: '1.0', kind: 'cycle-state' });
+    writeArtifact(playbookRepo, '.playbook/cycle-history.json', { schemaVersion: '1.0', kind: 'cycle-history' });
+    writeArtifact(playbookRepo, '.playbook/policy-evaluation.json', { schemaVersion: '1.0', kind: 'policy-evaluation' });
+    writeArtifact(playbookRepo, '.playbook/policy-apply-result.json', { schemaVersion: '1.0', kind: 'policy-apply-result' });
+    writeArtifact(playbookRepo, '.playbook/pr-review.json', { schemaVersion: '1.0', kind: 'pr-review' });
+    writeArtifact(playbookRepo, '.playbook/session.json', { schemaVersion: '1.0', kind: 'session' });
+
+    expect(await runObserver(cwd, ['repo', 'add', playbookRepo, '--id', 'playbook'], { format: 'json', quiet: false })).toBe(ExitCode.Success);
+
+    const server = createObserverServer(cwd);
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+    const address = server.address();
+    expect(address).toBeTypeOf('object');
+    const port = typeof address === 'object' && address ? address.port : 0;
+
+    const repos = await fetch(`http://127.0.0.1:${port}/repos`);
+    const reposJson = await repos.json() as { home_repo_id: string | null };
+    expect(reposJson.home_repo_id).toBe('playbook');
+
+    const uiResponse = await fetch(`http://127.0.0.1:${port}/ui/app.js`);
+    const uiScriptText = await uiResponse.text();
+    expect(uiScriptText).toContain('Blueprint missing. Run');
+    expect(uiScriptText).toContain('.playbook/system-map.json');
+    expect(uiScriptText).toContain('renderSelfObservation');
 
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   });
