@@ -249,6 +249,69 @@ describe('observer server', () => {
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   });
 
+
+  it('serves cross-repo compare and candidates as read-only and evidence-backed payloads', async () => {
+    const cwd = makeTempDir();
+    const repoA = path.join(cwd, 'repo-a');
+    const repoB = path.join(cwd, 'repo-b');
+    fs.mkdirSync(path.join(repoA, '.playbook'), { recursive: true });
+    fs.mkdirSync(path.join(repoB, '.playbook'), { recursive: true });
+
+    writeArtifact(cwd, '.playbook/cross-repo-patterns.json', {
+      schemaVersion: '1.0',
+      kind: 'cross-repo-patterns',
+      source_repos: ['repo-a', 'repo-b'],
+      comparisons: [
+        {
+          left_repo_id: 'repo-a',
+          right_repo_id: 'repo-b',
+          repo_deltas: [
+            {
+              kind: 'missing-artifact',
+              left_evidence: [{ artifact_kind: 'session', artifact_path: '.playbook/session.json', pointer: '/kind', excerpt: 'session' }],
+              right_evidence: [{ artifact_kind: 'policy-evaluation', artifact_path: '.playbook/policy-evaluation.json', pointer: '/kind', excerpt: 'policy' }]
+            }
+          ]
+        }
+      ],
+      candidate_patterns: [
+        {
+          id: 'portable-1',
+          source_repo_ids: ['repo-a', 'repo-b'],
+          evidence: [{ repo_id: 'repo-a', artifact_kind: 'session', artifact_path: '.playbook/session.json', pointer: '/id', excerpt: 'evidence' }]
+        }
+      ]
+    });
+
+    expect(await runObserver(cwd, ['repo', 'add', repoA, '--id', 'repo-a'], { format: 'json', quiet: false })).toBe(ExitCode.Success);
+    expect(await runObserver(cwd, ['repo', 'add', repoB, '--id', 'repo-b'], { format: 'json', quiet: false })).toBe(ExitCode.Success);
+
+    const server = createObserverServer(cwd);
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+    const address = server.address();
+    expect(address).toBeTypeOf('object');
+    const port = typeof address === 'object' && address ? address.port : 0;
+
+    const summary = await fetch(`http://127.0.0.1:${port}/api/cross-repo/summary`);
+    expect(summary.status).toBe(200);
+    const summaryJson = await summary.json() as { readOnly: boolean; summary: { candidate_count: number } };
+    expect(summaryJson.readOnly).toBe(true);
+    expect(summaryJson.summary.candidate_count).toBe(1);
+
+    const compare = await fetch(`http://127.0.0.1:${port}/api/cross-repo/compare?left=repo-a&right=repo-b`);
+    expect(compare.status).toBe(200);
+    const compareJson = await compare.json() as { comparison: { left_repo_id: string; repo_deltas: Array<{ left_evidence: unknown[] }> } };
+    expect(compareJson.comparison.left_repo_id).toBe('repo-a');
+    expect(compareJson.comparison.repo_deltas[0]?.left_evidence.length).toBeGreaterThan(0);
+
+    const candidates = await fetch(`http://127.0.0.1:${port}/api/cross-repo/candidates`);
+    expect(candidates.status).toBe(200);
+    const candidatesJson = await candidates.json() as { candidates: Array<{ id: string }> };
+    expect(candidatesJson.candidates[0]?.id).toBe('portable-1');
+
+    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  });
+
   it('serves UI shell, supports repo add/remove mutations, and still rejects unsupported methods', async () => {
     const cwd = makeTempDir();
     const server = createObserverServer(cwd);
@@ -269,6 +332,8 @@ describe('observer server', () => {
     expect(uiHtml).toContain('System Blueprint');
     expect(uiHtml).toContain('details id="selfPanel"');
     expect(uiHtml).toContain('Selected Blueprint Node');
+    expect(uiHtml).toContain('Repo View');
+    expect(uiHtml).toContain('Cross-Repo View');
 
     const uiScript = await fetch(`http://127.0.0.1:${port}/ui/app.js`);
     expect(uiScript.status).toBe(200);
@@ -276,6 +341,9 @@ describe('observer server', () => {
     expect(uiScriptText).toContain('setInterval(refreshAll, 5000)');
     expect(uiScriptText).toContain("'system-map'");
     expect(uiScriptText).toContain('renderSystemBlueprint');
+    expect(uiScriptText).toContain('setActiveView(\'repo\')');
+    expect(uiScriptText).toContain('Connect at least 2 repos to compare governed artifacts.');
+    expect(uiScriptText).toContain('if ((!selectedRepoId || !repos.find((repo) => repo.id === selectedRepoId)) && repos.length > 0)');
 
     const repoPath = path.join(cwd, 'repo-http');
     fs.mkdirSync(repoPath, { recursive: true });

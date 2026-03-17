@@ -439,6 +439,12 @@ const observerDashboardHtml = (): string => `<!doctype html>
       .badge { display: inline-flex; border-radius: 999px; padding: 2px 8px; border: 1px solid #35519c; font-size: 11px; margin-right: 6px; }
       .layout-main { min-width: 0; }
       .layout-side { min-width: 0; }
+      .mode-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+      .mode-tab.active { border-color: #a5c4ff; background: #29458e; }
+      .hidden { display: none; }
+      .empty-state { padding: 10px; border: 1px dashed #35519c; border-radius: 6px; color: #95addf; font-size: 12px; }
+      .cross-repo-list { display: grid; gap: 8px; }
+      .cross-repo-item { border: 1px solid #243252; border-radius: 6px; padding: 8px; background: #0a1129; }
       details summary { cursor: pointer; font-weight: 600; }
       .state-legend { margin-top: 6px; }
       .state-legend .badge { margin-bottom: 4px; }
@@ -460,16 +466,23 @@ const observerDashboardHtml = (): string => `<!doctype html>
       </aside>
       <section>
         <div class="layout-main">
+          <div class="mode-tabs" role="tablist" aria-label="Observer modes">
+            <button id="repoModeBtn" class="mode-tab active" role="tab" aria-selected="true">Repo View</button>
+            <button id="crossRepoModeBtn" class="mode-tab" role="tab" aria-selected="false">Cross-Repo View</button>
+          </div>
+          <div id="repoViewPanel">
           <div class="card"><h2 id="repoTitle">Repo Detail</h2><div id="repoDetail" class="meta">Select a repo.</div><button id="removeRepo" style="display:none">Remove repo</button></div>
+          <div class="card"><h3>System Blueprint</h3><div id="blueprintMeta" class="meta">Select a repo.</div><svg id="blueprintPanel" class="blueprint" viewBox="0 0 980 420" aria-label="System Blueprint"></svg></div>
+          <div class="card"><h3>Artifact Detail Viewer</h3><select id="artifactKind"></select><div id="artifactPanel"></div></div>
+          </div>
+          <div id="crossRepoViewPanel" class="hidden">
           <div class="card"><h3>Cross-Repo Intelligence</h3>
             <div class="row"><label class="meta">Left repo</label><select id="compareLeft"></select></div>
             <div class="row"><label class="meta">Right repo</label><select id="compareRight"></select></div>
             <div class="row"><button id="compareBtn">Compare pair</button><button id="compareAllBtn">All connected repos</button></div>
             <div id="crossRepoPanel" class="meta">Choose repos to compare governed artifacts.</div>
           </div>
-
-          <div class="card"><h3>System Blueprint</h3><div id="blueprintMeta" class="meta">Select a repo.</div><svg id="blueprintPanel" class="blueprint" viewBox="0 0 980 420" aria-label="System Blueprint"></svg></div>
-          <div class="card"><h3>Artifact Detail Viewer</h3><select id="artifactKind"></select><div id="artifactPanel"></div></div>
+          </div>
         </div>
         <div class="layout-side">
           <div class="card"><h3>Selected Blueprint Node</h3><div id="selectedNodeDetail" class="meta">Click a node to inspect layer, state, and artifact linkage.</div></div>
@@ -497,11 +510,16 @@ const compareRightEl = document.getElementById('compareRight');
 const compareBtnEl = document.getElementById('compareBtn');
 const compareAllBtnEl = document.getElementById('compareAllBtn');
 const crossRepoPanelEl = document.getElementById('crossRepoPanel');
+const repoModeBtnEl = document.getElementById('repoModeBtn');
+const crossRepoModeBtnEl = document.getElementById('crossRepoModeBtn');
+const repoViewPanelEl = document.getElementById('repoViewPanel');
+const crossRepoViewPanelEl = document.getElementById('crossRepoViewPanel');
 let selectedRepoId = null;
 let selectedBlueprintNodeId = null;
 let homeRepoId = null;
 let latestRepoPayload = null;
 let latestSnapshotRepoEntry = null;
+let activeView = 'repo';
 
 const NODE_LINKED_ARTIFACT = {
   'cycle-state': 'cycle-state',
@@ -720,6 +738,10 @@ const renderRepos = async () => {
   homeRepoId = payload.home_repo_id || null;
   if (!selectedRepoId && homeRepoId) selectedRepoId = homeRepoId;
   reposEl.innerHTML = '';
+  if (!Array.isArray(payload.repos) || payload.repos.length === 0) {
+    reposEl.innerHTML = '<div class="empty-state">No repos connected yet. Add a repo to start observing.</div>';
+    return payload;
+  }
   for (const repo of payload.repos) {
     const item = document.createElement('div');
     item.className = 'card repo' + (repo.id === selectedRepoId ? ' selected' : '');
@@ -735,11 +757,11 @@ const renderRepos = async () => {
 const loadRepoDetail = async () => {
   if (!selectedRepoId) {
     repoTitleEl.textContent = 'Repo Detail';
-    repoDetailEl.textContent = 'Select a repo.';
+    repoDetailEl.innerHTML = '<div class="empty-state">Connect a repo to inspect readiness, blueprint, and governed artifacts.</div>';
     removeRepoEl.style.display = 'none';
-    artifactPanelEl.innerHTML = '';
+    artifactPanelEl.innerHTML = '<div class="empty-state">Artifact detail appears after a repo is selected.</div>';
     blueprintPanelEl.innerHTML = '';
-    blueprintMetaEl.textContent = 'Select a repo.';
+    blueprintMetaEl.innerHTML = 'Connect and select a repo to render the system blueprint.';
     selectedNodeDetailEl.textContent = 'Click a node to inspect layer, state, and artifact linkage.';
     return;
   }
@@ -761,7 +783,7 @@ const loadRepoDetail = async () => {
 
 const loadArtifact = async () => {
   if (!selectedRepoId) {
-    artifactPanelEl.innerHTML = '<div class="meta">Select a repo.</div>';
+    artifactPanelEl.innerHTML = '<div class="empty-state">Select a repo to view artifact details.</div>';
     return;
   }
   const kind = artifactKindEl.value;
@@ -772,7 +794,7 @@ const loadArtifact = async () => {
 const loadBlueprint = async () => {
   if (!selectedRepoId) {
     blueprintPanelEl.innerHTML = '';
-    blueprintMetaEl.textContent = 'Select a repo.';
+    blueprintMetaEl.innerHTML = 'Connect and select a repo to render the system blueprint.';
     return;
   }
 
@@ -783,6 +805,17 @@ const loadBlueprint = async () => {
   renderSystemBlueprint(systemMapArtifact ? systemMapArtifact.value : null, readiness, latestSnapshotRepoEntry ? latestSnapshotRepoEntry.artifacts : []);
 };
 
+
+const setActiveView = (view) => {
+  activeView = view === 'cross-repo' ? 'cross-repo' : 'repo';
+  const repoMode = activeView === 'repo';
+  repoViewPanelEl.classList.toggle('hidden', !repoMode);
+  crossRepoViewPanelEl.classList.toggle('hidden', repoMode);
+  repoModeBtnEl.classList.toggle('active', repoMode);
+  crossRepoModeBtnEl.classList.toggle('active', !repoMode);
+  repoModeBtnEl.setAttribute('aria-selected', repoMode ? 'true' : 'false');
+  crossRepoModeBtnEl.setAttribute('aria-selected', repoMode ? 'false' : 'true');
+};
 
 const renderCompareSelectors = (repos) => {
   compareLeftEl.innerHTML = '';
@@ -799,18 +832,88 @@ const renderCompareSelectors = (repos) => {
   }
   if (!compareLeftEl.value && repos.length > 0) compareLeftEl.value = repos[0].id;
   if (!compareRightEl.value && repos.length > 1) compareRightEl.value = repos[1].id;
+  if (repos.length < 2) {
+    crossRepoPanelEl.innerHTML = '<div class="empty-state">Connect at least 2 repos to compare governed artifacts.</div>';
+  }
+};
+
+const renderEvidenceRow = (repoId, evidence) => {
+  const artifactKind = evidence.artifact_kind || evidence.artifactKind || 'unknown';
+  const artifactPath = evidence.artifact_path || evidence.artifactPath || 'unknown';
+  const pointer = evidence.pointer || evidence.path || '/';
+  const excerpt = evidence.excerpt || evidence.digest || evidence.summary || '';
+  return '<li><button class="repo" data-drill-repo="' + escapeHtml(repoId) + '" data-drill-kind="' + escapeHtml(artifactKind) + '">' +
+    escapeHtml(repoId + ' • ' + artifactKind) + '</button><div class="meta">' +
+    escapeHtml(artifactPath + ' @ ' + pointer + (excerpt ? ' — ' + excerpt : '')) + '</div></li>';
+};
+
+const attachDrilldownHandlers = () => {
+  for (const el of crossRepoPanelEl.querySelectorAll('[data-drill-repo]')) {
+    el.onclick = async () => {
+      selectedRepoId = el.getAttribute('data-drill-repo');
+      const nextKind = el.getAttribute('data-drill-kind');
+      if (nextKind && artifactKinds.includes(nextKind)) artifactKindEl.value = nextKind;
+      await loadRepoDetail();
+      renderRepos();
+      setActiveView('repo');
+    };
+  }
 };
 
 const renderCrossRepoEvidence = (payload) => {
-  const comparison = payload.comparison || payload.summary || payload;
-  crossRepoPanelEl.innerHTML = format(comparison);
+  const summary = payload.summary || {};
+  const comparison = payload.comparison || null;
+  const repoDelta = payload.repo_delta || (comparison && comparison.repo_deltas) || [];
+  const candidatePatterns = Array.isArray(payload.candidates) ? payload.candidates : [];
+
+  if (summary.candidate_count !== undefined) {
+    crossRepoPanelEl.innerHTML = '<div class="meta"><strong>Source repos:</strong> ' + (summary.source_repos || []).join(', ') + '</div>' +
+      '<div class="meta"><strong>Comparisons:</strong> ' + (summary.comparison_count || 0) + '</div>' +
+      '<div class="meta"><strong>Candidate patterns:</strong> ' + (summary.candidate_count || 0) + '</div>';
+    return;
+  }
+
+  const sections = [];
+  if (comparison) {
+    sections.push('<div class="cross-repo-item"><strong>Repo deltas</strong><div class="meta">' + escapeHtml((comparison.left_repo_id || '?') + ' vs ' + (comparison.right_repo_id || '?')) + '</div>' + format(repoDelta) + '</div>');
+    const evidence = [];
+    for (const item of repoDelta) {
+      const leftEvidence = Array.isArray(item.left_evidence) ? item.left_evidence : [];
+      for (const entry of leftEvidence) evidence.push(renderEvidenceRow(comparison.left_repo_id, entry));
+      const rightEvidence = Array.isArray(item.right_evidence) ? item.right_evidence : [];
+      for (const entry of rightEvidence) evidence.push(renderEvidenceRow(comparison.right_repo_id, entry));
+    }
+    if (evidence.length > 0) {
+      sections.push('<div class="cross-repo-item"><strong>Evidence drilldown</strong><ul>' + evidence.join('') + '</ul></div>');
+    }
+  }
+
+  if (candidatePatterns.length > 0) {
+    const rows = [];
+    for (const pattern of candidatePatterns) {
+      const evidences = Array.isArray(pattern.evidence) ? pattern.evidence : [];
+      const sourceRepo = Array.isArray(pattern.source_repo_ids) && pattern.source_repo_ids.length > 0 ? pattern.source_repo_ids[0] : '';
+      for (const evidence of evidences) {
+        rows.push(renderEvidenceRow(sourceRepo || evidence.repo_id || 'unknown', evidence));
+      }
+    }
+    sections.push('<div class="cross-repo-item"><strong>Candidate portable patterns</strong>' + (rows.length ? '<ul>' + rows.join('') + '</ul>' : '<div class="meta">No evidence rows available.</div>') + '</div>');
+  }
+
+  if (sections.length === 0) {
+    crossRepoPanelEl.innerHTML = '<div class="empty-state">No cross-repo comparison data is available yet.</div>';
+    return;
+  }
+
+  crossRepoPanelEl.innerHTML = '<div class="cross-repo-list">' + sections.join('') + '</div>';
+  attachDrilldownHandlers();
 };
 
 const loadCrossRepoPair = async () => {
   const left = compareLeftEl.value;
   const right = compareRightEl.value;
   if (!left || !right || left === right) {
-    crossRepoPanelEl.textContent = 'Select two distinct repos for pair comparison.';
+    crossRepoPanelEl.innerHTML = '<div class="empty-state">Select two distinct repos for pair comparison.</div>';
     return;
   }
   const payload = await getJson('/api/cross-repo/compare?left=' + encodeURIComponent(left) + '&right=' + encodeURIComponent(right));
@@ -818,14 +921,31 @@ const loadCrossRepoPair = async () => {
 };
 
 const loadCrossRepoAggregate = async () => {
-  const payload = await getJson('/api/cross-repo/summary');
-  renderCrossRepoEvidence(payload);
+  const reposPayload = await getJson('/repos');
+  const repos = Array.isArray(reposPayload.repos) ? reposPayload.repos : [];
+  if (repos.length < 2) {
+    crossRepoPanelEl.innerHTML = '<div class="empty-state">Connect at least 2 repos to compare governed artifacts.</div>';
+    return;
+  }
+
+  const [summaryPayload, candidatePayload] = await Promise.all([
+    getJson('/api/cross-repo/summary'),
+    getJson('/api/cross-repo/candidates')
+  ]);
+  renderCrossRepoEvidence(summaryPayload);
+  if (Array.isArray(candidatePayload.candidates) && candidatePayload.candidates.length > 0) {
+    renderCrossRepoEvidence(candidatePayload);
+  }
 };
 
 const refreshAll = async () => {
   try {
     const [healthStatus, reposPayload] = await Promise.all([loadHealth(), renderRepos()]);
-    renderCompareSelectors(reposPayload.repos || []);
+    const repos = reposPayload.repos || [];
+    if ((!selectedRepoId || !repos.find((repo) => repo.id === selectedRepoId)) && repos.length > 0) {
+      selectedRepoId = repos[0].id;
+    }
+    renderCompareSelectors(repos);
     await loadRepoDetail();
     if (homeRepoId) {
       const selfPayload = await getJson('/repos/' + encodeURIComponent(homeRepoId));
@@ -861,6 +981,11 @@ removeRepoEl.onclick = async () => {
   selectedBlueprintNodeId = null;
   await refreshAll();
 };
+
+
+repoModeBtnEl.onclick = () => setActiveView('repo');
+crossRepoModeBtnEl.onclick = () => setActiveView('cross-repo');
+setActiveView('repo');
 
 refreshAll();
 setInterval(refreshAll, 5000);
