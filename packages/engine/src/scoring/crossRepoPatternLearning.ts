@@ -1,227 +1,296 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { computePatternFitness, type PatternFitnessSignals, type PatternOutcomeLinks } from './patternFitnessScore.js';
-import type { PatternGraphArtifact, PatternGraphPattern } from './patternAttractorScore.js';
+import crypto from 'node:crypto';
 
-const clamp = (value: number): number => Math.max(0, Math.min(1, Number(value.toFixed(4))));
 const round2 = (value: number): number => Math.round((value + Number.EPSILON) * 100) / 100;
-
-const OUTCOMES_SIGNAL_MAP: Record<string, keyof PatternFitnessSignals> = {
-  'low-blast-radius': 'outcome_stability',
-  'stable-contract-surface': 'architectural_clarity',
-  'low-plan-churn': 'outcome_stability',
-  'low-governance-violations': 'governance_alignment',
-  'deterministic-artifacts': 'cross_repo_success',
-  'high-test-pass-stability': 'defect_reduction'
-};
-
-type PatternOutcomeDirection = 'positive' | 'negative' | 'mixed';
-
-type PatternOutcomeLink = {
-  pattern_id: string;
-  outcome_signal: string;
-  direction: PatternOutcomeDirection;
-  confidence: number;
-};
-
-type PatternOutcomesArtifact = {
-  generatedAt: string;
-  links: PatternOutcomeLink[];
-};
+const clamp = (value: number): number => Math.max(0, Math.min(1, round2(value)));
 
 export type CrossRepoInput = {
   id: string;
   repoPath: string;
 };
 
-export type CrossRepoPatternRepositorySummary = {
-  id: string;
-  repoPath: string;
-  patternCount: number;
-  patterns: {
-    pattern_id: string;
-    attractor: number;
-    fitness: number;
-    strength: number;
-    instance_count: number;
-    governance_stable: boolean;
-  }[];
+type GovernedArtifactKind =
+  | 'repo-index'
+  | 'cycle-state'
+  | 'cycle-history'
+  | 'policy-evaluation'
+  | 'policy-apply-result'
+  | 'pr-review'
+  | 'session'
+  | 'system-map';
+
+const GOVERNED_ARTIFACTS: { kind: GovernedArtifactKind; relPath: string }[] = [
+  { kind: 'repo-index', relPath: '.playbook/repo-index.json' },
+  { kind: 'cycle-state', relPath: '.playbook/cycle-state.json' },
+  { kind: 'cycle-history', relPath: '.playbook/cycle-history.json' },
+  { kind: 'policy-evaluation', relPath: '.playbook/policy-evaluation.json' },
+  { kind: 'policy-apply-result', relPath: '.playbook/policy-apply-result.json' },
+  { kind: 'pr-review', relPath: '.playbook/pr-review.json' },
+  { kind: 'session', relPath: '.playbook/session.json' },
+  { kind: 'system-map', relPath: '.playbook/system-map.json' }
+];
+
+export type CrossRepoPatternRepositorySummary = { id: string; repoPath: string; patternCount: number; patterns: unknown[] };
+export type CrossRepoPatternAggregate = { pattern_id: string; portability_score: number; repo_count: number };
+
+type EvidenceRef = {
+  repo_id: string;
+  artifact_kind: string;
+  artifact_path: string;
+  pointer: string;
+  excerpt: string;
+  value_digest: string | null;
 };
 
-export type CrossRepoPatternAggregate = {
-  pattern_id: string;
-  repo_count: number;
-  instance_count: number;
-  mean_attractor: number;
-  mean_fitness: number;
-  portability_score: number;
-  outcome_consistency: number;
-  instance_diversity: number;
-  governance_stability: number;
+type CandidatePattern = {
+  id: string;
+  title: string;
+  classification: 'gap' | 'strength' | 'workflow-pattern' | 'artifact-pattern';
+  status: 'candidate_read_only';
+  basis: 'artifact-evidence';
+  supporting_repos: string[];
+  evidence: EvidenceRef[];
+  portability: {
+    score: number;
+    factors: Array<{ name: string; value: number }>;
+  };
+  promotion: { mode: 'manual_only' };
 };
 
 export type CrossRepoPatternsArtifact = {
-  schemaVersion: '1.0';
   kind: 'cross-repo-patterns';
-  generatedAt: string;
-  repositories: CrossRepoPatternRepositorySummary[];
-  aggregates: CrossRepoPatternAggregate[];
+  version: 1;
+  generated_at: string;
+  mode: 'read-only';
+  source_repos: Array<{
+    repo_id: string;
+    repo_root: string;
+    readiness: string;
+    governed_artifacts: Array<{
+      artifact_kind: string;
+      path: string;
+      present: boolean;
+      digest: string | null;
+      governed: true;
+    }>;
+  }>;
+  comparisons: Array<{
+    id: string;
+    left_repo_id: string;
+    right_repo_id: string;
+    shared_gaps: Array<{ artifact_kind: string; evidence: EvidenceRef[] }>;
+    shared_patterns: Array<{ artifact_kind: string; evidence: EvidenceRef[] }>;
+    repo_deltas: Array<{ artifact_kind: string; left_present: boolean; right_present: boolean }>;
+  }>;
+  candidate_patterns: CandidatePattern[];
+  schemaVersion?: '1.0';
+  generatedAt?: string;
+  repositories?: Array<{ id: string; repoPath: string; patternCount: number; patterns: unknown[] }>;
+  aggregates?: Array<{ pattern_id: string; portability_score: number; repo_count: number }>;
 };
 
-const translateDirection = (confidence: number, direction: PatternOutcomeDirection): number => {
-  if (direction === 'negative') {
-    return clamp(1 - confidence);
-  }
-  if (direction === 'mixed') {
-    return clamp(0.5 + (confidence - 0.5) * 0.5);
-  }
-  return clamp(confidence);
-};
+const digestValue = (value: unknown): string => crypto.createHash('sha256').update(JSON.stringify(value), 'utf8').digest('hex');
 
-const deriveOutcomeLinks = (links: PatternOutcomeLink[]): PatternOutcomeLinks => {
-  const buckets = new Map<keyof PatternFitnessSignals, number[]>();
-
-  for (const link of links) {
-    const mapped = OUTCOMES_SIGNAL_MAP[link.outcome_signal];
-    if (!mapped) continue;
-    const existing = buckets.get(mapped) ?? [];
-    existing.push(translateDirection(link.confidence, link.direction));
-    buckets.set(mapped, existing);
-  }
-
-  const outcomeLinks: PatternOutcomeLinks = {};
-  for (const [signal, values] of buckets.entries()) {
-    const avg = values.reduce((sum, value) => sum + value, 0) / values.length;
-    outcomeLinks[signal] = clamp(avg);
-  }
-  return outcomeLinks;
-};
-
-const readJson = <T>(targetPath: string): T => JSON.parse(fs.readFileSync(targetPath, 'utf8')) as T;
-
-const readPatternGraph = (repoPath: string): PatternGraphArtifact => {
-  const graphPath = path.join(repoPath, '.playbook', 'pattern-graph.json');
-  if (!fs.existsSync(graphPath)) {
-    throw new Error(`playbook patterns cross-repo: missing pattern graph at ${graphPath}`);
-  }
-  return readJson<PatternGraphArtifact>(graphPath);
-};
-
-const readPatternOutcomes = (repoPath: string): PatternOutcomesArtifact | null => {
-  const outcomesPath = path.join(repoPath, '.playbook', 'pattern-outcomes.json');
-  if (!fs.existsSync(outcomesPath)) {
+const readJsonIfExists = (targetPath: string): unknown | null => {
+  if (!fs.existsSync(targetPath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(targetPath, 'utf8')) as unknown;
+  } catch {
     return null;
   }
-  return readJson<PatternOutcomesArtifact>(outcomesPath);
 };
 
-const getAttractor = (pattern: PatternGraphPattern): number =>
-  clamp(pattern.scores[pattern.scores.length - 1]?.value ?? 0);
-
-const getFitness = (pattern: PatternGraphPattern, outcomes: PatternOutcomesArtifact | null): number => {
-  const explicitFitness = [...pattern.scores].reverse().find((score) => score.signal === 'fitness-strength')?.value;
-  if (typeof explicitFitness === 'number') {
-    return clamp(explicitFitness);
-  }
-
-  if (!outcomes) {
-    return computePatternFitness(pattern).fitness_score;
-  }
-
-  const outcomeLinks = deriveOutcomeLinks(outcomes.links.filter((link) => link.pattern_id === pattern.id));
-  return computePatternFitness(pattern, outcomeLinks).fitness_score;
+const toReadiness = (presentCount: number, total: number): string => {
+  if (presentCount === 0) return 'connected_only';
+  if (presentCount === total) return 'observable';
+  return 'partially_observable';
 };
-
-const isGovernanceStable = (pattern: PatternGraphPattern): boolean => pattern.status === 'promoted' || pattern.status === 'canonical';
-
-const stdDev = (values: number[]): number => {
-  if (values.length <= 1) return 0;
-  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
-  const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
-  return Math.sqrt(variance);
-};
-
-const computePortability = (
-  repoCountSignal: number,
-  outcomeConsistency: number,
-  instanceDiversity: number,
-  governanceStability: number
-): number => clamp(repoCountSignal * 0.35 + outcomeConsistency * 0.25 + instanceDiversity * 0.2 + governanceStability * 0.2);
 
 export const computeCrossRepoPatternLearning = (repositories: CrossRepoInput[]): CrossRepoPatternsArtifact => {
-  const repositorySummaries: CrossRepoPatternRepositorySummary[] = repositories.map((repo) => {
-    const graph = readPatternGraph(repo.repoPath);
-    const outcomes = readPatternOutcomes(repo.repoPath);
-
-    const patterns = graph.patterns.map((pattern) => {
-      const attractor = getAttractor(pattern);
-      const fitness = getFitness(pattern, outcomes);
-      const strength = clamp(attractor * 0.6 + fitness * 0.4);
-
+  const repoRecords = repositories.map((repo) => {
+    const governed = GOVERNED_ARTIFACTS.map((spec) => {
+      const artifactPath = path.join(repo.repoPath, spec.relPath);
+      const value = readJsonIfExists(artifactPath);
       return {
-        pattern_id: pattern.id,
-        attractor,
-        fitness,
-        strength,
-        instance_count: pattern.instance_refs.length,
-        governance_stable: isGovernanceStable(pattern)
+        artifact_kind: spec.kind,
+        path: spec.relPath,
+        present: value !== null,
+        digest: value === null ? null : digestValue(value),
+        governed: true as const,
+        value
       };
     });
 
+    const presentCount = governed.filter((entry) => entry.present).length;
     return {
-      id: repo.id,
-      repoPath: repo.repoPath,
-      patternCount: patterns.length,
-      patterns
+      repo_id: repo.id,
+      repo_root: repo.repoPath,
+      readiness: toReadiness(presentCount, governed.length),
+      governed_artifacts: governed
     };
   });
 
-  const allPatterns = new Map<string, CrossRepoPatternRepositorySummary['patterns']>();
-  for (const repo of repositorySummaries) {
-    for (const pattern of repo.patterns) {
-      const existing = allPatterns.get(pattern.pattern_id) ?? [];
-      existing.push(pattern);
-      allPatterns.set(pattern.pattern_id, existing);
+  const comparisons = repoRecords.flatMap((left, leftIndex) =>
+    repoRecords.slice(leftIndex + 1).map((right) => {
+      const sharedGaps = GOVERNED_ARTIFACTS
+        .map((spec) => {
+          const leftArtifact = left.governed_artifacts.find((entry) => entry.artifact_kind === spec.kind)!;
+          const rightArtifact = right.governed_artifacts.find((entry) => entry.artifact_kind === spec.kind)!;
+          if (leftArtifact.present || rightArtifact.present) return null;
+          return {
+            artifact_kind: spec.kind,
+            evidence: [left, right].map((repoRecord) => ({
+              repo_id: repoRecord.repo_id,
+              artifact_kind: spec.kind,
+              artifact_path: spec.relPath,
+              pointer: '/present',
+              excerpt: 'missing-governed-artifact',
+              value_digest: null
+            }))
+          };
+        })
+        .filter(Boolean) as Array<{ artifact_kind: string; evidence: EvidenceRef[] }>;
+
+      const sharedPatterns = GOVERNED_ARTIFACTS
+        .map((spec) => {
+          const leftArtifact = left.governed_artifacts.find((entry) => entry.artifact_kind === spec.kind)!;
+          const rightArtifact = right.governed_artifacts.find((entry) => entry.artifact_kind === spec.kind)!;
+          if (!leftArtifact.present || !rightArtifact.present) return null;
+          return {
+            artifact_kind: spec.kind,
+            evidence: [left, right].map((repoRecord) => {
+              const artifact = repoRecord.governed_artifacts.find((entry) => entry.artifact_kind === spec.kind)!;
+              return {
+                repo_id: repoRecord.repo_id,
+                artifact_kind: spec.kind,
+                artifact_path: spec.relPath,
+                pointer: '/kind',
+                excerpt: 'governed-artifact-present',
+                value_digest: artifact.digest
+              };
+            })
+          };
+        })
+        .filter(Boolean) as Array<{ artifact_kind: string; evidence: EvidenceRef[] }>;
+
+      return {
+        id: `${left.repo_id}::${right.repo_id}`,
+        left_repo_id: left.repo_id,
+        right_repo_id: right.repo_id,
+        shared_gaps: sharedGaps,
+        shared_patterns: sharedPatterns,
+        repo_deltas: GOVERNED_ARTIFACTS.map((spec) => {
+          const leftArtifact = left.governed_artifacts.find((entry) => entry.artifact_kind === spec.kind)!;
+          const rightArtifact = right.governed_artifacts.find((entry) => entry.artifact_kind === spec.kind)!;
+          return { artifact_kind: spec.kind, left_present: leftArtifact.present, right_present: rightArtifact.present };
+        }).filter((entry) => entry.left_present !== entry.right_present)
+      };
+    })
+  );
+
+  const candidatePatterns: CandidatePattern[] = [];
+  for (const spec of GOVERNED_ARTIFACTS) {
+    const supporting = repoRecords.filter((repo) => repo.governed_artifacts.find((entry) => entry.artifact_kind === spec.kind)?.present);
+    if (supporting.length >= 2) {
+      const digests = supporting
+        .map((repo) => repo.governed_artifacts.find((entry) => entry.artifact_kind === spec.kind)?.digest)
+        .filter((value): value is string => typeof value === 'string');
+      const digestCounts = new Map<string, number>();
+      for (const digest of digests) digestCounts.set(digest, (digestCounts.get(digest) ?? 0) + 1);
+      const maxDigestSupport = Math.max(...[...digestCounts.values(), 0]);
+      const artifactConsistency = digests.length === 0 ? 0 : maxDigestSupport / digests.length;
+      const supportingCountFactor = supporting.length;
+      const repoDiversity = new Set(supporting.map((repo) => repo.readiness)).size / supporting.length;
+      const score = clamp((supporting.length / Math.max(repoRecords.length, 1)) * 0.4 + artifactConsistency * 0.35 + repoDiversity * 0.25);
+
+      candidatePatterns.push({
+        id: `pattern-${spec.kind}`,
+        title: `Portable governed artifact pattern: ${spec.kind}`,
+        classification: 'artifact-pattern',
+        status: 'candidate_read_only',
+        basis: 'artifact-evidence',
+        supporting_repos: supporting.map((repo) => repo.repo_id),
+        evidence: supporting.map((repo) => {
+          const artifact = repo.governed_artifacts.find((entry) => entry.artifact_kind === spec.kind)!;
+          return {
+            repo_id: repo.repo_id,
+            artifact_kind: spec.kind,
+            artifact_path: spec.relPath,
+            pointer: '/kind',
+            excerpt: 'governed-artifact-present',
+            value_digest: artifact.digest
+          };
+        }),
+        portability: {
+          score,
+          factors: [
+            { name: 'supporting_repo_count', value: supportingCountFactor },
+            { name: 'artifact_consistency', value: clamp(artifactConsistency) },
+            { name: 'rule_or_step_consistency', value: clamp(artifactConsistency) },
+            { name: 'repo_diversity', value: clamp(repoDiversity) }
+          ]
+        },
+        promotion: { mode: 'manual_only' }
+      });
+    }
+
+    const missingSupport = repoRecords.filter((repo) => !repo.governed_artifacts.find((entry) => entry.artifact_kind === spec.kind)?.present);
+    if (missingSupport.length >= 2) {
+      candidatePatterns.push({
+        id: `gap-${spec.kind}`,
+        title: `Shared governed gap: missing ${spec.kind}`,
+        classification: 'gap',
+        status: 'candidate_read_only',
+        basis: 'artifact-evidence',
+        supporting_repos: missingSupport.map((repo) => repo.repo_id),
+        evidence: missingSupport.map((repo) => ({
+          repo_id: repo.repo_id,
+          artifact_kind: spec.kind,
+          artifact_path: spec.relPath,
+          pointer: '/present',
+          excerpt: 'missing-governed-artifact',
+          value_digest: null
+        })),
+        portability: {
+          score: 0,
+          factors: [
+            { name: 'supporting_repo_count', value: missingSupport.length },
+            { name: 'artifact_consistency', value: 0 },
+            { name: 'rule_or_step_consistency', value: 0 },
+            { name: 'repo_diversity', value: 0 }
+          ]
+        },
+        promotion: { mode: 'manual_only' }
+      });
     }
   }
 
-  const repoDenominator = Math.max(repositorySummaries.length, 1);
-
-  const aggregates: CrossRepoPatternAggregate[] = [...allPatterns.entries()].map(([patternId, samples]) => {
-    const repoCount = samples.length;
-    const instanceCount = samples.reduce((sum, entry) => sum + entry.instance_count, 0);
-    const meanAttractor = samples.reduce((sum, entry) => sum + entry.attractor, 0) / repoCount;
-    const meanFitness = samples.reduce((sum, entry) => sum + entry.fitness, 0) / repoCount;
-    const meanStrength = samples.reduce((sum, entry) => sum + entry.strength, 0) / repoCount;
-    const consistencyPenalty = stdDev(samples.map((entry) => entry.strength));
-    const outcomeConsistency = clamp(1 - consistencyPenalty * 2);
-    const uniqueInstanceCounts = new Set(samples.map((entry) => entry.instance_count)).size;
-    const instanceDiversity = clamp(uniqueInstanceCounts / repoCount);
-    const governanceStability = clamp(samples.filter((entry) => entry.governance_stable).length / repoCount);
-    const repoCountSignal = clamp(repoCount / repoDenominator);
-    const portability = computePortability(repoCountSignal, outcomeConsistency, instanceDiversity, governanceStability);
-
-    return {
-      pattern_id: patternId,
-      repo_count: repoCount,
-      instance_count: instanceCount,
-      mean_attractor: round2(meanAttractor),
-      mean_fitness: round2(meanFitness),
-      portability_score: round2(portability),
-      outcome_consistency: round2(outcomeConsistency),
-      instance_diversity: round2(instanceDiversity),
-      governance_stability: round2(governanceStability)
-    };
-  });
-
-  aggregates.sort((left, right) => right.portability_score - left.portability_score || left.pattern_id.localeCompare(right.pattern_id));
+  candidatePatterns.sort((a, b) => b.portability.score - a.portability.score || a.id.localeCompare(b.id));
 
   return {
-    schemaVersion: '1.0',
     kind: 'cross-repo-patterns',
+    version: 1,
+    generated_at: new Date().toISOString(),
+    mode: 'read-only',
+    source_repos: repoRecords.map((repo) => ({
+      repo_id: repo.repo_id,
+      repo_root: repo.repo_root,
+      readiness: repo.readiness,
+      governed_artifacts: repo.governed_artifacts.map((artifact) => ({
+        artifact_kind: artifact.artifact_kind,
+        path: artifact.path,
+        present: artifact.present,
+        digest: artifact.digest,
+        governed: true as const
+      }))
+    })),
+    comparisons,
+    candidate_patterns: candidatePatterns,
+    schemaVersion: '1.0',
     generatedAt: new Date().toISOString(),
-    repositories: repositorySummaries,
-    aggregates
+    repositories: repoRecords.map((repo) => ({ id: repo.repo_id, repoPath: repo.repo_root, patternCount: 0, patterns: [] })),
+    aggregates: candidatePatterns.map((entry) => ({ pattern_id: entry.id, portability_score: entry.portability.score, repo_count: entry.supporting_repos.length }))
   };
 };
 
@@ -237,5 +306,5 @@ export const readCrossRepoPatternsArtifact = (cwd: string): CrossRepoPatternsArt
   if (!fs.existsSync(targetPath)) {
     throw new Error('playbook patterns: missing artifact at .playbook/cross-repo-patterns.json. Run "playbook patterns cross-repo" first.');
   }
-  return readJson<CrossRepoPatternsArtifact>(targetPath);
+  return JSON.parse(fs.readFileSync(targetPath, 'utf8')) as CrossRepoPatternsArtifact;
 };

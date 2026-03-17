@@ -472,12 +472,12 @@ Suggested remediation IDs:
 
 ### Cross-repo pattern learning (`patterns`)
 
-`pnpm playbook patterns cross-repo` aggregates `.playbook/pattern-graph.json` and `.playbook/pattern-outcomes.json` across repositories into `.playbook/cross-repo-patterns.json`.
+`pnpm playbook patterns cross-repo --json` emits a read-only governed comparison artifact at `.playbook/cross-repo-patterns.json` with deterministic `source_repos`, pairwise `comparisons`, and evidence-backed `candidate_patterns`.
 
-- Default pilot repositories are `ZachariahRedfield/playbook` and `ZachariahRedfield/fawxzzy-fitness`.
-- `pnpm playbook patterns portability` prints pattern portability rankings.
-- `pnpm playbook patterns generalized` filters portability scores above `0.85` (portable doctrine candidates).
-- `pnpm playbook patterns repo-delta <leftRepo> <rightRepo>` reports per-pattern deltas between two repositories.
+- `pnpm playbook patterns portability --pattern <patternId> --json` returns deterministic portability factors and evidence-backed ranking rows.
+- `pnpm playbook patterns generalized --json` filters to high-portability read-only/manual-only candidates.
+- `pnpm playbook patterns repo-delta --left <repoId> --right <repoId> --json` reports governed artifact deltas between two repositories.
+- Cross-repo intelligence in this phase is read-only: no cross-repo mutation and no automatic promotion.
 
 ### Deterministic test hotspot discovery
 
@@ -510,3 +510,11 @@ Use query surfaces to inspect state:
 
 - `pnpm playbook query runs`
 - `pnpm playbook query run --id <run-id>`
+
+
+`pnpm playbook patterns cross-repo --json` now emits a read-only governed comparison artifact at `.playbook/cross-repo-patterns.json` with deterministic `source_repos`, pairwise `comparisons`, and evidence-backed `candidate_patterns`.
+
+- `pnpm playbook patterns portability --pattern <patternId> --json` returns deterministic portability factors and evidence refs for candidate patterns.
+- `pnpm playbook patterns generalized --json` returns high-portability read-only/manual-only candidate recommendations (no auto-promotion).
+- `pnpm playbook patterns repo-delta --left <repoId> --right <repoId> --json` reports governed artifact deltas between two repositories.
+- Cross-repo comparison is read-only in this phase: no cross-repo mutation, no automatic doctrine updates, and no non-governed artifact ingestion.

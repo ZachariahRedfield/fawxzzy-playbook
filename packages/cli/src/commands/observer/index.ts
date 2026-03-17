@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import http from 'node:http';
 import { emitJsonOutput, writeJsonArtifactAbsolute } from '../../lib/jsonArtifact.js';
+import { computeCrossRepoPatternLearning, readCrossRepoPatternsArtifact, type CrossRepoPatternsArtifact } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../../lib/cliContract.js';
 
 type ObserverOptions = {
@@ -155,15 +156,15 @@ const readRegistry = (cwd: string): ObserverRepoRegistry => {
     schemaVersion: '1.0',
     kind: 'repo-registry',
     repos: parsed.repos
-      .map((entry) => ({
+      .map((entry: any) => ({
         id: String(entry.id ?? ''),
         name: String(entry.name ?? ''),
         root: String(entry.root ?? ''),
         status: 'connected' as const,
         artifactsRoot: String(entry.artifactsRoot ?? ''),
-        tags: Array.isArray(entry.tags) ? entry.tags.map((tag) => String(tag)).sort((left, right) => left.localeCompare(right)) : []
+        tags: Array.isArray(entry.tags) ? entry.tags.map((tag: unknown) => String(tag)).sort((left: string, right: string) => left.localeCompare(right)) : []
       }))
-      .filter((entry) => entry.id.length > 0)
+      .filter((entry: any) => entry.id.length > 0)
   });
 };
 
@@ -377,6 +378,16 @@ const buildSnapshotFromRegistry = (registry: ObserverRepoRegistry): Record<strin
   }))
 });
 
+
+const buildCrossRepoArtifact = (cwd: string, registry: ObserverRepoRegistry): CrossRepoPatternsArtifact => {
+  try {
+    return readCrossRepoPatternsArtifact(cwd);
+  } catch {
+    const repos = registry.repos.map((repo) => ({ id: repo.id, repoPath: repo.root }));
+    return computeCrossRepoPatternLearning(repos);
+  }
+};
+
 const writeJsonResponse = (response: http.ServerResponse, statusCode: number, payload: Record<string, unknown>): void => {
   response.statusCode = statusCode;
   response.setHeader('content-type', 'application/json; charset=utf-8');
@@ -442,18 +453,25 @@ const observerDashboardHtml = (): string => `<!doctype html>
       <aside>
         <div class="card"><h2>Connected Repos</h2><div id="repos"></div></div>
         <div class="card"><h3>Add Repo</h3><input id="repoPath" placeholder="/path/to/repo" /><input id="repoId" placeholder="optional-id" /><input id="repoTags" placeholder="tags comma-separated" /><button id="addRepo">Connect</button></div>
+        <details id="selfPanel" class="card">
+          <summary>Playbook Self-Observation</summary>
+          <div id="selfSummary" class="meta">Waiting for observer data.</div>
+        </details>
       </aside>
       <section>
         <div class="layout-main">
           <div class="card"><h2 id="repoTitle">Repo Detail</h2><div id="repoDetail" class="meta">Select a repo.</div><button id="removeRepo" style="display:none">Remove repo</button></div>
-          <div class="card"><h3>System Blueprint</h3><div id="blueprintMeta" class="meta">Select a repo.</div><svg id="blueprintPanel" class="blueprint" viewBox="0 0 980 420" aria-label="System Blueprint"></svg><div class="state-legend"><span class="badge">active</span><span class="badge">available</span><span class="badge">stale</span><span class="badge">idle</span><span class="badge">missing</span></div></div>
+          <div class="card"><h3>Cross-Repo Intelligence</h3>
+            <div class="row"><label class="meta">Left repo</label><select id="compareLeft"></select></div>
+            <div class="row"><label class="meta">Right repo</label><select id="compareRight"></select></div>
+            <div class="row"><button id="compareBtn">Compare pair</button><button id="compareAllBtn">All connected repos</button></div>
+            <div id="crossRepoPanel" class="meta">Choose repos to compare governed artifacts.</div>
+          </div>
+
+          <div class="card"><h3>System Blueprint</h3><div id="blueprintMeta" class="meta">Select a repo.</div><svg id="blueprintPanel" class="blueprint" viewBox="0 0 980 420" aria-label="System Blueprint"></svg></div>
           <div class="card"><h3>Artifact Detail Viewer</h3><select id="artifactKind"></select><div id="artifactPanel"></div></div>
         </div>
         <div class="layout-side">
-          <details id="selfPanel" class="card">
-            <summary>Playbook Self-Observation</summary>
-            <div id="selfSummary" class="meta">Waiting for observer data.</div>
-          </details>
           <div class="card"><h3>Selected Blueprint Node</h3><div id="selectedNodeDetail" class="meta">Click a node to inspect layer, state, and artifact linkage.</div></div>
         </div>
       </section>
@@ -474,6 +492,11 @@ const blueprintMetaEl = document.getElementById('blueprintMeta');
 const blueprintPanelEl = document.getElementById('blueprintPanel');
 const selfSummaryEl = document.getElementById('selfSummary');
 const selectedNodeDetailEl = document.getElementById('selectedNodeDetail');
+const compareLeftEl = document.getElementById('compareLeft');
+const compareRightEl = document.getElementById('compareRight');
+const compareBtnEl = document.getElementById('compareBtn');
+const compareAllBtnEl = document.getElementById('compareAllBtn');
+const crossRepoPanelEl = document.getElementById('crossRepoPanel');
 let selectedRepoId = null;
 let selectedBlueprintNodeId = null;
 let homeRepoId = null;
@@ -585,7 +608,7 @@ const renderSelectedNode = (systemMap, nodeStates) => {
     selectedNodeDetailEl.textContent = 'Click a node to inspect layer, state, and artifact linkage.';
     return;
   }
-  const node = Array.isArray(systemMap && systemMap.nodes) ? systemMap.nodes.find((entry) => entry.id === selectedBlueprintNodeId) : null;
+  const node = Array.isArray(systemMap && systemMap.nodes) ? systemMap.nodes.find((entry: any) => entry.id === selectedBlueprintNodeId) : null;
   if (!node) {
     selectedNodeDetailEl.textContent = 'Selected node is no longer available.';
     return;
@@ -754,15 +777,55 @@ const loadBlueprint = async () => {
   }
 
   const payload = await getJson('/snapshot');
-  latestSnapshotRepoEntry = (payload.snapshot && Array.isArray(payload.snapshot.repos)) ? payload.snapshot.repos.find((entry) => entry.id === selectedRepoId) : null;
+  latestSnapshotRepoEntry = (payload.snapshot && Array.isArray(payload.snapshot.repos)) ? payload.snapshot.repos.find((entry: any) => entry.id === selectedRepoId) : null;
   const systemMapArtifact = latestSnapshotRepoEntry && Array.isArray(latestSnapshotRepoEntry.artifacts) ? latestSnapshotRepoEntry.artifacts.find((artifact) => artifact.kind === 'system-map') : null;
   const readiness = latestRepoPayload && latestRepoPayload.readiness ? latestRepoPayload.readiness : {};
   renderSystemBlueprint(systemMapArtifact ? systemMapArtifact.value : null, readiness, latestSnapshotRepoEntry ? latestSnapshotRepoEntry.artifacts : []);
 };
 
+
+const renderCompareSelectors = (repos) => {
+  compareLeftEl.innerHTML = '';
+  compareRightEl.innerHTML = '';
+  for (const repo of repos) {
+    const leftOption = document.createElement('option');
+    leftOption.value = repo.id;
+    leftOption.textContent = repo.id;
+    compareLeftEl.appendChild(leftOption);
+    const rightOption = document.createElement('option');
+    rightOption.value = repo.id;
+    rightOption.textContent = repo.id;
+    compareRightEl.appendChild(rightOption);
+  }
+  if (!compareLeftEl.value && repos.length > 0) compareLeftEl.value = repos[0].id;
+  if (!compareRightEl.value && repos.length > 1) compareRightEl.value = repos[1].id;
+};
+
+const renderCrossRepoEvidence = (payload) => {
+  const comparison = payload.comparison || payload.summary || payload;
+  crossRepoPanelEl.innerHTML = format(comparison);
+};
+
+const loadCrossRepoPair = async () => {
+  const left = compareLeftEl.value;
+  const right = compareRightEl.value;
+  if (!left || !right || left === right) {
+    crossRepoPanelEl.textContent = 'Select two distinct repos for pair comparison.';
+    return;
+  }
+  const payload = await getJson('/api/cross-repo/compare?left=' + encodeURIComponent(left) + '&right=' + encodeURIComponent(right));
+  renderCrossRepoEvidence(payload);
+};
+
+const loadCrossRepoAggregate = async () => {
+  const payload = await getJson('/api/cross-repo/summary');
+  renderCrossRepoEvidence(payload);
+};
+
 const refreshAll = async () => {
   try {
-    const [healthStatus] = await Promise.all([loadHealth(), renderRepos()]);
+    const [healthStatus, reposPayload] = await Promise.all([loadHealth(), renderRepos()]);
+    renderCompareSelectors(reposPayload.repos || []);
     await loadRepoDetail();
     if (homeRepoId) {
       const selfPayload = await getJson('/repos/' + encodeURIComponent(homeRepoId));
@@ -776,6 +839,8 @@ const refreshAll = async () => {
 };
 
 document.getElementById('refresh').onclick = refreshAll;
+compareBtnEl.onclick = loadCrossRepoPair;
+compareAllBtnEl.onclick = loadCrossRepoAggregate;
 artifactKindEl.onchange = loadArtifact;
 document.getElementById('addRepo').onclick = async () => {
   const repoPath = document.getElementById('repoPath').value.trim();
@@ -801,7 +866,7 @@ refreshAll();
 setInterval(refreshAll, 5000);
 `;
 
-const observerServerResponse = (cwd: string, pathname: string): { statusCode: number; payload: Record<string, unknown> } => {
+const observerServerResponse = (cwd: string, pathname: string, searchParams: URLSearchParams): { statusCode: number; payload: Record<string, unknown> } => {
   const registry = readRegistry(cwd);
   const homeRepoId = findHomeRepoId(registry, cwd);
   const base = { schemaVersion: '1.0', readOnly: true, localOnly: true };
@@ -825,6 +890,43 @@ const observerServerResponse = (cwd: string, pathname: string): { statusCode: nu
     };
   }
 
+  if (pathname === '/api/cross-repo/summary') {
+    const artifact = buildCrossRepoArtifact(cwd, registry);
+    return { statusCode: 200, payload: { ...base, kind: 'observer-cross-repo-summary', summary: { source_repos: artifact.source_repos, candidate_count: artifact.candidate_patterns.length, comparison_count: artifact.comparisons.length } } };
+  }
+
+  if (pathname === '/api/cross-repo/candidates') {
+    const artifact = buildCrossRepoArtifact(cwd, registry);
+    return { statusCode: 200, payload: { ...base, kind: 'observer-cross-repo-candidates', candidates: artifact.candidate_patterns } };
+  }
+
+  if (pathname === '/api/cross-repo/compare' || pathname === '/api/cross-repo/repo-delta') {
+    const left = searchParams.get('left');
+    const right = searchParams.get('right');
+    if (!left || !right) {
+      return { statusCode: 400, payload: { ...base, kind: 'observer-server-error', error: 'missing-left-right' } };
+    }
+    const artifact = buildCrossRepoArtifact(cwd, registry);
+    const comparison = artifact.comparisons.find((entry: any) =>
+      (entry.left_repo_id === left && entry.right_repo_id === right) || (entry.left_repo_id === right && entry.right_repo_id === left)
+    );
+    if (!comparison) {
+      return { statusCode: 404, payload: { ...base, kind: 'observer-server-error', error: 'comparison-not-found' } };
+    }
+    return { statusCode: 200, payload: { ...base, kind: pathname.endsWith('repo-delta') ? 'observer-cross-repo-repo-delta' : 'observer-cross-repo-compare', comparison, repo_delta: comparison.repo_deltas } };
+  }
+
+  const patternMatch = /^\/api\/cross-repo\/patterns\/([^/]+)$/.exec(pathname);
+  if (patternMatch) {
+    const patternId = decodeURIComponent(patternMatch[1] ?? '');
+    const artifact = buildCrossRepoArtifact(cwd, registry);
+    const pattern = artifact.candidate_patterns.find((entry: any) => entry.id === patternId);
+    if (!pattern) {
+      return { statusCode: 404, payload: { ...base, kind: 'observer-server-error', error: 'pattern-not-found' } };
+    }
+    return { statusCode: 200, payload: { ...base, kind: 'observer-cross-repo-pattern', pattern } };
+  }
+
   if (pathname === '/snapshot') {
     return {
       statusCode: 200,
@@ -839,7 +941,7 @@ const observerServerResponse = (cwd: string, pathname: string): { statusCode: nu
 
   const repoMatch = /^\/repos\/([^/]+)$/.exec(pathname);
   if (repoMatch) {
-    const repo = registry.repos.find((entry) => entry.id === decodeURIComponent(repoMatch[1] ?? ''));
+    const repo = registry.repos.find((entry: any) => entry.id === decodeURIComponent(repoMatch[1] ?? ''));
     if (!repo) {
       return { statusCode: 404, payload: { ...base, kind: 'observer-server-error', error: 'repo-not-found' } };
     }
@@ -848,7 +950,7 @@ const observerServerResponse = (cwd: string, pathname: string): { statusCode: nu
 
   const artifactMatch = /^\/repos\/([^/]+)\/artifacts\/([^/]+)$/.exec(pathname);
   if (artifactMatch) {
-    const repo = registry.repos.find((entry) => entry.id === decodeURIComponent(artifactMatch[1] ?? ''));
+    const repo = registry.repos.find((entry: any) => entry.id === decodeURIComponent(artifactMatch[1] ?? ''));
     if (!repo) {
       return { statusCode: 404, payload: { ...base, kind: 'observer-server-error', error: 'repo-not-found' } };
     }
@@ -924,7 +1026,7 @@ export const createObserverServer = (cwd: string): http.Server =>
       return;
     }
 
-    const result = observerServerResponse(cwd, parsedUrl.pathname);
+    const result = observerServerResponse(cwd, parsedUrl.pathname, parsedUrl.searchParams);
     writeJsonResponse(response, result.statusCode, result.payload);
   });
 
