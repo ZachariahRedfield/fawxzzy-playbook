@@ -212,6 +212,15 @@ Control-loop pattern:
 
 `state -> queue -> execution plan -> execution receipt -> updated state -> next queue`
 
+Canonical next-queue ordering comparator:
+
+1. reconciliation priority: `failed` -> `partial` -> `not_run` -> `stale_plan_or_superseded`
+2. derived next action: `retry` -> `replan`
+3. originating wave: `wave_1` -> `wave_2`
+4. `repo_id`
+
+This keeps queue priority explicit and deterministic without relying on incidental object/array insertion order.
+
 Playbook notes:
 
 - **Rule**: Do not derive next actions from raw receipt once updated-state exists.

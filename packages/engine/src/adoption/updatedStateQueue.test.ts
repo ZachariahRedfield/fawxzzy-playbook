@@ -38,13 +38,13 @@ const updatedState: FleetUpdatedAdoptionState = {
 };
 
 describe('deriveNextAdoptionQueueFromUpdatedState', () => {
-  it('derives retry/replan queue entries from updated-state only with deterministic ordering and lineage', () => {
+  it('derives retry/replan queue entries from updated-state only with canonical reconciliation-priority ordering and lineage', () => {
     const first = deriveNextAdoptionQueueFromUpdatedState(updatedState, { generatedAt: '2026-01-05T00:00:00.000Z' });
     const second = deriveNextAdoptionQueueFromUpdatedState(updatedState, { generatedAt: '2026-01-05T00:00:00.000Z' });
 
     expect(first).toEqual(second);
     expect(first.queue_source).toBe('updated_state');
-    expect(first.work_items.map((item) => item.repo_id)).toEqual(['repo-partial', 'repo-not-run', 'repo-failed', 'repo-stale']);
+    expect(first.work_items.map((item) => item.repo_id)).toEqual(['repo-failed', 'repo-partial', 'repo-not-run', 'repo-stale']);
     expect(first.work_items.map((item) => item.next_action)).toEqual(['retry', 'retry', 'retry', 'replan']);
     expect(first.work_items.find((item) => item.repo_id === 'repo-blocked')).toBeUndefined();
     expect(first.work_items.find((item) => item.repo_id === 'repo-drift')).toBeUndefined();

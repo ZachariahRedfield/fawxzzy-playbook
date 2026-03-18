@@ -22,6 +22,16 @@ const GROUP_ORDER: Record<WorkQueueParallelGroup, number> = {
   'replan lane': 6
 };
 
+const NEXT_ACTION_ORDER = {
+  retry: 0,
+  replan: 1
+} as const;
+
+const WAVE_ORDER = {
+  wave_1: 0,
+  wave_2: 1
+} as const;
+
 const sortStrings = (values: Iterable<string>): string[] => [...new Set(values)].sort((a, b) => a.localeCompare(b));
 
 const promptLaneSegment = (promptId: string): string | null => promptId.split(':')[1] ?? null;
@@ -35,15 +45,43 @@ const commandForRetry = (repo: ReconciledRepoState): string => {
   return 'pnpm playbook apply --json';
 };
 
+const waveForRepo = (repo: ReconciledRepoState): 'wave_1' | 'wave_2' =>
+  repo.prompt_ids.slice().sort((a, b) => a.localeCompare(b))[0]?.startsWith('wave_2:') ? 'wave_2' : 'wave_1';
+
+const nextActionForRepo = (repo: ReconciledRepoState): 'retry' | 'replan' =>
+  repo.reconciliation_status === 'stale_plan_or_superseded' ? 'replan' : 'retry';
+
+const compareReposForNextQueue = (left: ReconciledRepoState, right: ReconciledRepoState): number => {
+  const leftAction = nextActionForRepo(left);
+  const rightAction = nextActionForRepo(right);
+  return (
+    PRIORITY_ORDER[left.reconciliation_status] - PRIORITY_ORDER[right.reconciliation_status] ||
+    NEXT_ACTION_ORDER[leftAction] - NEXT_ACTION_ORDER[rightAction] ||
+    WAVE_ORDER[waveForRepo(left)] - WAVE_ORDER[waveForRepo(right)] ||
+    left.repo_id.localeCompare(right.repo_id)
+  );
+};
+
+const compareDerivedQueueItems = (
+  left: AdoptionWorkItem,
+  right: AdoptionWorkItem,
+  repoOrder: Map<string, number>
+): number =>
+  (repoOrder.get(left.repo_id) ?? Number.MAX_SAFE_INTEGER) - (repoOrder.get(right.repo_id) ?? Number.MAX_SAFE_INTEGER) ||
+  NEXT_ACTION_ORDER[left.next_action ?? 'retry'] - NEXT_ACTION_ORDER[right.next_action ?? 'retry'] ||
+  WAVE_ORDER[left.wave] - WAVE_ORDER[right.wave] ||
+  GROUP_ORDER[left.parallel_group] - GROUP_ORDER[right.parallel_group] ||
+  left.repo_id.localeCompare(right.repo_id) ||
+  left.item_id.localeCompare(right.item_id);
+
 const queueItemForRepo = (repo: ReconciledRepoState): AdoptionWorkItem | null => {
   if (repo.reconciliation_status === 'blocked' || repo.reconciliation_status === 'completed_as_planned' || repo.reconciliation_status === 'completed_with_drift') {
     return null;
   }
 
-  const nextAction = repo.reconciliation_status === 'stale_plan_or_superseded' ? 'replan' : 'retry';
+  const nextAction = nextActionForRepo(repo);
   const parallelGroup: WorkQueueParallelGroup = nextAction === 'replan' ? 'replan lane' : 'retry lane';
   const recommendedCommand = nextAction === 'replan' ? 'pnpm playbook verify --json && pnpm playbook plan --json' : commandForRetry(repo);
-  const wave = repo.prompt_ids.slice().sort((a, b) => a.localeCompare(b))[0]?.startsWith('wave_2:') ? 'wave_2' : 'wave_1';
   return {
     item_id: `${repo.repo_id}:${nextAction}`,
     repo_id: repo.repo_id,
@@ -57,7 +95,7 @@ const queueItemForRepo = (repo: ReconciledRepoState): AdoptionWorkItem | null =>
     rationale: nextAction === 'replan'
       ? 'Updated state marked the prior plan stale or superseded, so the next adoption step is deterministic replanning.'
       : 'Updated state marked the prior execution outcome as retryable, so the next adoption step is a deterministic retry of the same command family.',
-    wave,
+    wave: waveForRepo(repo),
     queue_source: 'updated_state',
     next_action: nextAction,
     prompt_lineage: sortStrings(repo.prompt_ids)
@@ -69,18 +107,12 @@ export const deriveNextAdoptionQueueFromUpdatedState = (
   options?: { generatedAt?: string }
 ): FleetAdoptionWorkQueue => {
   const generatedAt = options?.generatedAt ?? new Date().toISOString();
-  const orderedRepos = [...updatedState.repos].sort((left, right) =>
-    PRIORITY_ORDER[left.reconciliation_status] - PRIORITY_ORDER[right.reconciliation_status] ||
-    left.repo_id.localeCompare(right.repo_id)
-  );
+  const orderedRepos = [...updatedState.repos].sort(compareReposForNextQueue);
+  const repoOrder = new Map(orderedRepos.map((repo, index) => [repo.repo_id, index]));
   const workItems = orderedRepos
     .map(queueItemForRepo)
     .filter((item): item is AdoptionWorkItem => item !== null)
-    .sort((left, right) =>
-      (left.wave === right.wave ? 0 : left.wave === 'wave_1' ? -1 : 1) ||
-      GROUP_ORDER[left.parallel_group] - GROUP_ORDER[right.parallel_group] ||
-      left.repo_id.localeCompare(right.repo_id)
-    );
+    .sort((left, right) => compareDerivedQueueItems(left, right, repoOrder));
 
   const waves: AdoptionWorkWave[] = (['wave_1', 'wave_2'] as const).map((wave) => {
     const items = workItems.filter((item) => item.wave === wave);
