@@ -1,3 +1,8 @@
+- WHAT: Switched `scripts/release-fallback-proof.mjs` Windows consumer-proof npm/npx launches to a deterministic `cmd.exe /d /s /c <command>` path while preserving existing tarball validation, artifact checks, and spawn diagnostics. WHY: Direct `spawnSync` of `.cmd` tools was failing with `EINVAL` in Windows automation even though the same commands were valid in an interactive shell.
+- Failure Mode: direct `spawnSync` of `.cmd` executables can fail with `EINVAL` on Windows even when the command is valid in an interactive shell.
+- Pattern: cross-platform proof runners should use platform-native process launch semantics rather than assuming spawned command parity.
+- Rule: Windows command execution in release-proof automation must use a deterministic launcher path that supports `.cmd` tools.
+
 - WHAT: Hardened `scripts/release-fallback-proof.mjs` consumer-proof command execution so machine-readable results now include spawn-launch diagnostics (`errorMessage`, `errorCode`, and related fields) and the consumer npm/npx ladder resolves platform-specific executables explicitly on Windows. WHY: Windows consumer-proof failures were surfacing as opaque `status: null` checks, which hid the real command-launch blocker and made fallback-proof triage nondeterministic across platforms.
 - Failure Mode: Windows spawn failures reported as `status: null` without `child.error` hide the real proof blocker.
 - Pattern: Cross-platform proof scripts should resolve platform-specific executables explicitly and always surface spawn errors in machine-readable output.

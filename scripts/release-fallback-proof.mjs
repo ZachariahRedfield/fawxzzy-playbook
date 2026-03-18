@@ -20,6 +20,28 @@ const NPM_COMMAND = resolveCommand('npm');
 const NPX_COMMAND = resolveCommand('npx');
 const CURL_COMMAND = resolveCommand('curl');
 const TAR_COMMAND = resolveCommand('tar');
+const WINDOWS_SHELL = process.env.ComSpec || 'cmd.exe';
+
+const quoteWindowsCommandArg = (arg) => {
+  if (/^[A-Za-z0-9_./:-]+$/.test(arg)) return arg;
+  return `"${String(arg).replace(/"/g, '\"')}"`;
+};
+
+export const createSpawnInvocation = (cmd, args, platform = process.platform) => {
+  if (platform !== 'win32') return { spawnCommand: cmd, spawnArgs: args, command: `${cmd} ${args.join(' ')}`.trim() };
+
+  const lowerCommand = cmd.toLowerCase();
+  if (lowerCommand !== 'npm' && lowerCommand !== 'npm.cmd' && lowerCommand !== 'npx' && lowerCommand !== 'npx.cmd') {
+    return { spawnCommand: cmd, spawnArgs: args, command: `${cmd} ${args.join(' ')}`.trim() };
+  }
+
+  const commandString = [cmd, ...args].map(quoteWindowsCommandArg).join(' ');
+  return {
+    spawnCommand: WINDOWS_SHELL,
+    spawnArgs: ['/d', '/s', '/c', commandString],
+    command: `${cmd} ${args.join(' ')}`.trim()
+  };
+};
 
 const parseArgs = () => {
   const args = process.argv.slice(2);
@@ -59,9 +81,10 @@ const parseArgs = () => {
   return result;
 };
 
-export const run = (cmd, args, cwd = process.cwd(), spawnImpl = spawnSync) => {
+export const run = (cmd, args, cwd = process.cwd(), spawnImpl = spawnSync, platform = process.platform) => {
   const startedAt = Date.now();
-  const child = spawnImpl(cmd, args, { cwd, encoding: 'utf8' });
+  const invocation = createSpawnInvocation(cmd, args, platform);
+  const child = spawnImpl(invocation.spawnCommand, invocation.spawnArgs, { cwd, encoding: 'utf8' });
   const endedAt = Date.now();
   const spawnError = child.error ?? null;
 
@@ -70,7 +93,7 @@ export const run = (cmd, args, cwd = process.cwd(), spawnImpl = spawnSync) => {
     status: child.status,
     stdout: child.stdout,
     stderr: child.stderr,
-    command: `${cmd} ${args.join(' ')}`,
+    command: invocation.command,
     startedAt,
     endedAt,
     errorMessage: spawnError?.message,

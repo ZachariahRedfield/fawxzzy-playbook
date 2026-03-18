@@ -4,6 +4,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
+  createSpawnInvocation,
   evaluateArtifactContracts,
   evaluateTarballEntries,
   parseTarEntries,
@@ -123,6 +124,32 @@ test('resolveCommand maps npm and npx to cmd executables on Windows only', () =>
   assert.equal(resolveCommand('npx', 'darwin'), 'npx');
 });
 
+test('createSpawnInvocation uses cmd.exe launcher for Windows npm and npx commands', () => {
+  assert.deepEqual(createSpawnInvocation('npm.cmd', ['install'], 'win32'), {
+    spawnCommand: 'cmd.exe',
+    spawnArgs: ['/d', '/s', '/c', 'npm.cmd install'],
+    command: 'npm.cmd install'
+  });
+  assert.deepEqual(createSpawnInvocation('npx.cmd', ['playbook', 'plan', '--out', '.playbook/plan.json'], 'win32'), {
+    spawnCommand: 'cmd.exe',
+    spawnArgs: ['/d', '/s', '/c', 'npx.cmd playbook plan --out .playbook/plan.json'],
+    command: 'npx.cmd playbook plan --out .playbook/plan.json'
+  });
+});
+
+test('createSpawnInvocation leaves non-Windows commands unchanged', () => {
+  assert.deepEqual(createSpawnInvocation('npm', ['install'], 'linux'), {
+    spawnCommand: 'npm',
+    spawnArgs: ['install'],
+    command: 'npm install'
+  });
+  assert.deepEqual(createSpawnInvocation('tar.exe', ['-tf', 'asset.tgz'], 'win32'), {
+    spawnCommand: 'tar.exe',
+    spawnArgs: ['-tf', 'asset.tgz'],
+    command: 'tar.exe -tf asset.tgz'
+  });
+});
+
 test('run surfaces spawn errors when command launch fails', () => {
   const result = run('npm.cmd', ['install'], '/tmp/consumer', () => ({
     status: null,
@@ -145,4 +172,28 @@ test('run surfaces spawn errors when command launch fails', () => {
   assert.equal(result.errorSyscall, 'spawnSync npm.cmd');
   assert.equal(result.errorPath, 'npm.cmd');
   assert.deepEqual(result.errorSpawnargs, ['install']);
+});
+
+test('run launches Windows npm commands through cmd.exe while preserving logical command text', () => {
+  const calls = [];
+  const result = run(
+    'npm.cmd',
+    ['install', '--no-save', '@https://example.com/playbook-cli-0.1.8.tgz'],
+    'C:/temp/playbook-test',
+    (command, args, options) => {
+      calls.push({ command, args, options });
+      return { status: 0, stdout: 'ok', stderr: '', error: null };
+    },
+    'win32'
+  );
+
+  assert.deepEqual(calls, [
+    {
+      command: 'cmd.exe',
+      args: ['/d', '/s', '/c', 'npm.cmd install --no-save "@https://example.com/playbook-cli-0.1.8.tgz"'],
+      options: { cwd: 'C:/temp/playbook-test', encoding: 'utf8' }
+    }
+  ]);
+  assert.equal(result.ok, true);
+  assert.equal(result.command, 'npm.cmd install --no-save @https://example.com/playbook-cli-0.1.8.tgz');
 });
