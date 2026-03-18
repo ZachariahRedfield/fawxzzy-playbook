@@ -84,13 +84,31 @@ describe('runBootstrapProof', () => {
     expect(result.highest_priority_next_action).toContain('pnpm playbook apply --json');
   });
 
-  it('classifies cli resolution failure before repo checks', () => {
+  it('accepts pnpm playbook fallback when pnpm exec playbook fails', () => {
     const repo = createRepo();
     writeReadyRepo(repo);
 
     const result = runBootstrapProof(repo, {
       runCommand: (command, args) => {
         if (command === 'pnpm' && args[0] === 'exec') {
+          return { ok: false, status: 1, stdout: '', stderr: 'Command "playbook" not found' };
+        }
+        return { ok: true, status: 0, stdout: '0.1.2\n', stderr: '' };
+      }
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.current_state).toBe('governed_consumer_ready');
+    expect(result.diagnostics.failing_stage).toBeNull();
+  });
+
+  it('classifies definitive cli resolution failure before repo checks', () => {
+    const repo = createRepo();
+    writeReadyRepo(repo);
+
+    const result = runBootstrapProof(repo, {
+      runCommand: (command, args) => {
+        if (command === 'pnpm' && (args[0] === 'exec' || args[0] === 'playbook')) {
           return { ok: false, status: 1, stdout: '', stderr: 'Command "playbook" not found' };
         }
         return { ok: true, status: 0, stdout: '0.1.2\n', stderr: '' };
