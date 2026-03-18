@@ -38,6 +38,28 @@ The Toroidal Flow + Knowledge Compaction architecture is also represented in com
 
 These artifacts capture deterministic architecture intent in reusable pattern/rule/principle cards while preserving existing runtime command contracts.
 
+## Interpretation boundary
+
+Playbook must separate deterministic system truth from human-oriented interpretation without creating a second source of truth.
+
+Pattern: System -> Interpretation Gap.
+Pattern: Interpretation Layer.
+
+The interpretation layer is representational only:
+
+- it does not modify source-of-truth artifacts
+- it does not introduce nondeterministic state
+- it derives human-facing summaries from deterministic system truth
+
+Rule: interpretation layers must remain read-only views over governed artifacts.
+Failure Mode: Correct-but-dense outputs that require system knowledge reduce actionability and adoption.
+
+Human-facing summaries should use progressive disclosure and single-next-action framing so operators can understand dense state without losing access to the underlying evidence.
+
+Pattern: Progressive Disclosure.
+Pattern: Single Next Action.
+Pattern: State -> Narrative Compression.
+
 ## System layering
 
 Playbook is organized as a layered monorepo:
@@ -50,6 +72,23 @@ Playbook is organized as a layered monorepo:
 Primary flow:
 
 `CLI -> engine (+ node adapter) -> repository`
+
+## Pilot-proven recompute boundary doctrine
+
+The external fitness pilot clarified the desired read/write boundary for governed product work.
+
+Pattern: Shared aggregation boundary for reads, targeted invalidation boundary for writes.
+Pattern: Mutation path -> affected canonical IDs -> centralized recompute.
+
+Architecture implication:
+
+- read-oriented interpretation and summary surfaces should converge through shared deterministic aggregation layers
+- write paths should identify affected canonical IDs first
+- recompute should be centralized, deterministic, and explainable
+
+Rule: first governed improvements should target correctness/performance seams with repeated logic and clear invariants.
+Rule: tooling migration is incomplete until runtime + governance bootstrap proof passes.
+Failure Mode: A repo can look integrated while still failing real governed consumption due to missing bootstrap/runtime/artifact guarantees.
 
 ## Canonical integration model: shared core, local intelligence
 

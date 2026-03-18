@@ -24,6 +24,11 @@ Failure Mode: Business docs drifting away from runtime truth.
 
 ## Strategic direction
 
+Recent pilot doctrine update: the first external fitness pilot formally proved Playbook is operational in a real external repo and exposed the next priority stack as external consumer bootstrap proof, environment/runtime health diagnostics, next-best-improvement analysis, and post-merge doctrine extraction.
+
+Pattern: Product story follows pilot-proof architecture.
+Rule: roadmap priorities should follow the highest-signal product gaps exposed by governed external use, not internal convenience alone.
+
 Recent implementation note: fleet-level readiness aggregation is now available in current command surfaces (`pnpm playbook status fleet --json`, Observer `GET /api/readiness/fleet`, and Observer dashboard fleet summary card) to prioritize cross-repo adoption without replacing repo-first workflows.
 Recent implementation note: deterministic adoption work-queue planning is also available (`pnpm playbook status queue --json`, Observer `GET /api/readiness/queue`, and Observer dashboard work-queue panel) to translate readiness state into ordered, wave-based, parallel-safe execution plans.
 Recent implementation note: Codex-ready execution packaging now layers on top of the queue (`pnpm playbook status execute --json`, Observer `GET /api/readiness/execute`, and Observer dashboard execution-plan card) to emit wave-scoped worker lanes and copy-paste prompts for parallel repo operations.
@@ -225,6 +230,24 @@ Using a second repo too early without bounded rollout turns a proving ground int
 
 
 ## External Pilot Integration â€” Fawxzzy Fitness
+
+Formal pilot retrospective: `docs/pilots/FAWXZZY_FITNESS_RETROSPECTIVE.md`.
+
+Doctrine now captured from the pilot:
+
+- stabilize tooling surface before governed product work
+- first governed improvements should target correctness/performance seams with repeated logic and clear invariants
+- tooling migration is incomplete until runtime + governance bootstrap proof passes
+- interpretation surfaces must make dense deterministic truth readable without mutating source truth
+
+Next product priorities exposed by the pilot:
+
+1. external consumer bootstrap proof
+2. environment/runtime health diagnostics
+3. next-best-improvement analysis
+4. post-merge doctrine extraction
+
+Failure Mode: A repo can look integrated while still failing real governed consumption due to missing bootstrap/runtime/artifact guarantees.
 
 Roadmap checkpoint: first-class external targeting (`--repo`) and one-command baseline external analysis via `playbook pilot --repo <path>` are implemented; treat this section as sequencing context, not canonical live command status
 

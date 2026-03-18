@@ -96,3 +96,19 @@ Implementation note:
 
 - `playbook pilot --repo <path>` is the canonical top-level surface for first external baseline analysis.
 - If the target repository is not present locally, treat the command list as runbook contract and execute when the pilot workspace is mounted.
+
+
+## Formal retrospective outcome
+
+The first external pilot is now formally recorded as a doctrine-producing milestone, not just a migration experiment.
+
+Reference retrospective: `docs/pilots/FAWXZZY_FITNESS_RETROSPECTIVE.md`.
+
+It confirmed that:
+
+- Playbook is operational in a real external repo
+- governance mattered to pilot success
+- meaningful product improvements emerged from real usage
+- the main gaps are bootstrap/runtime reliability, next-best-improvement selection, post-merge doctrine extraction, and interpretation of dense system truth
+
+Next-step roadmap priority from this pilot: external consumer bootstrap proof before broader governed product expansion.

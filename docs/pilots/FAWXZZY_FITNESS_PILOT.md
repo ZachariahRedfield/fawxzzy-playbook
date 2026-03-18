@@ -83,3 +83,15 @@ Each pilot run now appends or refreshes repository-scoped entries inside `.playb
 
 Rule:
 Never collapse observed patterns, evaluated patterns, and canonical doctrine into the same layer.
+
+
+## Formal doctrine follow-through
+
+This pilot is no longer only an execution runbook. Its results now feed explicit product doctrine in:
+
+- `docs/PATTERNS.md`
+- `docs/UI_GUIDELINES.md`
+- `docs/ARCHITECTURE.md`
+- `docs/pilots/FAWXZZY_FITNESS_RETROSPECTIVE.md`
+
+Rule: successful external pilots must promote durable rules, patterns, and failure modes into reviewed repository doctrine.

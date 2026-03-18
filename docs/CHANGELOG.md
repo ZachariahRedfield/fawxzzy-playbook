@@ -1,3 +1,14 @@
+## 2026-03-18 — External pilot doctrine formalization
+
+- WHAT: Added `docs/PATTERNS.md`, `docs/UI_GUIDELINES.md`, and `docs/pilots/FAWXZZY_FITNESS_RETROSPECTIVE.md`, and updated architecture/roadmap/pilot docs to formalize the first external Fawxzzy Fitness pilot as repo-level doctrine covering the System -> Interpretation Gap, Interpretation Layer, Progressive Disclosure, Single Next Action, State -> Narrative Compression, and pilot-proven recompute boundary patterns. WHY: The first real external pilot produced enough signal to promote product and governance learnings into explicit doctrine rather than leaving them as tribal knowledge.
+- Rule: stabilize tooling surface before governed product work.
+- Rule: first governed improvements should target correctness/performance seams with repeated logic and clear invariants.
+- Rule: tooling migration is incomplete until runtime + governance bootstrap proof passes.
+- Pattern: Shared aggregation boundary for reads, targeted invalidation boundary for writes.
+- Pattern: Mutation path -> affected canonical IDs -> centralized recompute.
+- Failure Mode: Correct-but-dense outputs that require system knowledge reduce actionability and adoption.
+- Failure Mode: A repo can look integrated while still failing real governed consumption due to missing bootstrap/runtime/artifact guarantees.
+
 - WHAT: Fixed `scripts/release-fallback-proof.mjs` external-consumer fallback proof initialization and Windows acquisition handling by creating a deterministic temp-consumer `package.json` baseline before any install, preserving scoped package specs through the `cmd.exe /d /s /c` launcher, and switching tarball fallback installs to direct asset URLs. WHY: Real Windows runs were failing before proof execution because npm install had no package baseline, `cmd.exe` quoting corrupted scoped package specs like `@fawxzzy/playbook-cli@9999.0.0`, and hosted tarball fallback attempted the invalid `@https://...` package-spec form.
 - Failure Mode: consumer fallback proof can fail before acquisition if the temp consumer repo is not initialized as an npm package.
 - Failure Mode: Windows command-string quoting can corrupt scoped package specs during cmd.exe launch.
