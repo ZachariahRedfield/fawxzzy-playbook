@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { ExitCode } from '../lib/cliContract.js';
 import type { AnalyzeReport } from './analyze.js';
@@ -17,8 +20,9 @@ const buildFleetAdoptionReadinessSummary = vi.fn();
 const buildFleetAdoptionWorkQueue = vi.fn();
 const buildFleetCodexExecutionPlan = vi.fn();
 const buildFleetExecutionReceipt = vi.fn();
+const buildFleetUpdatedAdoptionState = vi.fn();
 
-vi.mock('@zachariahredfield/playbook-engine', () => ({ buildRepoAdoptionReadiness, buildFleetAdoptionReadinessSummary, buildFleetAdoptionWorkQueue, buildFleetCodexExecutionPlan, buildFleetExecutionReceipt }));
+vi.mock('@zachariahredfield/playbook-engine', () => ({ buildRepoAdoptionReadiness, buildFleetAdoptionReadinessSummary, buildFleetAdoptionWorkQueue, buildFleetCodexExecutionPlan, buildFleetExecutionReceipt, buildFleetUpdatedAdoptionState }));
 
 const makeAnalyzeReport = (overrides?: Partial<AnalyzeReport>): AnalyzeReport => ({
   repoPath: '/tmp/repo',
@@ -51,6 +55,7 @@ describe('runStatus', () => {
     buildFleetAdoptionWorkQueue.mockReset();
     buildFleetCodexExecutionPlan.mockReset();
     buildFleetExecutionReceipt.mockReset();
+    buildFleetUpdatedAdoptionState.mockReset();
     buildRepoAdoptionReadiness.mockReturnValue({
       schemaVersion: '1.0',
       connection_status: 'connected',
@@ -129,6 +134,37 @@ describe('runStatus', () => {
         repos_needing_retry: [],
         planned_vs_actual_drift: []
       }
+    });
+    buildFleetUpdatedAdoptionState.mockReturnValue({
+      schemaVersion: '1.0',
+      kind: 'fleet-adoption-updated-state',
+      generated_at: '2026-01-01T00:00:00.000Z',
+      execution_plan_digest: 'abc123',
+      session_id: 'session-1',
+      summary: {
+        repos_total: 0,
+        by_reconciliation_status: {
+          completed_as_planned: 0,
+          completed_with_drift: 0,
+          partial: 0,
+          failed: 0,
+          blocked: 0,
+          not_run: 0,
+          stale_plan_or_superseded: 0
+        },
+        action_counts: {
+          needs_retry: 0,
+          needs_replan: 0,
+          needs_review: 0
+        },
+        repos_needing_retry: [],
+        repos_needing_replan: [],
+        repos_needing_review: [],
+        stale_or_superseded_repo_ids: [],
+        blocked_repo_ids: [],
+        completed_repo_ids: []
+      },
+      repos: []
     });
   });
 
@@ -319,6 +355,67 @@ describe('runStatus', () => {
     expect(payload.mode).toBe('receipt');
     expect(payload.receipt.kind).toBe('fleet-adoption-execution-receipt');
     expect(buildFleetExecutionReceipt).toHaveBeenCalled();
+    logSpy.mockRestore();
+  });
+
+
+  it('prints updated-state JSON output when updated scope is requested and writes the artifact', async () => {
+    const { runStatus } = await import('./status.js');
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-status-updated-'));
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    buildFleetUpdatedAdoptionState.mockReturnValue({
+      schemaVersion: '1.0',
+      kind: 'fleet-adoption-updated-state',
+      generated_at: '2026-01-01T00:00:00.000Z',
+      execution_plan_digest: 'abc123',
+      session_id: 'session-1',
+      summary: {
+        repos_total: 1,
+        by_reconciliation_status: {
+          completed_as_planned: 1,
+          completed_with_drift: 0,
+          partial: 0,
+          failed: 0,
+          blocked: 0,
+          not_run: 0,
+          stale_plan_or_superseded: 0
+        },
+        action_counts: {
+          needs_retry: 0,
+          needs_replan: 0,
+          needs_review: 0
+        },
+        repos_needing_retry: [],
+        repos_needing_replan: [],
+        repos_needing_review: [],
+        stale_or_superseded_repo_ids: [],
+        blocked_repo_ids: [],
+        completed_repo_ids: ['repo-a']
+      },
+      repos: [{
+        repo_id: 'repo-a',
+        prior_lifecycle_stage: 'planned_apply_pending',
+        planned_lifecycle_stage: 'ready',
+        updated_lifecycle_stage: 'ready',
+        reconciliation_status: 'completed_as_planned',
+        action_state: { needs_retry: false, needs_replan: false, needs_review: false },
+        prompt_ids: ['wave_1:apply_lane:repo-a'],
+        blocker_codes: [],
+        drift_prompt_ids: [],
+        receipt_status: 'success'
+      }]
+    });
+
+    const exitCode = await runStatus(cwd, { ci: false, format: 'json', quiet: false, scope: 'updated' });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(logSpy).toHaveBeenCalled();
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.mode).toBe('updated');
+    expect(payload.updated_state.kind).toBe('fleet-adoption-updated-state');
+    const artifactPath = path.join(cwd, '.playbook', 'execution-updated-state.json');
+    expect(fs.existsSync(artifactPath)).toBe(true);
     logSpy.mockRestore();
   });
 

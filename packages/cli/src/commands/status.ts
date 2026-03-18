@@ -9,12 +9,14 @@ import {
   buildFleetAdoptionWorkQueue,
   buildFleetCodexExecutionPlan,
   buildFleetExecutionReceipt,
+  buildFleetUpdatedAdoptionState,
   buildRepoAdoptionReadiness,
   type FleetAdoptionWorkQueue,
   type FleetCodexExecutionPlan,
   type FleetAdoptionReadinessSummary,
   type FleetExecutionOutcomeInput,
   type FleetExecutionReceipt,
+  type FleetUpdatedAdoptionState,
   type RepoAdoptionReadiness
 } from '@zachariahredfield/playbook-engine';
 import fs from 'node:fs';
@@ -26,7 +28,7 @@ type StatusOptions = {
   ci: boolean;
   format: 'text' | 'json';
   quiet: boolean;
-  scope?: 'repo' | 'fleet' | 'queue' | 'execute' | 'receipt';
+  scope?: 'repo' | 'fleet' | 'queue' | 'execute' | 'receipt' | 'updated';
 };
 
 type StatusResult = {
@@ -72,6 +74,14 @@ type StatusReceiptResult = {
   receipt: FleetExecutionReceipt;
 };
 
+
+type StatusUpdatedStateResult = {
+  schemaVersion: '1.0';
+  command: 'status';
+  mode: 'updated';
+  updated_state: FleetUpdatedAdoptionState;
+};
+
 type ObserverRegistry = {
   repos: Array<{ id: string; name: string; root: string }>;
 };
@@ -90,6 +100,7 @@ type TopIssue = {
 
 
 const EXECUTION_OUTCOME_INPUT_RELATIVE_PATH = path.join('.playbook', 'execution-outcome-input.json');
+const UPDATED_STATE_RELATIVE_PATH = path.join('.playbook', 'execution-updated-state.json');
 
 const defaultOutcomeInput = (): FleetExecutionOutcomeInput => ({
   schemaVersion: '1.0',
@@ -227,15 +238,34 @@ const toExecutionStatusResult = (cwd: string): StatusExecutionResult => {
   };
 };
 
-const toReceiptStatusResult = (cwd: string): StatusReceiptResult => {
+const computeReceipt = (cwd: string): { fleet: FleetAdoptionReadinessSummary; queue: FleetAdoptionWorkQueue; executionPlan: FleetCodexExecutionPlan; receipt: FleetExecutionReceipt } => {
   const fleet = toFleetStatusResult(cwd).fleet;
   const queue = buildFleetAdoptionWorkQueue(fleet);
   const executionPlan = buildFleetCodexExecutionPlan(queue);
+  const receipt = buildFleetExecutionReceipt(executionPlan, queue, fleet, readExecutionOutcomeInput(cwd));
+  return { fleet, queue, executionPlan, receipt };
+};
+
+const toReceiptStatusResult = (cwd: string): StatusReceiptResult => {
+  const { receipt } = computeReceipt(cwd);
   return {
     schemaVersion: '1.0',
     command: 'status',
     mode: 'receipt',
-    receipt: buildFleetExecutionReceipt(executionPlan, queue, fleet, readExecutionOutcomeInput(cwd))
+    receipt
+  };
+};
+
+const toUpdatedStateStatusResult = (cwd: string): StatusUpdatedStateResult => {
+  const { fleet, queue, executionPlan, receipt } = computeReceipt(cwd);
+  const updatedState = buildFleetUpdatedAdoptionState(executionPlan, queue, fleet, receipt);
+  fs.mkdirSync(path.join(cwd, '.playbook'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, UPDATED_STATE_RELATIVE_PATH), JSON.stringify(updatedState, null, 2));
+  return {
+    schemaVersion: '1.0',
+    command: 'status',
+    mode: 'updated',
+    updated_state: updatedState
   };
 };
 
@@ -354,6 +384,22 @@ export const runStatus = async (cwd: string, options: StatusOptions): Promise<nu
         console.log(`Failed: ${receiptResult.receipt.verification_summary.failed_count}`);
         console.log(`Partial: ${receiptResult.receipt.verification_summary.partial_count}`);
         console.log(`Drift: ${receiptResult.receipt.verification_summary.mismatch_count}`);
+      }
+      return ExitCode.Success;
+    }
+
+    if (options.scope === 'updated') {
+      const updatedResult = toUpdatedStateStatusResult(cwd);
+      if (options.format === 'json') {
+        console.log(JSON.stringify(updatedResult, null, 2));
+      } else {
+        console.log(`Updated state kind: ${updatedResult.updated_state.kind}`);
+        console.log(`Repos total: ${updatedResult.updated_state.summary.repos_total}`);
+        console.log(`Observed outcomes: ${JSON.stringify(updatedResult.updated_state.summary.by_reconciliation_status)}`);
+        console.log(`Action counts: ${JSON.stringify(updatedResult.updated_state.summary.action_counts)}`);
+        console.log(`Needs retry: ${updatedResult.updated_state.summary.repos_needing_retry.length}`);
+        console.log(`Needs replan: ${updatedResult.updated_state.summary.repos_needing_replan.length}`);
+        console.log(`Needs review: ${updatedResult.updated_state.summary.repos_needing_review.length}`);
       }
       return ExitCode.Success;
     }

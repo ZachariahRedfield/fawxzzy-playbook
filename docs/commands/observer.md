@@ -196,15 +196,16 @@ Failure Mode: If the dashboard emphasizes large static summaries over interactiv
 
 ## Execution outcome panel
 
-Observer now exposes `/api/readiness/receipt` and the dashboard renders a compact execution outcome panel showing:
+Observer now exposes `/api/readiness/receipt` and `/api/readiness/updated-state`. The dashboard renders separate panels for raw receipt visibility and reconciled updated state, showing:
 
 - latest wave result
 - completed prompts
 - failed prompts
-- repos needing retry
+- observed outcome counts from updated-state reconciliation
+- derived next actions (`needs_retry`, `needs_replan`, `needs_review`)
 - planned vs actual drift
 
-This panel is read-only-friendly: it derives its result from the current readiness summary, work queue, execution plan, and `.playbook/execution-outcome-input.json` when present.
+These panels are read-only-friendly: the receipt remains the canonical planned-vs-actual contract, and updated state is derived deterministically from current readiness, work queue, execution plan, receipt, and `.playbook/execution-outcome-input.json` when present. Updated state separates what happened from what action is needed next so CLI, Observer, and automation layers do not overload one enum with multiple meanings.
 
 - **Rule**: Observer outcome views must stay evidence-backed and must not auto-execute repo commands.
 - **Pattern**: Surface retry/drift summaries next to readiness and queue state so the next prioritization pass stays deterministic.
