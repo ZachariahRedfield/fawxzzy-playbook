@@ -117,6 +117,32 @@ const determineActionState = (input: {
   }
 };
 
+const buildUpdatedStateSummary = (repos: ReconciledRepoState[]): FleetUpdatedAdoptionState['summary'] => {
+  const reposNeedingRetry = sortStrings(repos.filter((repo) => repo.action_state.needs_retry).map((repo) => repo.repo_id));
+  const reposNeedingReplan = sortStrings(repos.filter((repo) => repo.action_state.needs_replan).map((repo) => repo.repo_id));
+  const reposNeedingReview = sortStrings(repos.filter((repo) => repo.action_state.needs_review).map((repo) => repo.repo_id));
+  const byStatus = ALL_STATUSES.reduce<Record<ReconciliationStatus, number>>((acc, status) => {
+    acc[status] = repos.filter((repo) => repo.reconciliation_status === status).length;
+    return acc;
+  }, {} as Record<ReconciliationStatus, number>);
+
+  return {
+    repos_total: repos.length,
+    by_reconciliation_status: byStatus,
+    action_counts: {
+      needs_retry: reposNeedingRetry.length,
+      needs_replan: reposNeedingReplan.length,
+      needs_review: reposNeedingReview.length
+    },
+    repos_needing_retry: reposNeedingRetry,
+    repos_needing_replan: reposNeedingReplan,
+    repos_needing_review: reposNeedingReview,
+    stale_or_superseded_repo_ids: sortStrings(repos.filter((repo) => repo.reconciliation_status === 'stale_plan_or_superseded').map((repo) => repo.repo_id)),
+    blocked_repo_ids: sortStrings(repos.filter((repo) => repo.reconciliation_status === 'blocked').map((repo) => repo.repo_id)),
+    completed_repo_ids: sortStrings(repos.filter((repo) => ['completed_as_planned', 'completed_with_drift'].includes(repo.reconciliation_status)).map((repo) => repo.repo_id))
+  };
+};
+
 export const buildFleetUpdatedAdoptionState = (
   plan: FleetCodexExecutionPlan,
   queue: FleetAdoptionWorkQueue,
@@ -170,32 +196,13 @@ export const buildFleetUpdatedAdoptionState = (
     };
   });
 
-  const byStatus = ALL_STATUSES.reduce<Record<ReconciliationStatus, number>>((acc, status) => {
-    acc[status] = repos.filter((repo) => repo.reconciliation_status === status).length;
-    return acc;
-  }, {} as Record<ReconciliationStatus, number>);
-
   return {
     schemaVersion: '1.0',
     kind: 'fleet-adoption-updated-state',
     generated_at: generatedAt,
     execution_plan_digest: receipt.execution_plan_digest,
     session_id: receipt.session_id,
-    summary: {
-      repos_total: repos.length,
-      by_reconciliation_status: byStatus,
-      action_counts: {
-        needs_retry: repos.filter((repo) => repo.action_state.needs_retry).length,
-        needs_replan: repos.filter((repo) => repo.action_state.needs_replan).length,
-        needs_review: repos.filter((repo) => repo.action_state.needs_review).length
-      },
-      repos_needing_retry: sortStrings(repos.filter((repo) => repo.action_state.needs_retry).map((repo) => repo.repo_id)),
-      repos_needing_replan: sortStrings(repos.filter((repo) => repo.action_state.needs_replan).map((repo) => repo.repo_id)),
-      repos_needing_review: sortStrings(repos.filter((repo) => repo.action_state.needs_review).map((repo) => repo.repo_id)),
-      stale_or_superseded_repo_ids: sortStrings(repos.filter((repo) => repo.reconciliation_status === 'stale_plan_or_superseded').map((repo) => repo.repo_id)),
-      blocked_repo_ids: sortStrings(repos.filter((repo) => repo.reconciliation_status === 'blocked').map((repo) => repo.repo_id)),
-      completed_repo_ids: sortStrings(repos.filter((repo) => ['completed_as_planned', 'completed_with_drift'].includes(repo.reconciliation_status)).map((repo) => repo.repo_id))
-    },
+    summary: buildUpdatedStateSummary(repos),
     repos
   };
 };
