@@ -14,6 +14,22 @@ Deterministic adoption/readiness summary for governed Playbook usage.
 
 If no Observer registry exists, fleet mode falls back to the current repository as a single-repo fleet.
 
+## Interpretation layer
+
+Human-readable and JSON status surfaces now add a derived `interpretation` block that preserves canonical status truth while compressing it into progressive disclosure:
+
+- **Default view**: `state`, `why`, `next_step`
+- **Secondary view**: blocker list, reasoning, and lower-priority actions
+- **Deep view**: raw-truth field references, artifact paths, diagnostics, and promotion metadata references
+
+Rule: interpretation is derived, not authoritative.
+
+Pattern: Interpretation Layer.
+Pattern: Progressive Disclosure.
+Pattern: Single Next Action.
+Pattern: State → Narrative Compression.
+Failure Mode: Building polished summaries before underlying diagnostics and recommendation signals exist leads to attractive but weak UX.
+
 ## Repo readiness JSON contract highlights
 
 - `connection_status`: `connected` | `not_connected`

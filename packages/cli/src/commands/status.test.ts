@@ -252,6 +252,7 @@ describe('runStatus', () => {
     expect(exitCode).toBe(ExitCode.Success);
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(payload.command).toBe('status');
+    expect(payload.interpretation.progressive_disclosure.default_view.next_step).toBeDefined();
     expect(payload).not.toHaveProperty('topIssue');
     expect(payload).toHaveProperty('adoption.lifecycle_stage', 'ready');
 

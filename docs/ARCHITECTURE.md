@@ -28,6 +28,16 @@ The first external pilot clarified a core architecture need: deterministic syste
 
 Pattern: System -> Interpretation Gap.
 Pattern: Interpretation Layer.
+Pattern: Progressive Disclosure.
+
+Pattern: Single Next Action.
+
+Pattern: State → Narrative Compression.
+
+Failure Mode: Building polished summaries before underlying diagnostics and recommendation signals exist leads to attractive but weak UX.
+
+User-facing status, route, and observer readiness surfaces should present deterministic interpretation as a thin derived layer over canonical artifacts: default view shows state/why/next step, secondary view exposes blockers/reasoning, and deep view preserves raw JSON, receipts, diagnostics, and promotion metadata references without replacing the underlying truth.
+
 Pattern: State -> Narrative Compression.
 
 Failure Mode: Correct-but-dense outputs that require system knowledge reduce actionability and adoption.

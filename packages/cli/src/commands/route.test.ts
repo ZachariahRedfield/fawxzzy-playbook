@@ -111,6 +111,7 @@ describe('runRoute', () => {
     expect(payload.selectedRoute).toBe('deterministic_local');
     expect(payload.task).toBe('update command docs');
     expect(payload.executionPlan.kind).toBe('execution-plan');
+    expect(payload.interpretation.progressive_disclosure.default_view.next_step.command).toBe('pnpm playbook docs audit --json');
     expect(payload.promotion).toMatchObject({
       kind: 'workflow-promotion',
       workflow_kind: 'route-execution-plan',

@@ -20,6 +20,13 @@ import {
   type RepoAdoptionReadiness
 } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../../lib/cliContract.js';
+import {
+  buildExecutionPlanInterpretation,
+  buildFleetInterpretation,
+  buildQueueInterpretation,
+  buildReceiptInterpretation,
+  buildUpdatedStateInterpretation
+} from '../../lib/interpretation.js';
 
 type ObserverOptions = {
   format: 'text' | 'json';
@@ -152,7 +159,23 @@ const computeReadinessArtifacts = (observerRoot: string, registry: ObserverRepoR
   const nextQueue = deriveNextAdoptionQueueFromUpdatedState(updatedState);
   const promotion = previewUpdatedStatePromotion(observerRoot, updatedState, nextQueue);
   const receipt = buildFleetExecutionReceipt(executionPlan, queue, fleet, outcomeInput, { workflowPromotion: promotion });
-  return { fleet, queue, executionPlan, receipt, updatedState, nextQueue, promotion };
+  return {
+    fleet,
+    queue,
+    executionPlan,
+    receipt,
+    updatedState,
+    nextQueue,
+    promotion,
+    interpretations: {
+      fleet: buildFleetInterpretation(fleet),
+      queue: buildQueueInterpretation(queue),
+      executionPlan: buildExecutionPlanInterpretation(executionPlan),
+      receipt: buildReceiptInterpretation(receipt),
+      updatedState: buildUpdatedStateInterpretation(updatedState, nextQueue, promotion.promotion_status),
+      nextQueue: buildQueueInterpretation(nextQueue)
+    }
+  };
 };
 
 const printObserverHelp = (): void => {
@@ -692,6 +715,7 @@ const observerServerResponse = (observerRoot: string, invocationCwd: string, pat
         ...base,
         kind: 'observer-fleet-readiness-summary',
         fleet: readinessArtifacts.fleet,
+        interpretation: readinessArtifacts.interpretations.fleet,
         promotion: readinessArtifacts.promotion
       }
     };
@@ -705,6 +729,7 @@ const observerServerResponse = (observerRoot: string, invocationCwd: string, pat
         ...base,
         kind: 'observer-fleet-adoption-work-queue',
         queue: readinessArtifacts.queue,
+        interpretation: readinessArtifacts.interpretations.queue,
         promotion: readinessArtifacts.promotion
       }
     };
@@ -718,6 +743,7 @@ const observerServerResponse = (observerRoot: string, invocationCwd: string, pat
         ...base,
         kind: 'observer-fleet-adoption-execution-plan',
         execution_plan: readinessArtifacts.executionPlan,
+        interpretation: readinessArtifacts.interpretations.executionPlan,
         promotion: readinessArtifacts.promotion
       }
     };
@@ -737,6 +763,7 @@ const observerServerResponse = (observerRoot: string, invocationCwd: string, pat
           ...base,
           kind: 'observer-fleet-adoption-updated-state',
           updated_state: readinessArtifacts.updatedState,
+          interpretation: readinessArtifacts.interpretations.updatedState,
           promotion: readinessArtifacts.promotion
         }
       };
@@ -748,6 +775,7 @@ const observerServerResponse = (observerRoot: string, invocationCwd: string, pat
           ...base,
           kind: 'observer-fleet-adoption-next-queue',
           next_queue: readinessArtifacts.nextQueue,
+          interpretation: readinessArtifacts.interpretations.nextQueue,
           promotion: readinessArtifacts.promotion
         }
       };
@@ -770,6 +798,7 @@ const observerServerResponse = (observerRoot: string, invocationCwd: string, pat
         ...base,
         kind: 'observer-fleet-adoption-execution-receipt',
         receipt: readinessArtifacts.receipt,
+        interpretation: readinessArtifacts.interpretations.receipt,
         promotion: readinessArtifacts.promotion
       }
     };

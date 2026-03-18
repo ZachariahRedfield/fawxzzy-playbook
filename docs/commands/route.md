@@ -18,6 +18,16 @@ pnpm playbook route "update command docs" --codex-prompt
 - Missing `<task>` emits a deterministic error envelope in `--json` mode.
 - Successful runs always stage, validate, and promote `.playbook/execution-plan.json` and print a stable route payload.
 
+## Interpretation layer
+
+`playbook route` now returns a derived `interpretation` block alongside the canonical route + execution-plan payload. The default view always resolves to one primary next action, while secondary and deep views preserve blockers, reasoning, raw execution-plan references, diagnostics, and promotion metadata references.
+
+Pattern: Interpretation Layer.
+Pattern: Progressive Disclosure.
+Pattern: Single Next Action.
+Pattern: State → Narrative Compression.
+Failure Mode: Building polished summaries before underlying diagnostics and recommendation signals exist leads to attractive but weak UX.
+
 ## Output contract
 
 Routing returns command metadata plus an `executionPlan` payload and a normalized `promotion` receipt. It writes:
