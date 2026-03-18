@@ -2,76 +2,102 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { generateStoryCandidates, promoteStoryCandidate } from './candidates.js';
+import { generateStoryCandidates, promoteStoryCandidate, readStoryCandidatesArtifact, STORY_CANDIDATES_RELATIVE_PATH } from './candidates.js';
 import { STORIES_RELATIVE_PATH, readStoriesArtifact } from './stories.js';
 
 const createTempRepoFixture = (): { repoRoot: string } => ({
   repoRoot: fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-story-candidates-'))
 });
 
+const writeArtifact = (repo: string, relativePath: string, value: unknown): void => {
+  const target = path.join(repo, relativePath);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, `${JSON.stringify(value, null, 2)}\n`);
+};
+
 describe('story candidates', () => {
-  it('generateStoryCandidates does not mutate canonical backlog state', () => {
+  it('generateStoryCandidates derives grouped read-only candidates from governed evidence without mutating canonical backlog state', () => {
     const { repoRoot: repo } = createTempRepoFixture();
-    expect(typeof repo).toBe('string');
-    expect(repo.length).toBeGreaterThan(0);
+
+    writeArtifact(repo, '.playbook/improvement-candidates.json', {
+      schemaVersion: '1.0',
+      kind: 'improvement-candidates',
+      generatedAt: '2026-03-18T00:00:00.000Z',
+      opportunity_analysis: {
+        top_recommendation: {
+          opportunity_id: 'shared_read_aggregation_boundary',
+          title: 'Converge broad artifact fanout through a shared read aggregation boundary',
+          heuristic_class: 'broad_query_fanout',
+          confidence: 0.92,
+          why_it_matters: 'Direct artifact fanout should be grouped into one durable architecture change.',
+          likely_change_shape: 'Extract a shared read model.',
+          rationale: ['Many surfaces read the same governed artifacts.'],
+          evidence: [{ file: 'packages/cli/src/commands/observer/index.ts', detail: 'multiple .playbook artifact reads' }]
+        },
+        secondary_queue: []
+      }
+    });
+    writeArtifact(repo, '.playbook/execution-updated-state.json', {
+      summary: {
+        repos_needing_review: ['repo-a'],
+        repos_needing_retry: ['repo-b'],
+        stale_or_superseded_repo_ids: ['repo-c'],
+        blocked_repo_ids: []
+      },
+      repos: [
+        { repo_id: 'repo-a', reconciliation_status: 'completed_with_drift', blocker_codes: [], drift_prompt_ids: ['prompt-1'], prompt_ids: ['prompt-1'] },
+        { repo_id: 'repo-b', reconciliation_status: 'partial', blocker_codes: ['apply_required'], drift_prompt_ids: [], prompt_ids: ['prompt-2'] },
+        { repo_id: 'repo-c', reconciliation_status: 'stale_plan_or_superseded', blocker_codes: [], drift_prompt_ids: [], prompt_ids: [] }
+      ]
+    });
+    writeArtifact(repo, '.playbook/router-recommendations.json', {
+      recommendations: [
+        {
+          recommendation_id: 'route-1',
+          task_family: 'story_derivation',
+          current_strategy: 'ad-hoc',
+          recommended_strategy: 'deterministic_local:story_candidates',
+          rationale: 'Stable route evidence favors a candidate-first backlog flow.',
+          confidence_score: 0.81
+        }
+      ]
+    });
 
     const storiesPath = path.join(repo, STORIES_RELATIVE_PATH);
-    const generated = generateStoryCandidates(repo, [
-      {
-        id: 'story-candidate-1',
-        title: 'Candidate only',
-        type: 'feature',
-        source: 'manual',
-        severity: 'medium',
-        priority: 'high',
-        confidence: 'high',
-        rationale: 'Generated from findings.',
-        evidence: ['.playbook/session.json'],
-        acceptance_criteria: ['Inspect candidate output'],
-        dependencies: [],
-        execution_lane: 'safe_single_pr',
-        suggested_route: 'playbook route "candidate only" --json'
-      }
-    ]);
+    const generated = generateStoryCandidates(repo);
 
     expect(generated.repo).toBe(path.basename(repo));
-    expect(generated.candidates).toHaveLength(1);
-    expect(generated.candidates[0]?.id).toBe('story-candidate-1');
+    expect(generated.candidates.length).toBeGreaterThanOrEqual(3);
+    expect(generated.candidates.some((candidate) => candidate.title.includes('Restore governed readiness prerequisites'))).toBe(true);
+    expect(generated.candidates.some((candidate) => candidate.title.includes('Converge broad artifact fanout'))).toBe(true);
+    expect(generated.candidates.some((candidate) => candidate.title.includes('Replan stale or superseded'))).toBe(true);
     expect(fs.existsSync(storiesPath)).toBe(false);
     expect(readStoriesArtifact(repo).stories).toEqual([]);
   });
 
-  it('promoteStoryCandidate explicitly writes canonical backlog state', () => {
+  it('readStoryCandidatesArtifact falls back to fresh derivation when the candidate artifact is absent', () => {
     const { repoRoot: repo } = createTempRepoFixture();
-    expect(typeof repo).toBe('string');
-    expect(repo.length).toBeGreaterThan(0);
+
+    const artifact = readStoryCandidatesArtifact(repo);
+
+    expect(artifact.kind).toBe('story-candidates');
+    expect(artifact.readOnly).toBe(true);
+    expect(artifact.candidates.some((candidate) => candidate.title.includes('Restore governed readiness prerequisites'))).toBe(true);
+  });
+
+  it('promoteStoryCandidate explicitly writes canonical backlog state after candidates are inspectable', () => {
+    const { repoRoot: repo } = createTempRepoFixture();
+    writeArtifact(repo, STORY_CANDIDATES_RELATIVE_PATH, generateStoryCandidates(repo));
+
+    const candidate = readStoryCandidatesArtifact(repo).candidates[0];
+    expect(candidate).toBeTruthy();
 
     const storiesPath = path.join(repo, STORIES_RELATIVE_PATH);
-    const generated = generateStoryCandidates(repo, [
-      {
-        id: 'story-candidate-2',
-        title: 'Promoted candidate',
-        type: 'governance',
-        source: 'manual',
-        severity: 'high',
-        priority: 'urgent',
-        confidence: 'medium',
-        rationale: 'Promotion should persist canonical backlog state.',
-        evidence: ['.playbook/policy-evaluation.json'],
-        acceptance_criteria: ['Persist backlog entry'],
-        dependencies: [],
-        execution_lane: null,
-        suggested_route: null
-      }
-    ]);
-
-    expect(fs.existsSync(storiesPath)).toBe(false);
-
-    const promoted = promoteStoryCandidate(repo, generated.candidates[0]!);
+    const promoted = promoteStoryCandidate(repo, candidate!.id);
 
     expect(promoted.artifactPath).toBe(storiesPath);
     expect(fs.existsSync(storiesPath)).toBe(true);
-    expect(promoted.story.id).toBe('story-candidate-2');
-    expect(readStoriesArtifact(repo).stories.map((story) => story.id)).toEqual(['story-candidate-2']);
+    expect(promoted.story.id).toBe(candidate!.id);
+    expect(readStoriesArtifact(repo).stories.map((story) => story.id)).toEqual([candidate!.id]);
   });
 });

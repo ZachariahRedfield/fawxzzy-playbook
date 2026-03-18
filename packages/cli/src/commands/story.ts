@@ -1,4 +1,22 @@
-import { createStoryRecord, readStoriesArtifact, STORIES_RELATIVE_PATH, STORY_STATUSES, STORY_TYPES, STORY_SEVERITIES, STORY_PRIORITIES, STORY_CONFIDENCES, upsertStory, updateStoryStatus, validateStoriesArtifact, type StoryRecord, type StoryStatus } from '@zachariahredfield/playbook-engine';
+import {
+  createStoryRecord,
+  generateStoryCandidates,
+  readStoriesArtifact,
+  STORIES_RELATIVE_PATH,
+  STORY_CANDIDATES_RELATIVE_PATH,
+  STORY_CONFIDENCES,
+  STORY_PRIORITIES,
+  STORY_SEVERITIES,
+  STORY_STATUSES,
+  STORY_TYPES,
+  updateStoryStatus,
+  upsertStory,
+  validateStoriesArtifact,
+  writeStoryCandidatesArtifact,
+  type StoryCandidateRecord,
+  type StoryRecord,
+  type StoryStatus
+} from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 import { stageWorkflowArtifact } from '../lib/workflowPromotion.js';
 
@@ -10,12 +28,25 @@ const readOption = (args: string[], name: string): string | null => {
   const prefixed = args.find((arg) => arg.startsWith(`${name}=`));
   return prefixed ? prefixed.slice(name.length + 1) : null;
 };
+const hasFlag = (args: string[], name: string): boolean => args.includes(name);
 const readListOption = (args: string[], name: string): string[] => args.flatMap((arg, index) => args[index - 1] === name ? [arg] : []).filter((value): value is string => Boolean(value));
 const print = (format: 'text' | 'json', payload: unknown): void => {
   if (format === 'json') console.log(JSON.stringify(payload, null, 2));
   else console.log(typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2));
 };
-const usage = 'Usage: playbook story <list|show|create|status> [options]';
+const usage = 'Usage: playbook story <list|show|create|status|candidates|promote> [options]';
+
+const summarizeCandidate = (candidate: StoryCandidateRecord): Record<string, unknown> => ({
+  id: candidate.id,
+  title: candidate.title,
+  type: candidate.type,
+  priority: candidate.priority,
+  severity: candidate.severity,
+  confidence: candidate.confidence,
+  source: candidate.source,
+  evidence: candidate.evidence,
+  promotion_hint: candidate.promotion_hint
+});
 
 export const runStory = async (cwd: string, args: string[], options: StoryCommandOptions): Promise<number> => {
   const subcommand = args[0];
@@ -28,6 +59,57 @@ export const runStory = async (cwd: string, args: string[], options: StoryComman
     const artifact = readStoriesArtifact(cwd);
     print(options.format, { schemaVersion: '1.0', command: 'story.list', repo: artifact.repo, stories: artifact.stories });
     return ExitCode.Success;
+  }
+
+  if (subcommand === 'candidates') {
+    const explain = hasFlag(args, '--explain');
+    const artifact = generateStoryCandidates(cwd);
+    const artifactPath = writeStoryCandidatesArtifact(cwd, artifact);
+    print(options.format, {
+      schemaVersion: '1.0',
+      command: 'story.candidates',
+      explain,
+      artifactPath,
+      repo: artifact.repo,
+      readOnly: artifact.readOnly,
+      sourceArtifacts: artifact.sourceArtifacts,
+      candidates: explain ? artifact.candidates : artifact.candidates.map(summarizeCandidate)
+    });
+    return ExitCode.Success;
+  }
+
+  if (subcommand === 'promote') {
+    const candidateId = args[1];
+    if (!candidateId) {
+      print(options.format, { schemaVersion: '1.0', command: 'story.promote', error: 'Usage: playbook story promote <candidate-id> --json' });
+      return ExitCode.Failure;
+    }
+    const current = readStoriesArtifact(cwd);
+    const errors: string[] = [];
+    const candidateArtifact = generateStoryCandidates(cwd);
+    const promotedCandidate = candidateArtifact.candidates.find((entry) => entry.id === candidateId) ?? null;
+    if (!promotedCandidate) errors.push(`Story candidate not found: ${candidateId}`);
+    const nextArtifact = errors.length === 0 && promotedCandidate ? upsertStory(current, { ...promotedCandidate, repo: current.repo }) : current;
+    const promotion = stageWorkflowArtifact({
+      cwd,
+      workflowKind: 'story-promote',
+      candidateRelativePath: '.playbook/stories.staged.json',
+      committedRelativePath: STORIES_RELATIVE_PATH,
+      artifact: nextArtifact,
+      validate: () => errors.length > 0 ? errors : validateStoriesArtifact(nextArtifact),
+      generatedAt: new Date().toISOString(),
+      successSummary: `Promoted story candidate ${candidateId}`,
+      blockedSummary: 'Story promotion blocked; committed backlog state preserved.'
+    });
+    print(options.format, {
+      schemaVersion: '1.0',
+      command: 'story.promote',
+      candidate_id: candidateId,
+      candidate_artifact: STORY_CANDIDATES_RELATIVE_PATH,
+      story: nextArtifact.stories.find((entry: StoryRecord) => entry.id === candidateId) ?? null,
+      promotion
+    });
+    return promotion.promoted ? ExitCode.Success : ExitCode.PolicyFailure;
   }
 
   if (subcommand === 'show') {
