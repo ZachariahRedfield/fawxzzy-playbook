@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { evaluateArtifactContracts } from '../scripts/release-fallback-proof.mjs';
+import {
+  evaluateArtifactContracts,
+  evaluateTarballEntries,
+  parseTarEntries
+} from '../scripts/release-fallback-proof.mjs';
 
 const withTempRepo = (fn) => {
   const root = mkdtempSync(path.join(os.tmpdir(), 'release-fallback-proof-test-'));
@@ -81,6 +85,30 @@ test('check shape is stable and includes remediation metadata on failure', () =>
       assert.ok('remediation' in check);
       assert.ok('severity' in check);
       assert.equal(typeof check.remediation, 'string');
+      assert.match(check.command, /^node artifact-exists-check /);
     }
   });
+});
+
+test('parseTarEntries normalizes CRLF output and preserves exact entries', () => {
+  assert.deepEqual(parseTarEntries('package/bin/playbook.js\r\npackage/runtime/main.js\r\n'), [
+    'package/bin/playbook.js',
+    'package/runtime/main.js'
+  ]);
+});
+
+test('evaluateTarballEntries validates exact entries and vendored runtime in JS', () => {
+  const checks = evaluateTarballEntries({
+    tarPath: 'dist/release/playbook-cli-0.1.8.tgz',
+    tarEntries: [
+      'package/bin/playbook.js',
+      'package/runtime/main.js',
+      'package/runtime/node_modules/foo/index.js'
+    ]
+  });
+
+  assert.equal(checks.length, 3);
+  assert.ok(checks.every((check) => check.ok));
+  assert.match(checks[0].command, /^node tar-entry-check /);
+  assert.match(checks[2].command, /^node tar-entry-prefix-check /);
 });

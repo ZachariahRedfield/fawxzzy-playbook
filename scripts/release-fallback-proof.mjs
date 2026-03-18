@@ -7,6 +7,11 @@ import { fileURLToPath } from 'node:url';
 
 const DEFAULT_OWNER = 'ZachariahRedfield';
 const DEFAULT_REPO = 'playbook';
+const IS_WINDOWS = process.platform === 'win32';
+const NPM_COMMAND = IS_WINDOWS ? 'npm.cmd' : 'npm';
+const NPX_COMMAND = IS_WINDOWS ? 'npx.cmd' : 'npx';
+const CURL_COMMAND = IS_WINDOWS ? 'curl.exe' : 'curl';
+const TAR_COMMAND = IS_WINDOWS ? 'tar.exe' : 'tar';
 
 const parseArgs = () => {
   const args = process.argv.slice(2);
@@ -110,7 +115,36 @@ const requiredTarEntries = [
   'package/runtime/main.js'
 ];
 
+export const parseTarEntries = (stdout) =>
+  stdout
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
 const hasVendoredRuntime = (entries) => entries.some((entry) => entry.startsWith('package/runtime/node_modules/'));
+
+export const evaluateTarballEntries = ({ tarPath, tarEntries }) => {
+  const checks = [];
+
+  for (const entry of requiredTarEntries) {
+    const present = tarEntries.includes(entry);
+    checks.push(
+      createCheck(`tarball contains ${entry}`, present, `node tar-entry-check ${tarPath} ${entry}`, {
+        reason: present ? undefined : `Expected tarball entry ${entry} was not found.`
+      })
+    );
+  }
+
+  const hasRuntime = hasVendoredRuntime(tarEntries);
+  checks.push(
+    createCheck('tarball contains vendored runtime dependencies', hasRuntime, `node tar-entry-prefix-check ${tarPath} package/runtime/node_modules/`, {
+      reason: hasRuntime ? undefined : 'Expected vendored runtime dependencies under package/runtime/node_modules/.'
+    })
+  );
+
+  return checks;
+};
 
 export const evaluateArtifactContracts = ({ repoRoot, contracts, producerRuns = {} }) =>
   contracts.map((contract) => {
@@ -150,7 +184,7 @@ export const evaluateArtifactContracts = ({ repoRoot, contracts, producerRuns = 
     return {
       name: `artifact assertion: ${contract.path}`,
       ok: failureType === null,
-      command: `test -f ${contract.path}`,
+      command: `node artifact-exists-check ${contract.path}`,
       status: failureType === null ? 0 : 1,
       artifactPath: contract.path,
       failureType,
@@ -171,37 +205,17 @@ const main = async () => {
   const tarPath = assetPath || path.join(tmp, `playbook-cli-${options.version}.tgz`);
 
   const sourceCheck = assetPath
-    ? createCheck('local fallback asset exists', existsSync(assetPath), `test -f ${assetPath}`, {
+    ? createCheck('local fallback asset exists', existsSync(assetPath), `node artifact-exists-check ${assetPath}`, {
         artifactPath: assetPath,
         reason: existsSync(assetPath) ? undefined : `Local fallback tarball not found at ${assetPath}.`
       })
-    : { name: 'release asset download', ...run('curl', ['-sSfL', assetUrl, '-o', tarPath]) };
+    : { name: 'release asset download', ...run(CURL_COMMAND, ['-sSfL', assetUrl, '-o', tarPath]) };
 
-  const inspect = sourceCheck.ok ? run('tar', ['-tzf', tarPath]) : { ok: false, command: `tar -tzf ${tarPath}` };
-  const tarEntries = inspect.ok ? inspect.stdout.split('\n').filter(Boolean) : [];
+  const inspect = sourceCheck.ok ? run(TAR_COMMAND, ['-tzf', tarPath]) : { ok: false, command: `${TAR_COMMAND} -tzf ${tarPath}` };
+  const tarEntries = inspect.ok ? parseTarEntries(inspect.stdout) : [];
 
   const checks = [sourceCheck, { name: 'release asset tar inspection', ...inspect }];
-
-  for (const entry of requiredTarEntries) {
-    checks.push(
-      createCheck(`tarball contains ${entry}`, tarEntries.includes(entry), `tar -tzf ${tarPath} | grep -Fx ${entry}`, {
-        reason: tarEntries.includes(entry) ? undefined : `Expected tarball entry ${entry} was not found.`
-      })
-    );
-  }
-
-  checks.push(
-    createCheck(
-      'tarball contains vendored runtime dependencies',
-      hasVendoredRuntime(tarEntries),
-      `tar -tzf ${tarPath} | grep '^package/runtime/node_modules/'`,
-      {
-        reason: hasVendoredRuntime(tarEntries)
-          ? undefined
-          : 'Expected vendored runtime dependencies under package/runtime/node_modules/.'
-      }
-    )
-  );
+  checks.push(...evaluateTarballEntries({ tarPath, tarEntries }));
 
   if (options.consumerRepo) {
     const consumerRepo = path.resolve(options.consumerRepo);
@@ -209,30 +223,33 @@ const main = async () => {
     const envPath = path.join(consumerRepo, '.env.playbook-fallback-proof');
     writeFileSync(envPath, `PLAYBOOK_OFFICIAL_FALLBACK_SPEC=${fallbackSpec}\n`, 'utf8');
 
-    const install = { name: 'consumer npm install', ...run('npm', ['install'], consumerRepo) };
+    const install = { name: 'consumer npm install', ...run(NPM_COMMAND, ['install'], consumerRepo) };
     const packageMiss = {
       name: 'consumer package acquisition attempt fails as expected',
-      ...(() => { const result = run('npm', ['install', '@fawxzzy/playbook-cli@9999.0.0'], consumerRepo); return { ...result, ok: !result.ok }; })()
+      ...(() => {
+        const result = run(NPM_COMMAND, ['install', '@fawxzzy/playbook-cli@9999.0.0'], consumerRepo);
+        return { ...result, ok: !result.ok };
+      })()
     };
     const fallbackInstall = {
       name: 'consumer fallback acquisition from release tarball',
-      ...run('npm', ['install', '--no-save', fallbackSpec], consumerRepo)
+      ...run(NPM_COMMAND, ['install', '--no-save', fallbackSpec], consumerRepo)
     };
     const index = {
       name: 'consumer prerequisite: index',
-      ...run('npx', ['playbook', 'index', '--json'], consumerRepo)
+      ...run(NPX_COMMAND, ['playbook', 'index', '--json'], consumerRepo)
     };
     const verify = {
       name: 'consumer canonical ladder: verify',
-      ...run('npx', ['playbook', 'verify', '--json'], consumerRepo)
+      ...run(NPX_COMMAND, ['playbook', 'verify', '--json'], consumerRepo)
     };
     const plan = {
       name: 'consumer canonical ladder: plan',
-      ...run('npx', ['playbook', 'plan', '--json', '--out', '.playbook/plan.json'], consumerRepo)
+      ...run(NPX_COMMAND, ['playbook', 'plan', '--json', '--out', '.playbook/plan.json'], consumerRepo)
     };
     const apply = {
       name: 'consumer canonical ladder: apply',
-      ...run('npx', ['playbook', 'apply', '--from-plan', '.playbook/plan.json', '--json'], consumerRepo)
+      ...run(NPX_COMMAND, ['playbook', 'apply', '--from-plan', '.playbook/plan.json', '--json'], consumerRepo)
     };
 
     checks.push(install, packageMiss, fallbackInstall, index, verify, plan, apply);
