@@ -15,6 +15,7 @@ const parseArgs = () => {
     repo: DEFAULT_REPO,
     version: '',
     consumerRepo: '',
+    assetPath: '',
     json: false
   };
 
@@ -24,14 +25,15 @@ const parseArgs = () => {
     else if (arg === '--owner') result.owner = args[++i] ?? DEFAULT_OWNER;
     else if (arg === '--repo') result.repo = args[++i] ?? DEFAULT_REPO;
     else if (arg === '--consumer-repo') result.consumerRepo = args[++i] ?? '';
+    else if (arg === '--asset-path') result.assetPath = args[++i] ?? '';
     else if (arg === '--json') result.json = true;
     else if (arg === '--help') {
       process.stdout.write(
         [
-          'Usage: node scripts/release-fallback-proof.mjs --version <x.y.z> [--consumer-repo <path>] [--json]',
+          'Usage: node scripts/release-fallback-proof.mjs --version <x.y.z> [--asset-path <tarball>] [--consumer-repo <path>] [--json]',
           '',
-          'Verifies Playbook release fallback tarball provisioning and (optionally) runs consumer fallback smoke checks.',
-          'Constructed URL: https://github.com/<owner>/<repo>/releases/download/v<version>/playbook-cli-<version>.tgz'
+          'Verifies Playbook release fallback tarball provisioning and optionally runs consumer fallback smoke checks.',
+          'When --asset-path is omitted the proof downloads https://github.com/<owner>/<repo>/releases/download/v<version>/playbook-cli-<version>.tgz'
         ].join('\n') + '\n'
       );
       process.exit(0);
@@ -59,6 +61,14 @@ const run = (cmd, args, cwd = process.cwd()) => {
   };
 };
 
+const createCheck = (name, ok, command, extras = {}) => ({
+  name,
+  ok,
+  command,
+  status: ok ? 0 : 1,
+  ...extras
+});
+
 const classifyArtifactFailure = ({ exists, parseError, schemaError, stale }) => {
   if (!exists) return 'missing_prerequisite_artifact';
   if (parseError || schemaError) return 'invalid_artifact';
@@ -66,20 +76,27 @@ const classifyArtifactFailure = ({ exists, parseError, schemaError, stale }) => 
   return null;
 };
 
+const extractArtifactPayload = (parsed) => {
+  if (!parsed || typeof parsed !== 'object') return parsed;
+  if (parsed.data && typeof parsed.data === 'object') return parsed.data;
+  return parsed;
+};
+
 const validateArtifactSchema = (parsed, schema) => {
   if (!schema) return null;
+  const payload = extractArtifactPayload(parsed);
   if (schema.kind === 'repo-graph') {
-    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.edges)) {
+    if (!payload || typeof payload !== 'object' || !Array.isArray(payload.edges)) {
       return 'Expected JSON object with an edges array.';
     }
     return null;
   }
 
   if (schema.kind === 'plan') {
-    if (!parsed || typeof parsed !== 'object') {
+    if (!payload || typeof payload !== 'object') {
       return 'Expected JSON object.';
     }
-    if (parsed.command !== 'plan') {
+    if (payload.command !== 'plan') {
       return 'Expected command field to equal "plan".';
     }
     return null;
@@ -87,6 +104,13 @@ const validateArtifactSchema = (parsed, schema) => {
 
   return null;
 };
+
+const requiredTarEntries = [
+  'package/bin/playbook.js',
+  'package/runtime/main.js'
+];
+
+const hasVendoredRuntime = (entries) => entries.some((entry) => entry.startsWith('package/runtime/node_modules/'));
 
 export const evaluateArtifactContracts = ({ repoRoot, contracts, producerRuns = {} }) =>
   contracts.map((contract) => {
@@ -141,47 +165,74 @@ export const evaluateArtifactContracts = ({ repoRoot, contracts, producerRuns = 
 const main = async () => {
   const options = parseArgs();
   const assetUrl = `https://github.com/${options.owner}/${options.repo}/releases/download/v${options.version}/playbook-cli-${options.version}.tgz`;
+  const assetPath = options.assetPath ? path.resolve(options.assetPath) : '';
 
   const tmp = mkdtempSync(path.join(os.tmpdir(), 'playbook-release-fallback-proof-'));
-  const tarPath = path.join(tmp, `playbook-cli-${options.version}.tgz`);
+  const tarPath = assetPath || path.join(tmp, `playbook-cli-${options.version}.tgz`);
 
-  const download = run('curl', ['-sSfL', assetUrl, '-o', tarPath]);
-  const inspect = download.ok ? run('tar', ['-tzf', tarPath]) : { ok: false, command: 'tar -tzf <downloaded-tarball>' };
+  const sourceCheck = assetPath
+    ? createCheck('local fallback asset exists', existsSync(assetPath), `test -f ${assetPath}`, {
+        artifactPath: assetPath,
+        reason: existsSync(assetPath) ? undefined : `Local fallback tarball not found at ${assetPath}.`
+      })
+    : { name: 'release asset download', ...run('curl', ['-sSfL', assetUrl, '-o', tarPath]) };
 
-  const checks = [
-    { name: 'release asset download', ...download },
-    { name: 'release asset tar inspection', ...inspect }
-  ];
+  const inspect = sourceCheck.ok ? run('tar', ['-tzf', tarPath]) : { ok: false, command: `tar -tzf ${tarPath}` };
+  const tarEntries = inspect.ok ? inspect.stdout.split('\n').filter(Boolean) : [];
+
+  const checks = [sourceCheck, { name: 'release asset tar inspection', ...inspect }];
+
+  for (const entry of requiredTarEntries) {
+    checks.push(
+      createCheck(`tarball contains ${entry}`, tarEntries.includes(entry), `tar -tzf ${tarPath} | grep -Fx ${entry}`, {
+        reason: tarEntries.includes(entry) ? undefined : `Expected tarball entry ${entry} was not found.`
+      })
+    );
+  }
+
+  checks.push(
+    createCheck(
+      'tarball contains vendored runtime dependencies',
+      hasVendoredRuntime(tarEntries),
+      `tar -tzf ${tarPath} | grep '^package/runtime/node_modules/'`,
+      {
+        reason: hasVendoredRuntime(tarEntries)
+          ? undefined
+          : 'Expected vendored runtime dependencies under package/runtime/node_modules/.'
+      }
+    )
+  );
 
   if (options.consumerRepo) {
-    const specValue = `@${assetUrl}`;
-    const envPath = path.join(options.consumerRepo, '.env.playbook-fallback-proof');
-    writeFileSync(envPath, `PLAYBOOK_OFFICIAL_FALLBACK_SPEC=${specValue}\n`, 'utf8');
+    const consumerRepo = path.resolve(options.consumerRepo);
+    const fallbackSpec = assetPath ? tarPath : `@${assetUrl}`;
+    const envPath = path.join(consumerRepo, '.env.playbook-fallback-proof');
+    writeFileSync(envPath, `PLAYBOOK_OFFICIAL_FALLBACK_SPEC=${fallbackSpec}\n`, 'utf8');
 
-    const install = { name: 'consumer npm install', ...run('npm', ['install'], options.consumerRepo) };
+    const install = { name: 'consumer npm install', ...run('npm', ['install'], consumerRepo) };
     const packageMiss = {
-      name: 'consumer package acquisition attempt',
-      ...run('npm', ['install', '@fawxzzy/playbook-cli@9999.0.0'], options.consumerRepo)
+      name: 'consumer package acquisition attempt fails as expected',
+      ...(() => { const result = run('npm', ['install', '@fawxzzy/playbook-cli@9999.0.0'], consumerRepo); return { ...result, ok: !result.ok }; })()
     };
     const fallbackInstall = {
       name: 'consumer fallback acquisition from release tarball',
-      ...run('npm', ['install', '--no-save', specValue], options.consumerRepo)
+      ...run('npm', ['install', '--no-save', fallbackSpec], consumerRepo)
     };
     const index = {
       name: 'consumer prerequisite: index',
-      ...run('npx', ['playbook', 'index', '--json'], options.consumerRepo)
+      ...run('npx', ['playbook', 'index', '--json'], consumerRepo)
     };
     const verify = {
       name: 'consumer canonical ladder: verify',
-      ...run('npx', ['playbook', 'verify', '--json'], options.consumerRepo)
+      ...run('npx', ['playbook', 'verify', '--json'], consumerRepo)
     };
     const plan = {
       name: 'consumer canonical ladder: plan',
-      ...run('npx', ['playbook', 'plan', '--json'], options.consumerRepo)
+      ...run('npx', ['playbook', 'plan', '--json', '--out', '.playbook/plan.json'], consumerRepo)
     };
     const apply = {
       name: 'consumer canonical ladder: apply',
-      ...run('npx', ['playbook', 'apply', '--json'], options.consumerRepo)
+      ...run('npx', ['playbook', 'apply', '--from-plan', '.playbook/plan.json', '--json'], consumerRepo)
     };
 
     checks.push(install, packageMiss, fallbackInstall, index, verify, plan, apply);
@@ -207,55 +258,51 @@ const main = async () => {
 
     checks.push(
       ...evaluateArtifactContracts({
-        repoRoot: options.consumerRepo,
+        repoRoot: consumerRepo,
         contracts: artifactContracts,
-        producerRuns: {
-          index,
-          plan
-        }
+        producerRuns: { index, plan }
       })
     );
   }
 
   const ok = checks.every((item) => item.ok);
+  const payload = {
+    ok,
+    version: options.version,
+    assetUrl,
+    assetPath: assetPath || undefined,
+    checks: checks.map((item) => ({
+      name: item.name,
+      ok: item.ok,
+      command: item.command,
+      status: item.status ?? null,
+      stdout: item.stdout?.trim() || undefined,
+      stderr: item.stderr?.trim() || undefined,
+      artifactPath: item.artifactPath,
+      failureType: item.failureType,
+      reason: item.reason,
+      expectedProducerCommand: item.expectedProducerCommand,
+      remediation: item.remediation,
+      severity: item.severity,
+      details: item.details
+    }))
+  };
+
   if (options.json) {
-    process.stdout.write(
-      JSON.stringify(
-        {
-          ok,
-          version: options.version,
-          assetUrl,
-          checks: checks.map((item) => ({
-            name: item.name,
-            ok: item.ok,
-            command: item.command,
-            status: item.status ?? null,
-            stdout: item.stdout?.trim() || undefined,
-            stderr: item.stderr?.trim() || undefined,
-            artifactPath: item.artifactPath,
-            failureType: item.failureType,
-            reason: item.reason,
-            expectedProducerCommand: item.expectedProducerCommand,
-            remediation: item.remediation,
-            severity: item.severity,
-            details: item.details
-          }))
-        },
-        null,
-        2
-      ) + '\n'
-    );
+    process.stdout.write(JSON.stringify(payload, null, 2) + '\n');
   } else {
-    for (const item of checks) {
+    for (const item of payload.checks) {
       process.stdout.write(`${item.ok ? 'PASS' : 'FAIL'} ${item.name}: ${item.command}\n`);
       if (!item.ok && item.artifactPath) {
         process.stdout.write(
-          `  -> ${item.failureType} [${item.severity}] at ${item.artifactPath}; producer: ${item.expectedProducerCommand}\n`
+          `  -> ${item.failureType ?? 'check_failed'}${item.severity ? ` [${item.severity}]` : ''} at ${item.artifactPath}${item.expectedProducerCommand ? `; producer: ${item.expectedProducerCommand}` : ''}\n`
         );
-        process.stdout.write(`  -> remediation: ${item.remediation}\n`);
       }
+      if (!item.ok && item.reason) process.stdout.write(`  -> ${item.reason}\n`);
+      if (!item.ok && item.remediation) process.stdout.write(`  -> remediation: ${item.remediation}\n`);
     }
     process.stdout.write(`Asset URL: ${assetUrl}\n`);
+    if (assetPath) process.stdout.write(`Asset path: ${assetPath}\n`);
   }
 
   rmSync(tmp, { recursive: true, force: true });
