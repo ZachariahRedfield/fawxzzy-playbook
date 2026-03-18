@@ -12,8 +12,7 @@
   "scripts": {
     "build": "node -e \"process.stdout.write('cli-wrapper build: no-op\\n')\"",
     "test": "node -e \"process.stdout.write('cli-wrapper test: no-op\\n')\"",
-    "prepack": "node ../../scripts/prepare-cli-wrapper-runtime.mjs",
-    "prepublishOnly": "node ../../scripts/prepare-cli-wrapper-runtime.mjs"
+    "prepack": "node ../../scripts/prepare-cli-wrapper-runtime.mjs"
   },
   "publishConfig": {
     "access": "public"

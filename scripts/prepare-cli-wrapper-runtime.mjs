@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -27,21 +26,6 @@ const ensureExists = (target, message) => {
 
 const readJson = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
-const run = (command, args, cwd = repoRoot) => {
-  const result = spawnSync(command, args, {
-    cwd,
-    stdio: 'inherit',
-    shell: process.platform === 'win32'
-  });
-
-  if (result.error) throw result.error;
-
-  if ((result.status ?? 1) !== 0) {
-    throw new Error(`Command failed: ${command} ${args.join(' ')}`);
-  }
-};
-
-
 const copyExternalPackage = (packageName, fromDir) => {
   if (copiedExternalPackages.has(packageName)) return;
 
@@ -55,16 +39,15 @@ const copyExternalPackage = (packageName, fromDir) => {
 
   const packageJson = readJson(resolvedPackageJsonPath);
   const dependencies = packageJson.dependencies ?? {};
-  for (const [dependencyName] of Object.entries(dependencies)) {
+  for (const dependencyName of Object.keys(dependencies)) {
     copyExternalPackage(dependencyName, sourceDir);
   }
 };
 
-if (!fs.existsSync(cliDistDir)) {
-  run('pnpm', ['-C', cliDir, 'build']);
-}
-
-ensureExists(cliDistDir, `Missing CLI dist at ${cliDistDir} after build.`);
+ensureExists(
+  cliDistDir,
+  `Missing CLI dist at ${cliDistDir}. Run "pnpm -r build" before packing the cli-wrapper.`
+);
 
 fs.rmSync(wrapperRuntimeDir, { recursive: true, force: true });
 fs.mkdirSync(wrapperRuntimeDir, { recursive: true });
@@ -73,8 +56,12 @@ fs.cpSync(cliDistDir, wrapperRuntimeDir, { recursive: true });
 for (const packageDir of workspacePackages) {
   const packageJsonPath = path.join(packageDir, 'package.json');
   const distDir = path.join(packageDir, 'dist');
+
   ensureExists(packageJsonPath, `Missing package.json at ${packageJsonPath}.`);
-  ensureExists(distDir, `Missing dependency dist at ${distDir}. Run "pnpm -r build" first.`);
+  ensureExists(
+    distDir,
+    `Missing dependency dist at ${distDir}. Run "pnpm -r build" before packing the cli-wrapper.`
+  );
 
   const packageJson = readJson(packageJsonPath);
   const vendorDir = path.join(wrapperRuntimeDir, 'node_modules', ...packageJson.name.split('/'));
