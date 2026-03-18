@@ -98,6 +98,9 @@ CI contract stance:
 - Maintenance automation (for example `agents:update`, `agents:check`, docs audit) should run in dedicated scheduled/on-demand maintenance workflows.
 - Cross-repo demo refresh automation should run as PR-based scheduled/on-demand maintenance workflows (not inside the main correctness CI gate).
 - Rule: Generated artifacts must be regenerated before they are validated in any refresh/build/release pipeline.
+- Rule: Generated artifacts must be produced in staging and promoted only after validation succeeds.
+- Pattern: Shared staged-artifact orchestration should provide generation isolation, candidate validation, and gated promotion.
+- Failure Mode: Environment-sensitive generation paths and direct committed-output writes undermine deterministic artifact governance.
 - Pattern: Generate → validate → promote is the default artifact pipeline shape.
 - Failure Mode: Validating stale generated artifacts before regeneration creates false-negative pipeline failures and circular recovery paths.
 

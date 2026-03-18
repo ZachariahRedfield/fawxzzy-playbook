@@ -139,6 +139,8 @@ Record major repository decisions in `docs/PLAYBOOK_NOTES.md` and keep `docs/CHA
 
 - Every PR must reference at least one roadmap `feature_id` from `docs/roadmap/ROADMAP.json`.
 - Command output changes must update contract snapshots and `docs/contracts/COMMAND_CONTRACTS_V1.md`.
+- Generated artifacts must be produced in staging and promoted only after validation succeeds.
+- Snapshot refresh uses the built CLI directly (`node scripts/update-contract-snapshots.mjs`) and therefore requires `pnpm -r build` before regeneration.
 - Documentation and governance changes must pass `pnpm playbook docs audit` in CI.
 
 ## Suggested PR structure

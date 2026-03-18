@@ -21,12 +21,21 @@ const runNode = (scriptPath, env = {}) =>
 
 test('update-contract-snapshots stages regenerated snapshots and leaves committed snapshots untouched on failed promotion', { timeout: 180000, concurrency: false }, () => {
   const original = fs.readFileSync(committedSnapshotPath, 'utf8');
-  const result = runNode(updateSnapshotsScript, { PLAYBOOK_SNAPSHOT_TEST_MODE: '1', PLAYBOOK_FAIL_BEFORE_SNAPSHOT_PROMOTION: '1' });
+  const result = runNode(updateSnapshotsScript, { PLAYBOOK_FAIL_BEFORE_SNAPSHOT_PROMOTION: '1' });
   const after = fs.readFileSync(committedSnapshotPath, 'utf8');
 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /snapshot promotion intentionally aborted before promotion/);
   assert.equal(after, original);
+});
+
+
+test('update-contract-snapshots uses the deterministic generator path instead of the vitest/esbuild refresh path', { timeout: 180000, concurrency: false }, () => {
+  const result = runNode(updateSnapshotsScript);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.doesNotMatch(result.stderr, /@esbuild\/linux-x64/);
+  assert.match(result.stdout, /Refreshed \d+ contract snapshot\(s\) via generate → validate → promote\./);
 });
 
 test('pack-release-fallback-asset validates staged tarballs before promotion and preserves committed asset on failure', { timeout: 120000, concurrency: false }, () => {

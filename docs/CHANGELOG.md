@@ -26,6 +26,11 @@
 
 ## Unreleased
 
+- WHAT: Hardened the shared staged-artifact workflow with rollback-safe promotion, clearer failure reporting, and cleanup guarantees; converted `scripts/sync-templates.mjs` and the legacy managed-docs updater onto the staged pipeline; and replaced contract snapshot refresh's Vitest/Vite execution path with a built-CLI generator that validates schemas before promotion. WHY: This removes the remaining direct-write fragility in touched artifact writers and makes snapshot refresh deterministic without depending on optional `@esbuild/linux-x64` installation shape.
+- Rule: Generated artifacts must be produced in staging and promoted only after validation succeeds.
+- Pattern: Shared staged-artifact orchestration should provide generation isolation, candidate validation, and gated promotion.
+- Failure Mode: Environment-sensitive generation paths and direct committed-output writes undermine deterministic artifact governance.
+
 - WHAT: Audited remaining artifact-producing refresh and packaging pipelines and normalized contract snapshot updates plus fallback release asset packing onto staged candidate generation with gated promotion. Introduced `scripts/staged-artifact-workflow.mjs` so managed docs, contract snapshot refresh, and release asset packaging share the same isolated generate → validate → promote structure, and added regression tests that prove failed validation/promotion leaves committed outputs untouched. WHY: These pipelines were still vulnerable to stale-state validation or premature writes that could partially promote invalid artifacts.
 - Rule: All artifact-producing pipelines must validate regenerated candidate state, not stale committed outputs.
 - Pattern: Use isolated candidate generation plus gated promotion for deterministic artifact workflows.
