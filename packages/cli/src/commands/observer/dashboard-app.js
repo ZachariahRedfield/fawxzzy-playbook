@@ -422,13 +422,17 @@ const renderUpdatedStateSummary = (updatedState) => {
 
   const summary = updatedState.summary || {};
   const statusCounts = summary.by_reconciliation_status || {};
+  const actionCounts = summary.action_counts || {};
   updatedStatePanelEl.innerHTML =
     '<div><strong>Repos total:</strong> ' + escapeHtml(String(summary.repos_total || 0)) + '</div>' +
-    '<div><strong>Completed:</strong> ' + escapeHtml(Array.isArray(summary.completed_repo_ids) && summary.completed_repo_ids.length > 0 ? summary.completed_repo_ids.join(', ') : 'none') + '</div>' +
-    '<div><strong>Retry required:</strong> ' + escapeHtml(Array.isArray(summary.repos_needing_retry) && summary.repos_needing_retry.length > 0 ? summary.repos_needing_retry.join(', ') : 'none') + '</div>' +
-    '<div><strong>Blocked:</strong> ' + escapeHtml(Array.isArray(summary.blocked_repo_ids) && summary.blocked_repo_ids.length > 0 ? summary.blocked_repo_ids.join(', ') : 'none') + '</div>' +
-    '<div><strong>Stale/superseded:</strong> ' + escapeHtml(Array.isArray(summary.stale_or_superseded_repo_ids) && summary.stale_or_superseded_repo_ids.length > 0 ? summary.stale_or_superseded_repo_ids.join(', ') : 'none') + '</div>' +
-    '<div><strong>Status counts:</strong> ' + escapeHtml(JSON.stringify(statusCounts)) + '</div>';
+    '<div><strong>What happened (completed):</strong> ' + escapeHtml(Array.isArray(summary.completed_repo_ids) && summary.completed_repo_ids.length > 0 ? summary.completed_repo_ids.join(', ') : 'none') + '</div>' +
+    '<div><strong>What happened (blocked):</strong> ' + escapeHtml(Array.isArray(summary.blocked_repo_ids) && summary.blocked_repo_ids.length > 0 ? summary.blocked_repo_ids.join(', ') : 'none') + '</div>' +
+    '<div><strong>What happened (stale/superseded):</strong> ' + escapeHtml(Array.isArray(summary.stale_or_superseded_repo_ids) && summary.stale_or_superseded_repo_ids.length > 0 ? summary.stale_or_superseded_repo_ids.join(', ') : 'none') + '</div>' +
+    '<div><strong>Observed outcome counts:</strong> ' + escapeHtml(JSON.stringify(statusCounts)) + '</div>' +
+    '<div><strong>Action counts:</strong> ' + escapeHtml(JSON.stringify(actionCounts)) + '</div>' +
+    '<div><strong>Needs retry:</strong> ' + escapeHtml(Array.isArray(summary.repos_needing_retry) && summary.repos_needing_retry.length > 0 ? summary.repos_needing_retry.join(', ') : 'none') + '</div>' +
+    '<div><strong>Needs replan:</strong> ' + escapeHtml(Array.isArray(summary.repos_needing_replan) && summary.repos_needing_replan.length > 0 ? summary.repos_needing_replan.join(', ') : 'none') + '</div>' +
+    '<div><strong>Needs review:</strong> ' + escapeHtml(Array.isArray(summary.repos_needing_review) && summary.repos_needing_review.length > 0 ? summary.repos_needing_review.join(', ') : 'none') + '</div>';
 };
 
 const loadUpdatedState = async () => {

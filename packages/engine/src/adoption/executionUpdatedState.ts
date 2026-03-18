@@ -11,8 +11,13 @@ export type ReconciliationStatus =
   | 'failed'
   | 'blocked'
   | 'not_run'
-  | 'retry_required'
   | 'stale_plan_or_superseded';
+
+export type ReconciledActionState = {
+  needs_retry: boolean;
+  needs_replan: boolean;
+  needs_review: boolean;
+};
 
 export type ReconciledRepoState = {
   repo_id: string;
@@ -20,7 +25,7 @@ export type ReconciledRepoState = {
   planned_lifecycle_stage: ReadinessLifecycleStage | null;
   updated_lifecycle_stage: ReadinessLifecycleStage;
   reconciliation_status: ReconciliationStatus;
-  retry_required: boolean;
+  action_state: ReconciledActionState;
   prompt_ids: string[];
   blocker_codes: string[];
   drift_prompt_ids: string[];
@@ -36,7 +41,14 @@ export type FleetUpdatedAdoptionState = {
   summary: {
     repos_total: number;
     by_reconciliation_status: Record<ReconciliationStatus, number>;
+    action_counts: {
+      needs_retry: number;
+      needs_replan: number;
+      needs_review: number;
+    };
     repos_needing_retry: string[];
+    repos_needing_replan: string[];
+    repos_needing_review: string[];
     stale_or_superseded_repo_ids: string[];
     blocked_repo_ids: string[];
     completed_repo_ids: string[];
@@ -51,7 +63,6 @@ const ALL_STATUSES: ReconciliationStatus[] = [
   'failed',
   'blocked',
   'not_run',
-  'retry_required',
   'stale_plan_or_superseded'
 ];
 
@@ -59,7 +70,6 @@ const sortStrings = (values: Iterable<string>): string[] => [...new Set(values)]
 
 const determineReconciliationStatus = (input: {
   receiptStatus: ExecutionComparisonStatus | 'unknown';
-  retryRecommended: boolean;
   blockerCodes: string[];
   driftPromptIds: string[];
   plannedStage: ReadinessLifecycleStage | null;
@@ -71,17 +81,49 @@ const determineReconciliationStatus = (input: {
   if (input.receiptStatus === 'not_run') return 'not_run';
   if (input.receiptStatus === 'mismatch') {
     if (input.updatedStage === input.priorStage) return 'stale_plan_or_superseded';
-    return input.retryRecommended ? 'retry_required' : 'completed_with_drift';
+    return 'completed_with_drift';
   }
   if (input.blockerCodes.length > 0) return 'blocked';
-  if (input.receiptStatus === 'failed') return input.retryRecommended ? 'retry_required' : 'failed';
-  if (input.receiptStatus === 'partial_success') return input.retryRecommended ? 'retry_required' : 'partial';
+  if (input.receiptStatus === 'failed') return 'failed';
+  if (input.receiptStatus === 'partial_success') return 'partial';
   if (input.receiptStatus === 'success') {
     if (input.plannedStage !== null && input.updatedStage !== input.plannedStage) return 'completed_with_drift';
     if (input.driftPromptIds.length > 0) return 'completed_with_drift';
     return 'completed_as_planned';
   }
   return 'failed';
+};
+
+const determineActionState = (input: {
+  reconciliationStatus: ReconciliationStatus;
+  receiptStatus: ExecutionComparisonStatus | 'unknown';
+  blockerCodes: string[];
+}): ReconciledActionState => {
+  const hasBlockers = input.blockerCodes.length > 0;
+  switch (input.reconciliationStatus) {
+    case 'completed_as_planned':
+      return { needs_retry: false, needs_replan: false, needs_review: false };
+    case 'completed_with_drift':
+      return { needs_retry: false, needs_replan: false, needs_review: true };
+    case 'partial':
+      return { needs_retry: true, needs_replan: false, needs_review: hasBlockers };
+    case 'failed':
+      return { needs_retry: true, needs_replan: false, needs_review: hasBlockers };
+    case 'blocked':
+      return {
+        needs_retry: input.receiptStatus === 'failed' || input.receiptStatus === 'partial_success',
+        needs_replan: false,
+        needs_review: true
+      };
+    case 'not_run':
+      return { needs_retry: false, needs_replan: false, needs_review: false };
+    case 'stale_plan_or_superseded':
+      return {
+        needs_retry: input.receiptStatus === 'failed' || input.receiptStatus === 'partial_success',
+        needs_replan: true,
+        needs_review: true
+      };
+  }
 };
 
 export const buildFleetUpdatedAdoptionState = (
@@ -106,19 +148,22 @@ export const buildFleetUpdatedAdoptionState = (
     const blockerCodes = sortStrings([...(receiptRepo?.blockers ?? []), ...receipt.blockers.filter((blocker) => blocker.repo_id === repo.repo_id).map((blocker) => blocker.blocker_code)]);
     const driftPromptIds = sortStrings(driftByRepo.get(repo.repo_id) ?? []);
     const priorStage = queueItem?.lifecycle_stage ?? repo.lifecycle_stage;
-    const plannedStage = receiptRepo?.planned_transition?.to ?? (queueItem ? queueItem.lifecycle_stage : null);
+    const plannedStage = receiptRepo?.planned_transition?.to ?? null;
     const updatedStage = receiptRepo?.observed_transition.to ?? repo.lifecycle_stage;
     const receiptStatus = receiptRepo?.status ?? 'unknown';
-    const retryRequired = Boolean(receiptRepo?.retry_recommended) || ['failed', 'partial_success', 'mismatch'].includes(receiptStatus);
     const reconciliationStatus = determineReconciliationStatus({
       receiptStatus,
-      retryRecommended: retryRequired,
       blockerCodes,
       driftPromptIds,
       plannedStage,
       updatedStage,
       priorStage,
       promptIds
+    });
+    const actionState = determineActionState({
+      reconciliationStatus,
+      receiptStatus,
+      blockerCodes
     });
 
     return {
@@ -127,7 +172,7 @@ export const buildFleetUpdatedAdoptionState = (
       planned_lifecycle_stage: plannedStage,
       updated_lifecycle_stage: updatedStage,
       reconciliation_status: reconciliationStatus,
-      retry_required: retryRequired || reconciliationStatus === 'retry_required',
+      action_state: actionState,
       prompt_ids: promptIds,
       blocker_codes: blockerCodes,
       drift_prompt_ids: driftPromptIds,
@@ -149,7 +194,14 @@ export const buildFleetUpdatedAdoptionState = (
     summary: {
       repos_total: repos.length,
       by_reconciliation_status: byStatus,
-      repos_needing_retry: sortStrings(repos.filter((repo) => repo.retry_required || repo.reconciliation_status === 'retry_required').map((repo) => repo.repo_id)),
+      action_counts: {
+        needs_retry: repos.filter((repo) => repo.action_state.needs_retry).length,
+        needs_replan: repos.filter((repo) => repo.action_state.needs_replan).length,
+        needs_review: repos.filter((repo) => repo.action_state.needs_review).length
+      },
+      repos_needing_retry: sortStrings(repos.filter((repo) => repo.action_state.needs_retry).map((repo) => repo.repo_id)),
+      repos_needing_replan: sortStrings(repos.filter((repo) => repo.action_state.needs_replan).map((repo) => repo.repo_id)),
+      repos_needing_review: sortStrings(repos.filter((repo) => repo.action_state.needs_review).map((repo) => repo.repo_id)),
       stale_or_superseded_repo_ids: sortStrings(repos.filter((repo) => repo.reconciliation_status === 'stale_plan_or_superseded').map((repo) => repo.repo_id)),
       blocked_repo_ids: sortStrings(repos.filter((repo) => repo.reconciliation_status === 'blocked').map((repo) => repo.repo_id)),
       completed_repo_ids: sortStrings(repos.filter((repo) => ['completed_as_planned', 'completed_with_drift'].includes(repo.reconciliation_status)).map((repo) => repo.repo_id))

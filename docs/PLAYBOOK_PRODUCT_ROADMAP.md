@@ -2132,4 +2132,4 @@ Execution state is persisted under `.playbook/runs/<run-id>.json` and is queryab
 - Observer repo cards/details now expose this readiness stage and first actionable next command without requiring manual artifact interpretation.
 
 - Execution outcomes: adoption execution now has a deterministic receipt model, planned-vs-actual lifecycle comparison, observer retry/drift surfacing, and reconciled updated-state closure (`state -> queue -> execution plan -> execution receipt -> updated state`).
-- Next dependency-ordered step completed: post-receipt reconciliation now writes canonical updated adoption state so retry routing and observer surfacing follow reconciled state instead of raw receipt echoing.
+- Next dependency-ordered step completed: post-receipt reconciliation now writes canonical updated adoption state, and the semantic-hardening follow-up separates observed outcome from derived next-action routing so retry/replan/review behavior stays explicit.

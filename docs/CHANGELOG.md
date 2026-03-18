@@ -1,3 +1,4 @@
+- WHAT: Hardened execution updated-state semantics so `reconciliation_status` now represents observed outcome only, while follow-up routing is carried separately in `action_state` / `action_counts` (`needs_retry`, `needs_replan`, `needs_review`). WHY: Prevents control-plane ambiguity where drift, blockage, and retry behavior were being collapsed into one overloaded enum.
 - WHAT: Added deterministic adoption-state reconciliation after execution receipt ingestion, including `fleet-adoption-updated-state`, `.playbook/execution-updated-state.json`, a new `pnpm playbook status updated --json` scope, and Observer receipt-vs-updated-state separation with retry derivation sourced from reconciled state. WHY: Closes the loop from planned execution into canonical post-receipt adoption state without inventing a second outcome model beyond the receipt contract.
 ## 2026-03-16 — Docs truth-boundary canonicalization
 

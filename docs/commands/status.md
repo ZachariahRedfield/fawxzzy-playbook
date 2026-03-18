@@ -172,7 +172,9 @@ Use the following deterministic chain without inventing a second outcome model:
 2. **Execution receipt** (`status receipt`) is the canonical planned-vs-actual contract.
 3. **Updated state** (`status updated`) reconciles prior readiness + queue + plan + receipt into the next canonical adoption state.
 
-Updated-state `reconciliation_status` values are:
+Updated state separates **observed reconciliation outcome** from **derived next-action metadata**.
+
+Observed `reconciliation_status` values are:
 
 - `completed_as_planned`
 - `completed_with_drift`
@@ -180,7 +182,12 @@ Updated-state `reconciliation_status` values are:
 - `failed`
 - `blocked`
 - `not_run`
-- `retry_required`
 - `stale_plan_or_superseded`
 
-Retry prioritization is now derived from reconciled updated state rather than only echoed from receipt summaries.
+Each repo also carries `action_state` booleans:
+
+- `needs_retry`
+- `needs_replan`
+- `needs_review`
+
+Summary aggregation keeps observed outcome counts (`by_reconciliation_status`) separate from follow-up routing counts (`action_counts`). In particular, `completed_with_drift` is a successful observed outcome class and does **not** automatically imply retry.

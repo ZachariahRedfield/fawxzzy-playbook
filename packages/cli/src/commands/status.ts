@@ -395,9 +395,11 @@ export const runStatus = async (cwd: string, options: StatusOptions): Promise<nu
       } else {
         console.log(`Updated state kind: ${updatedResult.updated_state.kind}`);
         console.log(`Repos total: ${updatedResult.updated_state.summary.repos_total}`);
-        console.log(`Retry required: ${updatedResult.updated_state.summary.repos_needing_retry.length}`);
-        console.log(`Completed: ${updatedResult.updated_state.summary.completed_repo_ids.length}`);
-        console.log(`Stale/superseded: ${updatedResult.updated_state.summary.stale_or_superseded_repo_ids.length}`);
+        console.log(`Observed outcomes: ${JSON.stringify(updatedResult.updated_state.summary.by_reconciliation_status)}`);
+        console.log(`Action counts: ${JSON.stringify(updatedResult.updated_state.summary.action_counts)}`);
+        console.log(`Needs retry: ${updatedResult.updated_state.summary.repos_needing_retry.length}`);
+        console.log(`Needs replan: ${updatedResult.updated_state.summary.repos_needing_replan.length}`);
+        console.log(`Needs review: ${updatedResult.updated_state.summary.repos_needing_review.length}`);
       }
       return ExitCode.Success;
     }

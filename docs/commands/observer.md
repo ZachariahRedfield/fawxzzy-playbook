@@ -201,10 +201,11 @@ Observer now exposes `/api/readiness/receipt` and `/api/readiness/updated-state`
 - latest wave result
 - completed prompts
 - failed prompts
-- repos needing retry from updated-state reconciliation
+- observed outcome counts from updated-state reconciliation
+- derived next actions (`needs_retry`, `needs_replan`, `needs_review`)
 - planned vs actual drift
 
-These panels are read-only-friendly: the receipt remains the canonical planned-vs-actual contract, and updated state is derived deterministically from current readiness, work queue, execution plan, receipt, and `.playbook/execution-outcome-input.json` when present.
+These panels are read-only-friendly: the receipt remains the canonical planned-vs-actual contract, and updated state is derived deterministically from current readiness, work queue, execution plan, receipt, and `.playbook/execution-outcome-input.json` when present. Updated state separates what happened from what action is needed next so CLI, Observer, and automation layers do not overload one enum with multiple meanings.
 
 - **Rule**: Observer outcome views must stay evidence-backed and must not auto-execute repo commands.
 - **Pattern**: Surface retry/drift summaries next to readiness and queue state so the next prioritization pass stays deterministic.

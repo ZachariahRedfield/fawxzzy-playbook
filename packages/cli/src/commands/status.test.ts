@@ -150,10 +150,16 @@ describe('runStatus', () => {
           failed: 0,
           blocked: 0,
           not_run: 0,
-          retry_required: 0,
           stale_plan_or_superseded: 0
         },
+        action_counts: {
+          needs_retry: 0,
+          needs_replan: 0,
+          needs_review: 0
+        },
         repos_needing_retry: [],
+        repos_needing_replan: [],
+        repos_needing_review: [],
         stale_or_superseded_repo_ids: [],
         blocked_repo_ids: [],
         completed_repo_ids: []
@@ -373,10 +379,16 @@ describe('runStatus', () => {
           failed: 0,
           blocked: 0,
           not_run: 0,
-          retry_required: 0,
           stale_plan_or_superseded: 0
         },
+        action_counts: {
+          needs_retry: 0,
+          needs_replan: 0,
+          needs_review: 0
+        },
         repos_needing_retry: [],
+        repos_needing_replan: [],
+        repos_needing_review: [],
         stale_or_superseded_repo_ids: [],
         blocked_repo_ids: [],
         completed_repo_ids: ['repo-a']
@@ -387,7 +399,7 @@ describe('runStatus', () => {
         planned_lifecycle_stage: 'ready',
         updated_lifecycle_stage: 'ready',
         reconciliation_status: 'completed_as_planned',
-        retry_required: false,
+        action_state: { needs_retry: false, needs_replan: false, needs_review: false },
         prompt_ids: ['wave_1:apply_lane:repo-a'],
         blocker_codes: [],
         drift_prompt_ids: [],
