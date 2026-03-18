@@ -14,8 +14,10 @@ const makeRepo = (): StoryCandidateTestRepo => {
 };
 
 const requireRepoRoot = (repoRoot: string | undefined): string => {
-  expect(repoRoot, 'test fixture must return a repoRoot path').toBeTruthy();
-  expect(repoRoot).toEqual(expect.any(String));
+  expect(repoRoot, 'test fixture must return a repoRoot path').toBeDefined();
+  expect(repoRoot).toBeTruthy();
+  expect(typeof repoRoot).toBe('string');
+  expect(repoRoot!.length).toBeGreaterThan(0);
   return repoRoot as string;
 };
 
