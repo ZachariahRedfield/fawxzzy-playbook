@@ -37,6 +37,7 @@ const additiveCommandOutputSchemas: RegisteredSchema[] = [
   { id: 'task-execution-profile', version: '1.0', path: 'packages/contracts/src/task-execution-profile.schema.json' },
   { id: 'execution-outcome-input', version: '1.0', path: 'packages/contracts/src/execution-outcome-input.schema.json' },
   { id: 'execution-plan', version: '1.0', path: 'packages/contracts/src/execution-plan.schema.json' },
+  { id: 'workflow-promotion', version: '1.0', path: 'packages/contracts/src/workflow-promotion.schema.json' },
   { id: 'workset-plan', version: '1.0', path: 'packages/contracts/src/workset-plan.schema.json' },
   { id: 'outcome-telemetry', version: '1.0', path: 'packages/contracts/src/outcome-telemetry.schema.json' },
   { id: 'learning-state', version: '1.0', path: 'packages/contracts/src/learning-state.schema.json' },

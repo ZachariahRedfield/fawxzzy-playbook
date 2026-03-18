@@ -195,6 +195,22 @@ Each repo also carries `action_state` booleans:
 Summary aggregation keeps observed outcome counts (`by_reconciliation_status`) separate from follow-up routing counts (`action_counts`). In particular, `completed_with_drift` is a successful observed outcome class and does **not** automatically imply retry.
 
 
+
+## Workflow promotion metadata
+
+`status updated --json` now returns a normalized `promotion` receipt using the shared workflow-promotion contract.
+
+Fields include:
+
+- `workflow_kind`: `status-updated`
+- `candidate_artifact_path`: `.playbook/staged/workflow-status-updated/execution-updated-state.json`
+- `committed_target_path`: `.playbook/execution-updated-state.json`
+- `validation_status` / `promotion_status`
+- `blocked_reason` / `error_summary` when promotion is blocked
+- `committed_state_preserved` when prior committed state remains intact
+
+Backward-compatible aliases remain available for existing consumers: `staged_artifact_path`, `validation_passed`, and `promoted`.
+
 ## Updated-state-driven next queue
 
 Once `.playbook/execution-updated-state.json` exists, that artifact becomes the single source of truth for the next adoption queue. Playbook now derives retry/replan routing from updated-state instead of re-reading raw execution receipts or recomputing directly from readiness.
