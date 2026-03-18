@@ -26,8 +26,6 @@ export type FleetExecutionIngestionResult = {
   outcome_input: FleetExecutionOutcomeInput;
 };
 
-const sortStrings = (values: Iterable<string>): string[] => [...new Set(values)].sort((left, right) => left.localeCompare(right));
-
 const stableResultOrder = (left: ExecutionResult, right: ExecutionResult): number =>
   left.repo_id.localeCompare(right.repo_id) ||
   left.prompt_id.localeCompare(right.prompt_id) ||
@@ -133,10 +131,7 @@ export const mapExecutionResultsToOutcomeInput = (
       status: toOutcomeStatus(result.status),
       verification_passed: result.status === 'success' && observedTransition.to === intended.to,
       notes: result.error?.trim() ? result.error.trim() : `Execution result ingested with status ${result.status}.`,
-      observed_transition: observedTransition,
-      blockers: result.status === 'failed' && result.error?.trim()
-        ? [{ blocker_code: 'execution_failed', message: result.error.trim(), evidence: 'ingested execution result error' }]
-        : undefined
+      observed_transition: observedTransition
     };
   });
 

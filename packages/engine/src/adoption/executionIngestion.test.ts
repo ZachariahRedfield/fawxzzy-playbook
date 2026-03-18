@@ -72,7 +72,12 @@ describe('execution ingestion', () => {
 
     expect(ingested.receipt.repo_results.find((entry) => entry.repo_id === 'repo-a')?.status).toBe('success');
     expect(ingested.receipt.repo_results.find((entry) => entry.repo_id === 'repo-b')?.status).toBe('failed');
+    expect(ingested.updated_state.repos.find((entry) => entry.repo_id === 'repo-b')).toMatchObject({
+      reconciliation_status: 'failed',
+      action_state: { needs_retry: true, needs_replan: false, needs_review: false }
+    });
     expect(ingested.updated_state.summary.repos_needing_retry).toEqual(['repo-b']);
+    expect(ingested.updated_state.summary.repos_needing_review).toEqual([]);
     expect(ingested.next_queue.work_items.map((entry) => entry.repo_id)).toEqual(['repo-b']);
   });
 });

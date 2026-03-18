@@ -80,6 +80,8 @@ describe('buildFleetUpdatedAdoptionState', () => {
     expect(updated.repos[0]?.action_state).toEqual({ needs_retry: false, needs_replan: false, needs_review: true });
     expect(updated.summary.by_reconciliation_status.blocked).toBe(1);
     expect(updated.summary.action_counts.needs_retry).toBe(0);
+    expect(updated.summary.repos_needing_retry).toEqual([]);
+    expect(updated.summary.repos_needing_review).toEqual(['repo-a']);
   });
 
   it('marks partial and failed outcomes as observed classes with retry follow-up separated in action_state', () => {
@@ -151,5 +153,7 @@ describe('buildFleetUpdatedAdoptionState', () => {
     expect(updated.repos[0]?.action_state).toEqual({ needs_retry: false, needs_replan: false, needs_review: true });
     expect(updated.summary.by_reconciliation_status.completed_with_drift).toBe(1);
     expect(updated.summary.action_counts).toEqual({ needs_retry: 0, needs_replan: 0, needs_review: 1 });
+    expect(updated.summary.repos_needing_retry).toEqual([]);
+    expect(updated.summary.repos_needing_review).toEqual(['repo-a']);
   });
 });
