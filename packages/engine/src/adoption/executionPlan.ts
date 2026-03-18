@@ -107,11 +107,25 @@ const FILE_HINTS_BY_GROUP: Record<WorkQueueParallelGroup, string[]> = {
   'apply lane': ['repo-local governed artifacts / command outputs only']
 };
 
+const LANE_PRIORITY: Record<WorkQueueParallelGroup, number> = {
+  'connect lane': 0,
+  'init lane': 1,
+  'index lane': 2,
+  'verify/plan lane': 3,
+  'apply lane': 4
+};
+
 const mergeRiskForGroup = (group: WorkQueueParallelGroup): 'low' | 'medium' | 'high' => {
   if (group === 'apply lane') return 'high';
   if (group === 'verify/plan lane') return 'medium';
   return 'low';
 };
+
+const sortLaneGroups = (left: WorkQueueParallelGroup, right: WorkQueueParallelGroup): number =>
+  LANE_PRIORITY[left] - LANE_PRIORITY[right] || left.localeCompare(right);
+
+const sortPromptItems = (left: AdoptionWorkItem, right: AdoptionWorkItem): number =>
+  sortLaneGroups(left.parallel_group, right.parallel_group) || left.repo_id.localeCompare(right.repo_id) || left.item_id.localeCompare(right.item_id);
 
 const stableDigest = (queue: FleetAdoptionWorkQueue): string => {
   const normalized = {
@@ -178,7 +192,7 @@ export const buildFleetCodexExecutionPlan = (
     }
 
     return [...byGroup.entries()]
-      .sort((left, right) => left[0].localeCompare(right[0]))
+      .sort((left, right) => sortLaneGroups(left[0], right[0]))
       .map(([group, items]) => ({
         lane_id: laneIdFor(wave, group),
         wave,
@@ -196,7 +210,7 @@ export const buildFleetCodexExecutionPlan = (
   const prompts: CodexExecutionPrompt[] = (['wave_1', 'wave_2'] as const).flatMap((wave) =>
     waveById[wave]
       .slice()
-      .sort((left, right) => left.item_id.localeCompare(right.item_id))
+      .sort(sortPromptItems)
       .map((item) => {
         const lane = laneLookup.get(`${wave}::${item.parallel_group}`);
         if (!lane) {
@@ -237,7 +251,10 @@ export const buildFleetCodexExecutionPlan = (
       wave_id: wave,
       purpose: PURPOSE_BY_WAVE[wave],
       repos: Array.from(new Set(items.map((item) => item.repo_id))).sort((left, right) => left.localeCompare(right)),
-      worker_lanes: workerLanes.filter((lane) => lane.wave === wave).map((lane) => lane.lane_id).sort((left, right) => left.localeCompare(right)),
+      worker_lanes: workerLanes
+        .filter((lane) => lane.wave === wave)
+        .sort((left, right) => sortLaneGroups(left.recommended_command_family, right.recommended_command_family) || left.lane_id.localeCompare(right.lane_id))
+        .map((lane) => lane.lane_id),
       completion_criteria: COMPLETION_BY_WAVE[wave]
     };
   });

@@ -34,7 +34,56 @@ describe('buildFleetCodexExecutionPlan', () => {
     const second = buildFleetCodexExecutionPlan(queue, { generatedAt: '2026-01-02T00:00:00.000Z' });
 
     expect(first).toEqual(second);
-    expect(first.codex_prompts.map((prompt) => prompt.prompt_id)).toEqual([...first.codex_prompts.map((prompt) => prompt.prompt_id)].sort());
+    expect(first.codex_prompts.map((prompt) => prompt.prompt_id)).toEqual([
+      'wave_1:connect_lane:repo-a',
+      'wave_1:init_lane:repo-b',
+      'wave_1:index_lane:repo-c',
+      'wave_2:init_lane:repo-a',
+      'wave_2:index_lane:repo-b',
+      'wave_2:verify/plan_lane:repo-c'
+    ]);
+  });
+
+  it('orders worker lanes by lifecycle progression', () => {
+    const queue = buildFleetAdoptionWorkQueue(makeFleet(), { generatedAt: '2026-01-01T00:00:00.000Z' });
+    const plan = buildFleetCodexExecutionPlan(queue, { generatedAt: '2026-01-02T00:00:00.000Z' });
+
+    expect(plan.waves.find((wave) => wave.wave_id === 'wave_1')?.worker_lanes).toEqual([
+      'wave_1:connect_lane',
+      'wave_1:init_lane',
+      'wave_1:index_lane'
+    ]);
+
+    expect(plan.waves.find((wave) => wave.wave_id === 'wave_2')?.worker_lanes).toEqual([
+      'wave_2:init_lane',
+      'wave_2:index_lane',
+      'wave_2:verify_plan_lane'
+    ]);
+  });
+
+  it('uses repo_id as tie-breaker within same lane and wave', () => {
+    const fleet = makeFleet();
+    fleet.total_repos = 4;
+    fleet.by_lifecycle_stage.playbook_detected_index_pending = 2;
+    fleet.repos_by_priority = [
+      ...fleet.repos_by_priority,
+      {
+        repo_id: 'repo-aa',
+        repo_name: 'Repo AA',
+        lifecycle_stage: 'playbook_detected_index_pending',
+        priority_stage: 'index_pending',
+        blocker_codes: ['index_required'],
+        next_action: 'pnpm playbook index --json'
+      }
+    ];
+
+    const queue = buildFleetAdoptionWorkQueue(fleet, { generatedAt: '2026-01-01T00:00:00.000Z' });
+    const plan = buildFleetCodexExecutionPlan(queue, { generatedAt: '2026-01-02T00:00:00.000Z' });
+    const wave1IndexPrompts = plan.codex_prompts
+      .filter((prompt) => prompt.wave === 'wave_1' && prompt.lane_id === 'wave_1:index_lane')
+      .map((prompt) => prompt.repo_id);
+
+    expect(wave1IndexPrompts).toEqual(['repo-aa', 'repo-c']);
   });
 
   it('separates wave_1 and wave_2 by dependency boundary', () => {

@@ -11,6 +11,7 @@
 ### CLI
 
 - WHAT: Added deterministic Codex execution-plan packaging on top of adoption queue output (`pnpm playbook status execute --json`) with a stable `fleet-adoption-codex-execution-plan` contract (`waves`, `worker_lanes`, `codex_prompts`, `execution_notes`, `blocked_followups`), observer API/UI integration (`GET /api/readiness/execute` + dashboard execution-plan card), and focused determinism/dependency/conflict/governance-note tests. WHY: Converts the adoption queue into copy-paste-ready parallel worker plans while preserving read-only deterministic planning boundaries.
+- WHAT: Canonicalized execution-plan ordering to explicit lifecycle lane priority (`connect` -> `init` -> `index` -> `verify/plan` -> `apply`) with prompt ordering (`wave` -> lane priority -> `repo_id` -> `item_id`) and aligned regression expectations to that contract. WHY: Prevents deterministic-but-misleading lexical ordering (for example `index` before `init`) and eliminates future test/contract drift.
 - Rule: Execution-plan output must remain deterministic and read-only for identical queue inputs.
 - Pattern: Package queue actions by wave and command-family lanes so operators can run Codex workers in parallel with low overlap risk.
 - Failure Mode: Merge-conflict churn and contradictory operator prompts when the same repo is assigned to conflicting same-wave command lanes.

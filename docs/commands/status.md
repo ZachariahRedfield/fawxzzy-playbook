@@ -122,10 +122,15 @@ Execution packaging rules:
 - Remaining deeper dependency-chain items stay in `blocked_followups[]` until prior waves complete.
 - Worker lanes are command-family homogeneous to keep PRs small and minimize merge overlap.
 
+Canonical ordering comparator:
+
+- Lanes are ordered by lifecycle progression: `connect lane` -> `init lane` -> `index lane` -> `verify/plan lane` -> `apply lane`.
+- Prompts are ordered by: `wave` -> lane lifecycle priority -> `repo_id` -> `item_id`.
+- Wave `worker_lanes[]` use the same lane lifecycle priority ordering.
+
 ## Parallel Codex usage guidance
 
 1. Use `status execute --json` and dispatch one `codex_prompts[]` entry per worker.
 2. Keep workers lane-scoped and repo-scoped; do not mix command families in one PR.
 3. Start with Wave 1 prompts only; generate a fresh execution plan after Wave 1 merges.
 4. Use `merge_conflict_risk` and lane rationale to schedule high-risk apply work last.
-
