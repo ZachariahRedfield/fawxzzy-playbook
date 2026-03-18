@@ -97,6 +97,9 @@ CI contract stance:
 - CI should enforce product correctness, not automation maintenance.
 - Maintenance automation (for example `agents:update`, `agents:check`, docs audit) should run in dedicated scheduled/on-demand maintenance workflows.
 - Cross-repo demo refresh automation should run as PR-based scheduled/on-demand maintenance workflows (not inside the main correctness CI gate).
+- Rule: Generated artifacts must be regenerated before they are validated in any refresh/build/release pipeline.
+- Pattern: Generate → validate → promote is the default artifact pipeline shape.
+- Failure Mode: Validating stale generated artifacts before regeneration creates false-negative pipeline failures and circular recovery paths.
 
 Failure Mode: If CI mixes product validation with maintenance tasks, pipelines become slow and fragile.
 

@@ -15,7 +15,7 @@ Roadmap and planning docs may describe sequencing intent, but they are not comma
 
 ## Deterministic governance gates
 
-- `pnpm docs:check` blocks managed command-state drift (`AGENTS.md`, this command index, and `docs/contracts/command-truth.json`).
+- `pnpm docs:check` blocks managed command-state drift (`AGENTS.md`, this command index, and `docs/contracts/command-truth.json`) by regenerating candidate outputs first, validating roadmap/docs governance against the regenerated set, and only then reporting whether promotion would be required.
 - `node scripts/validate-roadmap-contract.mjs --ci` blocks roadmap/live-command boundary drift by validating roadmap `commands` against `docs/contracts/command-truth.json`.
 - `pnpm playbook docs audit --ci --json` blocks command-truth drift findings marked as errors (for example duplicate command metadata or managed status-table mismatch).
 
@@ -29,47 +29,47 @@ Do not hand-edit entries inside the managed markers.
 
 | Command / Artifact | Purpose | Lifecycle | Role | Discoverability | Onboarding | Status | Example |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `analyze` | Analyze project stack | compatibility | compatibility | hidden-compatibility | — | Current (implemented) | `pnpm playbook analyze --json` |
-| `pilot` | Run one-command external baseline analysis workflow for a target repository | canonical | bootstrap | primary | — | Current (implemented) | `pnpm playbook pilot --repo "./target-repo" --json` |
-| `verify` | Verify governance rules | canonical | governance | primary | 8 | Current (implemented) | `pnpm playbook verify --ci --json` |
-| `plan` | Generate a structured fix plan from rule findings | canonical | remediation | primary | 9 | Current (implemented) | `pnpm playbook plan --json` |
-| `lanes` | Derive deterministic lane-state from .playbook/workset-plan.json | canonical | remediation | primary | — | Current (implemented) | `pnpm playbook lanes --json` |
-| `workers` | Assign deterministic proposal-only workers to ready lanes from .playbook/lane-state.json | canonical | remediation | primary | — | Current (implemented) | `pnpm playbook workers assign --json` |
-| `orchestrate` | Generate deterministic orchestration lane artifacts for a goal or tasks-file workset | canonical | remediation | primary | — | Current (implemented) | `pnpm playbook orchestrate --goal "ship capability" --lanes 3 --format both` |
-| `execute` | Execute orchestration lanes through the execution supervisor runtime | canonical | remediation | primary | — | Current (implemented) | `pnpm playbook execute --json` |
-| `cycle` | Run the hardened execution primitives as one deterministic cycle orchestration pass | canonical | remediation | primary | — | Current (implemented) | `pnpm playbook cycle --json` |
-| `apply` | Execute deterministic auto-fixable plan tasks | canonical | remediation | primary | 10 | Current (implemented) | `pnpm playbook apply --from-plan .playbook/plan.json` |
-| `analyze-pr` | Analyze local branch/worktree changes with deterministic PR intelligence | canonical | repo-intelligence | secondary | — | Current (implemented) | `pnpm playbook analyze-pr --json` |
-| `review-pr` | Run governed read-only PR review by composing analyze-pr, improve, and policy evaluate outputs | canonical | governance | secondary | — | Current (implemented) | `pnpm playbook review-pr --json` |
-| `doctor` | Diagnose repository health by aggregating verify, risk, docs, and index analyzers | canonical | governance | secondary | — | Current (implemented) | `pnpm playbook doctor --fix --dry-run` |
-| `diagram` | Generate deterministic architecture Mermaid diagrams | utility | utility | secondary | — | Current (implemented) | `pnpm playbook diagram --repo . --out docs/ARCHITECTURE_DIAGRAMS.md` |
-| `patterns` | Inspect pattern knowledge graph data and review promotion candidates | canonical | governance | secondary | — | Current (implemented) | `pnpm playbook patterns list --json` |
-| `docs` | Audit documentation governance surfaces and contracts | canonical | governance | secondary | — | Current (implemented) | `pnpm playbook docs audit --json` |
-| `audit` | Audit deterministic architecture guardrails and platform hardening controls | canonical | governance | secondary | — | Current (implemented) | `pnpm playbook audit architecture --json` |
-| `rules` | List loaded verify and analyze rules | canonical | governance | secondary | — | Current (implemented) | `pnpm playbook rules --json` |
-| `schema` | Print JSON Schemas for Playbook CLI command outputs | utility | utility | secondary | — | Current (implemented) | `pnpm playbook schema verify --json` |
-| `context` | Print deterministic CLI and architecture context for tools and agents | canonical | bootstrap | primary | 3 | Current (implemented) | `pnpm playbook context --json` |
-| `ai-context` | Print deterministic AI bootstrap context for Playbook-aware agents | canonical | bootstrap | primary | 1 | Current (implemented) | `pnpm playbook ai-context --json` |
-| `ai-contract` | Print deterministic AI repository contract for Playbook-aware agents | canonical | bootstrap | primary | 2 | Current (implemented) | `pnpm playbook ai-contract --json` |
-| `ignore` | Suggest and safely apply ranked .playbookignore recommendations | canonical | remediation | primary | 12 | Current (implemented) | `pnpm playbook ignore suggest --repo ../target-repo --json` |
-| `contracts` | Emit deterministic contract registry for schemas, artifacts, and roadmap status | utility | utility | secondary | — | Current (implemented) | `pnpm playbook contracts --json` |
-| `index` | Generate machine-readable repository intelligence index | canonical | repo-intelligence | primary | 4 | Current (implemented) | `pnpm playbook index --json` |
-| `graph` | Summarize machine-readable repository knowledge graph from .playbook/repo-graph.json | canonical | repo-intelligence | secondary | — | Current (implemented) | `pnpm playbook graph --json` |
-| `query` | Query machine-readable repository intelligence from .playbook/repo-index.json | canonical | repo-intelligence | primary | 5 | Current (implemented) | `pnpm playbook query modules --json` |
-| `deps` | Print module dependency graph from .playbook/repo-index.json | canonical | repo-intelligence | secondary | — | Current (implemented) | `pnpm playbook deps workouts --json` |
-| `ask` | Answer repository questions from machine-readable intelligence context | canonical | repo-intelligence | primary | 7 | Current (implemented) | `pnpm playbook ask "where should a new feature live?" --repo-context --json` |
-| `explain` | Explain rules, modules, or architecture from repository intelligence | canonical | repo-intelligence | primary | 6 | Current (implemented) | `pnpm playbook explain architecture --json` |
-| `route` | Classify tasks and emit deterministic proposal-only execution plans for task-specific routing decisions | canonical | repo-intelligence | primary | — | Current (implemented) | `pnpm playbook route "summarize current repo state" --json` |
-| `architecture` | Verify subsystem registry ownership and architecture mapping integrity | canonical | governance | secondary | — | Current (implemented) | `pnpm playbook architecture verify --json` |
-| `learn` | Draft deterministic knowledge candidates from local diff and repository intelligence | utility | utility | secondary | — | Current (implemented) | `pnpm playbook learn draft --json --out .playbook/knowledge/candidates.json` |
-| `memory` | Inspect, review, and curate repository memory artifacts with explicit human-reviewed doctrine promotion | utility | utility | secondary | — | Current (implemented) | `pnpm playbook memory events --json` |
-| `improve` | Generate deterministic improvement candidates from memory events and learning-state signals | utility | utility | secondary | — | Current (implemented) | `pnpm playbook improve --json` |
-| `knowledge` | Inspect read-only knowledge artifacts and provenance surfaces | canonical | repo-intelligence | secondary | — | Current (implemented) | `pnpm playbook knowledge list --json` |
-| `security` | Inspect deterministic security baseline findings and summary | canonical | governance | secondary | — | Current (implemented) | `pnpm playbook security baseline summary --json` |
-| `telemetry` | Inspect deterministic repository/process telemetry and compact cross-run learning summaries | utility | utility | secondary | — | Current (implemented) | `pnpm playbook telemetry learning --json` |
-| `policy` | Evaluate improvement proposals against governed runtime evidence (read-only control-plane) | canonical | governance | secondary | — | Current (implemented) | `pnpm playbook policy evaluate --json` |
-| `agent` | Read runtime control-plane records and run plan-backed dry-run previews | utility | utility | secondary | — | Current (implemented) | `pnpm playbook agent run --from-plan .playbook/plan.json --dry-run --json` |
-| `observer` | Manage deterministic local observer registry and read-only local API server | utility | utility | secondary | — | Current (implemented) | `pnpm playbook observer serve --port 4300` |
+| `analyze` | Analyze project stack | compatibility | compatibility | hidden-compatibility | Later | Current (implemented) | `pnpm playbook analyze --json` |
+| `pilot` | Run one-command external baseline analysis workflow for a target repository | canonical | bootstrap | primary | Later | Current (implemented) | `pnpm playbook pilot --repo "./target-repo" --json` |
+| `verify` | Verify governance rules | canonical | governance | primary | P8 | Current (implemented) | `pnpm playbook verify --ci --json` |
+| `plan` | Generate a structured fix plan from rule findings | canonical | remediation | primary | P9 | Current (implemented) | `pnpm playbook plan --json` |
+| `lanes` | Derive deterministic lane-state from .playbook/workset-plan.json | canonical | remediation | primary | Later | Current (implemented) | `pnpm playbook lanes --json` |
+| `workers` | Assign deterministic proposal-only workers to ready lanes from .playbook/lane-state.json | canonical | remediation | primary | Later | Current (implemented) | `pnpm playbook workers assign --json` |
+| `orchestrate` | Generate deterministic orchestration lane artifacts for a goal or tasks-file workset | canonical | remediation | primary | Later | Current (implemented) | `pnpm playbook orchestrate --goal "ship capability" --lanes 3 --format both` |
+| `execute` | Execute orchestration lanes through the execution supervisor runtime | canonical | remediation | primary | Later | Current (implemented) | `pnpm playbook execute --json` |
+| `cycle` | Run the hardened execution primitives as one deterministic cycle orchestration pass | canonical | remediation | primary | Later | Current (implemented) | `pnpm playbook cycle --json` |
+| `apply` | Execute deterministic auto-fixable plan tasks | canonical | remediation | primary | P10 | Current (implemented) | `pnpm playbook apply --from-plan .playbook/plan.json` |
+| `analyze-pr` | Analyze local branch/worktree changes with deterministic PR intelligence | canonical | repo-intelligence | secondary | Later | Current (implemented) | `pnpm playbook analyze-pr --json` |
+| `review-pr` | Run governed read-only PR review by composing analyze-pr, improve, and policy evaluate outputs | canonical | governance | secondary | Later | Current (implemented) | `pnpm playbook review-pr --json` |
+| `doctor` | Diagnose repository health by aggregating verify, risk, docs, and index analyzers | canonical | governance | secondary | Later | Current (implemented) | `pnpm playbook doctor --fix --dry-run` |
+| `diagram` | Generate deterministic architecture Mermaid diagrams | utility | utility | secondary | Later | Current (implemented) | `pnpm playbook diagram --repo . --out docs/ARCHITECTURE_DIAGRAMS.md` |
+| `patterns` | Inspect pattern knowledge graph data and review promotion candidates | canonical | governance | secondary | Later | Current (implemented) | `pnpm playbook patterns list --json` |
+| `docs` | Audit documentation governance surfaces and contracts | canonical | governance | secondary | Later | Current (implemented) | `pnpm playbook docs audit --json` |
+| `audit` | Audit deterministic architecture guardrails and platform hardening controls | canonical | governance | secondary | Later | Current (implemented) | `pnpm playbook audit architecture --json` |
+| `rules` | List loaded verify and analyze rules | canonical | governance | secondary | Later | Current (implemented) | `pnpm playbook rules --json` |
+| `schema` | Print JSON Schemas for Playbook CLI command outputs | utility | utility | secondary | Later | Current (implemented) | `pnpm playbook schema verify --json` |
+| `context` | Print deterministic CLI and architecture context for tools and agents | canonical | bootstrap | primary | P3 | Current (implemented) | `pnpm playbook context --json` |
+| `ai-context` | Print deterministic AI bootstrap context for Playbook-aware agents | canonical | bootstrap | primary | P1 | Current (implemented) | `pnpm playbook ai-context --json` |
+| `ai-contract` | Print deterministic AI repository contract for Playbook-aware agents | canonical | bootstrap | primary | P2 | Current (implemented) | `pnpm playbook ai-contract --json` |
+| `ignore` | Suggest and safely apply ranked .playbookignore recommendations | canonical | remediation | primary | P12 | Current (implemented) | `pnpm playbook ignore suggest --repo ../target-repo --json` |
+| `contracts` | Emit deterministic contract registry for schemas, artifacts, and roadmap status | utility | utility | secondary | Later | Current (implemented) | `pnpm playbook contracts --json` |
+| `index` | Generate machine-readable repository intelligence index | canonical | repo-intelligence | primary | P4 | Current (implemented) | `pnpm playbook index --json` |
+| `graph` | Summarize machine-readable repository knowledge graph from .playbook/repo-graph.json | canonical | repo-intelligence | secondary | Later | Current (implemented) | `pnpm playbook graph --json` |
+| `query` | Query machine-readable repository intelligence from .playbook/repo-index.json | canonical | repo-intelligence | primary | P5 | Current (implemented) | `pnpm playbook query modules --json` |
+| `deps` | Print module dependency graph from .playbook/repo-index.json | canonical | repo-intelligence | secondary | Later | Current (implemented) | `pnpm playbook deps workouts --json` |
+| `ask` | Answer repository questions from machine-readable intelligence context | canonical | repo-intelligence | primary | P7 | Current (implemented) | `pnpm playbook ask "where should a new feature live?" --repo-context --json` |
+| `explain` | Explain rules, modules, or architecture from repository intelligence | canonical | repo-intelligence | primary | P6 | Current (implemented) | `pnpm playbook explain architecture --json` |
+| `route` | Classify tasks and emit deterministic proposal-only execution plans for task-specific routing decisions | canonical | repo-intelligence | primary | Later | Current (implemented) | `pnpm playbook route "summarize current repo state" --json` |
+| `architecture` | Verify subsystem registry ownership and architecture mapping integrity | canonical | governance | secondary | Later | Current (implemented) | `pnpm playbook architecture verify --json` |
+| `learn` | Draft deterministic knowledge candidates from local diff and repository intelligence | utility | utility | secondary | Later | Current (implemented) | `pnpm playbook learn draft --json --out .playbook/knowledge/candidates.json` |
+| `memory` | Inspect, review, and curate repository memory artifacts with explicit human-reviewed doctrine promotion | utility | utility | secondary | Later | Current (implemented) | `pnpm playbook memory events --json` |
+| `improve` | Generate deterministic improvement candidates from memory events and learning-state signals | utility | utility | secondary | Later | Current (implemented) | `pnpm playbook improve --json` |
+| `knowledge` | Inspect read-only knowledge artifacts and provenance surfaces | canonical | repo-intelligence | secondary | Later | Current (implemented) | `pnpm playbook knowledge list --json` |
+| `security` | Inspect deterministic security baseline findings and summary | canonical | governance | secondary | Later | Current (implemented) | `pnpm playbook security baseline summary --json` |
+| `telemetry` | Inspect deterministic repository/process telemetry and compact cross-run learning summaries | utility | utility | secondary | Later | Current (implemented) | `pnpm playbook telemetry learning --json` |
+| `policy` | Evaluate improvement proposals against governed runtime evidence (read-only control-plane) | canonical | governance | secondary | Later | Current (implemented) | `pnpm playbook policy evaluate --json` |
+| `agent` | Read runtime control-plane records and run plan-backed dry-run previews | utility | utility | secondary | Later | Current (implemented) | `pnpm playbook agent run --from-plan .playbook/plan.json --dry-run --json` |
+| `observer` | Manage deterministic local observer registry and read-only local API server | utility | utility | secondary | Later | Current (implemented) | `pnpm playbook observer serve --port 4300` |
 <!-- PLAYBOOK:DOCS_COMMAND_STATUS_END -->
 
 ## Command docs index

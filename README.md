@@ -455,7 +455,7 @@ Authoritative command status lives in [docs/commands/README.md](docs/commands/RE
 
 AI operating contract for this repository lives in [AGENTS.md](AGENTS.md). Managed command inventory/examples are generated from shared CLI command metadata via `pnpm agents:update` and validated with `pnpm agents:check`.
 
-Managed command docs are generated/validated with `pnpm docs:update` and `pnpm docs:check` to reduce command-surface drift across `AGENTS.md` and `docs/commands/README.md`.
+Managed command docs are generated and validated through a staged artifact pipeline with `pnpm docs:update` and `pnpm docs:check`, which regenerate candidate outputs first, validate roadmap/docs governance against those regenerated artifacts, and only then promote approved updates to `AGENTS.md`, `docs/commands/README.md`, and `docs/contracts/command-truth.json`.
 
 Session knowledge hygiene is available via `pnpm playbook session cleanup --hygiene --dry-run --json-report .playbook/session-cleanup.report.json` for deterministic normalize/deduplicate/truncate/prune reporting.
 Session continuity is repo-scoped and deterministic via `.playbook/session.json` with `pnpm playbook session show`, `pnpm playbook session pin <artifact>`, `pnpm playbook session resume`, and `pnpm playbook session clear`.
@@ -596,7 +596,7 @@ The action lives at `./.github/action.yml` in this repository and accepts:
 
 ### Optional maintenance workflow
 
-Automation maintenance checks (managed docs regeneration/validation) can run outside the primary CI gate in a scheduled or manually triggered workflow:
+Automation maintenance checks (managed docs regeneration/validation) can run outside the primary CI gate in a scheduled or manually triggered workflow. Managed docs follow the same default artifact shape used by demo refresh: generate → validate → promote, so stale generated artifacts are refreshed before governance validation runs:
 
 - `pnpm agents:update`
 - `pnpm agents:check`

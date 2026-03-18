@@ -8,6 +8,11 @@
 
 ## Unreleased
 
+- WHAT: Normalized the managed-docs governance pipeline to the same sequencing model as demo refresh by introducing a staged `scripts/managed-docs-pipeline.mjs` flow that regenerates `AGENTS.md`, `docs/commands/README.md`, and `docs/contracts/command-truth.json` into an overlay workspace, runs roadmap-contract validation plus `playbook docs audit` against the regenerated outputs, and only promotes those files back into the repo after validation passes. Added regression coverage for stale-artifact regeneration-before-validation and promotion blocking on validation failure. WHY: Prevents stale generated command artifacts from failing governance checks before regeneration and avoids partially promoted docs when validation rejects the refreshed outputs.
+- Rule: Generated artifacts must be regenerated before they are validated in any refresh/build/release pipeline.
+- Pattern: Generate → validate → promote is the default artifact pipeline shape.
+- Failure Mode: Validating stale generated artifacts before regeneration creates false-negative pipeline failures and circular recovery paths.
+
 ### CLI
 
 - WHAT: Finalized the hosted fallback release cut for `0.1.8` by bumping all release-coupled workspace/package manifests and release-facing docs/examples in parity so the next clean tag publishes one deterministic wrapper/runtime version. WHY: Release/tag correctness depends on root package, published packages, wrapper tarball naming, and operator docs all agreeing on the same immutable version.
@@ -139,7 +144,6 @@
 - WHAT: Normalized repository memory operational events to a canonical deterministic schema (`event_id`, `event_type`, `timestamp`, `subsystem`, `subject`, `related_artifacts`, `payload`, optional `run_id`) across route decisions, lane transitions, worker assignments, execution outcomes, and improvement signals; added normalized event readers and deterministic ordering/index tests. WHY: Prevents memory-shape drift and establishes a stable event stream for future compaction and knowledge promotion workflows.
 - WHAT: Added deterministic router-accuracy telemetry across `routing_engine` and `telemetry_learning`, including planned-vs-realized comparison of execution/workset/state/outcome artifacts, a router-fit scoring module, persisted route metrics in process telemetry, and surfaced router accuracy in `playbook telemetry` text/JSON outputs with focused fit-scenario tests. WHY: Makes routing quality measurable so Playbook can learn whether orchestration fragmentation and validation strategy were correct.
 - WHAT: Implemented Phase 8 Router Lane 1 with additive deterministic `execution-plan` contract/schema and upgraded `pnpm playbook route` to emit/write proposal-only execution plans at `.playbook/execution-plan.json` with explicit task-family route metadata, validation bundles, source artifact availability, and warnings. WHY: Adds task-specific routing inspection that remains non-mutating while preserving deterministic governance boundaries.
-## Unreleased
 
 - Added deterministic doctrine promotion generation for governed knowledge lifecycle transitions (`candidate`, `compacted`, `promoted`, `retired`) with persisted artifacts at `.playbook/knowledge-candidates.json` and `.playbook/knowledge-promotions.json`.
 - Wired doctrine lifecycle visibility into `playbook improve` output while keeping promotions recommendation-first and governance-gated.
@@ -356,7 +360,6 @@
 - WHAT: Verify diff-base selection falls back to `HEAD~1` when `merge-base(main, HEAD) == HEAD`. WHY: Prevents empty diffs after commits on `main`, so the notes-on-changes gate still evaluates real changes.
 - WHAT: Smoke testing validates the built CLI (`packages/cli/dist/main.js`) and exercises `init` + `verify` behavior. WHY: Confirms shipped CLI behavior end-to-end, not only typechecks/unit tests.
 
-## Unreleased
 
 ### Added
 
@@ -409,7 +412,6 @@
 - Completed first docs-governance cleanup pass by removing idea leakage from runtime/workflow/index docs, archiving superseded migration reporting, and deleting obsolete roadmap-update migration guidance.
 
 
-## Unreleased
 
 - Added `workset-plan` artifact contract and `.playbook/workset-plan.json` output for `orchestrate --tasks-file`.
 - Added deterministic lane planner that groups compatible surfaces, separates conflict surfaces, respects dependency levels, and blocks ambiguous/unsupported tasks conservatively.
