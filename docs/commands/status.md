@@ -156,6 +156,22 @@ Canonical ordering comparator:
 3. Start with Wave 1 prompts only; generate a fresh execution plan after Wave 1 merges.
 4. Use `merge_conflict_risk` and lane rationale to schedule high-risk apply work last.
 
+
+## Thin execution bridge
+
+`playbook execute --worker-adapter <command> --json` is the narrow execution bridge from deterministic adoption prompts into the canonical feedback loop.
+
+- Playbook derives the same deterministic execution packaging used by `status execute --json`.
+- Each prompt is sent to the external adapter over stdin as a small JSON envelope (`repo_id`, `prompt_id`, `lane_id`, `wave`, `objective`, `implementation_plan`, `verification_steps`, `documentation_updates`).
+- The adapter must return one JSON object per invocation with the canonical minimum result shape: `repo_id`, `prompt_id`, `status`, optional `observed_transition`, and optional `error`.
+- Playbook writes only `.playbook/execution-outcome-input.json`, then reuses the existing receipt/update flow to produce receipt, updated-state, and next-queue outputs.
+
+Governance notes:
+
+- **Rule**: There is only one truth path for execution feedback: execution outcome -> receipt -> updated-state -> next-queue.
+- **Pattern**: Use a thin execution bridge that writes canonical outcome artifacts instead of adding a second control path.
+- **Failure Mode**: Helper execution flows that bypass canonical receipt/update ingestion fragment system truth and break deterministic governance.
+
 ## Execution receipt JSON contract highlights
 
 - `kind`: `fleet-adoption-execution-receipt`

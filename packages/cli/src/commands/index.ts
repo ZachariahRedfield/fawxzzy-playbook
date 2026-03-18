@@ -205,6 +205,7 @@ const commandRunners: Record<
       format,
       quiet,
       help: parseFlag(commandArgs, "--help") || parseFlag(commandArgs, "-h"),
+      workerAdapter: parseOptionValue(commandArgs, "--worker-adapter"),
     });
   },
   cycle: async ({ cwd, commandArgs, format, quiet }) => {
