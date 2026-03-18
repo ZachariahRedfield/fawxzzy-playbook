@@ -8,6 +8,8 @@ Deterministic adoption/readiness summary for governed Playbook usage.
 - `pnpm playbook status fleet --json`: fleet-level aggregate readiness summary using connected Observer repos.
 - `pnpm playbook status queue --json`: deterministic read-only adoption work-queue from fleet readiness.
 - `pnpm playbook status execute --json`: deterministic Codex-ready execution-plan packaging derived from the queue.
+- `pnpm playbook status receipt --json`: canonical planned-vs-actual execution receipt derived from readiness, queue, plan, and ingested execution outcomes.
+- `pnpm playbook status updated --json`: reconciled updated adoption state derived from prior state plus the canonical execution receipt; writes `.playbook/execution-updated-state.json`.
 
 If no Observer registry exists, fleet mode falls back to the current repository as a single-repo fleet.
 
@@ -161,3 +163,24 @@ Governance notes:
 - **Rule**: Prefer governed artifact evidence over operator claims when proving lifecycle transitions.
 - **Pattern**: Reuse readiness + queue + execution plan instead of inventing a separate outcome reasoner.
 - **Failure Mode**: Retry drift occurs when failed or mismatched prompts are not surfaced back into the next queue.
+
+## Planned vs actual lifecycle chain
+
+Use the following deterministic chain without inventing a second outcome model:
+
+1. **Execution plan** (`status execute`) is the operator/worker packaging artifact.
+2. **Execution receipt** (`status receipt`) is the canonical planned-vs-actual contract.
+3. **Updated state** (`status updated`) reconciles prior readiness + queue + plan + receipt into the next canonical adoption state.
+
+Updated-state `reconciliation_status` values are:
+
+- `completed_as_planned`
+- `completed_with_drift`
+- `partial`
+- `failed`
+- `blocked`
+- `not_run`
+- `retry_required`
+- `stale_plan_or_superseded`
+
+Retry prioritization is now derived from reconciled updated state rather than only echoed from receipt summaries.

@@ -30,6 +30,8 @@ export { buildFleetCodexExecutionPlan } from './adoption/executionPlan.js';
 export type { FleetCodexExecutionPlan, CodexExecutionWave, CodexExecutionWorkerLane, CodexExecutionPrompt, CodexExecutionBlockedFollowup } from './adoption/executionPlan.js';
 export { buildFleetExecutionReceipt } from './adoption/executionReceipt.js';
 export type { FleetExecutionOutcomeInput, ExecutionPromptOutcomeInput, FleetExecutionReceipt, ExecutionPromptResult, ExecutionWaveResult, ExecutionRepoResult, ExecutionArtifactEvidence, ExecutionBlocker, ExecutionVerificationSummary, ExecutionObservedStatus, ExecutionComparisonStatus, LifecycleTransition } from './adoption/executionReceipt.js';
+export { buildFleetUpdatedAdoptionState } from './adoption/executionUpdatedState.js';
+export type { FleetUpdatedAdoptionState, ReconciledRepoState, ReconciliationStatus } from './adoption/executionUpdatedState.js';
 
 export { generateRepositoryIndex } from './indexer/repoIndexer.js';
 export type { RepositoryIndex, RepositoryModule, RepositoryDependencyEdge, RepositoryWorkspaceNode, RepositoryTestCoverage, RepositoryConfigEntry } from './indexer/repoIndexer.js';

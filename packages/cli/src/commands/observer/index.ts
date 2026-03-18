@@ -8,6 +8,7 @@ import {
   buildFleetAdoptionWorkQueue,
   buildFleetCodexExecutionPlan,
   buildFleetExecutionReceipt,
+  buildFleetUpdatedAdoptionState,
   buildRepoAdoptionReadiness,
   computeCrossRepoPatternLearning,
   readCrossRepoPatternsArtifact,
@@ -545,6 +546,7 @@ const observerDashboardHtml = (): string => `<!doctype html>
           <div class="card"><h3>Adoption Work Queue</h3><div id="queueSummaryPanel" class="meta">Adoption work queue loads from connected repos.</div></div>
           <div class="card"><h3>Codex Execution Plan</h3><div id="executionPlanPanel" class="meta">Codex execution packaging loads from queue state.</div></div>
           <div class="card"><h3>Execution Outcome Receipt</h3><div id="executionReceiptPanel" class="meta">Execution outcome receipt loads from plan, queue, readiness, and ingested outcomes.</div></div>
+          <div class="card"><h3>Reconciled Updated State</h3><div id="updatedStatePanel" class="meta">Reconciled updated state closes the loop from receipt into canonical adoption state.</div></div>
           <div class="card"><h3>Cross-Repo Intelligence</h3>
             <div class="row"><label class="meta">Left repo</label><select id="compareLeft"></select></div>
             <div class="row"><label class="meta">Right repo</label><select id="compareRight"></select></div>
@@ -653,7 +655,7 @@ const observerServerResponse = (observerRoot: string, invocationCwd: string, pat
     };
   }
 
-  if (pathname === '/api/readiness/receipt') {
+  if (pathname === '/api/readiness/receipt' || pathname === '/api/readiness/updated-state') {
     const fleet = buildFleetReadinessSummary(registry);
     const queue = buildFleetAdoptionWorkQueue(fleet);
     const executionPlan = buildFleetCodexExecutionPlan(queue);
@@ -661,12 +663,24 @@ const observerServerResponse = (observerRoot: string, invocationCwd: string, pat
     const outcomeInput = fs.existsSync(outcomePath)
       ? (JSON.parse(fs.readFileSync(outcomePath, 'utf8')) as FleetExecutionOutcomeInput)
       : { schemaVersion: '1.0', kind: 'fleet-adoption-execution-outcome-input', generated_at: new Date(0).toISOString(), session_id: 'unrecorded-session', prompt_outcomes: [] };
+    const receipt = buildFleetExecutionReceipt(executionPlan, queue, fleet, outcomeInput);
+    if (pathname === '/api/readiness/updated-state') {
+      const updatedState = buildFleetUpdatedAdoptionState(executionPlan, queue, fleet, receipt);
+      return {
+        statusCode: 200,
+        payload: {
+          ...base,
+          kind: 'observer-fleet-adoption-updated-state',
+          updated_state: updatedState
+        }
+      };
+    }
     return {
       statusCode: 200,
       payload: {
         ...base,
         kind: 'observer-fleet-adoption-execution-receipt',
-        receipt: buildFleetExecutionReceipt(executionPlan, queue, fleet, outcomeInput)
+        receipt
       }
     };
   }

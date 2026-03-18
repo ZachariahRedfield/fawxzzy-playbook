@@ -50,6 +50,7 @@ const crossRepoViewPanelEl = document.getElementById('crossRepoViewPanel');
 const fleetSummaryPanelEl = document.getElementById('fleetSummaryPanel');
 const queueSummaryPanelEl = document.getElementById('queueSummaryPanel');
 const executionReceiptPanelEl = document.getElementById('executionReceiptPanel');
+const updatedStatePanelEl = document.getElementById('updatedStatePanel');
 const executionPlanPanelEl = document.getElementById('executionPlanPanel');
 let selectedRepoId = null;
 let selectedBlueprintNodeId = null;
@@ -412,6 +413,29 @@ const loadExecutionReceipt = async () => {
   renderExecutionReceiptSummary(payload.receipt || null);
 };
 
+
+const renderUpdatedStateSummary = (updatedState) => {
+  if (!updatedState || typeof updatedState !== 'object') {
+    updatedStatePanelEl.innerHTML = '<div class="empty-state">Reconciled updated state unavailable.</div>';
+    return;
+  }
+
+  const summary = updatedState.summary || {};
+  const statusCounts = summary.by_reconciliation_status || {};
+  updatedStatePanelEl.innerHTML =
+    '<div><strong>Repos total:</strong> ' + escapeHtml(String(summary.repos_total || 0)) + '</div>' +
+    '<div><strong>Completed:</strong> ' + escapeHtml(Array.isArray(summary.completed_repo_ids) && summary.completed_repo_ids.length > 0 ? summary.completed_repo_ids.join(', ') : 'none') + '</div>' +
+    '<div><strong>Retry required:</strong> ' + escapeHtml(Array.isArray(summary.repos_needing_retry) && summary.repos_needing_retry.length > 0 ? summary.repos_needing_retry.join(', ') : 'none') + '</div>' +
+    '<div><strong>Blocked:</strong> ' + escapeHtml(Array.isArray(summary.blocked_repo_ids) && summary.blocked_repo_ids.length > 0 ? summary.blocked_repo_ids.join(', ') : 'none') + '</div>' +
+    '<div><strong>Stale/superseded:</strong> ' + escapeHtml(Array.isArray(summary.stale_or_superseded_repo_ids) && summary.stale_or_superseded_repo_ids.length > 0 ? summary.stale_or_superseded_repo_ids.join(', ') : 'none') + '</div>' +
+    '<div><strong>Status counts:</strong> ' + escapeHtml(JSON.stringify(statusCounts)) + '</div>';
+};
+
+const loadUpdatedState = async () => {
+  const payload = await getJson('/api/readiness/updated-state');
+  renderUpdatedStateSummary(payload.updated_state || null);
+};
+
 const renderQueueSummary = (queue) => {
   if (!queue || typeof queue !== 'object') {
     queueSummaryPanelEl.innerHTML = '<div class="empty-state">Work queue unavailable.</div>';
@@ -620,6 +644,8 @@ const refreshAll = async () => {
     }
     await loadFleetSummary();
     await loadQueueSummary();
+    await loadExecutionReceipt();
+    await loadUpdatedState();
     await loadExecutionPlanSummary();
   } catch (error) {
     healthEl.textContent = 'error: ' + error.message;

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/execution-updated-state.schema.json",
+  "title": "Fleet Adoption Updated State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "generated_at", "execution_plan_digest", "session_id", "summary", "repos"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "kind": { "const": "fleet-adoption-updated-state" },
+    "generated_at": { "type": "string" },
+    "execution_plan_digest": { "type": "string" },
+    "session_id": { "type": "string" },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repos_total", "by_reconciliation_status", "repos_needing_retry", "stale_or_superseded_repo_ids", "blocked_repo_ids", "completed_repo_ids"],
+      "properties": {
+        "repos_total": { "type": "integer" },
+        "by_reconciliation_status": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["completed_as_planned", "completed_with_drift", "partial", "failed", "blocked", "not_run", "retry_required", "stale_plan_or_superseded"],
+          "properties": {
+            "completed_as_planned": { "type": "integer" },
+            "completed_with_drift": { "type": "integer" },
+            "partial": { "type": "integer" },
+            "failed": { "type": "integer" },
+            "blocked": { "type": "integer" },
+            "not_run": { "type": "integer" },
+            "retry_required": { "type": "integer" },
+            "stale_plan_or_superseded": { "type": "integer" }
+          }
+        },
+        "repos_needing_retry": { "type": "array", "items": { "type": "string" } },
+        "stale_or_superseded_repo_ids": { "type": "array", "items": { "type": "string" } },
+        "blocked_repo_ids": { "type": "array", "items": { "type": "string" } },
+        "completed_repo_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "repos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["repo_id", "prior_lifecycle_stage", "planned_lifecycle_stage", "updated_lifecycle_stage", "reconciliation_status", "retry_required", "prompt_ids", "blocker_codes", "drift_prompt_ids", "receipt_status"],
+        "properties": {
+          "repo_id": { "type": "string" },
+          "prior_lifecycle_stage": { "$ref": "https://playbook.dev/schemas/execution-receipt.schema.json#/$defs/lifecycleStage" },
+          "planned_lifecycle_stage": { "anyOf": [{ "$ref": "https://playbook.dev/schemas/execution-receipt.schema.json#/$defs/lifecycleStage" }, { "type": "null" }] },
+          "updated_lifecycle_stage": { "$ref": "https://playbook.dev/schemas/execution-receipt.schema.json#/$defs/lifecycleStage" },
+          "reconciliation_status": { "enum": ["completed_as_planned", "completed_with_drift", "partial", "failed", "blocked", "not_run", "retry_required", "stale_plan_or_superseded"] },
+          "retry_required": { "type": "boolean" },
+          "prompt_ids": { "type": "array", "items": { "type": "string" } },
+          "blocker_codes": { "type": "array", "items": { "type": "string" } },
+          "drift_prompt_ids": { "type": "array", "items": { "type": "string" } },
+          "receipt_status": { "enum": ["success", "failed", "partial_success", "mismatch", "not_run", "unknown"] }
+        }
+      }
+    }
+  }
+}

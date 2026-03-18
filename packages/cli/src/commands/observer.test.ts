@@ -449,6 +449,7 @@ describe('observer server', () => {
     expect(uiScriptText).toContain('Runtime loop available:</strong>');
     expect(uiScriptText).toContain('Lifecycle stage:');
     expect(uiScriptText).toContain('Next command:');
+    expect(uiScriptText).toContain('Reconciled updated state unavailable');
 
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   });
