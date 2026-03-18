@@ -108,73 +108,26 @@ jobs:
         env:
           PLAYBOOK_REVIEW_FILE: ".playbook/analyze-pr-review.json"
           PLAYBOOK_REVIEW_MARKER: "<!-- playbook:analyze-pr-inline -->"
+          PLAYBOOK_REVIEW_FALLBACK_MARKER: "<!-- playbook:analyze-pr-inline-fallback -->"
         with:
           script: |
             const fs = require('node:fs');
-            const reviewPath = process.env.PLAYBOOK_REVIEW_FILE;
-            const marker = process.env.PLAYBOOK_REVIEW_MARKER;
-            const diagnostics = JSON.parse(fs.readFileSync(reviewPath, 'utf8'));
-
-            const { owner, repo } = context.repo;
-            const pull_number = context.issue.number;
-            const headSha = context.payload.pull_request?.head?.sha;
-            if (!headSha) {
-              core.setFailed('Missing pull request head SHA for review diagnostics transport.');
-              return;
+            const { syncAnalyzePrReviewComments } = require('./.github/scripts/sync-analyze-pr-review-comments.cjs');
+            const diagnostics = JSON.parse(fs.readFileSync(process.env.PLAYBOOK_REVIEW_FILE, 'utf8'));
+            const expectedHeadSha = context.payload.pull_request?.head?.sha;
+            if (!expectedHeadSha) {
+              core.warning('Missing pull request head SHA for review diagnostics transport; degrading Playbook inline diagnostics to fallback comment behavior.');
             }
 
-            const reviewComments = await github.paginate(github.rest.pulls.listReviewComments, {
-              owner,
-              repo,
-              pull_number,
-              per_page: 100,
+            await syncAnalyzePrReviewComments({
+              github,
+              core,
+              context,
+              diagnostics,
+              marker: process.env.PLAYBOOK_REVIEW_MARKER,
+              fallbackMarker: process.env.PLAYBOOK_REVIEW_FALLBACK_MARKER,
+              expectedHeadSha,
             });
-
-            const playbookComments = reviewComments.filter((comment) =>
-              comment.user?.type === 'Bot' && typeof comment.body === 'string' && comment.body.includes(marker),
-            );
-
-            const normalizeBody = (body) => body.replace(marker, '').trim();
-            const keyForExisting = (comment) => `${comment.path}:${comment.line}:${normalizeBody(comment.body || '')}`;
-            const keyForDesired = (annotation) => `${annotation.path}:${annotation.line}:${annotation.body.trim()}`;
-
-            const existingByKey = new Map(playbookComments.map((comment) => [keyForExisting(comment), comment]));
-            const desiredByKey = new Map();
-            for (const annotation of diagnostics) {
-              if (!annotation.path || typeof annotation.line !== 'number' || !annotation.body) {
-                continue;
-              }
-              desiredByKey.set(keyForDesired(annotation), annotation);
-            }
-
-            for (const [existingKey, comment] of existingByKey.entries()) {
-              if (desiredByKey.has(existingKey)) {
-                continue;
-              }
-
-              await github.rest.pulls.deleteReviewComment({
-                owner,
-                repo,
-                comment_id: comment.id,
-              });
-            }
-
-            for (const [desiredKey, annotation] of desiredByKey.entries()) {
-              if (existingByKey.has(desiredKey)) {
-                continue;
-              }
-
-              await github.rest.pulls.createReviewComment({
-                owner,
-                repo,
-                pull_number,
-                commit_id: headSha,
-                path: annotation.path,
-                line: annotation.line,
-                side: 'RIGHT',
-                body: `${annotation.body.trim()}\n\n${marker}`,
-              });
-            }
 
       - name: Skip sticky comment for fork pull requests
         if: github.event.pull_request.head.repo.full_name != github.repository

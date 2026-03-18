@@ -22,6 +22,10 @@
 
 ### CLI
 
+- WHAT: Hardened Playbook PR review annotation delivery so inline diff comments are now best-effort: the workflow validates diff path, target line, and live PR head SHA before posting, and degrades gracefully to a non-inline fallback PR comment when anchors are stale or unresolvable instead of failing CI. WHY: Prevents flaky governance reporting where GitHub 422 review-comment anchor failures turned reporting transport problems into false build failures.
+- Rule: Do not fail governance reporting just because inline diff anchoring fails.
+- Pattern: Validate diff anchor first, then post inline; otherwise degrade gracefully to non-inline reporting.
+- Failure Mode: Treating file line numbers as guaranteed PR diff anchors causes flaky CI and false build failures.
 - WHAT: Made `execution-updated-state` the canonical driver of the next adoption work queue by adding deterministic `deriveNextAdoptionQueueFromUpdatedState(updatedState)` routing, preserving repo identity/wave grouping/prompt lineage, exposing `next_queue` from `pnpm playbook status updated --json`, and adding an Observer `Next Queue (Derived from Updated State)` panel/API. WHY: Prevents split-brain control flow by ensuring retry/replan decisions are derived only from reconciled updated-state rather than re-reading raw receipts or recomputing from readiness.
 - Rule: Do not derive next actions from raw receipt once updated-state exists.
 - Pattern: `state -> queue -> execution plan -> execution receipt -> updated state -> next queue` is the canonical adoption loop.
