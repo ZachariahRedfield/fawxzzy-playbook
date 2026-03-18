@@ -57,7 +57,7 @@ describe('runStory', () => {
       schemaVersion: '1.0',
       repo: path.basename(repo),
       stories: [{
-        id: 'story-1', repo: path.basename(repo), title: 'Existing', type: 'feature', source: 'manual', severity: 'medium', priority: 'high', confidence: 'high', status: 'proposed', evidence: [], rationale: '', acceptance_criteria: [], dependencies: [], execution_lane: null, suggested_route: null
+        id: 'story-1', repo: path.basename(repo), title: 'Existing', type: 'feature', source: 'manual', severity: 'medium', priority: 'high', confidence: 'high', status: 'proposed', evidence: [], rationale: 'Preserve committed state while validation blocks promotion', acceptance_criteria: [], dependencies: [], execution_lane: null, suggested_route: null
       }]
     }, null, 2));
     const before = fs.readFileSync(path.join(repo, '.playbook/stories.json'), 'utf8');
