@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { AnalyzeReport } from './analyze.js';
 import type { VerifyReport } from './verify.js';
-import { stageWorkflowArtifact } from '../lib/workflowPromotion.js';
+import { previewWorkflowArtifact, stageWorkflowArtifact } from '../lib/workflowPromotion.js';
 import type { WorkflowPromotion } from '../lib/workflowPromotion.js';
 
 type StatusOptions = {
@@ -258,6 +258,20 @@ const validateUpdatedStateArtifact = (updatedState: FleetUpdatedAdoptionState, n
   return errors;
 };
 
+
+const previewUpdatedStatePromotion = (cwd: string, updatedState: FleetUpdatedAdoptionState, nextQueue: FleetAdoptionWorkQueue): WorkflowPromotion =>
+  previewWorkflowArtifact({
+    cwd,
+    workflowKind: 'status-updated',
+    candidateRelativePath: UPDATED_STATE_STAGING_RELATIVE_PATH,
+    committedRelativePath: UPDATED_STATE_RELATIVE_PATH,
+    artifact: updatedState,
+    validate: () => validateUpdatedStateArtifact(updatedState, nextQueue),
+    generatedAt: updatedState.generated_at,
+    successSummary: 'Staged updated-state candidate validated and ready for promotion into committed adoption state.',
+    blockedSummary: 'Staged updated-state candidate blocked; committed adoption state preserved.'
+  });
+
 const stageAndPromoteUpdatedStateArtifact = (cwd: string, updatedState: FleetUpdatedAdoptionState, nextQueue: FleetAdoptionWorkQueue): WorkflowPromotion =>
   stageWorkflowArtifact({
     cwd,
@@ -275,7 +289,11 @@ const computeReceipt = (cwd: string): { fleet: FleetAdoptionReadinessSummary; qu
   const fleet = toFleetStatusResult(cwd).fleet;
   const queue = buildFleetAdoptionWorkQueue(fleet);
   const executionPlan = buildFleetCodexExecutionPlan(queue);
-  const receipt = buildFleetExecutionReceipt(executionPlan, queue, fleet, readExecutionOutcomeInput(cwd));
+  const provisionalReceipt = buildFleetExecutionReceipt(executionPlan, queue, fleet, readExecutionOutcomeInput(cwd));
+  const updatedState = buildFleetUpdatedAdoptionState(executionPlan, queue, fleet, provisionalReceipt);
+  const nextQueue = deriveNextAdoptionQueueFromUpdatedState(updatedState);
+  const workflowPromotion = previewUpdatedStatePromotion(cwd, updatedState, nextQueue);
+  const receipt = buildFleetExecutionReceipt(executionPlan, queue, fleet, readExecutionOutcomeInput(cwd), { workflowPromotion });
   return { fleet, queue, executionPlan, receipt };
 };
 
