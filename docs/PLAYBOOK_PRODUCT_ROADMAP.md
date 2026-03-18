@@ -2270,7 +2270,12 @@ Execution state is persisted under `.playbook/runs/<run-id>.json` and is queryab
 
 
 - `playbook story list --json` exposes the canonical repo-local story backlog artifact at `.playbook/stories.json`.
+- `playbook story candidates --json` derives and writes the non-canonical inspectable candidate artifact at `.playbook/story-candidates.json` without mutating `.playbook/stories.json`.
+- `playbook story promote <candidate-id> --json` explicitly promotes one candidate into the canonical backlog artifact.
 
 - Rule: Stories are the durable repo-scoped action unit and must remain structured first, narrative second.
 - Pattern: Backlog state is a canonical repo-local artifact, not a UI-owned construct.
+- Pattern: Findings need durable interpretation before they become backlog work.
+- Pattern: Candidate stories require grouping, dedupe, and explicit promotion.
 - Failure Mode: If story state is introduced without a canonical artifact and governed writes, backlog semantics fragment immediately.
+- Failure Mode: Raw finding -> automatic story conversion creates backlog spam and weak planning signal.

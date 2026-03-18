@@ -12,6 +12,12 @@ const makeRepo = (): string => {
   return dir;
 };
 
+const writeArtifact = (repo: string, relativePath: string, value: unknown): void => {
+  const target = path.join(repo, relativePath);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, JSON.stringify(value, null, 2));
+};
+
 afterEach(() => {
   vi.restoreAllMocks();
   while (tempDirs.length > 0) fs.rmSync(tempDirs.pop()!, { recursive: true, force: true });
@@ -48,6 +54,48 @@ describe('runStory', () => {
 
     const artifact = JSON.parse(fs.readFileSync(path.join(repo, '.playbook/stories.json'), 'utf8')) as { stories: Array<{ status: string }> };
     expect(artifact.stories[0]?.status).toBe('ready');
+  });
+
+  it('derives read-only story candidates and promotes one explicitly into the canonical backlog artifact', async () => {
+    const repo = makeRepo();
+    writeArtifact(repo, '.playbook/improvement-candidates.json', {
+      schemaVersion: '1.0',
+      kind: 'improvement-candidates',
+      generatedAt: '2026-03-18T00:00:00.000Z',
+      opportunity_analysis: {
+        top_recommendation: {
+          opportunity_id: 'shared_read_aggregation_boundary',
+          title: 'Converge broad artifact fanout through a shared read aggregation boundary',
+          heuristic_class: 'broad_query_fanout',
+          confidence: 0.92,
+          why_it_matters: 'Direct artifact fanout should be grouped into one durable architecture change.',
+          likely_change_shape: 'Extract a shared read model.',
+          rationale: ['Many surfaces read the same governed artifacts.'],
+          evidence: [{ file: 'packages/cli/src/commands/observer/index.ts', detail: 'multiple .playbook artifact reads' }]
+        },
+        secondary_queue: []
+      }
+    });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    let exitCode = await runStory(repo, ['candidates', '--explain'], { format: 'json', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+    let payload = JSON.parse(String(logSpy.mock.calls.at(-1)?.[0]));
+    expect(payload.readOnly).toBe(true);
+    expect(payload.candidates.length).toBeGreaterThan(0);
+    const candidateId = payload.candidates[0].id as string;
+    expect(fs.existsSync(path.join(repo, '.playbook/story-candidates.json'))).toBe(true);
+    expect(fs.existsSync(path.join(repo, '.playbook/stories.json'))).toBe(false);
+
+    const candidateArtifactBefore = fs.readFileSync(path.join(repo, '.playbook/story-candidates.json'), 'utf8');
+    logSpy.mockClear();
+    exitCode = await runStory(repo, ['promote', candidateId], { format: 'json', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+    payload = JSON.parse(String(logSpy.mock.calls.at(-1)?.[0]));
+    expect(payload.promotion.promoted).toBe(true);
+    expect(payload.story.id).toBe(candidateId);
+    expect(fs.readFileSync(path.join(repo, '.playbook/story-candidates.json'), 'utf8')).toBe(candidateArtifactBefore);
+    expect(JSON.parse(fs.readFileSync(path.join(repo, '.playbook/stories.json'), 'utf8')).stories.map((story: { id: string }) => story.id)).toContain(candidateId);
   });
 
   it('preserves committed backlog state when promotion is blocked', async () => {

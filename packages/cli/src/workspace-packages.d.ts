@@ -318,6 +318,14 @@ declare module "@zachariahredfield/playbook-engine" {
   export const upsertStory: (...args: any[]) => StoriesArtifact;
   export const updateStoryStatus: (...args: any[]) => StoriesArtifact;
 
+  export type StoryCandidateRecord = StoryRecord & { candidate_fingerprint: string; candidate_id: string; grouping_keys: string[]; source_signals: string[]; source_artifacts: string[]; promotion_hint: string; explanation: string[]; };
+  export type StoryCandidatesArtifact = { schemaVersion: '1.0'; kind: 'story-candidates'; generatedAt: string; repo: string; readOnly: true; sourceArtifacts: { readiness: string[]; improvementCandidatesPath: string; updatedStatePath: string; routerRecommendationsPath: string; }; candidates: StoryCandidateRecord[]; };
+  export const STORY_CANDIDATES_RELATIVE_PATH: '.playbook/story-candidates.json';
+  export const generateStoryCandidates: (...args: any[]) => StoryCandidatesArtifact;
+  export const writeStoryCandidatesArtifact: (...args: any[]) => string;
+  export const readStoryCandidatesArtifact: (...args: any[]) => StoryCandidatesArtifact;
+  export const promoteStoryCandidate: (...args: any[]) => { story: StoryRecord; artifact: StoriesArtifact; artifactPath: string; };
+
   export type ImprovementCandidatesArtifact = any;
   export type ImprovementActionArtifact = any;
   export type ImprovementGovernanceApprovalArtifact = any;

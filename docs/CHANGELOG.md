@@ -1,3 +1,11 @@
+## 2026-03-18 — Candidate story derivation and explicit promotion
+
+- WHAT: Added `pnpm playbook story candidates --json` and `pnpm playbook story candidates --explain --json`, which derive inspectable story candidates into `.playbook/story-candidates.json` from governed readiness blockers, improvement opportunities, execution updated-state drift/replan evidence, and stable router recommendations without mutating `.playbook/stories.json`. WHY: Findings need durable interpretation before they become backlog work, so candidate generation must stay read-only relative to the canonical backlog artifact.
+- WHAT: Added grouping/dedupe heuristics for candidate story derivation plus `pnpm playbook story promote <candidate-id> --json` for explicit promotion into `.playbook/stories.json`. WHY: Candidate stories require grouping, dedupe, and explicit promotion so Playbook avoids one-finding -> one-story backlog spam while still making durable backlog work easy to inspect and adopt.
+- Pattern: Findings need durable interpretation before they become backlog work.
+- Pattern: Candidate stories require grouping, dedupe, and explicit promotion.
+- Failure Mode: Raw finding -> automatic story conversion creates backlog spam and weak planning signal.
+
 ## 2026-03-18 — Deterministic execution replay and drift inspection
 
 - WHAT: Extended Observer with a read-only repo backlog planning surface sourced from the canonical `.playbook/stories.json` artifact, including backlog summary counts, highest-priority ready story, blocked-story visibility, story detail drilldown, and linked evidence/route/status context in repo view. WHY: Observer can now surface durable planning state between findings and execution without becoming a second story system.
