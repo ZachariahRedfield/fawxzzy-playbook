@@ -180,7 +180,9 @@ The existing artifact detail viewer remains the canonical raw drilldown for gove
 
 Pattern: Observer should behave like a runtime inspector with interpretation, not a second source of truth.
 Pattern: Default control-plane views should compress state into state / why / next step.
+Pattern: Observer behavior tests should target stable semantic surfaces, not fragile display strings.
 Failure Mode: A data-rich Observer that defaults to dense artifact text increases operator friction even when the underlying control system is correct.
+Failure Mode: Copy-coupled UI tests fail during presentation refactors even when deterministic behavior is unchanged.
 
 ### Self-observation cockpit (UI)
 

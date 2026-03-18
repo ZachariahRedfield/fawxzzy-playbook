@@ -1,7 +1,9 @@
 - WHAT: Refactored Observer’s default control-plane presentation so repo and fleet views now open with a compact Control-Loop Summary, dense readiness/queue/plan/receipt panels now use progressive disclosure (`state / why / next step` first, blockers/reasoning second, raw truth refs third), and raw canonical artifacts remain accessible through the existing artifact viewer. WHY: Operators should understand the deterministic control loop in seconds without losing access to governed receipts, promotion metadata, execution-plan detail, or other source-of-truth artifacts.
 - Pattern: Observer should behave like a runtime inspector with interpretation, not a second source of truth.
 - Pattern: Default control-plane views should compress state into state / why / next step.
+- Pattern: Observer behavior tests should target stable semantic surfaces, not fragile display strings.
 - Failure Mode: A data-rich Observer that defaults to dense artifact text increases operator friction even when the underlying control system is correct.
+- Failure Mode: Copy-coupled UI tests fail during presentation refactors even when deterministic behavior is unchanged.
 
 - WHAT: Fixed `status proof` CLI regression coverage to match the intentionally additive JSON contract by asserting canonical `proof` truth with additive-safe matching and explicitly covering the optional `interpretation` layer. WHY: Proof-scope JSON should remain deterministic for automation while allowing governed metadata growth without brittle deep-equality failures.
 - Pattern: Interpretation-layer metadata may be additive to raw deterministic truth, but must remain explicitly governed.
