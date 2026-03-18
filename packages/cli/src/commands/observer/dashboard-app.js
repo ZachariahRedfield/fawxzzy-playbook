@@ -85,6 +85,20 @@ const parseTimestamp = (value) => {
 };
 const escapeHtml = (value) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 const format = (value) => '<pre>' + JSON.stringify(value, null, 2) + '</pre>';
+
+const renderInterpretation = (interpretation) => {
+  const defaultView = interpretation && interpretation.progressive_disclosure && interpretation.progressive_disclosure.default_view;
+  const secondaryView = interpretation && interpretation.progressive_disclosure && interpretation.progressive_disclosure.secondary_view;
+  if (!defaultView) return '';
+  const blockers = secondaryView && Array.isArray(secondaryView.blockers) ? secondaryView.blockers.slice(0, 3) : [];
+  return '<div class="interpretation-shell">' +
+    '<div><strong>State:</strong> ' + escapeHtml(defaultView.state || 'unknown') + '</div>' +
+    '<div><strong>Why:</strong> ' + escapeHtml(defaultView.why || 'n/a') + '</div>' +
+    '<div><strong>Next step:</strong> ' + escapeHtml((defaultView.next_step && (defaultView.next_step.command || defaultView.next_step.label)) || 'n/a') + '</div>' +
+    (blockers.length > 0 ? '<div><strong>Blockers</strong><ul>' + blockers.map((blocker) => '<li>' + escapeHtml(blocker) + '</li>').join('') + '</ul></div>' : '') +
+    '</div>';
+};
+
 const getJson = async (url, init) => {
   const response = await fetch(url, init);
   const json = await response.json();
@@ -361,7 +375,7 @@ const loadBlueprint = async () => {
 
 
 
-const renderFleetSummary = (fleet) => {
+const renderFleetSummary = (fleet, interpretation) => {
   if (!fleet || typeof fleet !== 'object') {
     fleetSummaryPanelEl.innerHTML = '<div class="empty-state">Fleet summary unavailable.</div>';
     return;
@@ -378,7 +392,7 @@ const renderFleetSummary = (fleet) => {
   ).join('') : '';
 
   fleetSummaryPanelEl.innerHTML =
-    '<div><strong>Total repos:</strong> ' + escapeHtml(String(fleet.total_repos || 0)) + '</div>' +
+    renderInterpretation(interpretation) +    '<div><strong>Total repos:</strong> ' + escapeHtml(String(fleet.total_repos || 0)) + '</div>' +
     '<div><strong>Lifecycle counts:</strong> ' + escapeHtml(JSON.stringify(fleet.by_lifecycle_stage || {})) + '</div>' +
     '<div><strong>Fallback-proof ready:</strong> ' + escapeHtml(String(fleet.fallback_proof_ready_count || 0)) + '</div>' +
     '<div><strong>Cross-repo eligible:</strong> ' + escapeHtml(String(fleet.cross_repo_eligible_count || 0)) + '</div>' +
@@ -389,7 +403,7 @@ const renderFleetSummary = (fleet) => {
 
 const loadFleetSummary = async () => {
   const payload = await getJson('/api/readiness/fleet');
-  renderFleetSummary(payload.fleet || null);
+  renderFleetSummary(payload.fleet || null, payload.interpretation || null);
 };
 
 
@@ -424,7 +438,7 @@ const loadPromotionSummary = async () => {
   renderPromotionSummary(payload.promotion || null);
 };
 
-const renderExecutionReceiptSummary = (receipt) => {
+const renderExecutionReceiptSummary = (receipt, interpretation) => {
   if (!receipt || typeof receipt !== 'object') {
     executionReceiptPanelEl.innerHTML = '<div class="empty-state">Execution outcome receipt unavailable.</div>';
     return;
@@ -433,7 +447,7 @@ const renderExecutionReceiptSummary = (receipt) => {
   const latestWave = Array.isArray(receipt.wave_results) && receipt.wave_results.length > 0 ? receipt.wave_results[receipt.wave_results.length - 1] : null;
   const summary = receipt.verification_summary || {};
   executionReceiptPanelEl.innerHTML =
-    '<div><strong>Latest wave result:</strong> ' + escapeHtml(latestWave ? latestWave.wave_id + ' • ' + latestWave.status : 'none') + '</div>' +
+    renderInterpretation(interpretation) +    '<div><strong>Latest wave result:</strong> ' + escapeHtml(latestWave ? latestWave.wave_id + ' • ' + latestWave.status : 'none') + '</div>' +
     '<div><strong>Completed prompts:</strong> ' + escapeHtml(String(summary.succeeded_count || 0)) + '</div>' +
     '<div><strong>Failed prompts:</strong> ' + escapeHtml(String((summary.failed_count || 0) + (summary.mismatch_count || 0))) + '</div>' +
     '<div><strong>Repos needing retry:</strong> ' + escapeHtml(Array.isArray(summary.repos_needing_retry) && summary.repos_needing_retry.length > 0 ? summary.repos_needing_retry.join(', ') : 'none') + '</div>' +
@@ -442,12 +456,12 @@ const renderExecutionReceiptSummary = (receipt) => {
 
 const loadExecutionReceipt = async () => {
   const payload = await getJson('/api/readiness/receipt');
-  renderExecutionReceiptSummary(payload.receipt || null);
+  renderExecutionReceiptSummary(payload.receipt || null, payload.interpretation || null);
   renderPromotionSummary((payload.receipt && payload.receipt.workflow_promotion) || payload.promotion || null);
 };
 
 
-const renderUpdatedStateSummary = (updatedState) => {
+const renderUpdatedStateSummary = (updatedState, interpretation) => {
   if (!updatedState || typeof updatedState !== 'object') {
     updatedStatePanelEl.innerHTML = '<div class="empty-state">Reconciled updated state unavailable.</div>';
     return;
@@ -457,7 +471,7 @@ const renderUpdatedStateSummary = (updatedState) => {
   const statusCounts = summary.by_reconciliation_status || {};
   const actionCounts = summary.action_counts || {};
   updatedStatePanelEl.innerHTML =
-    '<div><strong>Repos total:</strong> ' + escapeHtml(String(summary.repos_total || 0)) + '</div>' +
+    renderInterpretation(interpretation) +    '<div><strong>Repos total:</strong> ' + escapeHtml(String(summary.repos_total || 0)) + '</div>' +
     '<div><strong>What happened (completed):</strong> ' + escapeHtml(Array.isArray(summary.completed_repo_ids) && summary.completed_repo_ids.length > 0 ? summary.completed_repo_ids.join(', ') : 'none') + '</div>' +
     '<div><strong>What happened (blocked):</strong> ' + escapeHtml(Array.isArray(summary.blocked_repo_ids) && summary.blocked_repo_ids.length > 0 ? summary.blocked_repo_ids.join(', ') : 'none') + '</div>' +
     '<div><strong>What happened (stale/superseded):</strong> ' + escapeHtml(Array.isArray(summary.stale_or_superseded_repo_ids) && summary.stale_or_superseded_repo_ids.length > 0 ? summary.stale_or_superseded_repo_ids.join(', ') : 'none') + '</div>' +
@@ -470,10 +484,10 @@ const renderUpdatedStateSummary = (updatedState) => {
 
 const loadUpdatedState = async () => {
   const payload = await getJson('/api/readiness/updated-state');
-  renderUpdatedStateSummary(payload.updated_state || null);
+  renderUpdatedStateSummary(payload.updated_state || null, payload.interpretation || null);
 };
 
-const renderNextQueueSummary = (queue) => {
+const renderNextQueueSummary = (queue, interpretation) => {
   if (!queue || typeof queue !== 'object') {
     nextQueuePanelEl.innerHTML = '<div class="empty-state">Next queue unavailable.</div>';
     return;
@@ -481,7 +495,7 @@ const renderNextQueueSummary = (queue) => {
 
   const topActions = Array.isArray(queue.work_items) ? queue.work_items.slice(0, 5) : [];
   nextQueuePanelEl.innerHTML =
-    '<div><strong>Queue source:</strong> ' + escapeHtml(queue.queue_source || 'unknown') + '</div>' +
+    renderInterpretation(interpretation) +    '<div><strong>Queue source:</strong> ' + escapeHtml(queue.queue_source || 'unknown') + '</div>' +
     '<div><strong>Next items:</strong> ' + escapeHtml(String(topActions.length ? (queue.work_items || []).length : 0)) + '</div>' +
     '<div><strong>Top actions</strong><ul>' + (topActions.length > 0 ? topActions.map((item) => '<li>' + escapeHtml(item.repo_id + ' • ' + (item.next_action || 'n/a') + ' • ' + item.recommended_command + ' • lineage ' + ((item.prompt_lineage || []).join(', ') || 'none')) + '</li>').join('') : '<li>none</li>') + '</ul></div>' +
     '<div><strong>Wave breakdown</strong><ul>' + (Array.isArray(queue.waves) ? queue.waves.map((wave) => '<li>' + escapeHtml(wave.wave + ': ' + wave.action_count + ' actions') + '</li>').join('') : '<li>none</li>') + '</ul></div>';
@@ -489,10 +503,10 @@ const renderNextQueueSummary = (queue) => {
 
 const loadNextQueueSummary = async () => {
   const payload = await getJson('/api/readiness/next-queue');
-  renderNextQueueSummary(payload.next_queue || null);
+  renderNextQueueSummary(payload.next_queue || null, payload.interpretation || null);
 };
 
-const renderQueueSummary = (queue) => {
+const renderQueueSummary = (queue, interpretation) => {
   if (!queue || typeof queue !== 'object') {
     queueSummaryPanelEl.innerHTML = '<div class="empty-state">Work queue unavailable.</div>';
     return;
@@ -509,7 +523,7 @@ const renderQueueSummary = (queue) => {
   ).join('') : '';
 
   queueSummaryPanelEl.innerHTML =
-    '<div><strong>Total repos:</strong> ' + escapeHtml(String(queue.total_repos || 0)) + '</div>' +
+    renderInterpretation(interpretation) +    '<div><strong>Total repos:</strong> ' + escapeHtml(String(queue.total_repos || 0)) + '</div>' +
     '<div><strong>Total work items:</strong> ' + escapeHtml(String((queue.work_items || []).length || 0)) + '</div>' +
     '<div><strong>Highest priority actions</strong><ul>' + (Array.isArray(queue.work_items) && queue.work_items.length > 0 ? queue.work_items.slice(0, 5).map((item) => '<li>' + escapeHtml(item.repo_id + ' • ' + item.recommended_command) + '</li>').join('') : '<li>none</li>') + '</ul></div>' +
     '<div><strong>Wave breakdown</strong><ul>' + (waveRows || '<li>none</li>') + '</ul></div>' +
@@ -519,12 +533,12 @@ const renderQueueSummary = (queue) => {
 
 const loadQueueSummary = async () => {
   const payload = await getJson('/api/readiness/queue');
-  renderQueueSummary(payload.queue || null);
+  renderQueueSummary(payload.queue || null, payload.interpretation || null);
 };
 
 
 
-const renderExecutionPlanSummary = (plan) => {
+const renderExecutionPlanSummary = (plan, interpretation) => {
   if (!plan || typeof plan !== 'object') {
     executionPlanPanelEl.innerHTML = '<div class="empty-state">Execution plan unavailable.</div>';
     return;
@@ -540,7 +554,7 @@ const renderExecutionPlanSummary = (plan) => {
   ).join('') : '';
 
   executionPlanPanelEl.innerHTML =
-    '<div><strong>Wave 1 repos:</strong> ' + escapeHtml(String((wave1 && wave1.repos && wave1.repos.length) || 0)) + '</div>' +
+    renderInterpretation(interpretation) +    '<div><strong>Wave 1 repos:</strong> ' + escapeHtml(String((wave1 && wave1.repos && wave1.repos.length) || 0)) + '</div>' +
     '<div><strong>Wave 2 repos:</strong> ' + escapeHtml(String((wave2 && wave2.repos && wave2.repos.length) || 0)) + '</div>' +
     '<div><strong>Worker lanes</strong><ul>' + (laneRows || '<li>none</li>') + '</ul></div>' +
     '<div><strong>Top Codex prompts</strong><ul>' + (promptRows || '<li>none</li>') + '</ul></div>';
@@ -548,7 +562,7 @@ const renderExecutionPlanSummary = (plan) => {
 
 const loadExecutionPlanSummary = async () => {
   const payload = await getJson('/api/readiness/execute');
-  renderExecutionPlanSummary(payload.execution_plan || null);
+  renderExecutionPlanSummary(payload.execution_plan || null, payload.interpretation || null);
 };
 
 const setActiveView = (view) => {

@@ -29,6 +29,16 @@ import type { AnalyzeReport } from './analyze.js';
 import type { VerifyReport } from './verify.js';
 import { previewWorkflowArtifact, stageWorkflowArtifact } from '../lib/workflowPromotion.js';
 import type { WorkflowPromotion } from '../lib/workflowPromotion.js';
+import {
+  buildExecutionPlanInterpretation,
+  buildFleetInterpretation,
+  buildProofInterpretation,
+  buildQueueInterpretation,
+  buildReceiptInterpretation,
+  buildRepoStatusInterpretation,
+  buildUpdatedStateInterpretation,
+  type InterpretationLayer
+} from '../lib/interpretation.js';
 
 type StatusOptions = {
   ci: boolean;
@@ -49,6 +59,7 @@ type StatusResult = {
     errors: number;
   };
   adoption: RepoAdoptionReadiness;
+  interpretation: InterpretationLayer;
 };
 
 type StatusFleetResult = {
@@ -56,6 +67,7 @@ type StatusFleetResult = {
   command: 'status';
   mode: 'fleet';
   fleet: FleetAdoptionReadinessSummary;
+  interpretation: InterpretationLayer;
 };
 
 type StatusQueueResult = {
@@ -63,7 +75,9 @@ type StatusQueueResult = {
   command: 'status';
   mode: 'queue';
   queue: FleetAdoptionWorkQueue;
+  interpretation: InterpretationLayer;
 };
+
 
 
 type StatusExecutionResult = {
@@ -71,6 +85,7 @@ type StatusExecutionResult = {
   command: 'status';
   mode: 'execute';
   execution_plan: FleetCodexExecutionPlan;
+  interpretation: InterpretationLayer;
 };
 
 type StatusReceiptResult = {
@@ -78,6 +93,7 @@ type StatusReceiptResult = {
   command: 'status';
   mode: 'receipt';
   receipt: FleetExecutionReceipt;
+  interpretation: InterpretationLayer;
 };
 
 
@@ -88,6 +104,7 @@ type StatusUpdatedStateResult = {
   updated_state: FleetUpdatedAdoptionState;
   next_queue: FleetAdoptionWorkQueue;
   promotion: WorkflowPromotion;
+  interpretation: InterpretationLayer;
 };
 
 
@@ -96,6 +113,7 @@ type StatusProofResult = {
   command: 'status';
   mode: 'proof';
   proof: ReturnType<typeof runBootstrapProof>;
+  interpretation: InterpretationLayer;
 };
 
 type ObserverRegistry = {
@@ -195,6 +213,8 @@ const toStatusResult = async (cwd: string): Promise<{ result: StatusResult; exit
 
   const environmentOk = doctor.status !== 'error';
 
+  const adoption = buildRepoAdoptionReadiness({ repoRoot: analyze.repoPath, connected: true });
+
   const result: StatusResult = {
     schemaVersion: '1.0',
     command: 'status',
@@ -203,12 +223,26 @@ const toStatusResult = async (cwd: string): Promise<{ result: StatusResult; exit
     analysis: { warnings, errors },
     verification: { ok: verify.ok },
     summary: { warnings, errors },
-    adoption: buildRepoAdoptionReadiness({ repoRoot: analyze.repoPath, connected: true })
+    adoption,
+    interpretation: buildRepoStatusInterpretation({
+      ok: doctor.status !== 'error' && verify.ok,
+      adoption,
+      topIssueDescription: null,
+      topIssueId: null
+    })
   };
 
   const exitCode = verify.ok ? ExitCode.Success : ExitCode.PolicyFailure;
 
-  return { result, exitCode, topIssue: await resolveTopIssue(cwd, verify, analyze), repoRoot: analyze.repoPath };
+  const topIssue = await resolveTopIssue(cwd, verify, analyze);
+  result.interpretation = buildRepoStatusInterpretation({
+    ok: result.ok,
+    adoption: result.adoption,
+    topIssueDescription: topIssue?.description ?? null,
+    topIssueId: topIssue?.id ?? null
+  });
+
+  return { result, exitCode, topIssue, repoRoot: analyze.repoPath };
 };
 
 const toFleetStatusResult = (cwd: string): StatusFleetResult => {
@@ -230,7 +264,8 @@ const toFleetStatusResult = (cwd: string): StatusFleetResult => {
     schemaVersion: '1.0',
     command: 'status',
     mode: 'fleet',
-    fleet
+    fleet,
+    interpretation: buildFleetInterpretation(fleet)
   };
 };
 
@@ -240,18 +275,21 @@ const toQueueStatusResult = (cwd: string): StatusQueueResult => {
     schemaVersion: '1.0',
     command: 'status',
     mode: 'queue',
-    queue: buildFleetAdoptionWorkQueue(fleet)
+    queue: buildFleetAdoptionWorkQueue(fleet),
+    interpretation: buildQueueInterpretation(buildFleetAdoptionWorkQueue(fleet))
   };
 };
 
 
 const toExecutionStatusResult = (cwd: string): StatusExecutionResult => {
   const queue = toQueueStatusResult(cwd).queue;
+  const executionPlan = buildFleetCodexExecutionPlan(queue);
   return {
     schemaVersion: '1.0',
     command: 'status',
     mode: 'execute',
-    execution_plan: buildFleetCodexExecutionPlan(queue)
+    execution_plan: executionPlan,
+    interpretation: buildExecutionPlanInterpretation(executionPlan)
   };
 };
 
@@ -314,7 +352,8 @@ const toReceiptStatusResult = (cwd: string): StatusReceiptResult => {
     schemaVersion: '1.0',
     command: 'status',
     mode: 'receipt',
-    receipt
+    receipt,
+    interpretation: buildReceiptInterpretation(receipt)
   };
 };
 
@@ -344,7 +383,8 @@ const toProofStatusResult = (cwd: string): { result: StatusProofResult; exitCode
       schemaVersion: '1.0',
       command: 'status',
       mode: 'proof',
-      proof
+      proof,
+      interpretation: buildProofInterpretation(proof)
     },
     exitCode: proof.ok ? ExitCode.Success : ExitCode.Failure
   };
@@ -363,7 +403,8 @@ const toUpdatedStateStatusResult = (cwd: string): { result: StatusUpdatedStateRe
       mode: 'updated',
       updated_state: updatedState,
       next_queue: nextQueue,
-      promotion
+      promotion,
+      interpretation: buildUpdatedStateInterpretation(updatedState, nextQueue, promotion.promotion_status)
     }
   };
 };
@@ -379,6 +420,15 @@ const printHuman = (
     return;
   }
 
+  console.log('State');
+  console.log(result.interpretation.progressive_disclosure.default_view.state);
+  console.log('');
+  console.log('Why');
+  console.log(result.interpretation.progressive_disclosure.default_view.why);
+  console.log('');
+  console.log('Next step');
+  console.log(result.interpretation.progressive_disclosure.default_view.next_step.command ?? result.interpretation.progressive_disclosure.default_view.next_step.label);
+  console.log('');
   console.log('Environment');
   console.log(result.environment.ok ? '  ✔ ok' : '  ✖ failed');
 
@@ -436,6 +486,15 @@ export const runStatus = async (cwd: string, options: StatusOptions): Promise<nu
       if (options.format === 'json') {
         console.log(JSON.stringify(queueResult, null, 2));
       } else {
+        console.log('State');
+        console.log(queueResult.interpretation.progressive_disclosure.default_view.state);
+        console.log('');
+        console.log('Why');
+        console.log(queueResult.interpretation.progressive_disclosure.default_view.why);
+        console.log('');
+        console.log('Next step');
+        console.log(queueResult.interpretation.progressive_disclosure.default_view.next_step.command ?? queueResult.interpretation.progressive_disclosure.default_view.next_step.label);
+        console.log('');
         console.log(`Queue repos: ${queueResult.queue.total_repos}`);
         console.log(`Wave 1 actions: ${queueResult.queue.waves[0]?.action_count ?? 0}`);
         console.log(`Wave 2 actions: ${queueResult.queue.waves[1]?.action_count ?? 0}`);
@@ -449,6 +508,15 @@ export const runStatus = async (cwd: string, options: StatusOptions): Promise<nu
       if (options.format === 'json') {
         console.log(JSON.stringify(fleetResult, null, 2));
       } else {
+        console.log('State');
+        console.log(fleetResult.interpretation.progressive_disclosure.default_view.state);
+        console.log('');
+        console.log('Why');
+        console.log(fleetResult.interpretation.progressive_disclosure.default_view.why);
+        console.log('');
+        console.log('Next step');
+        console.log(fleetResult.interpretation.progressive_disclosure.default_view.next_step.command ?? fleetResult.interpretation.progressive_disclosure.default_view.next_step.label);
+        console.log('');
         console.log(`Fleet repos: ${fleetResult.fleet.total_repos}`);
         console.log(`By stage: ${JSON.stringify(fleetResult.fleet.by_lifecycle_stage)}`);
         console.log(`Top action: ${fleetResult.fleet.recommended_actions[0]?.command ?? 'n/a'}`);
@@ -463,6 +531,15 @@ export const runStatus = async (cwd: string, options: StatusOptions): Promise<nu
       } else {
         const wave1 = executionResult.execution_plan.waves.find((wave: { wave_id: string; repos: string[] }) => wave.wave_id === 'wave_1');
         const wave2 = executionResult.execution_plan.waves.find((wave: { wave_id: string; repos: string[] }) => wave.wave_id === 'wave_2');
+        console.log('State');
+        console.log(executionResult.interpretation.progressive_disclosure.default_view.state);
+        console.log('');
+        console.log('Why');
+        console.log(executionResult.interpretation.progressive_disclosure.default_view.why);
+        console.log('');
+        console.log('Next step');
+        console.log(executionResult.interpretation.progressive_disclosure.default_view.next_step.command ?? executionResult.interpretation.progressive_disclosure.default_view.next_step.label);
+        console.log('');
         console.log(`Execution plan kind: ${executionResult.execution_plan.kind}`);
         console.log(`Wave 1 repos: ${wave1?.repos.length ?? 0}`);
         console.log(`Wave 2 repos: ${wave2?.repos.length ?? 0}`);
@@ -477,6 +554,15 @@ export const runStatus = async (cwd: string, options: StatusOptions): Promise<nu
       if (options.format === 'json') {
         console.log(JSON.stringify(receiptResult, null, 2));
       } else {
+        console.log('State');
+        console.log(receiptResult.interpretation.progressive_disclosure.default_view.state);
+        console.log('');
+        console.log('Why');
+        console.log(receiptResult.interpretation.progressive_disclosure.default_view.why);
+        console.log('');
+        console.log('Next step');
+        console.log(receiptResult.interpretation.progressive_disclosure.default_view.next_step.command ?? receiptResult.interpretation.progressive_disclosure.default_view.next_step.label);
+        console.log('');
         console.log(`Execution receipt kind: ${receiptResult.receipt.kind}`);
         console.log(`Prompts total: ${receiptResult.receipt.verification_summary.prompts_total}`);
         console.log(`Succeeded: ${receiptResult.receipt.verification_summary.succeeded_count}`);
@@ -512,6 +598,15 @@ export const runStatus = async (cwd: string, options: StatusOptions): Promise<nu
       if (options.format === 'json') {
         console.log(JSON.stringify(updatedResult, null, 2));
       } else {
+        console.log('State');
+        console.log(updatedResult.interpretation.progressive_disclosure.default_view.state);
+        console.log('');
+        console.log('Why');
+        console.log(updatedResult.interpretation.progressive_disclosure.default_view.why);
+        console.log('');
+        console.log('Next step');
+        console.log(updatedResult.interpretation.progressive_disclosure.default_view.next_step.command ?? updatedResult.interpretation.progressive_disclosure.default_view.next_step.label);
+        console.log('');
         console.log(`Updated state kind: ${updatedResult.updated_state.kind}`);
         console.log(`Repos total: ${updatedResult.updated_state.summary.repos_total}`);
         console.log(`Observed outcomes: ${JSON.stringify(updatedResult.updated_state.summary.by_reconciliation_status)}`);

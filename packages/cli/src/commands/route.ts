@@ -15,6 +15,7 @@ import { createCommandQualityTracker } from '../lib/commandQuality.js';
 import { emitCommandFailure, printCommandHelp } from '../lib/commandSurface.js';
 import { stageWorkflowArtifact } from '../lib/workflowPromotion.js';
 import type { WorkflowPromotion } from '../lib/workflowPromotion.js';
+import { buildRouteInterpretation, type InterpretationLayer } from '../lib/interpretation.js';
 
 type RouteOptions = {
   format: 'text' | 'json';
@@ -33,6 +34,7 @@ type RouteOutput = {
   executionPlan: ExecutionPlanArtifact;
   promotion: WorkflowPromotion;
   codexPrompt?: string;
+  interpretation: InterpretationLayer;
 };
 
 const EXECUTION_PLAN_PATH = '.playbook/execution-plan.json';
@@ -72,10 +74,27 @@ const toOutput = (
   requiredInputs: decision.requiredInputs,
   executionPlan,
   promotion,
-  codexPrompt
+  codexPrompt,
+  interpretation: buildRouteInterpretation({
+    task,
+    selectedRoute: decision.route,
+    why: decision.why,
+    requiredInputs: decision.requiredInputs,
+    executionPlan,
+    promotion
+  })
 });
 
 const printText = (payload: RouteOutput, options: RouteOptions): void => {
+  console.log('State');
+  console.log(payload.interpretation.progressive_disclosure.default_view.state);
+  console.log('');
+  console.log('Why');
+  console.log(payload.interpretation.progressive_disclosure.default_view.why);
+  console.log('');
+  console.log('Next step');
+  console.log(payload.interpretation.progressive_disclosure.default_view.next_step.command || payload.interpretation.progressive_disclosure.default_view.next_step.label);
+  console.log('');
   console.log('Route');
   console.log('─────');
   console.log(`Task: ${payload.task}`);

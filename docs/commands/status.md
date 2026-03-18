@@ -14,6 +14,22 @@ Deterministic adoption/readiness summary for governed Playbook usage.
 
 If no Observer registry exists, fleet mode falls back to the current repository as a single-repo fleet.
 
+## Interpretation layer
+
+Human-readable and JSON status surfaces now add a derived `interpretation` block that preserves canonical status truth while compressing it into progressive disclosure:
+
+- **Default view**: `state`, `why`, `next_step`
+- **Secondary view**: blocker list, reasoning, and lower-priority actions
+- **Deep view**: raw-truth field references, artifact paths, diagnostics, and promotion metadata references
+
+Rule: interpretation is derived, not authoritative.
+
+Pattern: Interpretation Layer.
+Pattern: Progressive Disclosure.
+Pattern: Single Next Action.
+Pattern: State → Narrative Compression.
+Failure Mode: Building polished summaries before underlying diagnostics and recommendation signals exist leads to attractive but weak UX.
+
 ## Repo readiness JSON contract highlights
 
 - `connection_status`: `connected` | `not_connected`
@@ -254,6 +270,21 @@ Stages are evaluated in order:
 5. `artifacts`: `.playbook/repo-index.json`, `.playbook/repo-graph.json`, `.playbook/plan.json`
 6. `execution-state`: `.playbook/policy-apply-result.json` and any already-enforced runtime state such as `.playbook/last-run.json` when governance requires it
 7. `governance`: governed `verify` contract checks
+
+
+JSON proof output preserves the canonical `proof` object and may also include additive `interpretation` metadata when Playbook is intentionally exposing the same `state` / `why` / `next_step` narrative layer used by other user-facing status surfaces.
+
+Pattern:
+
+- Interpretation-layer metadata may be additive to raw deterministic truth, but must remain explicitly governed.
+
+Rule:
+
+- JSON automation contracts should distinguish required truth fields from additive interpretation metadata.
+
+Failure Mode:
+
+- Exact deep-equality tests on additive command contracts cause false-negative CI failures after intentional metadata growth.
 
 Failure categories are explicit and machine-readable:
 
