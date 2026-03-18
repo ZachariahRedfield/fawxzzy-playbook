@@ -10,6 +10,9 @@
 
 ### CLI
 
+- WHAT: Aligned the fallback wrapper package/version and release scripts around the canonical `playbook-cli-<version>.tgz` asset, added local-asset fallback proof support with tarball content assertions, and fixed publish workflow package-name parity for `@fawxzzy/playbook` and `@fawxzzy/playbook-cli`. WHY: The wrapper release path was drifting between package metadata, workflow naming, and proof expectations, which could make a supposedly valid fallback artifact fail real external installation or skip the actual published package.
+- WHAT: Documented that machine-readable packaging/release validation should prove external installability, not just internal monorepo correctness; that fallback artifacts depending on unpublished workspace packages are a release failure mode; and that release validation must include a clean external consumer proof before fallback packaging is considered complete. WHY: External fallback signoff must be governed by consumer-repo evidence rather than monorepo-only assumptions.
+
 - WHAT: Removed fallback build bootstrapping from `scripts/prepare-cli-wrapper-runtime.mjs` so wrapper runtime staging is now pure verify+copy and fails deterministically when required `dist` artifacts are missing. WHY: Keeps monorepo `pnpm -r build` deterministic and prevents wrapper packaging from mutating upstream build state.
 - WHAT: Kept cli-wrapper runtime staging packaging-only via `prepack`, retained deterministic no-op `build`, and removed `prepublishOnly` from wrapper lifecycle behavior. WHY: Ensures staging runs only when producing wrapper artifacts while preserving the self-contained tarball contract.
 - WHAT: Regenerated managed architecture diagrams after wrapper dependency-surface cleanup to keep docs and diagram checks aligned. WHY: Prevents CI drift from stale generated architecture output.

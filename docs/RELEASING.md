@@ -46,6 +46,8 @@ Optional consumer smoke validation (for real downstream proof):
 pnpm release:fallback:proof --version 0.1.6 --consumer-repo /path/to/FawxzzyFitness --json
 ```
 
+Use `--asset-path dist/release/playbook-cli-<version>.tgz` to prove a locally packed release artifact before upload, and add `--consumer-repo <path>` for a clean external consumer proof.
+
 When `--consumer-repo` is provided, the command performs the clean-environment sequence:
 
 1. `npm install`
@@ -92,3 +94,9 @@ Create and push a git tag that matches the released version:
 git tag v0.1.6
 git push origin v0.1.6
 ```
+
+## 5.2) Proof invariants
+
+- Pattern: machine-readable packaging/release validation should prove external installability, not just internal monorepo correctness.
+- Failure Mode: fallback artifacts that depend on unpublished workspace packages pass local assumptions but fail real external installation.
+- Rule: release validation must include a clean external consumer proof before considering fallback packaging complete.
