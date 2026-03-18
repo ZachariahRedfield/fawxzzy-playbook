@@ -7,8 +7,10 @@ import { loadVerifyRules } from '../lib/loadVerifyRules.js';
 import {
   buildFleetAdoptionReadinessSummary,
   buildFleetAdoptionWorkQueue,
+  buildFleetCodexExecutionPlan,
   buildRepoAdoptionReadiness,
   type FleetAdoptionWorkQueue,
+  type FleetCodexExecutionPlan,
   type FleetAdoptionReadinessSummary,
   type RepoAdoptionReadiness
 } from '@zachariahredfield/playbook-engine';
@@ -21,7 +23,7 @@ type StatusOptions = {
   ci: boolean;
   format: 'text' | 'json';
   quiet: boolean;
-  scope?: 'repo' | 'fleet' | 'queue';
+  scope?: 'repo' | 'fleet' | 'queue' | 'execute';
 };
 
 type StatusResult = {
@@ -50,6 +52,14 @@ type StatusQueueResult = {
   command: 'status';
   mode: 'queue';
   queue: FleetAdoptionWorkQueue;
+};
+
+
+type StatusExecutionResult = {
+  schemaVersion: '1.0';
+  command: 'status';
+  mode: 'execute';
+  execution_plan: FleetCodexExecutionPlan;
 };
 
 type ObserverRegistry = {
@@ -176,6 +186,17 @@ const toQueueStatusResult = (cwd: string): StatusQueueResult => {
   };
 };
 
+
+const toExecutionStatusResult = (cwd: string): StatusExecutionResult => {
+  const queue = toQueueStatusResult(cwd).queue;
+  return {
+    schemaVersion: '1.0',
+    command: 'status',
+    mode: 'execute',
+    execution_plan: buildFleetCodexExecutionPlan(queue)
+  };
+};
+
 const printHuman = (
   result: StatusResult,
   ci: boolean,
@@ -260,6 +281,22 @@ export const runStatus = async (cwd: string, options: StatusOptions): Promise<nu
         console.log(`Fleet repos: ${fleetResult.fleet.total_repos}`);
         console.log(`By stage: ${JSON.stringify(fleetResult.fleet.by_lifecycle_stage)}`);
         console.log(`Top action: ${fleetResult.fleet.recommended_actions[0]?.command ?? 'n/a'}`);
+      }
+      return ExitCode.Success;
+    }
+
+    if (options.scope === 'execute') {
+      const executionResult = toExecutionStatusResult(cwd);
+      if (options.format === 'json') {
+        console.log(JSON.stringify(executionResult, null, 2));
+      } else {
+        const wave1 = executionResult.execution_plan.waves.find((wave: { wave_id: string; repos: string[] }) => wave.wave_id === 'wave_1');
+        const wave2 = executionResult.execution_plan.waves.find((wave: { wave_id: string; repos: string[] }) => wave.wave_id === 'wave_2');
+        console.log(`Execution plan kind: ${executionResult.execution_plan.kind}`);
+        console.log(`Wave 1 repos: ${wave1?.repos.length ?? 0}`);
+        console.log(`Wave 2 repos: ${wave2?.repos.length ?? 0}`);
+        console.log(`Worker lanes: ${executionResult.execution_plan.worker_lanes.length}`);
+        console.log(`Top prompt: ${executionResult.execution_plan.codex_prompts[0]?.prompt_id ?? 'n/a'}`);
       }
       return ExitCode.Success;
     }

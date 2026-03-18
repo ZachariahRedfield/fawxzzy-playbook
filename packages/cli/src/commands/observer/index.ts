@@ -6,6 +6,7 @@ import { emitJsonOutput, writeJsonArtifactAbsolute } from '../../lib/jsonArtifac
 import {
   buildFleetAdoptionReadinessSummary,
   buildFleetAdoptionWorkQueue,
+  buildFleetCodexExecutionPlan,
   buildRepoAdoptionReadiness,
   computeCrossRepoPatternLearning,
   readCrossRepoPatternsArtifact,
@@ -540,6 +541,7 @@ const observerDashboardHtml = (): string => `<!doctype html>
           <div id="crossRepoViewPanel" class="hidden">
           <div class="card"><h3>Fleet Readiness Summary</h3><div id="fleetSummaryPanel" class="meta">Fleet readiness summary loads from connected repos.</div></div>
           <div class="card"><h3>Adoption Work Queue</h3><div id="queueSummaryPanel" class="meta">Adoption work queue loads from connected repos.</div></div>
+          <div class="card"><h3>Codex Execution Plan</h3><div id="executionPlanPanel" class="meta">Codex execution packaging loads from queue state.</div></div>
           <div class="card"><h3>Cross-Repo Intelligence</h3>
             <div class="row"><label class="meta">Left repo</label><select id="compareLeft"></select></div>
             <div class="row"><label class="meta">Right repo</label><select id="compareRight"></select></div>
@@ -631,6 +633,19 @@ const observerServerResponse = (observerRoot: string, invocationCwd: string, pat
         ...base,
         kind: 'observer-fleet-adoption-work-queue',
         queue: buildFleetAdoptionWorkQueue(fleet)
+      }
+    };
+  }
+
+  if (pathname === '/api/readiness/execute') {
+    const fleet = buildFleetReadinessSummary(registry);
+    const queue = buildFleetAdoptionWorkQueue(fleet);
+    return {
+      statusCode: 200,
+      payload: {
+        ...base,
+        kind: 'observer-fleet-adoption-execution-plan',
+        execution_plan: buildFleetCodexExecutionPlan(queue)
       }
     };
   }

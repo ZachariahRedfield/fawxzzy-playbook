@@ -15,8 +15,9 @@ vi.mock('./verify.js', () => ({ collectVerifyReport }));
 const buildRepoAdoptionReadiness = vi.fn();
 const buildFleetAdoptionReadinessSummary = vi.fn();
 const buildFleetAdoptionWorkQueue = vi.fn();
+const buildFleetCodexExecutionPlan = vi.fn();
 
-vi.mock('@zachariahredfield/playbook-engine', () => ({ buildRepoAdoptionReadiness, buildFleetAdoptionReadinessSummary, buildFleetAdoptionWorkQueue }));
+vi.mock('@zachariahredfield/playbook-engine', () => ({ buildRepoAdoptionReadiness, buildFleetAdoptionReadinessSummary, buildFleetAdoptionWorkQueue, buildFleetCodexExecutionPlan }));
 
 const makeAnalyzeReport = (overrides?: Partial<AnalyzeReport>): AnalyzeReport => ({
   repoPath: '/tmp/repo',
@@ -47,6 +48,7 @@ describe('runStatus', () => {
     buildRepoAdoptionReadiness.mockReset();
     buildFleetAdoptionReadinessSummary.mockReset();
     buildFleetAdoptionWorkQueue.mockReset();
+    buildFleetCodexExecutionPlan.mockReset();
     buildRepoAdoptionReadiness.mockReturnValue({
       schemaVersion: '1.0',
       connection_status: 'connected',
@@ -91,6 +93,17 @@ describe('runStatus', () => {
       waves: [],
       grouped_actions: [],
       blocked_items: []
+    });
+    buildFleetCodexExecutionPlan.mockReturnValue({
+      schemaVersion: '1.0',
+      kind: 'fleet-adoption-codex-execution-plan',
+      generated_at: '2026-01-01T00:00:00.000Z',
+      source_queue_digest: 'abc123',
+      waves: [],
+      worker_lanes: [],
+      codex_prompts: [],
+      execution_notes: [],
+      blocked_followups: []
     });
   });
 
@@ -192,6 +205,21 @@ describe('runStatus', () => {
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(payload.mode).toBe('fleet');
     expect(payload.fleet.total_repos).toBe(1);
+    expect(collectDoctorReport).not.toHaveBeenCalled();
+    logSpy.mockRestore();
+  });
+
+
+  it('prints execution JSON output when execute scope is requested', async () => {
+    const { runStatus } = await import('./status.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runStatus(process.cwd(), { ci: false, format: 'json', quiet: false, scope: 'execute' });
+    expect(exitCode).toBe(ExitCode.Success);
+
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.mode).toBe('execute');
+    expect(payload.execution_plan.kind).toBe('fleet-adoption-codex-execution-plan');
     expect(collectDoctorReport).not.toHaveBeenCalled();
     logSpy.mockRestore();
   });

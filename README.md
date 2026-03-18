@@ -736,6 +736,8 @@ For portfolio-level triage, run `pnpm playbook status fleet --json` to aggregate
 
 For actionable execution sequencing, run `pnpm playbook status queue --json` to produce a deterministic, read-only adoption work queue with ordered work items, explicit dependencies, Wave 1/Wave 2 breakdown, and parallel-safe grouped action lanes.
 
-- Rule: identical readiness input must produce identical queue ordering and wave assignment.
-- Pattern: execute grouped lanes in stage order (`init` -> `index` -> `verify/plan` -> `apply`) for safe parallel adoption work.
-- Failure Mode: queue drift appears when dependent actions are run before prerequisite lane completion.
+For Codex-ready operator packaging, run `pnpm playbook status execute --json` to translate queue data into a stable execution-plan contract with explicit waves, worker lanes, copy-paste prompts, execution notes, and blocked followups.
+
+- Rule: identical readiness input must produce identical queue ordering, wave assignment, and execution-plan packaging.
+- Pattern: execute grouped lanes in stage order (`init` -> `index` -> `verify/plan` -> `apply`) and keep one repo in one active lane per wave to reduce conflicts.
+- Failure Mode: queue drift appears when dependent actions are run before prerequisite lane completion or when a repo is split across conflicting same-wave lanes.

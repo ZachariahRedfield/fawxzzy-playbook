@@ -49,6 +49,7 @@ const repoViewPanelEl = document.getElementById('repoViewPanel');
 const crossRepoViewPanelEl = document.getElementById('crossRepoViewPanel');
 const fleetSummaryPanelEl = document.getElementById('fleetSummaryPanel');
 const queueSummaryPanelEl = document.getElementById('queueSummaryPanel');
+const executionPlanPanelEl = document.getElementById('executionPlanPanel');
 let selectedRepoId = null;
 let selectedBlueprintNodeId = null;
 let homeRepoId = null;
@@ -419,6 +420,34 @@ const loadQueueSummary = async () => {
 };
 
 
+
+const renderExecutionPlanSummary = (plan) => {
+  if (!plan || typeof plan !== 'object') {
+    executionPlanPanelEl.innerHTML = '<div class="empty-state">Execution plan unavailable.</div>';
+    return;
+  }
+
+  const wave1 = Array.isArray(plan.waves) ? plan.waves.find((wave) => wave.wave_id === 'wave_1') : null;
+  const wave2 = Array.isArray(plan.waves) ? plan.waves.find((wave) => wave.wave_id === 'wave_2') : null;
+  const laneRows = Array.isArray(plan.worker_lanes) ? plan.worker_lanes.slice(0, 6).map((lane) =>
+    '<li>' + escapeHtml(lane.lane_id + ' • ' + lane.recommended_command_family + ' (' + (lane.repo_ids || []).length + ')') + '</li>'
+  ).join('') : '';
+  const promptRows = Array.isArray(plan.codex_prompts) ? plan.codex_prompts.slice(0, 4).map((prompt) =>
+    '<li>' + escapeHtml(prompt.prompt_id + ' • ' + prompt.repo_id + ' • ' + prompt.lane_id) + '</li>'
+  ).join('') : '';
+
+  executionPlanPanelEl.innerHTML =
+    '<div><strong>Wave 1 repos:</strong> ' + escapeHtml(String((wave1 && wave1.repos && wave1.repos.length) || 0)) + '</div>' +
+    '<div><strong>Wave 2 repos:</strong> ' + escapeHtml(String((wave2 && wave2.repos && wave2.repos.length) || 0)) + '</div>' +
+    '<div><strong>Worker lanes</strong><ul>' + (laneRows || '<li>none</li>') + '</ul></div>' +
+    '<div><strong>Top Codex prompts</strong><ul>' + (promptRows || '<li>none</li>') + '</ul></div>';
+};
+
+const loadExecutionPlanSummary = async () => {
+  const payload = await getJson('/api/readiness/execute');
+  renderExecutionPlanSummary(payload.execution_plan || null);
+};
+
 const setActiveView = (view) => {
   activeView = view === 'cross-repo' ? 'cross-repo' : 'repo';
   const repoMode = activeView === 'repo';
@@ -568,6 +597,7 @@ const refreshAll = async () => {
     }
     await loadFleetSummary();
     await loadQueueSummary();
+    await loadExecutionPlanSummary();
   } catch (error) {
     healthEl.textContent = 'error: ' + error.message;
   }

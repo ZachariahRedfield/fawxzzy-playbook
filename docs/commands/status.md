@@ -7,6 +7,7 @@ Deterministic adoption/readiness summary for governed Playbook usage.
 - `pnpm playbook status --json`: repo-level status/adoption summary.
 - `pnpm playbook status fleet --json`: fleet-level aggregate readiness summary using connected Observer repos.
 - `pnpm playbook status queue --json`: deterministic read-only adoption work-queue from fleet readiness.
+- `pnpm playbook status execute --json`: deterministic Codex-ready execution-plan packaging derived from the queue.
 
 If no Observer registry exists, fleet mode falls back to the current repository as a single-repo fleet.
 
@@ -95,4 +96,41 @@ pnpm playbook status --json
 pnpm playbook status
 pnpm playbook status fleet --json
 pnpm playbook status queue --json
+pnpm playbook status execute --json
 ```
+
+## Codex execution-plan JSON contract highlights
+
+- `kind`: `fleet-adoption-codex-execution-plan`
+- `generated_at` and stable `source_queue_digest`
+- `waves[]` with:
+  - `wave_id`, `purpose`, `repos[]`, `worker_lanes[]`, `completion_criteria`
+- `worker_lanes[]` with:
+  - `lane_id`, `wave`, `recommended_command_family`, `repo_ids[]`, `dependencies[]`
+  - `parallel_safe`, `merge_conflict_risk`, `rationale`
+- `codex_prompts[]` with:
+  - `prompt_id`, `wave`, `lane_id`, `repo_id`, `objective`
+  - `implementation_plan[]`, `files_to_modify[]`, `verification_steps[]`, `documentation_updates[]`
+  - explicit `governance_notes.rules[]`, `governance_notes.patterns[]`, `governance_notes.failure_modes[]`
+  - `prompt` copy-paste text
+- `execution_notes[]` and `blocked_followups[]`
+
+Execution packaging rules:
+
+- **Wave 1** includes only zero-dependency queue items.
+- **Wave 2** includes items unlocked directly by Wave 1 completion.
+- Remaining deeper dependency-chain items stay in `blocked_followups[]` until prior waves complete.
+- Worker lanes are command-family homogeneous to keep PRs small and minimize merge overlap.
+
+Canonical ordering comparator:
+
+- Lanes are ordered by lifecycle progression: `connect lane` -> `init lane` -> `index lane` -> `verify/plan lane` -> `apply lane`.
+- Prompts are ordered by: `wave` -> lane lifecycle priority -> `repo_id` -> `item_id`.
+- Wave `worker_lanes[]` use the same lane lifecycle priority ordering.
+
+## Parallel Codex usage guidance
+
+1. Use `status execute --json` and dispatch one `codex_prompts[]` entry per worker.
+2. Keep workers lane-scoped and repo-scoped; do not mix command families in one PR.
+3. Start with Wave 1 prompts only; generate a fresh execution plan after Wave 1 merges.
+4. Use `merge_conflict_risk` and lane rationale to schedule high-risk apply work last.

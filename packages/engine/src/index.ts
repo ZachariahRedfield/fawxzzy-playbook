@@ -26,6 +26,8 @@ export { buildFleetAdoptionReadinessSummary } from './adoption/fleetReadiness.js
 export type { FleetRepoReadinessEntry, FleetPriorityStage, FleetBlockerFrequency, FleetRecommendedAction, FleetRepoPriorityEntry, FleetAdoptionReadinessSummary } from './adoption/fleetReadiness.js';
 export { buildFleetAdoptionWorkQueue } from './adoption/workQueue.js';
 export type { FleetAdoptionWorkQueue, AdoptionWorkItem, AdoptionWorkWave, AdoptionGroupedActionLane, AdoptionBlockedItem, WorkQueueAction, WorkQueueParallelGroup, WorkQueueSeverity } from './adoption/workQueue.js';
+export { buildFleetCodexExecutionPlan } from './adoption/executionPlan.js';
+export type { FleetCodexExecutionPlan, CodexExecutionWave, CodexExecutionWorkerLane, CodexExecutionPrompt, CodexExecutionBlockedFollowup } from './adoption/executionPlan.js';
 
 export { generateRepositoryIndex } from './indexer/repoIndexer.js';
 export type { RepositoryIndex, RepositoryModule, RepositoryDependencyEdge, RepositoryWorkspaceNode, RepositoryTestCoverage, RepositoryConfigEntry } from './indexer/repoIndexer.js';
