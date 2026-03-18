@@ -18,7 +18,7 @@ afterEach(() => {
 });
 
 describe('runStory', () => {
-  it('creates, lists, shows, and updates stories', async () => {
+  it('creates, lists, shows, derives candidates, promotes, and updates stories', async () => {
     const repo = makeRepo();
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
@@ -39,6 +39,35 @@ describe('runStory', () => {
     expect(exitCode).toBe(ExitCode.Success);
     payload = JSON.parse(String(logSpy.mock.calls.at(-1)?.[0]));
     expect(payload.story.title).toBe('Backlog MVP');
+
+    fs.writeFileSync(path.join(repo, '.playbook/improvement-candidates.json'), JSON.stringify({
+      schemaVersion: '1.0',
+      kind: 'improvement-candidates',
+      generatedAt: '2026-01-01T00:00:00.000Z',
+      thresholds: { minimum_recurrence: 3, minimum_confidence: 0.6 },
+      sourceArtifacts: { memoryEventsPath: '', learningStatePath: '', memoryEventCount: 0, learningStateAvailable: false },
+      summary: { AUTO_SAFE: 0, CONVERSATIONAL: 0, GOVERNANCE: 1, total: 1 },
+      router_recommendations: { recommendations: [], rejected_recommendations: [] },
+      doctrine_candidates: { candidates: [], source_artifacts: [], generated_at: '2026-01-01T00:00:00.000Z', kind: 'knowledge-candidates', schemaVersion: '1.0' },
+      doctrine_promotions: { transitions: [], generated_at: '2026-01-01T00:00:00.000Z', kind: 'knowledge-promotions', schemaVersion: '1.0' },
+      command_improvements: { runtime_hardening: { proposals: [], rejected_proposals: [], open_questions: [] }, proposals: [], rejected_proposals: [] },
+      opportunity_analysis: { top_recommendation: null, secondary_queue: [] },
+      candidates: [{ candidate_id: 'candidate-a', category: 'routing', observation: 'Docs route recurs', recurrence_count: 3, confidence_score: 0.75, suggested_action: 'stabilize docs route', gating_tier: 'GOVERNANCE', improvement_tier: 'governance', required_review: true, blocking_reasons: [], evidence: { event_ids: ['evt-1'] }, evidence_count: 3, supporting_runs: 2 }],
+      rejected_candidates: []
+    }, null, 2));
+
+    logSpy.mockClear();
+    exitCode = await runStory(repo, ['candidates', '--explain'], { format: 'json', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+    payload = JSON.parse(String(logSpy.mock.calls.at(-1)?.[0]));
+    expect(payload.candidates.length).toBeGreaterThanOrEqual(1);
+    expect(payload.candidates[0].explanation.promotion.required).toBe(true);
+
+    logSpy.mockClear();
+    exitCode = await runStory(repo, ['promote', payload.candidates[0].candidate.candidate_id], { format: 'json', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+    payload = JSON.parse(String(logSpy.mock.calls.at(-1)?.[0]));
+    expect(payload.story.id).toContain('story-');
 
     logSpy.mockClear();
     exitCode = await runStory(repo, ['status', 'story-1', '--status', 'ready'], { format: 'json', quiet: false });

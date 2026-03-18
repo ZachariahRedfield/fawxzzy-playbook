@@ -1,4 +1,4 @@
-import { createStoryRecord, readStoriesArtifact, STORIES_RELATIVE_PATH, STORY_STATUSES, STORY_TYPES, STORY_SEVERITIES, STORY_PRIORITIES, STORY_CONFIDENCES, upsertStory, updateStoryStatus, validateStoriesArtifact, type StoryRecord, type StoryStatus } from '@zachariahredfield/playbook-engine';
+import { createStoryRecord, explainStoryCandidate, generateStoryCandidates, promoteStoryCandidate, readStoriesArtifact, STORIES_RELATIVE_PATH, STORY_CANDIDATES_RELATIVE_PATH, STORY_STATUSES, STORY_TYPES, STORY_SEVERITIES, STORY_PRIORITIES, STORY_CONFIDENCES, upsertStory, updateStoryStatus, validateStoriesArtifact, writeStoryCandidatesArtifact, type StoryCandidateRecord, type StoryRecord, type StoryStatus } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 import { stageWorkflowArtifact } from '../lib/workflowPromotion.js';
 
@@ -15,7 +15,7 @@ const print = (format: 'text' | 'json', payload: unknown): void => {
   if (format === 'json') console.log(JSON.stringify(payload, null, 2));
   else console.log(typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2));
 };
-const usage = 'Usage: playbook story <list|show|create|status> [options]';
+const usage = 'Usage: playbook story <list|show|create|status|candidates|promote> [options]';
 
 export const runStory = async (cwd: string, args: string[], options: StoryCommandOptions): Promise<number> => {
   const subcommand = args[0];
@@ -44,6 +44,34 @@ export const runStory = async (cwd: string, args: string[], options: StoryComman
     }
     print(options.format, { schemaVersion: '1.0', command: 'story.show', id, story });
     return ExitCode.Success;
+  }
+
+
+
+  if (subcommand === 'candidates') {
+    const explain = args.includes('--explain');
+    const artifact = generateStoryCandidates(cwd);
+    writeStoryCandidatesArtifact(cwd, artifact);
+    print(options.format, explain
+      ? { schemaVersion: '1.0', command: 'story.candidates', artifact_path: STORY_CANDIDATES_RELATIVE_PATH, candidates: artifact.candidates.map((candidate: StoryCandidateRecord) => ({ candidate, explanation: explainStoryCandidate(candidate) })) }
+      : { schemaVersion: '1.0', command: 'story.candidates', artifact_path: STORY_CANDIDATES_RELATIVE_PATH, candidates: artifact.candidates });
+    return ExitCode.Success;
+  }
+
+  if (subcommand === 'promote') {
+    const candidateId = args[1];
+    if (!candidateId) {
+      print(options.format, { schemaVersion: '1.0', command: 'story.promote', error: 'Usage: playbook story promote <candidate-id> --json' });
+      return ExitCode.Failure;
+    }
+    try {
+      const promotion = promoteStoryCandidate(cwd, candidateId);
+      print(options.format, { schemaVersion: '1.0', command: 'story.promote', candidate: promotion.candidate, story: promotion.story, artifact_path: promotion.storiesArtifactPath });
+      return ExitCode.Success;
+    } catch (error) {
+      print(options.format, { schemaVersion: '1.0', command: 'story.promote', candidate_id: candidateId, error: error instanceof Error ? error.message : String(error) });
+      return ExitCode.Failure;
+    }
   }
 
   if (subcommand === 'create') {

@@ -313,6 +313,14 @@ declare module "@zachariahredfield/playbook-engine" {
   export const validateStoriesArtifact: (...args: any[]) => string[];
   export const upsertStory: (...args: any[]) => StoriesArtifact;
   export const updateStoryStatus: (...args: any[]) => StoriesArtifact;
+  export type StoryCandidateRecord = any;
+  export type StoryCandidatesArtifact = any;
+  export const STORY_CANDIDATES_RELATIVE_PATH: '.playbook/story-candidates.json';
+  export const generateStoryCandidates: (...args: any[]) => StoryCandidatesArtifact;
+  export const writeStoryCandidatesArtifact: (...args: any[]) => void;
+  export const readStoryCandidatesArtifact: (...args: any[]) => StoryCandidatesArtifact;
+  export const explainStoryCandidate: (...args: any[]) => any;
+  export const promoteStoryCandidate: (...args: any[]) => { candidate: StoryCandidateRecord; story: StoryRecord; storiesArtifactPath: '.playbook/stories.json' };
 
   export type ImprovementCandidatesArtifact = any;
   export type ImprovementActionArtifact = any;

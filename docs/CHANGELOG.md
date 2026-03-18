@@ -1,3 +1,11 @@
+## 2026-03-18 — Story candidate derivation and explicit backlog promotion
+
+- WHAT: Added deterministic `pnpm playbook story candidates --json` and `pnpm playbook story candidates --explain --json` support that derives advisory `.playbook/story-candidates.json` records from governed readiness blockers, improvement opportunities/candidates, runtime hardening proposals, and execution drift evidence with grouping and dedupe heuristics instead of raw finding -> story auto-creation. WHY: Findings need durable interpretation before they become backlog work, and grouped candidates provide inspectable planning signal without turning every governed observation into canonical backlog spam.
+- WHAT: Added explicit `pnpm playbook story promote <candidate-id> --json` promotion into canonical `.playbook/stories.json`, plus focused engine/CLI coverage proving candidate generation is read-only with respect to backlog state and that promotion is the only durable backlog mutation path. WHY: Candidate stories require grouping, dedupe, and explicit promotion so the canonical backlog remains intentional and reviewable.
+- Pattern: Findings need durable interpretation before they become backlog work.
+- Pattern: Candidate stories require grouping, dedupe, and explicit promotion.
+- Failure Mode: Raw finding -> automatic story conversion creates backlog spam and weak planning signal.
+
 ## 2026-03-18 — Deterministic execution replay and drift inspection
 
 - WHAT: Added `pnpm playbook receipt replay --json`, a read-only deterministic replay flow that reloads the canonical execution outcome input artifact, regenerates receipt / updated-state / next-queue from the current execution loop, and compares replay output against committed updated-state-derived downstream truth. WHY: Closed-loop execution now has a first-class debugging and regression surface for proving that identical canonical inputs reproduce identical downstream state.
