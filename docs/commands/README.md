@@ -579,5 +579,14 @@ Use query surfaces to inspect state:
 - Failure Mode: Letting patterns enter execution directly creates a second control path and breaks operator trust.
 
 - `playbook story plan <id> --json`: generate a route/execution plan from canonical story intent while keeping story, plan, worker, and receipt as separate linked artifacts.
+- `playbook route --story <id> --json`: derive a deterministic route directly from a story id and stamp stable `story_reference` metadata into the generated execution plan.
+
+## Pattern lifecycle and transfer
+
+- `pnpm playbook promote pattern-retire <pattern-id> --reason <text> --json`
+- `pnpm playbook promote pattern-demote <pattern-id> --reason <text> --json`
+- `pnpm playbook promote pattern-recall <pattern-id> --reason <text> --json`
+- `pnpm playbook patterns transfer export --pattern <id> --target-repo <repo-id> --json`
+- `pnpm playbook patterns transfer import --file <path> --repo <repo-id> --json`
 - `playbook route --story <id> --json`: derive a deterministic route directly from a story id and stamp stable `story_reference` metadata plus advisory `pattern_context` into the generated execution plan.
 - Promoted global patterns may inform story-backed planning through read-only advisory context, but only repo-local stories remain execution authority.
