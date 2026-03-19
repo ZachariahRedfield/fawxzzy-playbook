@@ -33,6 +33,15 @@ export type StoryTransitionPreview = {
   next_status: StoryStatus;
 };
 
+export type StoryPromotionProvenance = {
+  source_ref: string;
+  promoted_from: 'story-candidate' | 'pattern-candidate';
+  candidate_id: string;
+  candidate_fingerprint: string;
+  source_artifact: string;
+  promoted_at: string;
+};
+
 export type StoryRecord = {
   id: string;
   repo: string;
@@ -49,6 +58,7 @@ export type StoryRecord = {
   dependencies: string[];
   execution_lane: string | null;
   suggested_route: string | null;
+  provenance?: StoryPromotionProvenance;
 };
 
 export type StoriesArtifact = {
@@ -241,6 +251,7 @@ export const validateStoryRecord = (story: unknown, expectedRepo?: string): stri
   if (!Array.isArray(record.dependencies) || asStringArray(record.dependencies).length !== record.dependencies.length) errors.push('story.dependencies must be an array of strings');
   if (!(record.execution_lane === null || typeof record.execution_lane === 'string')) errors.push('story.execution_lane must be a string or null');
   if (!(record.suggested_route === null || typeof record.suggested_route === 'string')) errors.push('story.suggested_route must be a string or null');
+  if (!(record.provenance === undefined || (typeof record.provenance === 'object' && record.provenance !== null && !Array.isArray(record.provenance)))) errors.push('story.provenance must be an object when provided');
   return errors;
 };
 
