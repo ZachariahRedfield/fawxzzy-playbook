@@ -1,5 +1,13 @@
 ## Unreleased
 
+- WHAT: Hardened Observer’s cross-repo candidate mapper so optional aggregate-array fields such as `supporting_repos` and `evidence` are normalized before iteration/spread, and tightened the observer fixture coverage to prove partially populated read-only candidate payloads do not crash or leak unstable shapes. WHY: Read-only observer endpoints must remain stable even when upstream aggregate artifacts omit additive optional arrays.
+- Rule: Observer/API boundary mappers must normalize optional array fields before iteration or spreading.
+- Pattern: Aggregate read models should be tolerant of additive or partially populated upstream contract shapes.
+- Failure Mode: UI/read-only endpoints crash when mapper logic assumes producer-perfect arrays for newly introduced cross-repo fields.
+- WHAT: Tightened Observer repo and cross-repo operator views so repo mode stays story-first, cross-repo mode groups portable-pattern candidates by kind with one primary next action, raw JSON moved behind deep disclosure, and blocker/next-action rendering now normalizes structured objects instead of leaking `[object Object]`. WHY: A correct read-only control plane still needs strong signal hierarchy so operators can act quickly without losing governed truth surfaces.
+- Pattern: Observer should lead with signal hierarchy, not raw artifact density.
+- Pattern: Story/backlog visibility should sit above lower-level execution detail when it is the next human planning surface.
+- Failure Mode: A correct control plane with poor signal hierarchy still creates operator drag.
 - WHAT: Hardened `scripts/pack-release-fallback-asset.mjs` release-version detection so fallback packaging now prefers explicit `PLAYBOOK_RELEASE_VERSION`, otherwise accepts only semver-looking Git tag context (`GITHUB_REF_TYPE=tag` or `refs/tags/...`), and ignores generic branch/PR/merge refs such as `630/merge`. Added regression coverage that isolates inherited CI ref metadata from normal test runs while preserving explicit release-version mismatch enforcement. WHY: Ordinary PR/test workflows must not inherit ambient merge metadata and accidentally enter release-version validation.
 - Rule: Release artifact validation must key off explicit release context, not arbitrary CI branch or merge refs.
 - Pattern: Testable packaging pipelines isolate release semantics from normal CI semantics.
