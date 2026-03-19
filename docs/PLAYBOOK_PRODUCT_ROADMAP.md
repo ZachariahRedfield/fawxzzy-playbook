@@ -669,23 +669,22 @@ Failure Mode - If workflow memory lives only in chat or human recall, the system
   - Playbook needs a repo-native interpretation layer that persists across sessions and execution attempts without collapsing findings, plans, workers, and receipts into one artifact.
   - the target shape is `Detection -> Story -> Plan -> Execution -> Receipt`, where Story is the durable repo-scoped action unit and Backlog is the per-repo queue/view over those stories.
 - **Already exists today**
-  - Playbook already emits deterministic findings, readiness gaps, execution plans, worker-lane proposals, and execution receipts that can become evidence inputs for future stories.
-  - Observer already provides a repo-scoped read-only surface that can later host backlog visibility without becoming the canonical source of story state.
+  - Playbook now persists canonical repo story state in `.playbook/stories.json` and candidate derivation state in `.playbook/story-candidates.json`, establishing a governed split between durable backlog truth and read-only candidate generation.
+  - explicit story promotion is implemented so candidate stories can be grouped/deduped first and then promoted into the canonical backlog instead of auto-converting every finding into a story.
+  - Playbook already emits deterministic findings, readiness gaps, execution plans, worker-lane proposals, routing recommendations, and execution receipts that act as evidence inputs for story creation and later story updates.
+  - Observer now provides read-only repo backlog visibility sourced from `.playbook/stories.json`, so operators can inspect canonical story state without introducing a second planning system.
 - **Partially defined**
-  - current docs distinguish findings, plans, workers, and receipts, but there is not yet a canonical story/backlog artifact or deterministic promotion flow from candidate finding clusters into durable repo work items.
+  - implemented foundations now exist, but deeper lifecycle seams still need hardening: canonical story schema evolution, deterministic priority scoring, dependency-aware ordering, and richer story-linked execution transitions are not yet the fully unified control-plane model.
+  - story-linked routing exists in unreleased notes, but the full `Story -> Plan -> Worker -> Receipt` lifecycle is still only partially connected and needs clearer architectural doctrine across planning and execution surfaces.
 - **Future MVP scope**
-  - repo-local story storage.
-  - manual story creation for human-originated work.
-  - candidate story derivation from detected findings with grouping, dedupe, and explicit promotion into backlog.
-  - deterministic priority scoring.
-  - backlog list in Observer or equivalent repo UI.
-  - story detail carrying evidence, rationale, acceptance criteria, dependencies, execution lane, and suggested route.
+  - deepen repo-local story storage and manual story creation for human-originated work beyond the current implemented foundation.
+  - make story detail the fully governed durable seam for evidence, rationale, acceptance criteria, dependencies, execution lane, and suggested route.
+  - add deterministic priority scoring so backlog ordering becomes explainable and stable instead of operator-interpreted only.
 - **Future evolution**
-  - candidate normalization and dedupe across repeated findings.
+  - deepen candidate normalization and dedupe across repeated findings and recurring evidence refreshes.
   - dependency-aware story ordering.
-  - generate execution plans from stories.
-  - split stories into PR-sized Codex worker lanes.
-  - tie receipts and observed outcomes back to stories.
+  - deepen `story -> plan` generation and `plan -> worker lane` derivation so story-linked execution becomes a complete governed lifecycle rather than a partial seam.
+  - tie receipts, updated-state outcomes, and observed drift back to stories with deterministic lifecycle transitions.
   - optional GitHub issue import/export later, without making external issue systems the canonical source of truth.
 - **Non-goals / guardrails**
   - do not build a generic PM suite inside Playbook.
@@ -698,8 +697,12 @@ Failure Mode - If workflow memory lives only in chat or human recall, the system
 
 Pattern: Detection -> Story -> Plan -> Execution -> Receipt.
 Pattern: Detection needs durable interpretation.
+Pattern: Canonical story state, candidate derivation, and Observer rendering are separate architecture seams.
+Pattern: Product roadmap docs must distinguish implemented foundations from future evolution.
 Rule: Stories must be structured first, narrative second.
+Rule: Product roadmap docs must distinguish implemented foundations from future evolution.
 Failure Mode: Backlog spam from raw findings.
+Failure Mode: When roadmap docs lag implemented governed surfaces, operator understanding and future planning prompts drift from product truth.
 
 #### 9. Knowledge Query / Inspection Surfaces
 

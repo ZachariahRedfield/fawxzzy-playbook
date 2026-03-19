@@ -332,22 +332,23 @@ Playbook governance execution follows a staged flow:
 
 In the Toroidal Flow overlay, this execution flow is the **forward execution arc** and `apply` is treated as a midpoint for full-cycle architecture framing rather than a terminal endpoint.
 
-## Future planning-layer seam: repo-scoped Stories / Backlog
+## Repo-scoped Stories / Backlog seam
 
-Playbook's current deterministic runtime already distinguishes repository findings, plans, worker lanes, and execution receipts. A future repo-scoped Stories / Backlog layer should sit **between** detection and execution rather than replacing either side.
+Playbook's current deterministic runtime now includes canonical repo story state, candidate derivation, explicit promotion, and read-only Observer backlog rendering. The Stories / Backlog layer sits **between** detection and execution rather than replacing either side.
 
-Canonical future lifecycle:
+Canonical lifecycle:
 
-`Detection -> Story -> Plan -> Execution -> Receipt`
+`Detection -> Candidate Story -> Story -> Plan -> Worker -> Receipt`
 
 Separation of concerns:
 
 - **Detection / findings**: granular evidence emitted by analysis, verify, readiness, observer, or other governed signals.
-- **Story**: the durable scoped unit of work for one repository.
-- **Backlog**: the per-repo queue/view of stories.
-- **Plan**: deterministic execution strategy generated from a story.
-- **Workers**: PR-sized implementation lanes derived from a plan.
-- **Receipt**: observed execution outcome tied back to what actually happened.
+- **Candidate story**: a read-only proposed durable work item derived from governed evidence and stored separately from canonical backlog truth.
+- **Story**: the durable scoped unit of work for one repository and the canonical backlog artifact.
+- **Backlog**: the per-repo queue/view over canonical stories.
+- **Plan**: deterministic execution strategy generated from a story; plans are execution intent, not backlog truth.
+- **Workers**: PR-sized implementation lanes derived from a plan; worker contracts are execution decomposition, not planning state.
+- **Receipt**: observed execution outcome tied back to what actually happened; receipts capture realized outcomes, not durable planning intent.
 
 Why this seam is needed:
 
@@ -355,14 +356,21 @@ Why this seam is needed:
 - deterministic systems can surface many correct warnings without telling operators which related signals should become one durable work item.
 - execution artifacts are intentionally transient/planned outputs, while stories must persist across sessions, retries, and alternative execution attempts.
 
+Implemented architecture boundaries today:
+
+- `.playbook/stories.json` is the canonical repo-scoped story/backlog artifact.
+- `.playbook/story-candidates.json` is the candidate-derivation artifact and must remain read-only relative to canonical story state until explicit promotion occurs.
+- Observer may render backlog state from `.playbook/stories.json`, but Observer is a read-only presentation seam and must not become the canonical story system.
+- story-linked routing and execution metadata are additive linking seams; they do not collapse Story, Plan, Worker, and Receipt into one shared artifact.
+
 Pattern: Detection -> Story -> Plan -> Execution -> Receipt.
 Pattern: Detection needs durable interpretation.
 Rule: Stories must be structured first, narrative second.
 Failure Mode: Backlog spam from raw findings.
 
-### Proposed future Story model
+### Story model and remaining future seams
 
-This is a documentation-only architecture target, not an implemented runtime artifact.
+The canonical story/backlog seam is implemented, but this model still describes the intended durable shape and the fields that should remain queryable as the lifecycle deepens.
 
 ```json
 {
@@ -402,13 +410,20 @@ Minimum structured fields:
 - `execution_lane` (`safe_single_pr`, `safe_parallel`, `needs_human`, `blocked`)
 - `suggested_route`
 
-Design guardrails for the future implementation:
+Design guardrails:
 
 - story fields should be deterministic and queryable before any narrative summary layer.
 - candidate stories derived from findings must support grouping, dedupe, and explicit promotion rather than automatic one-warning-to-one-story conversion.
 - story storage should remain repo-scoped and local-first.
 - observer/UI surfaces may render backlog state later, but UI wrappers must not become the canonical story source of truth.
 - external issue import/export can be additive later, but Playbook should not turn into a generic Jira clone.
+
+Still-future scope:
+
+- deterministic priority scoring for stable backlog ordering.
+- dependency-aware story ordering.
+- deeper `story -> plan -> worker -> receipt` lifecycle transitions and replay/update integration.
+- optional import/export bridges to external issue systems without changing canonical source-of-truth ownership.
 
 Non-goals for this layer:
 
