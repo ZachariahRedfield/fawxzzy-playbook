@@ -60,6 +60,8 @@ const backlogListPanelEl = document.getElementById('backlogListPanel');
 const storyDetailPanelEl = document.getElementById('storyDetailPanel');
 const promotionLayerPanelEl = document.getElementById('promotionLayerPanel');
 const crossRepoPromotionPanelEl = document.getElementById('crossRepoPromotionPanel');
+const globalPatternListPanelEl = document.getElementById('globalPatternListPanel');
+const globalPatternDetailPanelEl = document.getElementById('globalPatternDetailPanel');
 let selectedRepoId = null;
 let selectedBlueprintNodeId = null;
 let homeRepoId = null;
@@ -77,7 +79,10 @@ let latestBacklogPayload = null;
 let latestStoryDetailPayload = null;
 let latestRepoPromotionLayerPayload = null;
 let latestCrossRepoPromotionLayerPayload = null;
+let latestGlobalPatternListPayload = null;
+let latestGlobalPatternDetailPayload = null;
 let selectedStoryId = null;
+let selectedGlobalPatternId = null;
 
 const NODE_LINKED_ARTIFACT = {
   'cycle-state': 'cycle-state',
@@ -200,6 +205,7 @@ const computePlanStatus = () => {
 const storyStatusOrder = ['ready', 'in_progress', 'blocked', 'proposed', 'done', 'archived'];
 
 const renderLinkButton = (repoId, storyId, label) => '<button class="repo" data-story-repo="' + escapeHtml(repoId) + '" data-story-id="' + escapeHtml(storyId) + '">' + escapeHtml(label) + '</button>';
+const renderGlobalPatternButton = (patternId, label) => '<button class="repo" data-global-pattern-id="' + escapeHtml(patternId) + '">' + escapeHtml(label) + '</button>';
 
 const attachStoryHandlers = () => {
   for (const el of document.querySelectorAll('[data-story-id]')) {
@@ -208,6 +214,15 @@ const attachStoryHandlers = () => {
       selectedStoryId = el.getAttribute('data-story-id');
       await loadRepoDetail();
       renderRepos();
+    };
+  }
+};
+
+const attachGlobalPatternHandlers = () => {
+  for (const el of document.querySelectorAll('[data-global-pattern-id]')) {
+    el.onclick = async () => {
+      selectedGlobalPatternId = el.getAttribute('data-global-pattern-id');
+      await loadGlobalPatternDetail();
     };
   }
 };
@@ -314,6 +329,47 @@ const renderCrossRepoPromotionLayer = (payload) => {
     '</div>' +
     '<div class="cross-repo-item"><strong>Derived candidates</strong><div class="meta">Global cross-repo pattern candidates from <code>' + escapeHtml((layer.derived_candidates && layer.derived_candidates.raw_artifact_path) || '.playbook/pattern-candidates.json') + '</code>.</div>' + renderJoinList(candidateRows) + '</div>' +
     '<div class="cross-repo-item"><strong>Promoted knowledge</strong><div class="meta">Global promoted patterns from <code>' + escapeHtml((layer.promoted_knowledge && layer.promoted_knowledge.raw_artifact_path) || '.playbook/patterns.json') + '</code>.</div>' + renderJoinList(promotedRows) + '</div>';
+};
+
+const renderGlobalPatternList = (payload) => {
+  const patterns = toArray(payload && payload.patterns);
+  if (!patterns.length) {
+    globalPatternListPanelEl.innerHTML = '<div class="empty-state">No promoted patterns found yet. Promote a reviewed pattern candidate to turn cross-repo observations into navigable doctrine.</div>';
+    globalPatternDetailPanelEl.innerHTML = '<div class="empty-state">Select a promoted pattern to inspect provenance and linked repo stories.</div>';
+    return;
+  }
+  globalPatternListPanelEl.innerHTML = '<ul>' + patterns.map((pattern) =>
+    '<li>' + renderGlobalPatternButton(pattern.id, pattern.id + ' • ' + (pattern.title || pattern.id)) +
+    '<div class="meta">candidate: ' + escapeHtml(pattern.candidate_id || 'n/a') +
+    ' • linked stories: ' + escapeHtml(String(pattern.linked_story_count || 0)) +
+    ' • repos: ' + escapeHtml(toArray(pattern.linked_repo_ids).join(', ') || 'none') + '</div></li>'
+  ).join('') + '</ul>';
+  attachGlobalPatternHandlers();
+};
+
+const renderGlobalPatternDetail = (payload) => {
+  const detail = payload && payload.detail;
+  if (!detail || !detail.summary) {
+    globalPatternDetailPanelEl.innerHTML = '<div class="empty-state">Select a promoted pattern to inspect provenance and linked repo stories.</div>';
+    return;
+  }
+  const summary = detail.summary || {};
+  const linkedStories = toArray(detail.linked_stories);
+  globalPatternDetailPanelEl.innerHTML =
+    '<div class="summary-strip">' +
+    renderSummaryMetric('Candidate', summary.candidate_id || 'n/a') +
+    renderSummaryMetric('Linked stories', String(summary.linked_story_count || 0)) +
+    renderSummaryMetric('Linked repos', String(toArray(summary.linked_repo_ids).length)) +
+    '</div>' +
+    '<div class="narrative-primary"><strong>' + escapeHtml(summary.title || summary.id || 'unknown') + '</strong></div>' +
+    '<div><strong>Source refs</strong><ul>' + (toArray(summary.source_refs).length ? toArray(summary.source_refs).map((ref) => '<li><code>' + escapeHtml(ref) + '</code></li>').join('') : '<li>none</li>') + '</ul></div>' +
+    '<details class="narrative-secondary"><summary>Linked repo stories</summary><ul>' +
+    (linkedStories.length ? linkedStories.map((story) => '<li>' + renderLinkButton(story.repo_id, story.story_id, story.repo_id + ' • ' + story.story_id + ' • ' + story.title) +
+      '<div class="meta">status: ' + escapeHtml(story.status || 'unknown') + ' • route: ' + escapeHtml(story.suggested_route || 'n/a') +
+      ' • provenance: ' + escapeHtml((story.provenance && story.provenance.source_ref) || (story.provenance && story.provenance.candidate_id) || 'none') + '</div></li>').join('') : '<li>none</li>') +
+    '</ul></details>' +
+    '<details class="raw-truth-note"><summary>Deep/raw pattern artifact</summary><div><code>' + escapeHtml(detail.raw_artifact_path || '.playbook/patterns.json') + '</code></div>' + format(detail.pattern || detail) + '</details>';
+  attachStoryHandlers();
 };
 
 const renderStoryDetail = (detail) => {
@@ -1083,6 +1139,18 @@ const loadCrossRepoAggregate = async () => {
   const promotionLayerPayload = await getJson('/api/cross-repo/promotion-layer');
   latestCrossRepoPromotionLayerPayload = promotionLayerPayload;
   renderCrossRepoPromotionLayer(promotionLayerPayload);
+  const globalPatternListPayload = await getJson('/api/cross-repo/global-patterns');
+  latestGlobalPatternListPayload = globalPatternListPayload;
+  renderGlobalPatternList(globalPatternListPayload);
+  const patterns = toArray(globalPatternListPayload.patterns);
+  if (!selectedGlobalPatternId || !patterns.find((pattern) => pattern.id === selectedGlobalPatternId)) {
+    selectedGlobalPatternId = patterns[0] ? patterns[0].id : null;
+  }
+  if (selectedGlobalPatternId) {
+    await loadGlobalPatternDetail();
+  } else {
+    renderGlobalPatternDetail(null);
+  }
   if (repos.length < 2) {
     crossRepoPanelEl.innerHTML = '<div class="empty-state">Connect at least 2 repos to compare governed artifacts.</div>';
     return;
@@ -1098,6 +1166,16 @@ const loadCrossRepoAggregate = async () => {
     candidates: candidatePayload.candidates,
     deep_disclosure: candidatePayload.deep_disclosure
   });
+};
+
+const loadGlobalPatternDetail = async () => {
+  if (!selectedGlobalPatternId) {
+    renderGlobalPatternDetail(null);
+    return;
+  }
+  const payload = await getJson('/api/cross-repo/global-patterns/' + encodeURIComponent(selectedGlobalPatternId));
+  latestGlobalPatternDetailPayload = payload;
+  renderGlobalPatternDetail(payload);
 };
 
 const refreshAll = async () => {

@@ -43,6 +43,7 @@ Maintainer note (UI bootstrap safety):
 - Embedding large browser apps as raw template strings makes accidental TS leakage easier and review harder; dedicated source files reduce this risk and improve maintainability.
 - Regression checks live in `packages/cli/src/commands/observer.test.ts` and `packages/cli/scripts/run-observer-tests.mjs` to guard TS-leakage patterns and required bootstrap wiring (`refreshAll`, repo hydration, self-observation refresh).
 - Read endpoints: `GET /health`, `GET /repos`, `GET /snapshot`, `GET /repos/:id`, `GET /repos/:id/artifacts/:kind`, `GET /api/readiness/fleet`
+- Promotion lineage endpoints: `GET /api/cross-repo/global-patterns`, `GET /api/cross-repo/global-patterns/:id`
 - Registry mutation endpoints (local-only, add/remove parity with CLI): `POST /repos`, `DELETE /repos/:id`
 - Responses are deterministic envelopes, and artifact state remains sourced from governed observer/runtime artifacts.
 - Startup output includes observer root metadata (`observer_root`, `registry_path`, `repo_count`) in both text and `--json` modes for debugging.
@@ -90,6 +91,28 @@ If cwd differs across terminals, pass `--root` explicitly to force all add/list/
 Rule: A Playbook server must wrap governed artifacts and commands, not replace them.
 Pattern: Thin local server over canonical runtime artifacts.
 Failure Mode: If the server becomes the real source of state instead of a wrapper over repo-local truth, architecture drifts away from CLI-first determinism.
+
+## Candidate → pattern → story lineage
+
+Observer cross-repo view now exposes a read-only lineage chain from global pattern candidates to promoted patterns and then down into repo stories that were promoted from the same candidate provenance.
+
+The operator-facing flow is intentionally progressive:
+
+1. **Global Promotion Layer** shows the compact pattern candidate and promoted pattern surfaces.
+2. **Global Pattern Lineage** lists promoted patterns with linked-story counts by repo.
+3. **Pattern detail** expands provenance/source refs and the repo stories whose promotion provenance points back to the same global candidate.
+4. **Story detail** remains the canonical repo-local drilldown for downstream execution context.
+
+The lineage contract is additive and read-only:
+
+- promoted pattern → story joins are reconstructed from provenance metadata only
+- provenance/source refs remain visible on pattern detail
+- raw artifact inspection still routes through the existing artifact viewer and deep disclosure panels
+- no new canonical write paths are introduced beyond existing explicit promotion actions
+
+Rule: Lineage should be reconstructed from provenance, not maintained through redundant backlinks in v1.
+Pattern: Progressive disclosure turns dense deterministic truth into usable operator understanding.
+Failure Mode: Promotion data that exists only in files but not in the operator surface becomes effectively non-operational.
 
 ### Readiness and observability status
 

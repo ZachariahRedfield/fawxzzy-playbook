@@ -121,6 +121,37 @@ type ObserverGlobalPromotionLayer = {
   };
 };
 
+type ObserverPatternLineageStory = {
+  repo_id: string;
+  story_id: string;
+  title: string;
+  status: string;
+  suggested_route: string | null;
+  raw_artifact_path: '.playbook/stories.json';
+  provenance: {
+    source_ref: string | null;
+    candidate_id: string | null;
+    promoted_from: string | null;
+  };
+};
+
+type ObserverGlobalPatternSummary = {
+  id: string;
+  title: string;
+  candidate_id: string | null;
+  promoted_at: string | null;
+  source_refs: string[];
+  linked_story_count: number;
+  linked_repo_ids: string[];
+};
+
+type ObserverGlobalPatternDetail = {
+  summary: ObserverGlobalPatternSummary;
+  pattern: Record<string, unknown>;
+  raw_artifact_path: '.playbook/patterns.json';
+  linked_stories: ObserverPatternLineageStory[];
+};
+
 type ObserverCrossRepoCandidateGroup = {
   kind: string;
   candidate_count: number;
@@ -507,6 +538,30 @@ const listArtifactRecords = (artifact: unknown): Array<Record<string, unknown>> 
 const toStringList = (value: unknown): string[] =>
   Array.isArray(value) ? [...new Set(value.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0))].sort((left, right) => left.localeCompare(right)) : [];
 
+const toSourceRefList = (entry: Record<string, unknown>): string[] => {
+  const rawSourceRefs = Array.isArray(entry.sourceRefs) ? entry.sourceRefs : [];
+  const direct = rawSourceRefs.flatMap((value) => {
+    if (typeof value === 'string' && value.trim()) return [value];
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const record = value as Record<string, unknown>;
+      const repoId = typeof record.repoId === 'string' ? record.repoId : null;
+      const artifactPath = typeof record.artifactPath === 'string' ? record.artifactPath : null;
+      const entryId = typeof record.entryId === 'string' ? record.entryId : null;
+      const fingerprint = typeof record.fingerprint === 'string' ? record.fingerprint : null;
+      if (repoId && artifactPath && entryId && fingerprint) {
+        return [`${repoId}::${artifactPath}::${entryId}::${fingerprint}`];
+      }
+    }
+    return [];
+  });
+  const provenance = entry.provenance && typeof entry.provenance === 'object' && !Array.isArray(entry.provenance)
+    ? toSourceRefList(entry.provenance as Record<string, unknown>)
+    : [];
+  const evidenceRefs = Array.isArray(entry.evidence_refs) ? entry.evidence_refs.filter((value): value is string => typeof value === 'string' && value.trim().length > 0) : [];
+  const sourceArtifact = typeof entry.source_artifact === 'string' && entry.source_artifact ? [entry.source_artifact] : [];
+  return [...new Set([...direct, ...provenance, ...evidenceRefs, ...sourceArtifact])].sort((left, right) => left.localeCompare(right));
+};
+
 const toJoinableLink = (entry: Record<string, unknown>, fallbackType: ObserverJoinLink['type'], origin: ObserverJoinLink['origin'], rawArtifactPath: string, promoteCommand: string | null): ObserverJoinLink | null => {
   const id = typeof entry.id === 'string' && entry.id ? entry.id : typeof entry.candidateId === 'string' && entry.candidateId ? entry.candidateId : typeof entry.knowledgeId === 'string' && entry.knowledgeId ? entry.knowledgeId : null;
   if (!id) return null;
@@ -517,10 +572,89 @@ const toJoinableLink = (entry: Record<string, unknown>, fallbackType: ObserverJo
     title,
     normalizationKey: typeof entry.normalizationKey === 'string' && entry.normalizationKey ? entry.normalizationKey : null,
     promotedFrom: typeof entry.promotedFrom === 'string' && entry.promotedFrom ? entry.promotedFrom : typeof entry.sourceCandidateId === 'string' && entry.sourceCandidateId ? entry.sourceCandidateId : null,
-    sourceRefs: toStringList(entry.sourceRefs),
+    sourceRefs: toSourceRefList(entry),
     origin,
     raw_artifact_path: rawArtifactPath,
     promote_command: promoteCommand
+  };
+};
+
+const buildGlobalPatternStoryLinks = (registry: ObserverRepoRegistry, patternEntry: Record<string, unknown>): ObserverPatternLineageStory[] => {
+  const provenance = patternEntry.provenance && typeof patternEntry.provenance === 'object' && !Array.isArray(patternEntry.provenance)
+    ? patternEntry.provenance as Record<string, unknown>
+    : {};
+  const sourceRef = typeof provenance.source_ref === 'string' ? provenance.source_ref : null;
+  const candidateId = typeof provenance.candidate_id === 'string' ? provenance.candidate_id : null;
+  const stories: ObserverPatternLineageStory[] = [];
+  for (const repo of registry.repos) {
+    const artifact = readRepoStories(repo);
+    for (const story of artifact.stories) {
+      const storyProvenance = (story as typeof story & {
+        provenance?: {
+          source_ref?: string;
+          candidate_id?: string;
+          promoted_from?: string;
+        };
+      }).provenance ?? null;
+      if (!storyProvenance || storyProvenance.promoted_from !== 'pattern-candidate') continue;
+      const matchesSourceRef = sourceRef && storyProvenance.source_ref === sourceRef;
+      const matchesCandidateId = candidateId && storyProvenance.candidate_id === candidateId;
+      if (!matchesSourceRef && !matchesCandidateId) continue;
+      stories.push({
+        repo_id: repo.id,
+        story_id: story.id,
+        title: story.title,
+        status: story.status,
+        suggested_route: story.suggested_route,
+        raw_artifact_path: '.playbook/stories.json',
+        provenance: {
+          source_ref: storyProvenance.source_ref ?? null,
+          candidate_id: storyProvenance.candidate_id ?? null,
+          promoted_from: storyProvenance.promoted_from ?? null
+        }
+      });
+    }
+  }
+  return stories.sort((left, right) =>
+    left.repo_id.localeCompare(right.repo_id) ||
+    left.story_id.localeCompare(right.story_id)
+  );
+};
+
+const buildGlobalPatternSummary = (registry: ObserverRepoRegistry, patternEntry: Record<string, unknown>): ObserverGlobalPatternSummary | null => {
+  const id = typeof patternEntry.id === 'string' && patternEntry.id ? patternEntry.id : null;
+  if (!id) return null;
+  const provenance = patternEntry.provenance && typeof patternEntry.provenance === 'object' && !Array.isArray(patternEntry.provenance)
+    ? patternEntry.provenance as Record<string, unknown>
+    : {};
+  const linkedStories = buildGlobalPatternStoryLinks(registry, patternEntry);
+  return {
+    id,
+    title: typeof patternEntry.title === 'string' && patternEntry.title ? patternEntry.title : id,
+    candidate_id: typeof provenance.candidate_id === 'string' ? provenance.candidate_id : null,
+    promoted_at: typeof provenance.promoted_at === 'string' ? provenance.promoted_at : null,
+    source_refs: toSourceRefList(patternEntry),
+    linked_story_count: linkedStories.length,
+    linked_repo_ids: [...new Set(linkedStories.map((story) => story.repo_id))].sort((left, right) => left.localeCompare(right))
+  };
+};
+
+const buildGlobalPatternList = (observerRoot: string, registry: ObserverRepoRegistry): ObserverGlobalPatternSummary[] =>
+  readGlobalPromotedPatterns(observerRoot)
+    .map((entry) => buildGlobalPatternSummary(registry, entry))
+    .filter((entry): entry is ObserverGlobalPatternSummary => entry !== null)
+    .sort((left, right) => left.id.localeCompare(right.id));
+
+const buildGlobalPatternDetail = (observerRoot: string, registry: ObserverRepoRegistry, patternId: string): ObserverGlobalPatternDetail | null => {
+  const pattern = readGlobalPromotedPatterns(observerRoot).find((entry) => entry.id === patternId);
+  if (!pattern) return null;
+  const summary = buildGlobalPatternSummary(registry, pattern);
+  if (!summary) return null;
+  return {
+    summary,
+    pattern,
+    raw_artifact_path: '.playbook/patterns.json',
+    linked_stories: buildGlobalPatternStoryLinks(registry, pattern)
   };
 };
 
@@ -987,6 +1121,7 @@ const observerDashboardHtml = (): string => `<!doctype html>
           <div class="card"><h3>Reconciled Updated State</h3><div id="updatedStatePanel" class="meta">Reconciled updated state closes the loop from receipt into canonical adoption state.</div></div>
           <div class="card"><h3>Next Queue (Derived from Updated State)</h3><div id="nextQueuePanel" class="meta">Next adoption queue is derived deterministically from updated state only.</div></div>
           <div class="card"><h3>Global Promotion Layer</h3><div id="crossRepoPromotionPanel" class="meta">Global candidates and promoted patterns load here.</div></div>
+          <div class="card"><h3>Global Pattern Lineage</h3><div id="globalPatternListPanel" class="meta">Promoted patterns and linked repo stories load here.</div><div id="globalPatternDetailPanel" class="meta">Select a promoted pattern to inspect provenance and downstream story lineage.</div></div>
           <div class="card"><h3>Cross-Repo Intelligence</h3>
             <div class="row"><label class="meta">Left repo</label><select id="compareLeft"></select></div>
             <div class="row"><label class="meta">Right repo</label><select id="compareRight"></select></div>
@@ -1177,6 +1312,37 @@ const observerServerResponse = (observerRoot: string, invocationCwd: string, pat
         ...base,
         kind: 'observer-cross-repo-promotion-layer',
         promotion_layer: buildGlobalPromotionLayer(observerRoot)
+      }
+    };
+  }
+
+  if (pathname === '/api/cross-repo/global-patterns') {
+    return {
+      statusCode: 200,
+      payload: {
+        ...base,
+        kind: 'observer-cross-repo-global-pattern-list',
+        patterns: buildGlobalPatternList(observerRoot, registry),
+        deep_disclosure: {
+          raw_artifact_path: '.playbook/patterns.json'
+        }
+      }
+    };
+  }
+
+  const globalPatternMatch = /^\/api\/cross-repo\/global-patterns\/([^/]+)$/.exec(pathname);
+  if (globalPatternMatch) {
+    const patternId = decodeURIComponent(globalPatternMatch[1] ?? '');
+    const detail = buildGlobalPatternDetail(observerRoot, registry, patternId);
+    if (!detail) {
+      return { statusCode: 404, payload: { ...base, kind: 'observer-server-error', error: 'global-pattern-not-found' } };
+    }
+    return {
+      statusCode: 200,
+      payload: {
+        ...base,
+        kind: 'observer-cross-repo-global-pattern-detail',
+        detail
       }
     };
   }

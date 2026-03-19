@@ -222,6 +222,7 @@ describe('observer server', () => {
     expect(uiHtml).toContain('Backlog Summary');
     expect(uiHtml).toContain('Backlog List');
     expect(uiHtml).toContain('Story Detail');
+    expect(uiHtml).toContain('Global Pattern Lineage');
 
     const uiScript = await fetch(`http://127.0.0.1:${port}/ui/app.js`);
     const uiScriptText = await uiScript.text();
@@ -271,6 +272,8 @@ describe('observer server', () => {
     expect(uiScriptText).toContain('renderSelfObservation');
     expect(uiScriptText).toContain('const selfPayload = await getJson');
     expect(uiScriptText).toContain('const loadPromotionSummary = async () =>');
+    expect(uiScriptText).toContain('const loadGlobalPatternDetail = async () =>');
+    expect(uiScriptText).toContain('/api/cross-repo/global-patterns');
     expect(uiScriptText).toContain('await loadRepoDetail();');
     expect(uiScriptText).toContain('const refreshAll = async () =>');
     expect(uiScriptText).toContain('setInterval(refreshAll, 5000);');
@@ -313,7 +316,18 @@ describe('observer server', () => {
     fs.writeFileSync(path.join(cwd, '.playbook', 'patterns.json'), JSON.stringify({
       schemaVersion: '1.0',
       command: 'pattern-compaction',
-      patterns: [{ id: 'pattern-promoted-global', title: 'Global promoted', normalizationKey: 'observer-layer', promotedFrom: 'pattern-candidate-global', sourceRefs: ['.playbook/stories.json'] }]
+      patterns: [{
+        id: 'pattern-promoted-global',
+        title: 'Global promoted',
+        normalizationKey: 'observer-layer',
+        promotedFrom: 'pattern-candidate-global',
+        sourceRefs: ['.playbook/stories.json'],
+        provenance: {
+          source_ref: 'global/pattern-candidates/pattern-candidate-global',
+          candidate_id: 'pattern-candidate-global',
+          promoted_at: '2026-01-01T00:00:00.000Z'
+        }
+      }]
     }, null, 2));
     fs.writeFileSync(path.join(repo, '.playbook', 'stories.json'), JSON.stringify({
       schemaVersion: '1.0',
@@ -326,6 +340,18 @@ describe('observer server', () => {
         {
           id: 'story-blocked', repo: 'repo-a', title: 'Blocked story', type: 'governance', source: 'manual', severity: 'medium', priority: 'high', confidence: 'medium', status: 'blocked',
           evidence: ['policy-evaluation.json'], rationale: 'Blocked until evidence is available.', acceptance_criteria: ['Unblock later'], dependencies: ['story-ready'], execution_lane: null, suggested_route: null
+        },
+        {
+          id: 'story-pattern-adoption', repo: 'repo-a', title: 'Adopt global pattern', type: 'feature', source: 'global-pattern-candidate', severity: 'medium', priority: 'medium', confidence: 'high', status: 'proposed',
+          evidence: ['.playbook/pattern-candidates.json'], rationale: 'Derived from promoted pattern candidate.', acceptance_criteria: ['Adopt the global pattern'], dependencies: [], execution_lane: 'safe_single_pr', suggested_route: 'pattern_learning',
+          provenance: {
+            source_ref: 'global/pattern-candidates/pattern-candidate-global',
+            promoted_from: 'pattern-candidate',
+            candidate_id: 'pattern-candidate-global',
+            candidate_fingerprint: 'fp-pattern-candidate-global',
+            source_artifact: '.playbook/pattern-candidates.json',
+            promoted_at: '2026-01-02T00:00:00.000Z'
+          }
         }
       ]
     }, null, 2));
@@ -442,6 +468,45 @@ describe('observer server', () => {
     expect(crossRepoPromotionJson.promotion_layer.derived_candidates.raw_artifact_path).toBe('.playbook/pattern-candidates.json');
     expect(crossRepoPromotionJson.promotion_layer.derived_candidates.patterns.map((entry) => entry.id)).toEqual(['pattern-candidate-global']);
     expect(crossRepoPromotionJson.promotion_layer.promoted_knowledge.patterns.map((entry) => entry.id)).toEqual(['pattern-promoted-global']);
+
+    const globalPatternListResponse = await fetch(`http://127.0.0.1:${port}/api/cross-repo/global-patterns`);
+    expect(globalPatternListResponse.status).toBe(200);
+    const globalPatternListJson = await globalPatternListResponse.json() as {
+      patterns: Array<{ id: string; candidate_id: string | null; linked_story_count: number; source_refs: string[]; linked_repo_ids: string[] }>;
+    };
+    expect(globalPatternListJson.patterns).toEqual([
+      expect.objectContaining({
+        id: 'pattern-promoted-global',
+        candidate_id: 'pattern-candidate-global',
+        linked_story_count: 1,
+        linked_repo_ids: ['repo-a'],
+        source_refs: expect.arrayContaining(['.playbook/stories.json'])
+      })
+    ]);
+
+    const globalPatternDetailResponse = await fetch(`http://127.0.0.1:${port}/api/cross-repo/global-patterns/pattern-promoted-global`);
+    expect(globalPatternDetailResponse.status).toBe(200);
+    const globalPatternDetailJson = await globalPatternDetailResponse.json() as {
+      detail: {
+        summary: { id: string; candidate_id: string | null; linked_story_count: number; source_refs: string[] };
+        linked_stories: Array<{ repo_id: string; story_id: string; provenance: { source_ref: string | null } }>;
+        raw_artifact_path: string;
+      };
+    };
+    expect(globalPatternDetailJson.detail.summary.id).toBe('pattern-promoted-global');
+    expect(globalPatternDetailJson.detail.summary.candidate_id).toBe('pattern-candidate-global');
+    expect(globalPatternDetailJson.detail.summary.linked_story_count).toBe(1);
+    expect(globalPatternDetailJson.detail.summary.source_refs).toContain('.playbook/stories.json');
+    expect(globalPatternDetailJson.detail.linked_stories).toEqual([
+      expect.objectContaining({
+        repo_id: 'repo-a',
+        story_id: 'story-pattern-adoption',
+        provenance: expect.objectContaining({
+          source_ref: 'global/pattern-candidates/pattern-candidate-global'
+        })
+      })
+    ]);
+    expect(globalPatternDetailJson.detail.raw_artifact_path).toBe('.playbook/patterns.json');
 
     const artifactResponse = await fetch(`http://127.0.0.1:${port}/repos/repo-a/artifacts/session`);
     expect(artifactResponse.status).toBe(200);
