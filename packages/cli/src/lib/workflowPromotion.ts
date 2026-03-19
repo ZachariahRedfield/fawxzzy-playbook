@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { stringifyDeterministicJson } from './jsonArtifact.js';
 export type WorkflowPromotion = {
   schemaVersion: '1.0';
   kind: 'workflow-promotion';
@@ -19,8 +20,6 @@ export type WorkflowPromotion = {
   generated_at: string;
   summary: string;
 };
-
-const stableStringify = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`;
 
 const promoteWorkflowArtifact = (stagedPath: string, destinationPath: string): void => {
   fs.mkdirSync(path.dirname(destinationPath), { recursive: true });
@@ -108,7 +107,7 @@ export const stageWorkflowArtifact = (input: StageWorkflowArtifactInput): Workfl
   const committedPath = path.join(input.cwd, input.committedRelativePath);
 
   fs.mkdirSync(path.dirname(stagedPath), { recursive: true });
-  fs.writeFileSync(stagedPath, stableStringify(input.artifact), 'utf8');
+  fs.writeFileSync(stagedPath, stringifyDeterministicJson(input.artifact), 'utf8');
 
   const promotion = previewWorkflowArtifact(input);
   if (!promotion.promoted) {

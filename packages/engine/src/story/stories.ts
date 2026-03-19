@@ -36,7 +36,7 @@ export type StoryTransitionPreview = {
 
 export type StoryPromotionProvenance = {
   source_ref: string;
-  promoted_from: 'story-candidate' | 'pattern-candidate';
+  promoted_from: 'story-candidate' | 'pattern-candidate' | 'pattern';
   candidate_id: string;
   candidate_fingerprint: string;
   source_artifact: string;

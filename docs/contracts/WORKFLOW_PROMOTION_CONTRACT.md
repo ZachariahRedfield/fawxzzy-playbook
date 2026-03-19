@@ -46,3 +46,5 @@ Current adopters:
 - `pnpm playbook route --json`
 
 Both workflows now write a staged candidate first, keep the staged artifact inspectable, and return the same promotion metadata shape in JSON output.
+
+Related audited write boundary: `docs/contracts/PROMOTION_RECEIPT_CONTRACT.md` defines the deterministic receipt contract for explicit story/pattern knowledge promotion attempts.

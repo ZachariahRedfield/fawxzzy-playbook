@@ -20,7 +20,10 @@ Pattern: Backlog state is a canonical repo-local artifact, not a UI-owned constr
 Pattern: Findings need durable interpretation before they become backlog work.
 
 Pattern: Candidate stories require grouping, dedupe, and explicit promotion.
+Rule: Promotion must emit a deterministic receipt whenever canonical knowledge is mutated or mutation is attempted.
+Pattern: Promotion should be inspectable with the same rigor as execution.
 
 Failure Mode: If story state is introduced without a canonical artifact and governed writes, backlog semantics fragment immediately.
 
 Failure Mode: Raw finding -> automatic story conversion creates backlog spam and weak planning signal.
+Failure Mode: Knowledge writes without receipts create invisible drift and undermine trust in promotion history.

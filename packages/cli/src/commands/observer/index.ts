@@ -191,6 +191,8 @@ const OBSERVER_ARTIFACTS = [
   { kind: 'pr-review', relativePath: '.playbook/pr-review.json' },
   { kind: 'session', relativePath: '.playbook/session.json' },
   { kind: 'system-map', relativePath: '.playbook/system-map.json' },
+  { kind: 'promotion-receipt-story', relativePath: '.playbook/promotion-receipts/story.latest.json' },
+  { kind: 'promotion-receipt-pattern', relativePath: '.playbook/promotion-receipts/pattern.latest.json' },
   { kind: 'pattern-candidates', relativePath: '.playbook/pattern-candidates.json' },
   { kind: 'patterns', relativePath: '.playbook/patterns.json' }
 ] as const;

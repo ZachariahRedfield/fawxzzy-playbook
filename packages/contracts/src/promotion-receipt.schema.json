@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/promotion-receipt.schema.json",
+  "title": "Promotion Receipt Contract",
+  "description": "Deterministic receipt emitted whenever story or pattern promotion mutates canonical knowledge or attempts mutation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "promotion_kind",
+    "source_candidate_ref",
+    "source_fingerprint",
+    "target_artifact_path",
+    "target_id",
+    "before_fingerprint",
+    "after_fingerprint",
+    "outcome",
+    "generated_at"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "kind": { "type": "string", "const": "promotion-receipt" },
+    "promotion_kind": { "type": "string", "enum": ["story", "pattern"] },
+    "source_candidate_ref": { "type": "string", "minLength": 1 },
+    "source_fingerprint": { "type": "string", "minLength": 1 },
+    "target_artifact_path": { "type": "string", "minLength": 1 },
+    "target_id": { "type": "string", "minLength": 1 },
+    "before_fingerprint": { "type": ["string", "null"] },
+    "after_fingerprint": { "type": ["string", "null"] },
+    "outcome": { "type": "string", "enum": ["promoted", "noop", "conflict"] },
+    "generated_at": { "type": "string", "format": "date-time" }
+  }
+}
