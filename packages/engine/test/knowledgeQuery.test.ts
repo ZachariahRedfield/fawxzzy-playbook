@@ -1,11 +1,13 @@
 import fs from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  knowledgeCompareQuery,
   knowledgeInspect,
   knowledgeList,
   knowledgeProvenance,
   knowledgeQuery,
   knowledgeStale,
+  knowledgeSupersession,
   knowledgeTimeline
 } from '../src/query/knowledge.js';
 import { createSeededKnowledgeFixtureRepo } from '../../../test/fixtures/knowledge/seededKnowledgeFixture.js';
@@ -59,6 +61,57 @@ describe('knowledge query services', () => {
       expect(supersededProvenance.provenance.record.type).toBe('superseded');
       expect(supersededProvenance.provenance.relatedRecords.map((record) => record.id)).toEqual(['pattern-live', 'cand-stale']);
     } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('includes global reusable patterns with lifecycle-aware filtering and supersession views', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-19T00:00:00.000Z'));
+    const root = createSeededKnowledgeFixtureRepo({ prefix: 'playbook-knowledge-global-' });
+    const playbookHome = `${root}/playbook-home`;
+    fs.mkdirSync(`${playbookHome}/.playbook`, { recursive: true });
+    fs.writeFileSync(`${playbookHome}/patterns.json`, JSON.stringify({
+      schemaVersion: '1.0',
+      kind: 'promoted-patterns',
+      patterns: [
+        {
+          id: 'pattern.global.active',
+          title: 'Active global pattern',
+          description: 'Reusable globally',
+          status: 'active',
+          confidence: 0.9,
+          evidence_refs: ['event-1'],
+          provenance: { candidate_id: 'cand-live', promoted_at: '2026-03-01T00:00:00.000Z' }
+        },
+        {
+          id: 'pattern.global.demoted',
+          title: 'Demoted global pattern',
+          description: 'Old guidance',
+          status: 'demoted',
+          confidence: 0.4,
+          evidence_refs: ['event-2'],
+          provenance: { candidate_id: 'cand-stale', promoted_at: '2025-01-01T00:00:00.000Z' },
+          demoted_at: '2026-03-10T00:00:00.000Z',
+          demotion_reason: 'Obsolete'
+        }
+      ]
+    }, null, 2));
+    process.env.PLAYBOOK_HOME = playbookHome;
+
+    try {
+      const listed = knowledgeList(root, { lifecycle: 'demoted' });
+      expect(listed.knowledge.map((record) => record.id)).toEqual(['pattern.global.demoted']);
+      expect(listed.summary.byLifecycle.demoted).toBe(1);
+
+      const compared = knowledgeCompareQuery(root, 'pattern.global.active', 'pattern-live');
+      expect(compared.comparison.left.lifecycle.state).toBe('active');
+
+      const supersession = knowledgeSupersession(root, 'pattern.global.demoted');
+      expect(supersession.supersession.record.lifecycle.state).toBe('demoted');
+      expect(supersession.supersession.record.lifecycle.warnings[0]).toContain('demoted');
+    } finally {
+      delete process.env.PLAYBOOK_HOME;
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
