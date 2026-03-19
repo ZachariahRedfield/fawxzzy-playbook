@@ -1,5 +1,13 @@
 ## Unreleased
 
+- WHAT: Hardened Observer’s cross-repo candidate mapper so optional aggregate-array fields such as `supporting_repos` and `evidence` are normalized before iteration/spread, and tightened the observer fixture coverage to prove partially populated read-only candidate payloads do not crash or leak unstable shapes. WHY: Read-only observer endpoints must remain stable even when upstream aggregate artifacts omit additive optional arrays.
+- Rule: Observer/API boundary mappers must normalize optional array fields before iteration or spreading.
+- Pattern: Aggregate read models should be tolerant of additive or partially populated upstream contract shapes.
+- Failure Mode: UI/read-only endpoints crash when mapper logic assumes producer-perfect arrays for newly introduced cross-repo fields.
+- WHAT: Tightened Observer repo and cross-repo operator views so repo mode stays story-first, cross-repo mode groups portable-pattern candidates by kind with one primary next action, raw JSON moved behind deep disclosure, and blocker/next-action rendering now normalizes structured objects instead of leaking `[object Object]`. WHY: A correct read-only control plane still needs strong signal hierarchy so operators can act quickly without losing governed truth surfaces.
+- Pattern: Observer should lead with signal hierarchy, not raw artifact density.
+- Pattern: Story/backlog visibility should sit above lower-level execution detail when it is the next human planning surface.
+- Failure Mode: A correct control plane with poor signal hierarchy still creates operator drag.
 - Added story-linked routing via `playbook route --story <id>` and `playbook story plan <id>` while preserving Story as durable intent and Plan as separate execution shape.
 - Added `story_reference` metadata propagation from execution plans into receipt and updated-state outputs, plus conservative deterministic story lifecycle transitions for planning, blocked execution, and completed execution evidence.
 
