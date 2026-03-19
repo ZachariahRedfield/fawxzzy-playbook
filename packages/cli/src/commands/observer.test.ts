@@ -13,6 +13,11 @@ const writeArtifact = (repoRoot: string, relativePath: string, payload: Record<s
   fs.writeFileSync(targetPath, JSON.stringify(payload, null, 2));
 };
 
+const writeFixtureFile = (targetPath: string, contents: string): void => {
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  fs.writeFileSync(targetPath, contents);
+};
+
 const parseJsonCall = (spy: ReturnType<typeof vi.spyOn>): Record<string, unknown> => JSON.parse(String(spy.mock.calls.at(-1)?.[0] ?? '{}'));
 
 afterEach(() => {
@@ -291,31 +296,31 @@ describe('observer server', () => {
     const repo = path.join(cwd, 'repo-a');
     fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
     fs.mkdirSync(path.join(cwd, '.playbook'), { recursive: true });
-    fs.writeFileSync(path.join(repo, '.playbook', 'session.json'), JSON.stringify({ schemaVersion: '1.0', kind: 'session', id: 'session-a' }, null, 2));
-    fs.writeFileSync(path.join(repo, '.playbook', 'system-map.json'), JSON.stringify({ schemaVersion: '1.0', kind: 'system-map', layers: [], nodes: [], edges: [] }, null, 2));
-    fs.writeFileSync(path.join(repo, '.playbook', 'pattern-candidates.json'), JSON.stringify({
+    writeFixtureFile(path.join(repo, '.playbook', 'session.json'), JSON.stringify({ schemaVersion: '1.0', kind: 'session', id: 'session-a' }, null, 2));
+    writeFixtureFile(path.join(repo, '.playbook', 'system-map.json'), JSON.stringify({ schemaVersion: '1.0', kind: 'system-map', layers: [], nodes: [], edges: [] }, null, 2));
+    writeFixtureFile(path.join(repo, '.playbook', 'pattern-candidates.json'), JSON.stringify({
       schemaVersion: '1.0',
       kind: 'pattern-candidates',
       generatedAt: '2026-01-01T00:00:00.000Z',
       candidates: [{ id: 'pattern-candidate-repo', title: 'Repo candidate', normalizationKey: 'observer-layer', sourceRefs: ['.playbook/stories.json'], status: 'observed', pattern_family: 'observer', description: 'repo', source_artifact: '.playbook/stories.json', signals: ['join'], confidence: 0.8, evidence_refs: ['.playbook/stories.json'] }]
     }, null, 2));
-    fs.writeFileSync(path.join(repo, '.playbook', 'patterns.json'), JSON.stringify({
+    writeFixtureFile(path.join(repo, '.playbook', 'patterns.json'), JSON.stringify({
       schemaVersion: '1.0',
       command: 'pattern-compaction',
       patterns: [{ id: 'pattern-promoted-repo', title: 'Repo promoted', normalizationKey: 'observer-layer', promotedFrom: 'story-ready', sourceRefs: ['.playbook/stories.json'] }]
     }, null, 2));
-    fs.writeFileSync(path.join(cwd, '.playbook', 'pattern-candidates.json'), JSON.stringify({
+    writeFixtureFile(path.join(cwd, '.playbook', 'pattern-candidates.json'), JSON.stringify({
       schemaVersion: '1.0',
       kind: 'pattern-candidates',
       generatedAt: '2026-01-01T00:00:00.000Z',
       candidates: [{ id: 'pattern-candidate-global', title: 'Global candidate', normalizationKey: 'observer-layer', sourceRefs: ['.playbook/stories.json'], status: 'observed', pattern_family: 'observer', description: 'global', source_artifact: '.playbook/stories.json', signals: ['join'], confidence: 0.9, evidence_refs: ['.playbook/stories.json'] }]
     }, null, 2));
-    fs.writeFileSync(path.join(cwd, '.playbook', 'patterns.json'), JSON.stringify({
+    writeFixtureFile(path.join(cwd, '.playbook', 'patterns.json'), JSON.stringify({
       schemaVersion: '1.0',
       command: 'pattern-compaction',
       patterns: [{ id: 'pattern-promoted-global', title: 'Global promoted', normalizationKey: 'observer-layer', promotedFrom: 'pattern-candidate-global', sourceRefs: ['.playbook/stories.json'] }]
     }, null, 2));
-    fs.writeFileSync(path.join(repo, '.playbook', 'stories.json'), JSON.stringify({
+    writeFixtureFile(path.join(repo, '.playbook', 'stories.json'), JSON.stringify({
       schemaVersion: '1.0',
       repo: 'repo-a',
       stories: [
@@ -329,7 +334,7 @@ describe('observer server', () => {
         }
       ]
     }, null, 2));
-    fs.writeFileSync(path.join(repo, '.playbook', 'promotion-receipts', 'story.latest.json'), JSON.stringify({
+    writeFixtureFile(path.join(repo, '.playbook', 'promotion-receipts', 'story.latest.json'), JSON.stringify({
       schemaVersion: '1.0',
       kind: 'promotion-receipt',
       promotion_kind: 'story',
