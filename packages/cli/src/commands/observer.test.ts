@@ -1803,6 +1803,7 @@ describe("observer pattern context surfaces", () => {
       const planPayload = (await planResponse.json()) as {
         plan_detail: {
           pattern_context: { patterns: Array<{ pattern_id: string }> };
+          lifecycle_warnings: string[];
         };
       };
       expect(
@@ -1810,6 +1811,7 @@ describe("observer pattern context surfaces", () => {
           (entry) => entry.pattern_id,
         ),
       ).toEqual(["pattern.docs"]);
+      expect(planPayload.plan_detail.lifecycle_warnings[0]).toContain("demoted");
 
       const storiesArtifact = JSON.parse(
         fs.readFileSync(path.join(repo, ".playbook/stories.json"), "utf8"),
