@@ -77,6 +77,7 @@ Knowledge query and inspection outputs must satisfy these constraints:
 - memory query surfaces must not imply enforcement by themselves
 - candidate knowledge must remain distinguishable from promoted governance
 - repo-local/private-first behavior must remain explicit
+- Canonical scope/path contract: `repo_local_memory` -> `.playbook/memory/knowledge/patterns.json`, `global_reusable_pattern_memory` -> `.playbook/patterns.json` under `PLAYBOOK_HOME` (compat-read legacy `patterns.json`), and `cross_repo_proposal_bridge` -> `.playbook/pattern-proposals.json`. Read surfaces should emit scope metadata instead of inferring scope from path shape.
 
 Inspection contracts are intelligence surfaces, not mutation or promotion actions.
 

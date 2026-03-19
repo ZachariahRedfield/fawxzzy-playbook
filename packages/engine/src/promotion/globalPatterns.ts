@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { readPatternKnowledgeStoreArtifact, resolvePatternKnowledgeStore } from '../patternStore.js';
 
 export const GLOBAL_PATTERN_CANDIDATES_SCHEMA_VERSION = '1.0' as const;
 export const GLOBAL_PATTERNS_SCHEMA_VERSION = '1.0' as const;
@@ -155,12 +156,8 @@ export const readGlobalPatternCandidatesArtifact = (playbookHome = resolvePlaybo
 };
 
 export const readGlobalPatternsArtifact = (playbookHome = resolvePlaybookHome()): PatternArtifact => {
-  const targetPath = path.join(playbookHome, PATTERNS_FILENAME);
-  if (!fs.existsSync(targetPath)) {
-    return createDefaultGlobalPatternsArtifact();
-  }
-
-  return canonicalizePatternArtifact(JSON.parse(fs.readFileSync(targetPath, 'utf8')) as PatternArtifact);
+  const { artifact } = readPatternKnowledgeStoreArtifact('global_reusable_pattern_memory', createDefaultGlobalPatternsArtifact(), { playbookHome });
+  return canonicalizePatternArtifact(artifact as PatternArtifact);
 };
 
 export const writeGlobalPatternCandidatesArtifact = (
@@ -174,7 +171,7 @@ export const writeGlobalPatternCandidatesArtifact = (
 };
 
 export const writeGlobalPatternsArtifact = (artifact: PatternArtifact, playbookHome = resolvePlaybookHome()): string => {
-  const targetPath = path.join(playbookHome, PATTERNS_FILENAME);
+  const targetPath = resolvePatternKnowledgeStore('global_reusable_pattern_memory', { playbookHome }).absolutePath;
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   fs.writeFileSync(targetPath, deterministicStringify(canonicalizePatternArtifact(artifact)), 'utf8');
   return targetPath;

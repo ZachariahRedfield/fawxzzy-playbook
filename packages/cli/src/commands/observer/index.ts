@@ -22,6 +22,7 @@ import {
   type FleetExecutionOutcomeInput,
   type RepoAdoptionReadiness,
   readStoriesArtifact,
+  resolvePatternKnowledgeStore,
   summarizeStoriesBacklog,
   findStoryById,
   sortStoriesForBacklog,
@@ -120,8 +121,10 @@ type ObserverPromotionLayer = {
     stories: Array<Record<string, unknown>>;
   };
   promoted_knowledge: {
-    raw_artifact_path: ".playbook/patterns.json";
+    raw_artifact_path: string;
     patterns: Array<Record<string, unknown>>;
+    scope?: string;
+    canonical_artifact_path?: string;
   };
   joins: {
     linked_story_ids: string[];
@@ -133,12 +136,16 @@ type ObserverPromotionLayer = {
 
 type ObserverGlobalPromotionLayer = {
   derived_candidates: {
-    raw_artifact_path: ".playbook/pattern-candidates.json";
+    raw_artifact_path: string;
     patterns: Array<Record<string, unknown>>;
+    scope?: string;
+    canonical_artifact_path?: string;
   };
   promoted_knowledge: {
-    raw_artifact_path: ".playbook/patterns.json";
+    raw_artifact_path: string;
     patterns: Array<Record<string, unknown>>;
+    scope?: string;
+    canonical_artifact_path?: string;
   };
 };
 
@@ -169,7 +176,7 @@ type ObserverGlobalPatternSummary = {
 type ObserverGlobalPatternDetail = {
   summary: ObserverGlobalPatternSummary;
   pattern: Record<string, unknown>;
-  raw_artifact_path: ".playbook/patterns.json";
+  raw_artifact_path: string;
   linked_stories: ObserverPatternLineageStory[];
 };
 
@@ -983,7 +990,7 @@ const readRepoPromotedPatterns = (
   listArtifactRecords(
     readJsonArtifact<Record<string, unknown>>(
       repo.root,
-      ".playbook/patterns.json",
+      resolvePatternKnowledgeStore("repo_local_memory", { projectRoot: repo.root }).canonicalRelativePath,
       { patterns: [] },
     ),
   );
@@ -1001,14 +1008,18 @@ const readGlobalPatternCandidates = (
 
 const readGlobalPromotedPatterns = (
   observerRoot: string,
-): Array<Record<string, unknown>> =>
-  listArtifactRecords(
+): Array<Record<string, unknown>> => {
+  const store = resolvePatternKnowledgeStore("global_reusable_pattern_memory", { playbookHome: observerRoot });
+  return listArtifactRecords(
     readJsonArtifact<Record<string, unknown>>(
       observerRoot,
-      ".playbook/patterns.json",
+      store.resolvedFrom === "compatibility"
+        ? store.compatibilityRelativePaths[0] ?? store.canonicalRelativePath
+        : store.canonicalRelativePath,
       { patterns: [] },
     ),
   );
+};
 
 const buildRepoPromotionLayer = (
   repo: ObserverRepoEntry,
@@ -1060,7 +1071,7 @@ const buildRepoPromotionLayer = (
         entry,
         "pattern",
         "promoted-knowledge",
-        ".playbook/patterns.json",
+        resolvePatternKnowledgeStore("repo_local_memory", { projectRoot: repo.root }).canonicalRelativePath,
         null,
       ),
     )
@@ -1090,8 +1101,10 @@ const buildRepoPromotionLayer = (
       stories: storyCandidates,
     },
     promoted_knowledge: {
-      raw_artifact_path: ".playbook/patterns.json",
+      raw_artifact_path: resolvePatternKnowledgeStore("repo_local_memory", { projectRoot: repo.root }).canonicalRelativePath,
       patterns,
+      scope: "repo_local_memory",
+      canonical_artifact_path: resolvePatternKnowledgeStore("repo_local_memory", { projectRoot: repo.root }).canonicalRelativePath,
     },
     joins: {
       linked_story_ids: [...joinedStories].sort((l, r) => l.localeCompare(r)),
@@ -1114,10 +1127,16 @@ const buildGlobalPromotionLayer = (
   derived_candidates: {
     raw_artifact_path: ".playbook/pattern-candidates.json",
     patterns: readGlobalPatternCandidates(observerRoot),
+    scope: "cross_repo_proposal_bridge",
+    canonical_artifact_path: ".playbook/pattern-candidates.json",
   },
   promoted_knowledge: {
-    raw_artifact_path: ".playbook/patterns.json",
+    raw_artifact_path: resolvePatternKnowledgeStore("global_reusable_pattern_memory", { playbookHome: observerRoot }).resolvedFrom === "compatibility"
+      ? resolvePatternKnowledgeStore("global_reusable_pattern_memory", { playbookHome: observerRoot }).compatibilityRelativePaths[0] ?? resolvePatternKnowledgeStore("global_reusable_pattern_memory", { playbookHome: observerRoot }).canonicalRelativePath
+      : resolvePatternKnowledgeStore("global_reusable_pattern_memory", { playbookHome: observerRoot }).canonicalRelativePath,
     patterns: readGlobalPromotedPatterns(observerRoot),
+    scope: "global_reusable_pattern_memory",
+    canonical_artifact_path: resolvePatternKnowledgeStore("global_reusable_pattern_memory", { playbookHome: observerRoot }).canonicalRelativePath,
   },
 });
 

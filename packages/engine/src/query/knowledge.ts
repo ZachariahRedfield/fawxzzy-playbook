@@ -12,6 +12,7 @@ import {
   type KnowledgeSummary,
   type KnowledgeTimelineOptions
 } from '@zachariahredfield/playbook-core';
+import { resolvePatternKnowledgeStore } from '../patternStore.js';
 
 const filterPayload = (options: Partial<KnowledgeQueryOptions>): Record<string, string | number> => {
   const payload: Record<string, string | number> = {};
@@ -27,6 +28,7 @@ const filterPayload = (options: Partial<KnowledgeQueryOptions>): Record<string, 
 };
 
 const createListPayload = (
+  projectRoot: string,
   command: 'knowledge-list' | 'knowledge-query' | 'knowledge-timeline' | 'knowledge-stale',
   knowledge: KnowledgeRecord[],
   filters: Record<string, string | number>
@@ -35,6 +37,16 @@ const createListPayload = (
   command,
   filters,
   summary: buildKnowledgeSummary(knowledge),
+  scope_metadata: {
+    pattern_scope: (() => {
+      const store = resolvePatternKnowledgeStore('repo_local_memory', { projectRoot });
+      return {
+        scope: store.scope,
+        artifact_path: store.canonicalRelativePath,
+        compat_artifact_paths: store.compatibilityRelativePaths
+      };
+    })()
+  },
   knowledge
 });
 
@@ -46,10 +58,10 @@ export type KnowledgeProvenanceQueryResult = ReturnType<typeof knowledgeProvenan
 export type KnowledgeStaleResult = ReturnType<typeof knowledgeStale>;
 
 export const knowledgeList = (projectRoot: string, options: KnowledgeQueryOptions = {}) =>
-  createListPayload('knowledge-list', listKnowledge(projectRoot, options), filterPayload(options));
+  createListPayload(projectRoot, 'knowledge-list', listKnowledge(projectRoot, options), filterPayload(options));
 
 export const knowledgeQuery = (projectRoot: string, options: KnowledgeQueryOptions = {}) =>
-  createListPayload('knowledge-query', queryKnowledge(projectRoot, options), filterPayload(options));
+  createListPayload(projectRoot, 'knowledge-query', queryKnowledge(projectRoot, options), filterPayload(options));
 
 export const knowledgeInspect = (projectRoot: string, id: string, options: Pick<KnowledgeQueryOptions, 'staleDays'> = {}) => {
   const knowledge = getKnowledgeById(projectRoot, id, options);
@@ -66,7 +78,7 @@ export const knowledgeInspect = (projectRoot: string, id: string, options: Pick<
 };
 
 export const knowledgeTimeline = (projectRoot: string, options: KnowledgeTimelineOptions = {}) =>
-  createListPayload('knowledge-timeline', getKnowledgeTimeline(projectRoot, options), filterPayload(options));
+  createListPayload(projectRoot, 'knowledge-timeline', getKnowledgeTimeline(projectRoot, options), filterPayload(options));
 
 export const knowledgeProvenance = (
   projectRoot: string,
@@ -89,6 +101,6 @@ export const knowledgeProvenance = (
 export const knowledgeStale = (
   projectRoot: string,
   options: Pick<KnowledgeQueryOptions, 'limit' | 'order' | 'staleDays'> = {}
-) => createListPayload('knowledge-stale', getStaleKnowledge(projectRoot, options), filterPayload(options));
+) => createListPayload(projectRoot, 'knowledge-stale', getStaleKnowledge(projectRoot, options), filterPayload(options));
 
 export type { KnowledgeRecord, KnowledgeQueryOptions, KnowledgeTimelineOptions, KnowledgeSummary, KnowledgeProvenanceResult };

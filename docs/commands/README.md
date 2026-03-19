@@ -561,6 +561,7 @@ Use query surfaces to inspect state:
 - `pnpm playbook patterns repo-delta --left <repoId> --right <repoId> --json` reports governed artifact deltas between two repositories.
 - `pnpm playbook patterns proposals --json` now groups cross-repo evidence into promotable portable-pattern candidates with explicit memory/story promotion targets and evidence lineage.
 - `pnpm playbook patterns proposals promote --proposal <proposal-id> --target memory|story [--repo <repo-id>] --json` keeps cross-repo promotion explicit while writing into governed memory or backlog surfaces.
+- Reusable pattern storage is scope-first: repo-local promoted memory stays at `.playbook/memory/knowledge/patterns.json`, cross-repo proposal bridge artifacts stay at `.playbook/pattern-proposals.json`, and global reusable pattern memory is canonically `.playbook/patterns.json` under `PLAYBOOK_HOME` with deterministic compatibility reads from legacy `patterns.json`.
 - Cross-repo comparison may suggest promotion, but promotion remains explicit: no automatic doctrine updates, no hidden story mutation, and no non-governed artifact ingestion.
 
 - `playbook story list --json` exposes the canonical repo-local story backlog artifact at `.playbook/stories.json`.

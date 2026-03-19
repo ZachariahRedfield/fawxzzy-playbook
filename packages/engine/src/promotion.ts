@@ -16,8 +16,9 @@ import {
   type StoriesArtifact
 } from './story/stories.js';
 import { PATTERN_CANDIDATES_RELATIVE_PATH } from './extract/patternCandidates.js';
+import { resolvePatternKnowledgeStore } from './patternStore.js';
 
-export const GLOBAL_PATTERNS_RELATIVE_PATH = 'patterns.json' as const;
+export const GLOBAL_PATTERNS_RELATIVE_PATH = '.playbook/patterns.json' as const;
 
 export type PromotionSourceRef =
   | `repo/${string}/story-candidates/${string}`
@@ -161,7 +162,7 @@ const defaultPatternsArtifact = (): CanonicalPatternsArtifact => ({
 });
 
 export const readCanonicalPatternsArtifact = (playbookHome: string): CanonicalPatternsArtifact => {
-  const filePath = path.join(playbookHome, GLOBAL_PATTERNS_RELATIVE_PATH);
+  const filePath = resolvePatternKnowledgeStore('global_reusable_pattern_memory', { playbookHome }).resolvedPath;
   const parsed = readJsonIfPresent<CanonicalPatternsArtifact>(filePath);
   if (!parsed) return defaultPatternsArtifact();
   if (parsed.schemaVersion !== '1.0' || parsed.kind !== 'promoted-patterns' || !Array.isArray(parsed.patterns)) {

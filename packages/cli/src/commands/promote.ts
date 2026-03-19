@@ -3,6 +3,7 @@ import path from 'node:path';
 import {
   GLOBAL_PATTERNS_RELATIVE_PATH,
   materializePatternFromCandidate,
+  resolvePatternKnowledgeStore,
   materializeStoryFromSource,
   transitionPatternLifecycle,
   type PromotionSourceRef
@@ -74,6 +75,7 @@ export const runPromote = (cwd: string, args: string[], options: PromoteOptions)
   const target = args[0];
   const sourceRef = args[1] as PromotionSourceRef | undefined;
   const playbookHome = resolvePlaybookHome(cwd);
+  const globalPatternStore = resolvePatternKnowledgeStore('global_reusable_pattern_memory', { playbookHome });
 
   if ((target !== 'story' && target !== 'pattern' && target !== 'pattern-retire' && target !== 'pattern-demote' && target !== 'pattern-recall') || (!sourceRef && !['pattern-retire','pattern-demote','pattern-recall'].includes(target ?? ''))) {
     print(options.format, {
@@ -224,6 +226,12 @@ export const runPromote = (cwd: string, args: string[], options: PromoteOptions)
       noop: prepared.outcome === 'noop',
       outcome: prepared.outcome,
       artifact_path: GLOBAL_PATTERNS_RELATIVE_PATH,
+      scope_metadata: {
+        scope: globalPatternStore.scope,
+        canonical_artifact_path: globalPatternStore.canonicalRelativePath,
+        compat_artifact_paths: globalPatternStore.compatibilityRelativePaths,
+        resolved_from: globalPatternStore.resolvedFrom
+      },
       promotion,
       receipt
     });

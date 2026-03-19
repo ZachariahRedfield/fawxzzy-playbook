@@ -2291,6 +2291,10 @@ Execution state is persisted under `.playbook/runs/<run-id>.json` and is queryab
 - Pattern: Reusable knowledge compounds when it can seed bounded local backlog items.
 - Failure Mode: If story state is introduced without a canonical artifact and governed writes, backlog semantics fragment immediately.
 - Failure Mode: Letting patterns enter execution directly creates a second control path and breaks operator trust.
+- Storage contract update: reusable pattern knowledge now follows explicit scopes — `repo_local_memory` -> `.playbook/memory/knowledge/patterns.json`, `global_reusable_pattern_memory` -> `.playbook/patterns.json` under `PLAYBOOK_HOME` (compat-read legacy `patterns.json`), and `cross_repo_proposal_bridge` -> `.playbook/pattern-proposals.json`.
+- Rule: One canonical storage contract per knowledge scope.
+- Pattern: Scope-first knowledge resolution beats path inference.
+- Failure Mode: Global pattern path drift creates operator confusion and hidden read/write mismatch.
 - Failure Mode: Raw finding -> automatic story conversion creates backlog spam and weak planning signal.
 
 

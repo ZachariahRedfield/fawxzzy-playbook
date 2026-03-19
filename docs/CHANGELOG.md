@@ -1,3 +1,5 @@
+- WHAT: Normalized reusable pattern knowledge storage behind explicit scope metadata and a shared resolver so repo-local memory, global reusable pattern memory, and cross-repo proposal bridge artifacts now resolve through one contract. WHY: Scope-first resolution removes global path drift and keeps CLI/Observer reads deterministic during legacy-path migration.
+
 ## 2026-03-19 — Pattern retirement lifecycle and transfer packages
 
 - WHAT: Added explicit promoted-pattern lifecycle states (`active`, `superseded`, `retired`, `demoted`) plus deterministic `playbook promote pattern-retire|pattern-demote|pattern-recall` flows that emit audited promotion receipts. WHY: Promoted knowledge must remain recallable and retireable instead of accumulating as permanent doctrine.

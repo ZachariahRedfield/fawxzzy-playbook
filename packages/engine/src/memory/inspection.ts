@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { MemoryReplayCandidate, MemoryReplayCandidateProvenance, MemoryReplayResult } from '../schema/memoryReplay.js';
+import { resolvePatternKnowledgeStore } from '../patternStore.js';
 import type { MemoryKnowledgeArtifact, MemoryKnowledgeEntry, MemoryKnowledgeKind } from './knowledge.js';
 import type { MemoryEvent, MemoryIndex } from './types.js';
 
@@ -11,7 +12,7 @@ const MEMORY_CANDIDATES_PATH = [...MEMORY_ROOT, 'candidates.json'] as const;
 
 const KNOWLEDGE_PATHS: Record<MemoryKnowledgeKind, string> = {
   decision: path.join(...MEMORY_ROOT, 'knowledge', 'decisions.json'),
-  pattern: path.join(...MEMORY_ROOT, 'knowledge', 'patterns.json'),
+  pattern: resolvePatternKnowledgeStore('repo_local_memory', { projectRoot: '.' }).canonicalRelativePath,
   failure_mode: path.join(...MEMORY_ROOT, 'knowledge', 'failure-modes.json'),
   invariant: path.join(...MEMORY_ROOT, 'knowledge', 'invariants.json')
 };

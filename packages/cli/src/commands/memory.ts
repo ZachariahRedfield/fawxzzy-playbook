@@ -6,7 +6,8 @@ import {
   lookupMemoryEventTimeline,
   lookupPromotedMemoryKnowledge,
   promoteMemoryCandidate,
-  retirePromotedKnowledge
+  retirePromotedKnowledge,
+  resolvePatternKnowledgeStore
 } from '@zachariahredfield/playbook-engine';
 import { emitJsonOutput } from '../lib/jsonArtifact.js';
 import { ExitCode } from '../lib/cliContract.js';
@@ -253,13 +254,21 @@ export const runMemory = async (cwd: string, args: string[], options: MemoryOpti
     }
 
     if (subcommand === 'knowledge') {
+      const patternStore = resolvePatternKnowledgeStore('repo_local_memory', { projectRoot: cwd });
       const payload = {
         schemaVersion: '1.0',
         command: 'memory-knowledge',
         knowledge: lookupPromotedMemoryKnowledge(cwd, {
           kind: (readOptionValue(args, '--kind') as 'decision' | 'pattern' | 'failure_mode' | 'invariant' | null) ?? undefined,
           includeSuperseded: args.includes('--include-superseded')
-        })
+        }),
+        scope_metadata: {
+          pattern_scope: {
+            scope: patternStore.scope,
+            artifact_path: patternStore.canonicalRelativePath,
+            compat_artifact_paths: patternStore.compatibilityRelativePaths
+          }
+        }
       };
 
       emitMemoryResult(cwd, options, 'memory knowledge', payload, `Found ${payload.knowledge.length} promoted memory records.`);

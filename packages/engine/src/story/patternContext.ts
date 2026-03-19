@@ -1,8 +1,10 @@
+import path from 'node:path';
 import {
   resolvePlaybookHome,
   readGlobalPatternsArtifact,
   type PatternRecord,
 } from "../promotion/globalPatterns.js";
+import { resolvePatternKnowledgeStore } from "../patternStore.js";
 import type { StoryRecord } from "./stories.js";
 
 export type StoryPatternContextMatch = {
@@ -17,6 +19,13 @@ export type StoryPatternContextMatch = {
 
 export type StoryPatternContext = {
   patterns: StoryPatternContextMatch[];
+  pattern_store: {
+    scope: 'global_reusable_pattern_memory';
+    artifact_path: string;
+    canonical_artifact_path: string;
+    compat_artifact_paths: string[];
+    resolution: 'canonical' | 'compatibility' | 'default';
+  };
 };
 
 type MatchReason = {
@@ -29,6 +38,8 @@ type ExtendedPatternRecord = PatternRecord & {
     | string
     | { title?: string; summary?: string; acceptance?: string[] };
 };
+
+const pathRelative = (root: string, target: string): string => path.relative(root, target).replaceAll('\\', '/');
 
 const sortUnique = (values: string[]): string[] =>
   [...new Set(values.filter((value) => value.trim().length > 0))].sort(
@@ -147,6 +158,7 @@ export const buildStoryPatternContext = (
   options?: { playbookHome?: string },
 ): StoryPatternContext => {
   const playbookHome = options?.playbookHome ?? resolvePlaybookHome();
+  const patternStore = resolvePatternKnowledgeStore('global_reusable_pattern_memory', { playbookHome });
   const patterns = readGlobalPatternsArtifact(playbookHome)
     .patterns as ExtendedPatternRecord[];
   const matches = patterns
@@ -173,5 +185,14 @@ export const buildStoryPatternContext = (
     )
     .map(({ _rank, ...entry }) => entry);
 
-  return { patterns: matches };
+  return {
+    patterns: matches,
+    pattern_store: {
+      scope: 'global_reusable_pattern_memory',
+      artifact_path: pathRelative(patternStore.rootPath, patternStore.resolvedPath),
+      canonical_artifact_path: patternStore.canonicalRelativePath,
+      compat_artifact_paths: patternStore.compatibilityRelativePaths,
+      resolution: patternStore.resolvedFrom,
+    },
+  };
 };

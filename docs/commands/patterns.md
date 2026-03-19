@@ -263,6 +263,7 @@ Use these terms consistently when documenting or operating pattern promotion:
 
 - **Global reusable pattern memory**: promoted cross-repo doctrine in `.playbook/memory/knowledge/patterns.json`.
 - **Pattern proposals**: bridge artifacts in `.playbook/pattern-proposals.json` reviewed before promotion.
+- Canonical reusable pattern storage contract: repo-local memory -> `.playbook/memory/knowledge/patterns.json`, global reusable pattern memory -> `.playbook/patterns.json` under `PLAYBOOK_HOME` (compat-read legacy `patterns.json`), cross-repo proposal bridge -> `.playbook/pattern-proposals.json`.
 - **Repo-local story backlog**: canonical repo execution-planning input in `.playbook/stories.json`.
 
 Rule: Cross-repo pattern knowledge may suggest local work, but only repo-local stories may enter execution planning.

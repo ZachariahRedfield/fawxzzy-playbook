@@ -772,3 +772,7 @@ This receipt is designed to feed future prioritization cleanly: `verification_su
 - Failure Mode: If story state is introduced without a canonical artifact and governed writes, backlog semantics fragment immediately.
 - Failure Mode: Raw finding -> automatic story conversion creates backlog spam and weak planning signal.
 - Failure Mode: Letting patterns enter execution directly creates a second control path and breaks operator trust.
+- `pnpm playbook promote pattern ...` and global pattern read surfaces now normalize the canonical global reusable pattern store to `.playbook/patterns.json` under `PLAYBOOK_HOME`, with deterministic compatibility reads from legacy `patterns.json` during migration.
+- Rule: One canonical storage contract per knowledge scope.
+- Pattern: Scope-first knowledge resolution beats path inference.
+- Failure Mode: Global pattern path drift creates operator confusion and hidden read/write mismatch.
