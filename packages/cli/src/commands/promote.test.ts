@@ -38,7 +38,9 @@ describe('runPromote', () => {
     expect(exitCode).toBe(ExitCode.Success);
     const payload = JSON.parse(String(logSpy.mock.calls.at(-1)?.[0]));
     expect(payload.story.provenance.source_ref).toContain('/story-candidates/');
+    expect(payload.receipt.outcome).toBe('promoted');
     expect(JSON.parse(fs.readFileSync(path.join(repo, '.playbook/stories.json'), 'utf8')).stories).toHaveLength(1);
+    expect(JSON.parse(fs.readFileSync(path.join(repo, '.playbook/promotion-receipts/story.latest.json'), 'utf8')).target_id).toBe('story-candidate-1');
     expect(fs.existsSync(path.join(home, 'patterns.json'))).toBe(false);
   });
 
@@ -54,8 +56,10 @@ describe('runPromote', () => {
     expect(exitCode).toBe(ExitCode.Success);
     const payload = JSON.parse(String(logSpy.mock.calls.at(-1)?.[0]));
     expect(payload.pattern.provenance.source_ref).toBe('global/pattern-candidates/pattern-candidate-1');
+    expect(payload.receipt.outcome).toBe('promoted');
     expect(fs.existsSync(path.join(home, 'staged', 'promotions', 'patterns.json'))).toBe(true);
     expect(JSON.parse(fs.readFileSync(path.join(home, 'patterns.json'), 'utf8')).patterns).toHaveLength(1);
+    expect(JSON.parse(fs.readFileSync(path.join(home, '.playbook/promotion-receipts/pattern.latest.json'), 'utf8')).target_id).toBe('pattern.layering');
   });
 
   it('is idempotent for repeated promotions and fails clearly on conflicts', () => {
@@ -71,6 +75,7 @@ describe('runPromote', () => {
     expect(runPromote(home, ['pattern', 'global/pattern-candidates/pattern-candidate-1', '--pattern-id', 'pattern.layering'], { format: 'json', quiet: false })).toBe(ExitCode.Success);
     let payload = JSON.parse(String(logSpy.mock.calls.at(-1)?.[0]));
     expect(payload.noop).toBe(true);
+    expect(payload.receipt.outcome).toBe('noop');
 
     writeJson(home, '.playbook/pattern-candidates.json', {
       schemaVersion: '1.0', kind: 'pattern-candidates', generatedAt: '2026-03-19T00:00:00.000Z',
@@ -80,6 +85,7 @@ describe('runPromote', () => {
     expect(runPromote(home, ['pattern', 'global/pattern-candidates/pattern-candidate-1', '--pattern-id', 'pattern.layering'], { format: 'json', quiet: false })).toBe(ExitCode.Failure);
     payload = JSON.parse(String(logSpy.mock.calls.at(-1)?.[0]));
     expect(payload.error).toContain('conflict for pattern');
+    expect(payload.receipt.outcome).toBe('conflict');
   });
 
   it('promotes global pattern candidates to repo-local stories and mutates only the target repo scope artifact', () => {

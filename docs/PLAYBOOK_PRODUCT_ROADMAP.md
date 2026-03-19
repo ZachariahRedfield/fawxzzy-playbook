@@ -2277,13 +2277,17 @@ Execution state is persisted under `.playbook/runs/<run-id>.json` and is queryab
 - `playbook story promote <candidate-id> --json` explicitly promotes one candidate into the canonical backlog artifact.
 - `playbook patterns proposals --json` groups cross-repo comparisons into promotable portable-pattern/story candidates with evidence lineage and explicit governed promotion targets.
 - `playbook patterns proposals promote --proposal <proposal-id> --target memory|story [--repo <repo-id>] --json` keeps cross-repo adoption explicit while bridging into reusable memory or canonical backlog surfaces.
+- Promotion is an audited write boundary: story/pattern promotion attempts now emit deterministic receipts with source provenance, before/after fingerprints, target identity, and `promoted | noop | conflict` outcomes.
 
 - Rule: Stories are the durable repo-scoped action unit and must remain structured first, narrative second.
 - Pattern: Backlog state is a canonical repo-local artifact, not a UI-owned construct.
 - Pattern: Findings need durable interpretation before they become backlog work.
 - Pattern: Candidate stories require grouping, dedupe, and explicit promotion.
+- Pattern: Promotion should be inspectable with the same rigor as execution.
+- Rule: Promotion must emit a deterministic receipt whenever canonical knowledge is mutated or mutation is attempted.
 - Failure Mode: If story state is introduced without a canonical artifact and governed writes, backlog semantics fragment immediately.
 - Failure Mode: Raw finding -> automatic story conversion creates backlog spam and weak planning signal.
+- Failure Mode: Knowledge writes without receipts create invisible drift and undermine trust in promotion history.
 
 
 - Pattern: Story is durable intent; Plan is execution shape; Receipt is observed outcome.

@@ -31,11 +31,11 @@ const canonicalize = (value: unknown): unknown => {
   return value;
 };
 
-const stableSerialize = (value: unknown): string => JSON.stringify(canonicalize(value));
+export const stableSerializeJson = (value: unknown): string => JSON.stringify(canonicalize(value));
 
-const computeChecksum = (value: unknown): string => createHash('sha256').update(stableSerialize(value), 'utf8').digest('hex');
+export const computeJsonChecksum = (value: unknown): string => createHash('sha256').update(stableSerializeJson(value), 'utf8').digest('hex');
 
-const stringifyDeterministic = (value: unknown): string => `${JSON.stringify(canonicalize(value), null, 2)}\n`;
+export const stringifyDeterministicJson = (value: unknown): string => `${JSON.stringify(canonicalize(value), null, 2)}\n`;
 
 const inferArtifact = (targetPath: string, payload: Record<string, unknown>): string => {
   if (payload.command === 'plan') return 'playbook.plan';
@@ -55,14 +55,14 @@ const writeArtifactPath = (targetPath: string, payload: Record<string, unknown>,
         artifact: inferArtifact(targetPath, payload),
         version: 1,
         generated_at: new Date().toISOString(),
-        checksum: computeChecksum(payload),
+        checksum: computeJsonChecksum(payload),
         data: payload
       }
     : payload;
 
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   const tempPath = path.join(path.dirname(targetPath), `.${path.basename(targetPath)}.${process.pid}.${Date.now()}.tmp`);
-  fs.writeFileSync(tempPath, stringifyDeterministic(artifactPayload), 'utf8');
+  fs.writeFileSync(tempPath, stringifyDeterministicJson(artifactPayload), 'utf8');
   fs.renameSync(tempPath, targetPath);
   return targetPath;
 };

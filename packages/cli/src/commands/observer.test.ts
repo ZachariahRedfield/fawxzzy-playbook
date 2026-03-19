@@ -329,6 +329,19 @@ describe('observer server', () => {
         }
       ]
     }, null, 2));
+    fs.writeFileSync(path.join(repo, '.playbook', 'promotion-receipts', 'story.latest.json'), JSON.stringify({
+      schemaVersion: '1.0',
+      kind: 'promotion-receipt',
+      promotion_kind: 'story',
+      source_candidate_ref: 'repo/repo-a/story-candidates/story-ready',
+      source_fingerprint: 'sha256-story',
+      target_artifact_path: '.playbook/stories.json',
+      target_id: 'story-ready',
+      before_fingerprint: null,
+      after_fingerprint: 'sha256-story',
+      outcome: 'promoted',
+      generated_at: '2026-01-01T00:00:00.000Z'
+    }, null, 2));
 
     expect(await runObserver(cwd, ['repo', 'add', repo, '--id', 'repo-a'], { format: 'json', quiet: false })).toBe(ExitCode.Success);
 
@@ -454,6 +467,14 @@ describe('observer server', () => {
     const systemMapArtifactJson = await systemMapArtifactResponse.json() as { artifact: { kind: string; value: { kind: string } } };
     expect(systemMapArtifactJson.artifact.kind).toBe('system-map');
     expect(systemMapArtifactJson.artifact.value.kind).toBe('system-map');
+
+    const promotionReceiptResponse = await fetch(`http://127.0.0.1:${port}/repos/repo-a/artifacts/promotion-receipt-story`);
+    expect(promotionReceiptResponse.status).toBe(200);
+    const promotionReceiptJson = await promotionReceiptResponse.json() as { artifact: { kind: string; value: { kind: string; outcome: string; target_id: string } } };
+    expect(promotionReceiptJson.artifact.kind).toBe('promotion-receipt-story');
+    expect(promotionReceiptJson.artifact.value.kind).toBe('promotion-receipt');
+    expect(promotionReceiptJson.artifact.value.outcome).toBe('promoted');
+    expect(promotionReceiptJson.artifact.value.target_id).toBe('story-ready');
 
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   });
