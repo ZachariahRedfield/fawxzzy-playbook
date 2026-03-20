@@ -1,4 +1,4 @@
-import type { TestAutofixArtifact, TestAutofixFinalStatus, TestAutofixRetryPolicyDecision } from './testAutofix.js';
+import type { TestAutofixArtifact, TestAutofixFinalStatus, TestAutofixMode, TestAutofixRetryPolicyDecision } from './testAutofix.js';
 import type { TestAutofixRemediationHistoryEntry } from './testAutofixRemediationHistory.js';
 
 export const REMEDIATION_STATUS_SCHEMA_VERSION = '1.0' as const;
@@ -11,6 +11,11 @@ export type RemediationStatusLatestRun = {
   final_status: TestAutofixFinalStatus;
   retry_policy_decision: TestAutofixRetryPolicyDecision;
   retry_policy_reason: string;
+  mode: TestAutofixMode;
+  would_apply: boolean;
+  confidence_threshold: number;
+  autofix_confidence: number;
+  confidence_reasoning: string[];
   preferred_repair_class: string | null;
   failure_signatures: string[];
   blocked_signatures: string[];

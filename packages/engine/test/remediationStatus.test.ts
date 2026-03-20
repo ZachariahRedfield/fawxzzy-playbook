@@ -100,6 +100,29 @@ describe('buildRemediationStatusArtifact', () => {
     expect(artifact.safe_to_retry_signatures).toEqual(['sig-b']);
   });
 
+
+
+  it('tolerates older latest results that omit confidence fields', () => {
+    const artifact = buildRemediationStatusArtifact({
+      latestResult: latestResult({
+        mode: undefined as never,
+        would_apply: undefined as never,
+        confidence_threshold: undefined as never,
+        autofix_confidence: undefined as never,
+        confidence_reasoning: undefined as never
+      }),
+      history: history(),
+      latestResultPath: '.playbook/test-autofix.json',
+      remediationHistoryPath: '.playbook/test-autofix-history.json'
+    });
+
+    expect(artifact.latest_run.mode).toBe('apply');
+    expect(artifact.latest_run.would_apply).toBe(false);
+    expect(artifact.latest_run.confidence_threshold).toBe(0);
+    expect(artifact.latest_run.autofix_confidence).toBe(0);
+    expect(artifact.latest_run.confidence_reasoning).toEqual([]);
+  });
+
   it('marks blocked retry outlook when latest policy blocks replay', () => {
     const blocked = buildRemediationStatusArtifact({
       latestResult: latestResult({

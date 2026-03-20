@@ -16,27 +16,35 @@ test('renderRemediationComment renders canonical artifact fields from autofix an
       },
     },
     autofix: {
-      final_status: 'blocked',
-      retry_policy_decision: 'blocked_repeat_failure',
+      final_status: 'blocked_low_confidence',
+      mode: 'dry_run',
+      would_apply: false,
+      confidence_threshold: 0.7,
+      autofix_confidence: 0.62,
+      confidence_reasoning: ['reason-1', 'reason-2'],
+      retry_policy_decision: 'allow_with_preferred_repair_class',
       preferred_repair_class: 'snapshot_refresh',
       applied_task_ids: ['task-a', 'task-b'],
-      stop_reasons: ['blocked_repeat_failure'],
+      stop_reasons: ['blocked for confidence'],
       apply_result: { attempted: false, ok: false },
       verification_result: { attempted: false, ok: false },
       source_triage: { path: '.playbook/test-triage.json' },
       source_fix_plan: { path: '.playbook/test-fix-plan.json' },
-      source_apply: { path: '.playbook/test-autofix-apply.json' },
+      source_apply: { path: null },
       remediation_history_path: '.playbook/test-autofix-history.json',
     },
     remediationStatus: {
       blocked_signatures: ['sig-a'],
       review_required_signatures: ['sig-b'],
+      latest_run: { mode: 'dry_run' }
     },
   });
 
-  assert.match(body, /Final status \| blocked/);
-  assert.match(body, /Retry policy decision \| blocked_repeat_failure/);
-  assert.match(body, /Preferred repair class \| snapshot_refresh/);
+  assert.match(body, /Final status \| blocked_low_confidence/);
+  assert.match(body, /Mode \| dry_run/);
+  assert.match(body, /Autofix confidence \| 0\.62/);
+  assert.match(body, /Low-confidence skip \| yes/);
+  assert.match(body, /reason-1; reason-2/);
   assert.match(body, /task-a/);
   assert.match(body, /sig-a/);
   assert.match(body, /\.playbook\/test-autofix-history\.json/);

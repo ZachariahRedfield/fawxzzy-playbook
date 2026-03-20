@@ -1,4 +1,5 @@
 import type {
+  TestAutofixConfidenceDetails,
   TestAutofixRemediationClassification,
   TestAutofixRemediationHistoryArtifact,
   TestAutofixRemediationHistoryEntry,
@@ -15,6 +16,8 @@ import {
 const compareStrings = (left: string, right: string): number => left.localeCompare(right);
 
 const uniqueSorted = (values: Array<string | null | undefined>): string[] => [...new Set(values.filter((value): value is string => Boolean(value)).map((value) => value.trim()).filter(Boolean))].sort(compareStrings);
+const MAX_AUTOFIX_CONFIDENCE = 0.95;
+const clampConfidence = (value: number): number => Math.max(0, Math.min(MAX_AUTOFIX_CONFIDENCE, Number(value.toFixed(2))));
 
 export const createEmptyRemediationHistoryArtifact = (): TestAutofixRemediationHistoryArtifact => ({
   schemaVersion: TEST_AUTOFIX_REMEDIATION_HISTORY_SCHEMA_VERSION,
@@ -62,7 +65,7 @@ export const listPriorSuccessfulRepairClasses = (artifact: TestAutofixRemediatio
 );
 
 export const listRepeatedFailedRepairAttempts = (artifact: TestAutofixRemediationHistoryArtifact, failureSignature: string): TestAutofixRemediationHistoryEntry[] =>
-  listRunsByFailureSignature(artifact, failureSignature).filter((entry) => entry.final_status === 'blocked' || entry.final_status === 'not_fixed');
+  listRunsByFailureSignature(artifact, failureSignature).filter((entry) => entry.final_status === 'blocked' || entry.final_status === 'blocked_low_confidence' || entry.final_status === 'not_fixed');
 
 const DEFAULT_FAILED_REPEAT_THRESHOLD = 2;
 
@@ -164,5 +167,61 @@ export const evaluateRepeatRemediationPolicy = (
     preferred_repair_class: null,
     retry_policy_decision: 'allow_repair',
     retry_policy_reason: 'Repeat history exists, but no preferred or blocked repair class was identified, so one bounded repair attempt is allowed.'
+  };
+};
+
+export const computeAutofixConfidence = (options: {
+  triage: TestTriageArtifact;
+  fixPlan: TestFixPlanArtifact;
+  history: TestAutofixRemediationHistoryArtifact;
+  retryPolicy: RetryPolicyEvaluation;
+}): TestAutofixConfidenceDetails => {
+  const reasoning: string[] = [];
+  if (options.retryPolicy.retry_policy_decision === 'blocked_repeat_failure') {
+    return {
+      autofix_confidence: 0,
+      confidence_reasoning: ['repeat policy blocked mutation, so deterministic confidence is forced to 0.00']
+    };
+  }
+
+  let score = 0.25;
+  const findingKinds = uniqueSorted(options.triage.findings.map((finding) => finding.failure_kind));
+  const preferredKinds = new Set(['snapshot_drift', 'stale_assertion', 'ordering_drift']);
+  const allPreferredKinds = findingKinds.length > 0 && findingKinds.every((kind) => preferredKinds.has(kind));
+  if (allPreferredKinds) {
+    score += 0.35;
+    reasoning.push(`failure kinds stayed in preferred deterministic classes (${findingKinds.join(', ')}), boosting confidence.`);
+  } else {
+    score += 0.1;
+    reasoning.push(`failure kinds included less-certain classes (${findingKinds.join(', ') || 'none'}), keeping confidence conservative.`);
+  }
+
+  if (options.retryPolicy.history_summary.prior_successful_repair_classes.length > 0) {
+    score += 0.2;
+    reasoning.push(`history contains prior successful repair classes (${options.retryPolicy.history_summary.prior_successful_repair_classes.join(', ')}), boosting confidence.`);
+  }
+
+  const repeatedFailures = options.retryPolicy.history_summary.repeated_failed_repair_attempts.reduce((sum, entry) => sum + entry.count, 0);
+  if (repeatedFailures > 0) {
+    score -= Math.min(0.3, repeatedFailures * 0.1);
+    reasoning.push(`history recorded ${repeatedFailures} repeated failed repair attempt(s), reducing confidence.`);
+  }
+
+  const totalFindings = options.fixPlan.tasks.length + options.fixPlan.excluded.length;
+  const exclusionRatio = totalFindings === 0 ? 1 : options.fixPlan.excluded.length / totalFindings;
+  score += (1 - exclusionRatio) * 0.15;
+  reasoning.push(`excluded finding ratio was ${options.fixPlan.excluded.length}/${totalFindings || 1}, so fewer exclusions raise confidence.`);
+
+  if (options.retryPolicy.retry_policy_decision === 'allow_with_preferred_repair_class') {
+    score += 0.1;
+    reasoning.push('repeat policy identified a preferred repair class, adding a bounded confidence boost.');
+  } else if (options.retryPolicy.retry_policy_decision === 'review_required_repeat_failure') {
+    score -= 0.15;
+    reasoning.push('repeat policy escalated mixed history for review, reducing confidence.');
+  }
+
+  return {
+    autofix_confidence: clampConfidence(score),
+    confidence_reasoning: reasoning.sort(compareStrings)
   };
 };

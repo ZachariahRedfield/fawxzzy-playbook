@@ -1,3 +1,4 @@
+- WHAT: Added deterministic `autofix_confidence` scoring, `confidence_reasoning`, `--dry-run` support, and confidence-threshold mutation gating to `test-autofix`, then wired CI/PR reporting to render those artifact-backed decisions while protected branches stay dry-run-only. WHY: Self-repair earns trust only when mutation is explainable, previewable, and gated by canonical runtime artifacts rather than workflow-local heuristics.
 # Changelog
 
 ## Unreleased

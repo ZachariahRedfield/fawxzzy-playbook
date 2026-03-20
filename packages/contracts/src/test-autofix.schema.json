@@ -15,9 +15,14 @@
     "source_fix_plan",
     "source_apply",
     "remediation_history_path",
+    "mode",
+    "would_apply",
+    "confidence_threshold",
     "failure_signatures",
     "history_summary",
     "preferred_repair_class",
+    "autofix_confidence",
+    "confidence_reasoning",
     "retry_policy_decision",
     "retry_policy_reason",
     "apply_result",
@@ -374,6 +379,7 @@
         "partially_fixed",
         "not_fixed",
         "blocked",
+        "blocked_low_confidence",
         "review_required_only"
       ]
     },
@@ -385,6 +391,32 @@
     },
     "reason": {
       "type": "string"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "dry_run",
+        "apply"
+      ]
+    },
+    "would_apply": {
+      "type": "boolean"
+    },
+    "confidence_threshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "autofix_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "confidence_reasoning": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   }
 }

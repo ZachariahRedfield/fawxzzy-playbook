@@ -20,6 +20,7 @@ It is read-only and aggregates the canonical remediation artifacts already produ
 - `.playbook/test-autofix-history.json`
 - stable failure signatures across recent runs
 - repeat-policy decisions
+- latest confidence score, threshold, mode, and confidence reasoning
 - preferred repair classes from prior success
 - blocked, review-required, and safe-to-retry signatures
 - recent final statuses and remediation history
@@ -42,7 +43,7 @@ Operator trust depends on keeping the seams explicit:
 
 Text mode highlights:
 
-- latest run status
+- latest run status, mode, and confidence
 - blocked signatures
 - preferred repair guidance
 - signatures currently safe to retry
@@ -80,3 +81,6 @@ If either artifact is missing or invalid, the command fails clearly instead of i
 - Rule: Once remediation decisions become stateful, the system needs a first-class readable status surface.
 - Pattern: Remediation systems should separate mutation flow from operator-facing inspection/reporting views.
 - Failure Mode: Policy-aware automation without a readable status surface becomes hard to trust, debug, and adopt.
+
+
+`remediation-status` remains read-only, but its latest-run summary now mirrors confidence-aware gating state from the canonical `test-autofix` artifact. That means CI and PR renderers can report whether a run was dry-run vs apply, whether mutation would have occurred, the deterministic confidence score, and whether low confidence blocked mutation without inventing any workflow-local logic.

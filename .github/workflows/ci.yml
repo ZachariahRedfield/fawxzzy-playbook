@@ -41,6 +41,8 @@ jobs:
           require-clean-worktree-for-autofix: ${{ github.event_name == 'workflow_dispatch' && inputs.require_clean_worktree_for_autofix && 'true' || 'false' }}
           trusted-autofix-events: "workflow_dispatch"
           trusted-autofix-branches: "refs/heads/main"
+          protected-branches: "refs/heads/main"
+          autofix-confidence-threshold: ${{ vars.PLAYBOOK_AUTOFIX_CONFIDENCE_THRESHOLD || '0.7' }}
 
       - name: Upload Playbook remediation artifacts
         if: always()

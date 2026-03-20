@@ -31,6 +31,14 @@ inputs:
     description: Require a clean worktree before CI autofix mutation is allowed.
     required: false
     default: "true"
+  protected-branches:
+    description: Comma-separated refs that should run test-autofix in dry-run mode even when remediation is allowed.
+    required: false
+    default: "refs/heads/main"
+  autofix-confidence-threshold:
+    description: Deterministic minimum confidence required before test-autofix may mutate.
+    required: false
+    default: "0.7"
 
 outputs:
   test-exit-code:
@@ -42,6 +50,9 @@ outputs:
   remediation-policy-allows-mutation:
     description: Whether policy gates allowed canonical CI autofix mutation.
     value: ${{ steps.remediation-policy.outputs.mutation-allowed }}
+  remediation-mode:
+    description: Whether CI ran test-autofix in apply or dry-run mode.
+    value: ${{ steps.remediation-policy.outputs.mode }}
 
 runs:
   using: composite
@@ -153,6 +164,8 @@ runs:
         GITHUB_EVENT_NAME: ${{ github.event_name }}
         GITHUB_REF: ${{ github.ref }}
         GITHUB_REPOSITORY: ${{ github.repository }}
+        PLAYBOOK_PROTECTED_BRANCHES: ${{ inputs.protected-branches }}
+        PLAYBOOK_AUTOFIX_CONFIDENCE_THRESHOLD: ${{ inputs.autofix-confidence-threshold }}
         GITHUB_EVENT_PULL_REQUEST_HEAD_REPO_FULL_NAME: ${{ github.event.pull_request.head.repo.full_name }}
       run: |
         mkdir -p .playbook
@@ -171,6 +184,9 @@ runs:
           .split(',').map((entry) => entry.trim()).filter(Boolean);
         const eventName = String(process.env.GITHUB_EVENT_NAME || '');
         const ref = String(process.env.GITHUB_REF || '');
+        const protectedBranches = String(process.env.PLAYBOOK_PROTECTED_BRANCHES || '')
+          .split(',').map((entry) => entry.trim()).filter(Boolean);
+        const confidenceThreshold = String(process.env.PLAYBOOK_AUTOFIX_CONFIDENCE_THRESHOLD || '0.7');
         const repository = String(process.env.GITHUB_REPOSITORY || '');
         const prHeadRepo = String(process.env.GITHUB_EVENT_PULL_REQUEST_HEAD_REPO_FULL_NAME || '');
 
@@ -190,6 +206,7 @@ runs:
 
         let status = 'not_needed';
         let mutationAllowed = false;
+        let mode = 'apply';
         if (testExitCode !== 0) {
           if (!enabled) reasons.push('autofix disabled by workflow input');
           if (!trustedEvent) reasons.push(`event ${eventName || '(unknown)'} is not in trusted-autofix-events`);
@@ -198,6 +215,9 @@ runs:
           if (requireCleanWorktree && !cleanWorktree) reasons.push('worktree is not clean before CI autofix mutation');
           mutationAllowed = enabled && trustedEvent && trustedBranch && trustedPrSource && (!requireCleanWorktree || cleanWorktree);
           status = mutationAllowed ? 'allowed' : 'blocked_by_policy';
+          if (mutationAllowed && protectedBranches.includes(ref)) {
+            mode = 'dry_run';
+          }
         }
 
         const artifact = {
@@ -208,6 +228,8 @@ runs:
           mutation_allowed: mutationAllowed,
           test_exit_code: testExitCode,
           enabled,
+          mode,
+          confidence_threshold: confidenceThreshold,
           gating: {
             event_name: eventName,
             ref,
@@ -233,22 +255,32 @@ runs:
         fs.writeFileSync(outPath, JSON.stringify(artifact, null, 2) + '\n', 'utf8');
         console.log(`status=${status}`);
         console.log(`mutation_allowed=${mutationAllowed}`);
+        console.log(`mode=${mode}`);
         if (status === 'blocked_by_policy') {
           console.log(`blocked_reasons=${reasons.join('; ') || '(none recorded)'}`);
         }
         NODE
         status=$(node -e "const fs=require('node:fs'); const artifact=JSON.parse(fs.readFileSync('.playbook/ci-remediation-policy.json','utf8')); console.log(artifact.status)")
         mutation_allowed=$(node -e "const fs=require('node:fs'); const artifact=JSON.parse(fs.readFileSync('.playbook/ci-remediation-policy.json','utf8')); console.log(String(artifact.mutation_allowed))")
+        mode=$(node -e "const fs=require('node:fs'); const artifact=JSON.parse(fs.readFileSync('.playbook/ci-remediation-policy.json','utf8')); console.log(String(artifact.mode || 'apply'))")
         echo "status=$status" >> "$GITHUB_OUTPUT"
         echo "mutation-allowed=$mutation_allowed" >> "$GITHUB_OUTPUT"
+        echo "mode=$mode" >> "$GITHUB_OUTPUT"
 
     - name: Run canonical bounded test-autofix
       if: env.PLAYBOOK_TEST_EXIT_CODE != '0' && steps.remediation-policy.outputs.mutation-allowed == 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      env:
+        PLAYBOOK_AUTOFIX_CONFIDENCE_THRESHOLD: ${{ inputs.autofix-confidence-threshold }}
       run: |
-        echo "+ pnpm playbook test-autofix --input .playbook/ci-failure.log --json | tee .playbook/test-autofix.json"
-        pnpm playbook test-autofix --input .playbook/ci-failure.log --json | tee .playbook/test-autofix.json
+        EXTRA_ARGS=()
+        if [[ "${{ steps.remediation-policy.outputs.mode }}" == "dry_run" ]]; then
+          EXTRA_ARGS+=(--dry-run)
+        fi
+        EXTRA_ARGS+=(--confidence-threshold "$PLAYBOOK_AUTOFIX_CONFIDENCE_THRESHOLD")
+        echo "+ pnpm playbook test-autofix --input .playbook/ci-failure.log ${EXTRA_ARGS[*]} --json | tee .playbook/test-autofix.json"
+        pnpm playbook test-autofix --input .playbook/ci-failure.log "${EXTRA_ARGS[@]}" --json | tee .playbook/test-autofix.json
 
     - name: Run canonical remediation-status read model
       if: env.PLAYBOOK_TEST_EXIT_CODE != '0' && steps.remediation-policy.outputs.mutation-allowed == 'true'

@@ -175,6 +175,8 @@ const commandRunners: Record<
       quiet,
       input: parseOptionValue(commandArgs, '--input'),
       outFile: parseOptionValue(commandArgs, '--out'),
+      dryRun: parseFlag(commandArgs, '--dry-run'),
+      confidenceThreshold: parseOptionValue(commandArgs, '--confidence-threshold') ? Number(parseOptionValue(commandArgs, '--confidence-threshold')) : undefined,
       help: parseFlag(commandArgs, '--help') || parseFlag(commandArgs, '-h')
     });
   },

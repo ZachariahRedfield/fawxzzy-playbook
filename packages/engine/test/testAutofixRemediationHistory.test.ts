@@ -4,6 +4,7 @@ import { buildTestTriageArtifact } from '../src/testTriage.js';
 import {
   appendRemediationHistoryEntry,
   createEmptyRemediationHistoryArtifact,
+  computeAutofixConfidence,
   evaluateRepeatRemediationPolicy,
   listPriorSuccessfulRepairClasses,
   listRepeatedFailedRepairAttempts,
@@ -125,6 +126,44 @@ describe('test-autofix remediation history helpers', () => {
         run_ids: ['test-autofix-run-0001', 'test-autofix-run-0002']
       }
     ]);
+  });
+
+
+  it('computes deterministic confidence from failure class, history, exclusions, and retry policy', () => {
+    const triage = buildSnapshotTriage(1);
+    const fixPlan = buildTestFixPlanArtifact(triage);
+    const signature = triage.findings[0]!.failure_signature;
+    const history = appendHistoryRun(createEmptyRemediationHistoryArtifact(), {
+      signature,
+      runId: 'test-autofix-run-0001',
+      finalStatus: 'fixed',
+      repairClasses: ['snapshot_refresh'],
+      verificationOk: true
+    });
+    const retryPolicy = evaluateRepeatRemediationPolicy(triage, fixPlan, history);
+
+    const confidence = computeAutofixConfidence({ triage, fixPlan, history, retryPolicy });
+    expect(confidence.autofix_confidence).toBe(0.95);
+    expect(confidence.confidence_reasoning).toEqual([
+      'excluded finding ratio was 0/1, so fewer exclusions raise confidence.',
+      'failure kinds stayed in preferred deterministic classes (snapshot_drift), boosting confidence.',
+      'history contains prior successful repair classes (snapshot_refresh), boosting confidence.',
+      'repeat policy identified a preferred repair class, adding a bounded confidence boost.'
+    ]);
+  });
+
+  it('forces confidence to zero when repeat policy blocks mutation', () => {
+    const triage = buildSnapshotTriage(1);
+    const fixPlan = buildTestFixPlanArtifact(triage);
+    const signature = triage.findings[0]!.failure_signature;
+    let history = createEmptyRemediationHistoryArtifact();
+    history = appendHistoryRun(history, { signature, runId: 'test-autofix-run-0001', finalStatus: 'not_fixed', repairClasses: ['snapshot_refresh'], verificationOk: false });
+    history = appendHistoryRun(history, { signature, runId: 'test-autofix-run-0002', finalStatus: 'blocked', repairClasses: ['snapshot_refresh'], verificationOk: false });
+    const retryPolicy = evaluateRepeatRemediationPolicy(triage, fixPlan, history);
+
+    const confidence = computeAutofixConfidence({ triage, fixPlan, history, retryPolicy });
+    expect(confidence.autofix_confidence).toBe(0);
+    expect(confidence.confidence_reasoning).toEqual(['repeat policy blocked mutation, so deterministic confidence is forced to 0.00']);
   });
 
   it('keeps mixed repeat history deterministic when prior successful repair evidence exists', () => {

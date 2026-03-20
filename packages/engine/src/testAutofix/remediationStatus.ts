@@ -21,8 +21,12 @@ const compareHistoryEntriesDesc = (left: TestAutofixRemediationHistoryEntry, rig
   return right.run_id.localeCompare(left.run_id);
 };
 
+const normalizeStringArray = (value: unknown): string[] => Array.isArray(value)
+  ? [...new Set(value.filter((entry): entry is string => typeof entry === 'string').map((entry) => entry.trim()).filter(Boolean))].sort(compareStrings)
+  : [];
+
 const decideRetryOutlook = (entry: TestAutofixArtifact, signature: string): RemediationStatusSignatureSummary['retry_outlook'] => {
-  if (entry.failure_signatures.includes(signature)) {
+  if (normalizeStringArray(entry.failure_signatures).includes(signature)) {
     if (entry.retry_policy_decision === 'blocked_repeat_failure') return 'blocked';
     if (entry.retry_policy_decision === 'review_required_repeat_failure' || entry.final_status === 'review_required_only') return 'review_required';
   }
@@ -30,11 +34,14 @@ const decideRetryOutlook = (entry: TestAutofixArtifact, signature: string): Reme
 };
 
 const summarizeLatestRun = (latest: TestAutofixArtifact): RemediationStatusLatestRun => {
-  const blocked = latest.retry_policy_decision === 'blocked_repeat_failure' ? [...latest.failure_signatures] : [];
+  const failureSignatures = normalizeStringArray((latest as Partial<TestAutofixArtifact>).failure_signatures);
+  const stopReasons = normalizeStringArray((latest as Partial<TestAutofixArtifact>).stop_reasons);
+  const confidenceReasoning = normalizeStringArray((latest as Partial<TestAutofixArtifact>).confidence_reasoning);
+  const blocked = latest.retry_policy_decision === 'blocked_repeat_failure' ? [...failureSignatures] : [];
   const reviewRequired = latest.retry_policy_decision === 'review_required_repeat_failure' || latest.final_status === 'review_required_only'
-    ? [...latest.failure_signatures]
+    ? [...failureSignatures]
     : [];
-  const safeToRetry = latest.failure_signatures.filter((signature) => !blocked.includes(signature) && !reviewRequired.includes(signature)).sort(compareStrings);
+  const safeToRetry = failureSignatures.filter((signature) => !blocked.includes(signature) && !reviewRequired.includes(signature)).sort(compareStrings);
 
   return {
     run_id: latest.run_id,
@@ -43,12 +50,17 @@ const summarizeLatestRun = (latest: TestAutofixArtifact): RemediationStatusLates
     final_status: latest.final_status,
     retry_policy_decision: latest.retry_policy_decision,
     retry_policy_reason: latest.retry_policy_reason,
+    mode: latest.mode ?? 'apply',
+    would_apply: latest.would_apply ?? false,
+    confidence_threshold: typeof latest.confidence_threshold === 'number' ? latest.confidence_threshold : 0,
+    autofix_confidence: typeof latest.autofix_confidence === 'number' ? latest.autofix_confidence : 0,
+    confidence_reasoning: confidenceReasoning,
     preferred_repair_class: latest.preferred_repair_class,
-    failure_signatures: [...latest.failure_signatures],
+    failure_signatures: failureSignatures,
     blocked_signatures: blocked.sort(compareStrings),
     review_required_signatures: reviewRequired.sort(compareStrings),
     safe_to_retry_signatures: safeToRetry,
-    stop_reasons: [...latest.stop_reasons]
+    stop_reasons: stopReasons
   };
 };
 

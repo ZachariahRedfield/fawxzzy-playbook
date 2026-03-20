@@ -20,29 +20,18 @@ import { printCommandHelp } from '../lib/commandSurface.js';
 import { runSpawnSync } from '../lib/processRunner.js';
 import { runApply } from './apply.js';
 
-
-type TestAutofixRetryPolicyDecision = 'allow_repair' | 'allow_with_preferred_repair_class' | 'blocked_repeat_failure' | 'review_required_repeat_failure' | 'no_history';
-
-type TestAutofixHistorySummary = {
-  matched_signatures: string[];
-  matching_run_ids: string[];
-  prior_final_statuses: string[];
-  prior_applied_repair_classes: string[];
-  prior_successful_repair_classes: string[];
-  repeated_failed_repair_attempts: Array<{
-    failure_signature: string;
-    repair_class: string;
-    count: number;
-    run_ids: string[];
-  }>;
-  provenance_run_ids: string[];
-};
+type TestAutofixHistorySummary = TestAutofixArtifact['history_summary'];
+type TestAutofixMode = TestAutofixArtifact['mode'];
+type TestAutofixConfidenceDetails = Pick<TestAutofixArtifact, 'autofix_confidence' | 'confidence_reasoning'>;
+type TestAutofixRetryPolicyDecision = TestAutofixArtifact['retry_policy_decision'];
 
 type TestAutofixOptions = {
   format: 'text' | 'json';
   quiet: boolean;
   input?: string;
   outFile?: string;
+  dryRun?: boolean;
+  confidenceThreshold?: number;
   help?: boolean;
 };
 
@@ -101,6 +90,18 @@ type ApplyJsonPayload = {
 
 const engine = engineRuntime as unknown as {
   appendRemediationHistoryEntry: (artifact: RemediationHistoryArtifact, entry: RemediationHistoryEntry) => RemediationHistoryArtifact;
+  computeAutofixConfidence: (options: {
+    triage: TestTriageArtifact;
+    fixPlan: TestFixPlanArtifact;
+    history: RemediationHistoryArtifact;
+    retryPolicy: {
+      failure_signatures: string[];
+      history_summary: TestAutofixHistorySummary;
+      preferred_repair_class: string | null;
+      retry_policy_decision: TestAutofixRetryPolicyDecision;
+      retry_policy_reason: string;
+    };
+  }) => TestAutofixConfidenceDetails;
   evaluateRepeatRemediationPolicy: (triage: TestTriageArtifact, fixPlan: TestFixPlanArtifact, history: RemediationHistoryArtifact) => {
     failure_signatures: string[];
     history_summary: TestAutofixHistorySummary;
@@ -121,6 +122,7 @@ const DEFAULT_TRIAGE_FILE = '.playbook/test-triage.json' as const;
 const DEFAULT_FIX_PLAN_FILE = '.playbook/test-fix-plan.json' as const;
 const DEFAULT_APPLY_FILE = '.playbook/test-autofix-apply.json' as const;
 const DEFAULT_HISTORY_FILE = '.playbook/test-autofix-history.json' as const;
+const DEFAULT_CONFIDENCE_THRESHOLD = 0.7;
 
 const readInputLog = (cwd: string, inputPath?: string): { rawLog: string; path: string } => {
   if (!inputPath) {
@@ -152,6 +154,14 @@ const emptyVerificationSummary = (): TestAutofixVerificationSummary => ({
 
 const compareStrings = (left: string, right: string): number => left.localeCompare(right);
 const uniqueSorted = (values: Array<string | null | undefined>): string[] => [...new Set(values.filter((value): value is string => Boolean(value)).map((value) => value.trim()).filter(Boolean))].sort(compareStrings);
+const parseConfidenceThreshold = (value: string | undefined): number => {
+  const normalized = value == null ? String(DEFAULT_CONFIDENCE_THRESHOLD) : value;
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
+    throw new Error(`playbook test-autofix: confidence threshold must be a number between 0 and 1, received ${normalized}.`);
+  }
+  return Number(parsed.toFixed(2));
+};
 
 const summarizeExcludedFindings = (artifact: TestFixPlanArtifact): TestAutofixExcludedFindingSummary => {
   const counts = new Map<string, number>();
@@ -224,6 +234,9 @@ const renderText = (artifact: TestAutofixArtifact, outFile: string): string => {
     '────────────',
     `Input log: ${artifact.input}`,
     `Run id: ${artifact.run_id}`,
+    `Mode: ${artifact.mode}`,
+    `Would apply: ${artifact.would_apply ? 'yes' : 'no'}`,
+    `Confidence: ${artifact.autofix_confidence.toFixed(2)} (threshold ${artifact.confidence_threshold.toFixed(2)})`,
     `Wrote artifact: ${outFile}`,
     `History artifact: ${artifact.remediation_history_path}`,
     `Final status: ${artifact.final_status}`,
@@ -234,6 +247,13 @@ const renderText = (artifact: TestAutofixArtifact, outFile: string): string => {
     `Apply attempted: ${artifact.apply_result.attempted ? 'yes' : 'no'}`,
     `Verification attempted: ${artifact.verification_result.attempted ? 'yes' : 'no'}`
   ];
+
+  if (artifact.confidence_reasoning.length > 0) {
+    lines.push('', 'Confidence reasoning');
+    for (const reason of artifact.confidence_reasoning) {
+      lines.push(`- ${reason}`);
+    }
+  }
 
   if (artifact.applied_task_ids.length > 0) {
     lines.push('', 'Applied tasks');
@@ -364,17 +384,74 @@ const buildHistoryEntry = (params: {
   };
 };
 
+const buildArtifact = (params: {
+  runId: string;
+  inputPath: string;
+  outFile: string;
+  retryPolicy: {
+    failure_signatures: string[];
+    history_summary: TestAutofixHistorySummary;
+    preferred_repair_class: string | null;
+    retry_policy_decision: TestAutofixRetryPolicyDecision;
+    retry_policy_reason: string;
+  };
+  confidence: TestAutofixConfidenceDetails;
+  excludedSummary: TestAutofixExcludedFindingSummary;
+  mode: TestAutofixMode;
+  wouldApply: boolean;
+  threshold: number;
+  applyResult: TestAutofixApplySummary;
+  verificationResult: TestAutofixVerificationSummary;
+  verificationCommands: TestAutofixVerificationCommandResult[];
+  appliedTaskIds: string[];
+  finalStatus: TestAutofixFinalStatus;
+  stopReasons: string[];
+  reason: string;
+  applyArtifactPath: string | null;
+}): TestAutofixArtifact => ({
+  schemaVersion: TEST_AUTOFIX_SCHEMA_VERSION,
+  kind: TEST_AUTOFIX_ARTIFACT_KIND,
+  command: 'test-autofix',
+  generatedAt: new Date(0).toISOString(),
+  run_id: params.runId,
+  input: params.inputPath,
+  source_triage: { path: DEFAULT_TRIAGE_FILE, command: 'test-triage' },
+  source_fix_plan: { path: DEFAULT_FIX_PLAN_FILE, command: 'test-fix-plan' },
+  source_apply: { path: params.applyArtifactPath, command: 'apply' },
+  remediation_history_path: DEFAULT_HISTORY_FILE,
+  mode: params.mode,
+  would_apply: params.wouldApply,
+  confidence_threshold: params.threshold,
+  failure_signatures: params.retryPolicy.failure_signatures,
+  history_summary: params.retryPolicy.history_summary,
+  preferred_repair_class: params.retryPolicy.preferred_repair_class,
+  autofix_confidence: params.confidence.autofix_confidence,
+  confidence_reasoning: params.confidence.confidence_reasoning,
+  retry_policy_decision: params.retryPolicy.retry_policy_decision,
+  retry_policy_reason: params.retryPolicy.retry_policy_reason,
+  apply_result: params.applyResult,
+  verification_result: params.verificationResult,
+  executed_verification_commands: params.verificationCommands,
+  applied_task_ids: params.appliedTaskIds,
+  excluded_finding_summary: params.excludedSummary,
+  final_status: params.finalStatus,
+  stop_reasons: params.stopReasons,
+  reason: params.reason
+});
+
 export const runTestAutofix = async (cwd: string, options: TestAutofixOptions): Promise<number> => {
   if (options.help) {
     printCommandHelp({
-      usage: 'playbook test-autofix --input <path> [--json] [--out <path>]',
+      usage: 'playbook test-autofix --input <path> [--json] [--out <path>] [--dry-run] [--confidence-threshold <0-1>]',
       description:
-        'Orchestrate deterministic test failure diagnosis, bounded repair planning, reviewed apply execution, narrow-first verification, and remediation history capture without introducing a new mutation executor.',
+        'Orchestrate deterministic test failure diagnosis, bounded repair planning, repeat-policy evaluation, confidence gating, reviewed apply execution, narrow-first verification, and remediation history capture without introducing a new mutation executor.',
       options: [
-        '--input <path>           Read a captured test failure log',
-        `--out <path>             Write the result artifact (default ${DEFAULT_RESULT_FILE})`,
-        '--json                   Print the stable test-autofix artifact as JSON',
-        '--help                   Show help'
+        '--input <path>                   Read a captured test failure log',
+        `--out <path>                     Write the result artifact (default ${DEFAULT_RESULT_FILE})`,
+        '--dry-run                        Run orchestration and gating without calling apply or mutating the repository',
+        '--confidence-threshold <0-1>     Require confidence at or above this threshold before mutation (default 0.7, env PLAYBOOK_AUTOFIX_CONFIDENCE_THRESHOLD)',
+        '--json                           Print the stable test-autofix artifact as JSON',
+        '--help                           Show help'
       ],
       artifacts: [DEFAULT_TRIAGE_FILE, DEFAULT_FIX_PLAN_FILE, DEFAULT_APPLY_FILE, DEFAULT_RESULT_FILE, DEFAULT_HISTORY_FILE]
     });
@@ -385,6 +462,8 @@ export const runTestAutofix = async (cwd: string, options: TestAutofixOptions): 
     const source = readInputLog(cwd, options.input);
     const historyBefore = readHistoryArtifact(cwd);
     const runId = engine.nextRemediationHistoryRunId(historyBefore);
+    const threshold = parseConfidenceThreshold(options.confidenceThreshold == null ? process.env.PLAYBOOK_AUTOFIX_CONFIDENCE_THRESHOLD : String(options.confidenceThreshold));
+    const mode: TestAutofixMode = options.dryRun ? 'dry_run' : 'apply';
     const triage = engine.buildTestTriageArtifact(source.rawLog, { input: 'file', path: source.path });
     writeJsonArtifact(cwd, DEFAULT_TRIAGE_FILE, triage, 'test-autofix');
 
@@ -393,37 +472,99 @@ export const runTestAutofix = async (cwd: string, options: TestAutofixOptions): 
 
     const excludedSummary = summarizeExcludedFindings(fixPlan);
     const retryPolicy = engine.evaluateRepeatRemediationPolicy(triage, fixPlan, historyBefore);
+    const confidence = engine.computeAutofixConfidence({ triage, fixPlan, history: historyBefore, retryPolicy });
     const stop = classifyStopWithoutMutation(triage, fixPlan, retryPolicy);
     const outFile = options.outFile ?? DEFAULT_RESULT_FILE;
     let applyArtifactPath: string | null = null;
     let filesTouched: string[] = [];
+    const wouldApply = !stop && mode !== 'dry_run' && confidence.autofix_confidence >= threshold;
 
     if (stop) {
-      const artifact: TestAutofixArtifact = {
-        schemaVersion: TEST_AUTOFIX_SCHEMA_VERSION,
-        kind: TEST_AUTOFIX_ARTIFACT_KIND,
-        command: 'test-autofix',
-        generatedAt: new Date(0).toISOString(),
-        run_id: runId,
-        input: source.path,
-        source_triage: { path: DEFAULT_TRIAGE_FILE, command: 'test-triage' },
-        source_fix_plan: { path: DEFAULT_FIX_PLAN_FILE, command: 'test-fix-plan' },
-        source_apply: { path: null, command: 'apply' },
-        remediation_history_path: DEFAULT_HISTORY_FILE,
-        failure_signatures: retryPolicy.failure_signatures,
-        history_summary: retryPolicy.history_summary,
-        preferred_repair_class: retryPolicy.preferred_repair_class,
-        retry_policy_decision: retryPolicy.retry_policy_decision,
-        retry_policy_reason: retryPolicy.retry_policy_reason,
-        apply_result: emptyApplySummary(stop.reason),
-        verification_result: emptyVerificationSummary(),
-        executed_verification_commands: [],
-        applied_task_ids: [],
-        excluded_finding_summary: excludedSummary,
-        final_status: stop.finalStatus,
-        stop_reasons: [stop.reason],
-        reason: stop.reason
-      };
+      const artifact = buildArtifact({
+        runId,
+        inputPath: source.path,
+        outFile,
+        retryPolicy,
+        confidence,
+        excludedSummary,
+        mode,
+        wouldApply,
+        threshold,
+        applyResult: emptyApplySummary(stop.reason),
+        verificationResult: emptyVerificationSummary(),
+        verificationCommands: [],
+        appliedTaskIds: [],
+        finalStatus: stop.finalStatus,
+        stopReasons: [stop.reason],
+        reason: stop.reason,
+        applyArtifactPath
+      });
+      writeJsonArtifact(cwd, outFile, artifact, 'test-autofix');
+      const historyEntry = buildHistoryEntry({ runId, inputPath: source.path, triage, fixPlan, artifact, applyArtifactPath, outFile, filesTouched });
+      const nextHistory = engine.appendRemediationHistoryEntry(historyBefore, historyEntry);
+      writeJsonArtifact(cwd, DEFAULT_HISTORY_FILE, nextHistory, 'test-autofix');
+      if (options.format === 'json') {
+        emitJsonOutput({ cwd, command: 'test-autofix', payload: artifact });
+      } else if (!options.quiet) {
+        console.log(renderText(artifact, outFile));
+      }
+      return computeExitCode(artifact.final_status);
+    }
+
+    if (mode === 'dry_run') {
+      const reason = 'Dry-run mode completed triage, planning, repeat-policy evaluation, and confidence gating without calling apply or mutating the repository.';
+      const artifact = buildArtifact({
+        runId,
+        inputPath: source.path,
+        outFile,
+        retryPolicy,
+        confidence,
+        excludedSummary,
+        mode,
+        wouldApply: confidence.autofix_confidence >= threshold,
+        threshold,
+        applyResult: emptyApplySummary(reason),
+        verificationResult: emptyVerificationSummary(),
+        verificationCommands: [],
+        appliedTaskIds: [],
+        finalStatus: 'blocked',
+        stopReasons: [reason],
+        reason,
+        applyArtifactPath
+      });
+      writeJsonArtifact(cwd, outFile, artifact, 'test-autofix');
+      const historyEntry = buildHistoryEntry({ runId, inputPath: source.path, triage, fixPlan, artifact, applyArtifactPath, outFile, filesTouched });
+      const nextHistory = engine.appendRemediationHistoryEntry(historyBefore, historyEntry);
+      writeJsonArtifact(cwd, DEFAULT_HISTORY_FILE, nextHistory, 'test-autofix');
+      if (options.format === 'json') {
+        emitJsonOutput({ cwd, command: 'test-autofix', payload: artifact });
+      } else if (!options.quiet) {
+        console.log(renderText(artifact, outFile));
+      }
+      return computeExitCode(artifact.final_status);
+    }
+
+    if (confidence.autofix_confidence < threshold) {
+      const reason = `${retryPolicy.retry_policy_reason} Confidence ${confidence.autofix_confidence.toFixed(2)} is below threshold ${threshold.toFixed(2)}, so mutation was skipped.`;
+      const artifact = buildArtifact({
+        runId,
+        inputPath: source.path,
+        outFile,
+        retryPolicy: { ...retryPolicy, retry_policy_reason: reason },
+        confidence,
+        excludedSummary,
+        mode,
+        wouldApply: false,
+        threshold,
+        applyResult: emptyApplySummary(reason),
+        verificationResult: emptyVerificationSummary(),
+        verificationCommands: [],
+        appliedTaskIds: [],
+        finalStatus: 'blocked_low_confidence',
+        stopReasons: [reason],
+        reason,
+        applyArtifactPath
+      });
       writeJsonArtifact(cwd, outFile, artifact, 'test-autofix');
       const historyEntry = buildHistoryEntry({ runId, inputPath: source.path, triage, fixPlan, artifact, applyArtifactPath, outFile, filesTouched });
       const nextHistory = engine.appendRemediationHistoryEntry(historyBefore, historyEntry);
@@ -483,31 +624,25 @@ export const runTestAutofix = async (cwd: string, options: TestAutofixOptions): 
       }
     }
 
-    const artifact: TestAutofixArtifact = {
-      schemaVersion: TEST_AUTOFIX_SCHEMA_VERSION,
-      kind: TEST_AUTOFIX_ARTIFACT_KIND,
-      command: 'test-autofix',
-      generatedAt: new Date(0).toISOString(),
-      run_id: runId,
-      input: source.path,
-      source_triage: { path: DEFAULT_TRIAGE_FILE, command: 'test-triage' },
-      source_fix_plan: { path: DEFAULT_FIX_PLAN_FILE, command: 'test-fix-plan' },
-      source_apply: { path: applyArtifactPath, command: 'apply' },
-      remediation_history_path: DEFAULT_HISTORY_FILE,
-      failure_signatures: retryPolicy.failure_signatures,
-      history_summary: retryPolicy.history_summary,
-      preferred_repair_class: retryPolicy.preferred_repair_class,
-      retry_policy_decision: retryPolicy.retry_policy_decision,
-      retry_policy_reason: retryPolicy.retry_policy_reason,
-      apply_result: applySummary,
-      verification_result: verificationSummary,
-      executed_verification_commands: verificationCommands,
-      applied_task_ids: appliedTaskIds,
-      excluded_finding_summary: excludedSummary,
-      final_status: finalStatus,
-      stop_reasons: [reason],
-      reason
-    };
+    const artifact = buildArtifact({
+      runId,
+      inputPath: source.path,
+      outFile,
+      retryPolicy,
+      confidence,
+      excludedSummary,
+      mode,
+      wouldApply: true,
+      threshold,
+      applyResult: applySummary,
+      verificationResult: verificationSummary,
+      verificationCommands,
+      appliedTaskIds,
+      finalStatus,
+      stopReasons: [reason],
+      reason,
+      applyArtifactPath
+    });
 
     writeJsonArtifact(cwd, outFile, artifact, 'test-autofix');
     const historyEntry = buildHistoryEntry({ runId, inputPath: source.path, triage, fixPlan, artifact, applyArtifactPath, outFile, filesTouched });

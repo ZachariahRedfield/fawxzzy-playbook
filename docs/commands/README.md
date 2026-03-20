@@ -626,7 +626,7 @@ Architecture note:
 - `apply` = reviewed execution.
 - Risky findings remain review-required and must not be converted into executable tasks by diagnosis or planning docs.
 
-`pnpm playbook test-autofix --input <path> --json` now includes a repeat-aware remediation policy layer between remediation history and mutation. Stable failure signatures are used to reuse prior successful repair guidance, block repeated failed repair classes after a bounded threshold, or escalate mixed repeat history for review instead of replaying noisy bad fixes. This command still performs at most one bounded repair attempt per run.
+`pnpm playbook test-autofix --input <path> --json` now includes a repeat-aware remediation policy layer, deterministic `autofix_confidence` scoring, configurable confidence-threshold gating, and `--dry-run` support. Stable failure signatures are still the source of truth for reuse/block/escalation, while CI and PR surfaces only render the resulting artifacts instead of inventing workflow-local heuristics.
 
 - Rule: trust-boundary docs must evolve at the same time as remediation command surfaces.
 - Rule: every canonical remediation command must expose one stable artifact contract and one authoritative operator doc.

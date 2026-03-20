@@ -20,9 +20,9 @@ const baseLatest = (overrides: Partial<TestAutofixArtifact> = {}): TestAutofixAr
   source_triage: { path: '.playbook/test-triage.json', command: 'test-triage' },
   source_fix_plan: { path: '.playbook/test-fix-plan.json', command: 'test-fix-plan' },
   source_apply: { path: '.playbook/test-autofix-apply.json', command: 'apply' },
-  remediation_history_path: '.playbook/test-autofix-history.json', failure_signatures: ['sig-b'],
+  remediation_history_path: '.playbook/test-autofix-history.json', mode: 'apply', would_apply: true, confidence_threshold: 0.7, failure_signatures: ['sig-b'],
   history_summary: { matched_signatures: ['sig-b'], matching_run_ids: ['test-autofix-run-0002'], prior_final_statuses: ['fixed'], prior_applied_repair_classes: ['snapshot_refresh'], prior_successful_repair_classes: ['snapshot_refresh'], repeated_failed_repair_attempts: [], provenance_run_ids: ['test-autofix-run-0002'] },
-  preferred_repair_class: 'snapshot_refresh', retry_policy_decision: 'allow_with_preferred_repair_class', retry_policy_reason: 'History matched.',
+  preferred_repair_class: 'snapshot_refresh', autofix_confidence: 0.95, confidence_reasoning: ['reason-a'], retry_policy_decision: 'allow_with_preferred_repair_class', retry_policy_reason: 'History matched.',
   apply_result: { attempted: true, ok: true, exitCode: 0, applied: 1, skipped: 0, unsupported: 0, failed: 0, message: null },
   verification_result: { attempted: true, ok: true, total: 1, passed: 1, failed: 0 }, executed_verification_commands: [{ command: 'pnpm -r test', exitCode: 0, ok: true }], applied_task_ids: ['task-1'],
   excluded_finding_summary: { total: 0, review_required: 0, by_reason: [] }, final_status: 'fixed', stop_reasons: ['done'], reason: 'done',
@@ -59,6 +59,8 @@ describe('runRemediationStatus', () => {
     expect(exitCode).toBe(ExitCode.Success);
     expect(payload.latest_run.final_status).toBe('fixed');
     expect(payload.latest_run.preferred_repair_class).toBe('snapshot_refresh');
+    expect(payload.latest_run.mode).toBe('apply');
+    expect(payload.latest_run.autofix_confidence).toBe(0.95);
     expect(payload.safe_to_retry_signatures).toEqual(['sig-b']);
   });
 

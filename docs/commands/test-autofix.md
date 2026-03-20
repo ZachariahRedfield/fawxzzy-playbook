@@ -7,6 +7,8 @@ Orchestrate deterministic test failure diagnosis, bounded repair planning, revie
 ```bash
 pnpm playbook test-autofix --input .playbook/ci-failure.log
 pnpm playbook test-autofix --input .playbook/ci-failure.log --json
+pnpm playbook test-autofix --input .playbook/ci-failure.log --dry-run --json
+pnpm playbook test-autofix --input .playbook/ci-failure.log --confidence-threshold 0.8 --json
 pnpm playbook test-autofix --input .playbook/ci-failure.log --out .playbook/test-autofix.json
 pnpm playbook schema test-autofix --json
 ```
@@ -21,7 +23,8 @@ It is an orchestration wrapper over the existing seams:
 2. bounded repair planning via `test-fix-plan`
 3. reviewed execution via `apply --from-plan`
 4. verification via the exact rerun plan already emitted by `test-triage`
-5. remediation history capture in `.playbook/test-autofix-history.json`
+5. deterministic confidence scoring and threshold gating
+6. remediation history capture in `.playbook/test-autofix-history.json`
 
 Trust boundary wording stays explicit:
 
@@ -41,6 +44,8 @@ New automation still produces and consumes plan artifacts instead of inventing a
 - triage yields no findings
 - fix-plan yields no executable tasks
 - all findings are exclusion-only / review-required only
+- confidence falls below the deterministic mutation threshold
+- `--dry-run` is enabled
 
 `test-autofix` classifies the run explicitly when:
 
@@ -79,6 +84,7 @@ JSON output is the stable `test-autofix` artifact itself.
 It records:
 
 - deterministic `run_id` plus triage / fix-plan / apply source references
+- `mode`, `would_apply`, `confidence_threshold`, `autofix_confidence`, and summarized `confidence_reasoning`
 - apply summary and files touched provenance via the apply artifact
 - verification summary and per-command outcomes
 - applied task ids
@@ -122,3 +128,35 @@ If policy gates block mutation, CI writes `.playbook/ci-remediation-policy.json`
 - Rule: Mutation must always pass through a single governed execution boundary.
 - Pattern: New automation capabilities should orchestrate existing diagnosis, planning, execution, and verification seams instead of inventing a parallel executor.
 - Failure Mode: Self-repair systems that skip explicit result classification and stop conditions become noisy, unsafe, and hard to trust.
+
+## Confidence scoring + dry-run
+
+`test-autofix` now computes a deterministic `autofix_confidence` in `[0,1]` and explains it with ordered `confidence_reasoning`. The score remains stable across equivalent runs because it only uses stable artifacts: failure kinds, repeat-policy output, remediation history, and the admitted/excluded finding ratio.
+
+Scoring rules are intentionally simple and explainable:
+
+- preferred failure classes (`snapshot_drift`, `stale_assertion`, `ordering_drift`) boost confidence
+- prior successful repair classes for the same stable failure signature boost confidence
+- repeated failed repair attempts penalize confidence
+- higher exclusion ratios reduce confidence
+- repeat-policy decisions still dominate: `blocked_repeat_failure` forces confidence to `0`, and preferred repair guidance adds a bounded boost
+
+Use `--dry-run` to execute triage, plan generation, repeat-policy evaluation, and confidence gating without calling `apply` or mutating the repository. In dry-run mode, verification commands are still surfaced in the artifact contract but are not executed because they depend on mutation.
+
+## Confidence-based mutation gate
+
+Mutation now occurs only when all of the following are true:
+
+- repeat-policy gates allow mutation
+- `--dry-run` is not enabled
+- `autofix_confidence >= confidence_threshold`
+
+The default threshold is `0.7`. Override it with `--confidence-threshold <0-1>` or `PLAYBOOK_AUTOFIX_CONFIDENCE_THRESHOLD`. Below threshold, `test-autofix` emits `final_status: blocked_low_confidence`, preserves the trust boundary, and extends `retry_policy_reason` with the confidence explanation instead of mutating.
+
+## GitHub Actions CI transport
+
+The repository CI workflow still acts only as a thin transport and gate over canonical artifacts. Protected branches such as `refs/heads/main` now run `test-autofix` in `--dry-run` mode, while allowed non-protected branches may run in apply mode. Both modes upload the same deterministic artifacts, and CI may pass `PLAYBOOK_AUTOFIX_CONFIDENCE_THRESHOLD` to keep mutation thresholds configurable without moving heuristics into workflow scripts.
+
+- Rule: mutation should only occur when confidence exceeds a deterministic threshold and policy gates allow it.
+- Pattern: all CI/PR decisions come from remediation artifacts; workflow scripts only transport and gate the runtime.
+- Failure Mode: adding confidence heuristics directly to workflow logic creates drift between CI behavior and CLI truth.

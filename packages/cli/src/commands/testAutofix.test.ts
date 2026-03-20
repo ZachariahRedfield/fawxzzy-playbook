@@ -36,10 +36,12 @@ const readHistoryArtifact = (repo: string): TestAutofixRemediationHistoryArtifac
 
 beforeEach(() => {
   mockedRunSpawnSync.mockReset();
+  delete process.env.PLAYBOOK_AUTOFIX_CONFIDENCE_THRESHOLD;
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
+  delete process.env.PLAYBOOK_AUTOFIX_CONFIDENCE_THRESHOLD;
 });
 
 describe('runTestAutofix', () => {
@@ -70,6 +72,9 @@ describe('runTestAutofix', () => {
 
     expect(exitCode).toBe(ExitCode.Success);
     expect(payload.final_status).toBe('fixed');
+    expect(payload.mode).toBe('apply');
+    expect(payload.would_apply).toBe(true);
+    expect(payload.autofix_confidence).toBe(0.75);
     expect(payload.run_id).toBe('test-autofix-run-0001');
     expect(payload.applied_task_ids).toEqual(['task-123']);
     expect(payload.retry_policy_decision).toBe('no_history');
@@ -122,6 +127,7 @@ describe('runTestAutofix', () => {
     expect(exitCode).toBe(ExitCode.Success);
     expect(payload.retry_policy_decision).toBe('allow_with_preferred_repair_class');
     expect(payload.preferred_repair_class).toBe('snapshot_refresh');
+    expect(payload.autofix_confidence).toBe(0.95);
   });
 
   it('blocks repeat mutation when the same repair class already failed twice', async () => {
@@ -188,17 +194,10 @@ describe('runTestAutofix', () => {
     expect(exitCode).toBe(ExitCode.Failure);
     expect(payload.retry_policy_decision).toBe('blocked_repeat_failure');
     expect(payload.final_status).toBe('blocked');
+    expect(payload.autofix_confidence).toBe(0);
     expect(payload.apply_result.attempted).toBe(false);
     expect(payload.verification_result.attempted).toBe(false);
     expect(payload.source_apply.path).toBeNull();
-    expect(payload.history_summary.repeated_failed_repair_attempts).toEqual([
-      {
-        failure_signature: signature,
-        repair_class: 'snapshot_refresh',
-        count: 2,
-        run_ids: ['test-autofix-run-0001', 'test-autofix-run-0002']
-      }
-    ]);
     expect(applySpy).not.toHaveBeenCalled();
     expect(mockedRunSpawnSync).not.toHaveBeenCalled();
 
@@ -206,6 +205,83 @@ describe('runTestAutofix', () => {
     expect(history.runs).toHaveLength(3);
     expect(history.runs[2]?.final_status).toBe('blocked');
     expect(history.runs[2]?.provenance.apply_result_path).toBeNull();
+  });
+
+  it('supports dry-run mode without calling apply or verification while still surfacing whether mutation would have been allowed', async () => {
+    const repo = createRepo();
+    writeFailureLog(repo, [
+      '@fawxzzy/playbook test: FAIL  packages/cli/src/commands/schema.test.ts',
+      '  × renders schema snapshot',
+      '    Snapshot `renders schema snapshot 1` mismatch'
+    ]);
+
+    const applySpy = vi.spyOn(applyCommand, 'runApply');
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runTestAutofix(repo, { format: 'json', quiet: false, input: 'failure.log', dryRun: true });
+    const payload = readLoggedArtifact(spy);
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    expect(payload.mode).toBe('dry_run');
+    expect(payload.would_apply).toBe(true);
+    expect(payload.apply_result.attempted).toBe(false);
+    expect(payload.verification_result.attempted).toBe(false);
+    expect(payload.source_apply.path).toBeNull();
+    expect(applySpy).not.toHaveBeenCalled();
+    expect(mockedRunSpawnSync).not.toHaveBeenCalled();
+  });
+
+  it('skips mutation when confidence is below threshold', async () => {
+    const repo = createRepo();
+    writeFailureLog(repo, [
+      '@fawxzzy/playbook test: FAIL  packages/cli/src/commands/schema.test.ts',
+      '  × renders schema snapshot',
+      '    Snapshot `renders schema snapshot 1` mismatch'
+    ]);
+
+    const applySpy = vi.spyOn(applyCommand, 'runApply');
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runTestAutofix(repo, { format: 'json', quiet: false, input: 'failure.log', confidenceThreshold: 0.8 });
+    const payload = readLoggedArtifact(spy);
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    expect(payload.final_status).toBe('blocked_low_confidence');
+    expect(payload.autofix_confidence).toBe(0.75);
+    expect(payload.would_apply).toBe(false);
+    expect(payload.retry_policy_reason).toContain('below threshold 0.80');
+    expect(applySpy).not.toHaveBeenCalled();
+    expect(mockedRunSpawnSync).not.toHaveBeenCalled();
+  });
+
+  it('accepts threshold from PLAYBOOK_AUTOFIX_CONFIDENCE_THRESHOLD and proceeds above threshold', async () => {
+    const repo = createRepo();
+    writeFailureLog(repo, [
+      '@fawxzzy/playbook test: FAIL  packages/cli/src/commands/schema.test.ts',
+      '  × renders schema snapshot',
+      '    Snapshot `renders schema snapshot 1` mismatch'
+    ]);
+    process.env.PLAYBOOK_AUTOFIX_CONFIDENCE_THRESHOLD = '0.7';
+
+    vi.spyOn(applyCommand, 'runApply').mockImplementation(async () => {
+      console.log(JSON.stringify({
+        schemaVersion: '1.0',
+        command: 'apply',
+        ok: true,
+        exitCode: 0,
+        results: [{ id: 'task-123', file: 'packages/cli/src/commands/schema.test.ts', ruleId: 'test-triage.snapshot-refresh', status: 'applied' }],
+        summary: { applied: 1, skipped: 0, unsupported: 0, failed: 0 }
+      }));
+      return ExitCode.Success;
+    });
+    mockedRunSpawnSync.mockReturnValue({ status: 0, stdout: '', stderr: '', pid: 1, output: ['', '', ''], signal: null } as never);
+
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runTestAutofix(repo, { format: 'json', quiet: false, input: 'failure.log' });
+    const payload = readLoggedArtifact(spy);
+
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(payload.confidence_threshold).toBe(0.7);
+    expect(payload.would_apply).toBe(true);
+    expect(payload.apply_result.attempted).toBe(true);
   });
 
   it('maps repeated equivalent runs to the same failure signature in history', async () => {

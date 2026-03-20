@@ -21,6 +21,11 @@ function formatArtifacts(paths) {
   return entries.map(([key, value]) => `- \`${key}\`: \`${value}\``);
 }
 
+function summarizeConfidenceReasoning(values) {
+  if (!Array.isArray(values) || values.length === 0) return '(none)';
+  return values.slice(0, 3).join('; ');
+}
+
 function renderRemediationComment({ policy, autofix, remediationStatus, marker = DEFAULT_MARKER }) {
   const effectiveStatus = policy?.status === 'blocked_by_policy'
     ? 'blocked_by_policy'
@@ -34,6 +39,8 @@ function renderRemediationComment({ policy, autofix, remediationStatus, marker =
   const policyReasons = Array.isArray(policy?.reasons) ? policy.reasons : [];
   const boundedActionSummary = autofix
     ? [
+        `mode=${autofix.mode}`,
+        `would_apply=${autofix.would_apply ? 'yes' : 'no'}`,
         `apply attempted=${autofix.apply_result?.attempted ? 'yes' : 'no'}`,
         `apply ok=${autofix.apply_result?.ok ? 'yes' : 'no'}`,
         `verification attempted=${autofix.verification_result?.attempted ? 'yes' : 'no'}`,
@@ -61,7 +68,12 @@ function renderRemediationComment({ policy, autofix, remediationStatus, marker =
     `| Final status | ${effectiveStatus} |`,
     `| Retry policy decision | ${retryDecision} |`,
     `| Preferred repair class | ${preferredRepairClass ?? '(none)'} |`,
+    `| Mode | ${autofix?.mode ?? remediationStatus?.latest_run?.mode ?? 'not_run'} |`,
     `| Mutation gate | ${policy?.mutation_allowed ? 'allowed' : 'blocked'} |`,
+    `| Autofix confidence | ${typeof autofix?.autofix_confidence === 'number' ? autofix.autofix_confidence.toFixed(2) : '(not available)'} |`,
+    `| Confidence threshold | ${typeof autofix?.confidence_threshold === 'number' ? autofix.confidence_threshold.toFixed(2) : '(not available)'} |`,
+    `| Low-confidence skip | ${effectiveStatus === 'blocked_low_confidence' ? 'yes' : 'no'} |`,
+    `| Confidence reasoning | ${summarizeConfidenceReasoning(autofix?.confidence_reasoning)} |`,
   ];
 
   lines.push('', '### Bounded action summary', ...toBulletList(boundedActionSummary));
