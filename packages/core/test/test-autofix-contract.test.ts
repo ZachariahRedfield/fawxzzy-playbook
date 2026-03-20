@@ -8,6 +8,6 @@ describe('test-autofix contract constants', () => {
   });
 
   it('exports deterministic final statuses', () => {
-    expect(testAutofixFinalStatuses).toEqual(['fixed', 'partially_fixed', 'not_fixed', 'blocked', 'review_required_only']);
+    expect(testAutofixFinalStatuses).toEqual(['fixed', 'partially_fixed', 'not_fixed', 'blocked', 'blocked_low_confidence', 'review_required_only']);
   });
 });
