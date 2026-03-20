@@ -58,6 +58,8 @@ describe('runTestAutofix', () => {
     expect(payload.final_status).toBe('fixed');
     expect(payload.run_id).toBe('test-autofix-run-0001');
     expect(payload.applied_task_ids).toEqual(['task-123']);
+    expect(payload.retry_policy_decision).toBe('no_history');
+    expect(payload.history_summary.matching_run_ids).toEqual([]);
     expect(payload.source_apply.path).toBe('.playbook/test-autofix-apply.json');
     expect(payload.executed_verification_commands.map((entry: { command: string }) => entry.command)).toEqual([
       'pnpm --filter @fawxzzy/playbook exec vitest run packages/cli/src/commands/schema.test.ts',
@@ -74,6 +76,75 @@ describe('runTestAutofix', () => {
     expect(history.data.runs).toHaveLength(1);
     expect(history.data.runs[0]?.files_touched).toEqual(['packages/cli/src/commands/schema.test.ts']);
     expect(history.data.runs[0]?.failure_signatures).toHaveLength(1);
+    expect(history.data.runs[0]?.run_id).toBe('test-autofix-run-0001');
+  });
+
+
+  it('reuses prior successful guidance for the same stable signature', async () => {
+    const repo = createRepo();
+    writeFailureLog(repo, [
+      '@fawxzzy/playbook test: FAIL  packages/cli/src/commands/schema.test.ts',
+      '  × renders schema snapshot',
+      '    Snapshot `renders schema snapshot 1` mismatch'
+    ]);
+
+    vi.spyOn(applyCommand, 'runApply').mockImplementation(async () => {
+      console.log(JSON.stringify({
+        schemaVersion: '1.0',
+        command: 'apply',
+        ok: true,
+        exitCode: 0,
+        results: [{ id: 'task-123', file: 'packages/cli/src/commands/schema.test.ts', ruleId: 'test-triage.snapshot-refresh', status: 'applied' }],
+        summary: { applied: 1, skipped: 0, unsupported: 0, failed: 0 }
+      }));
+      return ExitCode.Success;
+    });
+    mockedRunSpawnSync.mockReturnValue({ status: 0, stdout: '', stderr: '', pid: 1, output: ['', '', ''], signal: null } as never);
+
+    await runTestAutofix(repo, { format: 'json', quiet: false, input: 'failure.log' });
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runTestAutofix(repo, { format: 'json', quiet: false, input: 'failure.log' });
+    const payload = JSON.parse(String(spy.mock.calls.at(-1)?.[0])) as Record<string, any>;
+
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(payload.retry_policy_decision).toBe('allow_with_preferred_repair_class');
+    expect(payload.preferred_repair_class).toBe('snapshot_refresh');
+  });
+
+  it('blocks repeat mutation when the same repair class already failed twice', async () => {
+    const repo = createRepo();
+    writeFailureLog(repo, [
+      '@fawxzzy/playbook test: FAIL  packages/cli/src/commands/schema.test.ts',
+      '  × renders schema snapshot',
+      '    Snapshot `renders schema snapshot 1` mismatch'
+    ]);
+
+    fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+    fs.writeFileSync(path.join(repo, '.playbook', 'test-autofix-history.json'), JSON.stringify({
+      data: {
+        schemaVersion: '1.0',
+        kind: 'test-autofix-remediation-history',
+        generatedAt: new Date(0).toISOString(),
+        runs: [
+          {
+            run_id: 'test-autofix-run-0001', generatedAt: new Date(0).toISOString(), input: { path: 'failure.log' }, failure_signatures: ['snapshot_drift|@fawxzzy/playbook|packages/cli/src/commands/schema.test.ts|renders schema snapshot'], triage_classifications: [], admitted_findings: [], excluded_findings: [], applied_task_ids: ['task-1'], applied_repair_classes: ['snapshot_refresh'], files_touched: [], verification_commands: ['pnpm -r test'], verification_outcomes: [{ command: 'pnpm -r test', exitCode: 1, ok: false }], final_status: 'not_fixed', stop_reasons: ['Verification still failed.'], provenance: { failure_log_path: 'failure.log', triage_artifact_path: '.playbook/test-triage.json', fix_plan_artifact_path: '.playbook/test-fix-plan.json', apply_result_path: '.playbook/test-autofix-apply.json', autofix_result_path: '.playbook/test-autofix.json' }
+          },
+          {
+            run_id: 'test-autofix-run-0002', generatedAt: new Date(0).toISOString(), input: { path: 'failure.log' }, failure_signatures: ['snapshot_drift|@fawxzzy/playbook|packages/cli/src/commands/schema.test.ts|renders schema snapshot'], triage_classifications: [], admitted_findings: [], excluded_findings: [], applied_task_ids: ['task-1'], applied_repair_classes: ['snapshot_refresh'], files_touched: [], verification_commands: ['pnpm -r test'], verification_outcomes: [{ command: 'pnpm -r test', exitCode: 1, ok: false }], final_status: 'blocked', stop_reasons: ['Verification still failed.'], provenance: { failure_log_path: 'failure.log', triage_artifact_path: '.playbook/test-triage.json', fix_plan_artifact_path: '.playbook/test-fix-plan.json', apply_result_path: '.playbook/test-autofix-apply.json', autofix_result_path: '.playbook/test-autofix.json' }
+          }
+        ]
+      }
+    }));
+
+    const applySpy = vi.spyOn(applyCommand, 'runApply');
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runTestAutofix(repo, { format: 'json', quiet: false, input: 'failure.log' });
+    const payload = JSON.parse(String(spy.mock.calls.at(-1)?.[0])) as Record<string, any>;
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    expect(payload.retry_policy_decision).toBe('blocked_repeat_failure');
+    expect(payload.final_status).toBe('blocked');
+    expect(applySpy).not.toHaveBeenCalled();
   });
 
   it('maps repeated equivalent runs to the same failure signature in history', async () => {
