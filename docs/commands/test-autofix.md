@@ -91,6 +91,32 @@ The remediation history artifact is the trustable evidence layer for bounded sel
 Repeat-aware remediation is now the explicit policy layer between history and mutation. Before `apply` runs, `test-autofix` evaluates stable failure signatures against `.playbook/test-autofix-history.json` and emits a deterministic retry decision: `no_history`, `allow_repair`, `allow_with_preferred_repair_class`, `blocked_repeat_failure`, or `review_required_repeat_failure`. That policy prevents replaying known-bad repairs, can surface a previously successful repair class as preferred guidance, and still allows only one bounded repair attempt per run without recursive loops.
 Use `pnpm playbook schema test-autofix --json` to inspect the machine-readable schema.
 
+
+## GitHub Actions CI transport
+
+The repository CI workflow now treats remediation as a thin transport layer over canonical runtime artifacts.
+
+When `pnpm test` fails, CI captures the raw failure output to `.playbook/ci-failure.log` and then evaluates explicit mutation gates before doing anything else.
+If CI mutation is explicitly enabled and all gates pass, the workflow runs only the canonical commands:
+
+```bash
+pnpm playbook test-autofix --input .playbook/ci-failure.log --json
+pnpm playbook remediation-status --json
+```
+
+The workflow does not implement repair logic itself.
+It only captures the failure log, invokes the canonical remediation commands, and uploads the resulting `.playbook/` artifacts.
+
+Fail-closed gates keep the trust boundary explicit:
+
+- diagnosis via `test-triage`
+- planning via `test-fix-plan`
+- execution via `apply --from-plan`
+- orchestration via `test-autofix`
+- inspection/reporting via `remediation-status`
+
+If policy gates block mutation, CI writes `.playbook/ci-remediation-policy.json` and reports blocked-by-policy state instead of widening the mutation path.
+
 ## Rule / Pattern / Failure Mode
 
 - Rule: Mutation must always pass through a single governed execution boundary.

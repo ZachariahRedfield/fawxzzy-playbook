@@ -15,6 +15,33 @@ inputs:
     description: Additional arguments for pnpm install.
     required: false
     default: "--frozen-lockfile"
+  enable-test-autofix:
+    description: Explicit opt-in flag that allows canonical test-autofix orchestration to run after test failure in CI.
+    required: false
+    default: "false"
+  trusted-autofix-events:
+    description: Comma-separated GitHub event names allowed to run CI autofix when explicitly enabled.
+    required: false
+    default: "workflow_dispatch"
+  trusted-autofix-branches:
+    description: Comma-separated refs allowed to run CI autofix on push when explicitly enabled.
+    required: false
+    default: "refs/heads/main"
+  require-clean-worktree-for-autofix:
+    description: Require a clean worktree before CI autofix mutation is allowed.
+    required: false
+    default: "true"
+
+outputs:
+  test-exit-code:
+    description: Exit code from the primary pnpm test step.
+    value: ${{ steps.run-tests.outputs.test-exit-code }}
+  remediation-policy-status:
+    description: Policy gate outcome for CI remediation.
+    value: ${{ steps.remediation-policy.outputs.status }}
+  remediation-policy-allows-mutation:
+    description: Whether policy gates allowed canonical CI autofix mutation.
+    value: ${{ steps.remediation-policy.outputs.mutation-allowed }}
 
 runs:
   using: composite
@@ -92,12 +119,152 @@ runs:
         echo "+ pnpm -r build"
         pnpm -r build
 
-    - name: Run tests
+    - name: Run tests and capture deterministic failure log
+      id: run-tests
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
+        mkdir -p .playbook
+        log_path=".playbook/ci-failure.log"
+        : > "$log_path"
         echo "+ pnpm test"
-        pnpm test
+        set +e
+        pnpm test 2>&1 | tee "$log_path"
+        test_exit_code=${PIPESTATUS[0]}
+        set -e
+        echo "test-exit-code=$test_exit_code" >> "$GITHUB_OUTPUT"
+        echo "PLAYBOOK_TEST_EXIT_CODE=$test_exit_code" >> "$GITHUB_ENV"
+        if [[ "$test_exit_code" -eq 0 ]]; then
+          echo "pnpm test succeeded; failure log reserved at $log_path for deterministic CI transport compatibility."
+        else
+          echo "pnpm test failed; deterministic failure log captured at $log_path"
+        fi
+
+    - name: Evaluate CI remediation policy gates
+      id: remediation-policy
+      if: always()
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        PLAYBOOK_AUTOFIX_ENABLED: ${{ inputs.enable-test-autofix }}
+        PLAYBOOK_TRUSTED_AUTOFIX_EVENTS: ${{ inputs.trusted-autofix-events }}
+        PLAYBOOK_TRUSTED_AUTOFIX_BRANCHES: ${{ inputs.trusted-autofix-branches }}
+        PLAYBOOK_REQUIRE_CLEAN_WORKTREE: ${{ inputs.require-clean-worktree-for-autofix }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        GITHUB_REF: ${{ github.ref }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_EVENT_PULL_REQUEST_HEAD_REPO_FULL_NAME: ${{ github.event.pull_request.head.repo.full_name }}
+      run: |
+        mkdir -p .playbook
+        node <<'NODE'
+        const fs = require('node:fs');
+        const path = require('node:path');
+        const cp = require('node:child_process');
+
+        const cwd = process.cwd();
+        const testExitCode = Number(process.env.PLAYBOOK_TEST_EXIT_CODE || '0');
+        const enabled = String(process.env.PLAYBOOK_AUTOFIX_ENABLED || 'false') === 'true';
+        const requireCleanWorktree = String(process.env.PLAYBOOK_REQUIRE_CLEAN_WORKTREE || 'true') === 'true';
+        const trustedEvents = String(process.env.PLAYBOOK_TRUSTED_AUTOFIX_EVENTS || '')
+          .split(',').map((entry) => entry.trim()).filter(Boolean);
+        const trustedBranches = String(process.env.PLAYBOOK_TRUSTED_AUTOFIX_BRANCHES || '')
+          .split(',').map((entry) => entry.trim()).filter(Boolean);
+        const eventName = String(process.env.GITHUB_EVENT_NAME || '');
+        const ref = String(process.env.GITHUB_REF || '');
+        const repository = String(process.env.GITHUB_REPOSITORY || '');
+        const prHeadRepo = String(process.env.GITHUB_EVENT_PULL_REQUEST_HEAD_REPO_FULL_NAME || '');
+
+        const reasons = [];
+        let cleanWorktree = true;
+        try {
+          cp.execFileSync('git', ['update-index', '-q', '--refresh'], { cwd, stdio: 'ignore' });
+          cp.execFileSync('git', ['diff', '--quiet'], { cwd, stdio: 'ignore' });
+          cp.execFileSync('git', ['diff', '--cached', '--quiet'], { cwd, stdio: 'ignore' });
+        } catch {
+          cleanWorktree = false;
+        }
+
+        const trustedEvent = trustedEvents.includes(eventName);
+        const trustedBranch = eventName !== 'push' || trustedBranches.includes(ref);
+        const trustedPrSource = eventName !== 'pull_request' || (prHeadRepo && prHeadRepo === repository);
+
+        let status = 'not_needed';
+        let mutationAllowed = false;
+        if (testExitCode !== 0) {
+          if (!enabled) reasons.push('autofix disabled by workflow input');
+          if (!trustedEvent) reasons.push(`event ${eventName || '(unknown)'} is not in trusted-autofix-events`);
+          if (!trustedBranch) reasons.push(`ref ${ref || '(unknown)'} is not in trusted-autofix-branches`);
+          if (!trustedPrSource) reasons.push('pull_request head repository is untrusted for CI mutation');
+          if (requireCleanWorktree && !cleanWorktree) reasons.push('worktree is not clean before CI autofix mutation');
+          mutationAllowed = enabled && trustedEvent && trustedBranch && trustedPrSource && (!requireCleanWorktree || cleanWorktree);
+          status = mutationAllowed ? 'allowed' : 'blocked_by_policy';
+        }
+
+        const artifact = {
+          schemaVersion: '1.0',
+          kind: 'ci-remediation-policy',
+          generatedAt: new Date().toISOString(),
+          status,
+          mutation_allowed: mutationAllowed,
+          test_exit_code: testExitCode,
+          enabled,
+          gating: {
+            event_name: eventName,
+            ref,
+            trusted_events: trustedEvents,
+            trusted_branches: trustedBranches,
+            trusted_event: trustedEvent,
+            trusted_branch: trustedBranch,
+            trusted_pull_request_source: trustedPrSource,
+            require_clean_worktree: requireCleanWorktree,
+            clean_worktree: cleanWorktree,
+          },
+          reasons,
+          artifact_paths: {
+            failure_log_path: '.playbook/ci-failure.log',
+            policy_path: '.playbook/ci-remediation-policy.json',
+            autofix_result_path: '.playbook/test-autofix.json',
+            remediation_status_path: '.playbook/remediation-status.json',
+          },
+        };
+
+        const outPath = path.join(cwd, '.playbook', 'ci-remediation-policy.json');
+        fs.mkdirSync(path.dirname(outPath), { recursive: true });
+        fs.writeFileSync(outPath, JSON.stringify(artifact, null, 2) + '\n', 'utf8');
+        console.log(`status=${status}`);
+        console.log(`mutation_allowed=${mutationAllowed}`);
+        if (status === 'blocked_by_policy') {
+          console.log(`blocked_reasons=${reasons.join('; ') || '(none recorded)'}`);
+        }
+        NODE
+        status=$(node -e "const fs=require('node:fs'); const artifact=JSON.parse(fs.readFileSync('.playbook/ci-remediation-policy.json','utf8')); console.log(artifact.status)")
+        mutation_allowed=$(node -e "const fs=require('node:fs'); const artifact=JSON.parse(fs.readFileSync('.playbook/ci-remediation-policy.json','utf8')); console.log(String(artifact.mutation_allowed))")
+        echo "status=$status" >> "$GITHUB_OUTPUT"
+        echo "mutation-allowed=$mutation_allowed" >> "$GITHUB_OUTPUT"
+
+    - name: Run canonical bounded test-autofix
+      if: env.PLAYBOOK_TEST_EXIT_CODE != '0' && steps.remediation-policy.outputs.mutation-allowed == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "+ pnpm playbook test-autofix --input .playbook/ci-failure.log --json | tee .playbook/test-autofix.json"
+        pnpm playbook test-autofix --input .playbook/ci-failure.log --json | tee .playbook/test-autofix.json
+
+    - name: Run canonical remediation-status read model
+      if: env.PLAYBOOK_TEST_EXIT_CODE != '0' && steps.remediation-policy.outputs.mutation-allowed == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "+ pnpm playbook remediation-status --json | tee .playbook/remediation-status.json"
+        pnpm playbook remediation-status --json | tee .playbook/remediation-status.json
+
+    - name: Log blocked-by-policy CI remediation state
+      if: env.PLAYBOOK_TEST_EXIT_CODE != '0' && steps.remediation-policy.outputs.mutation-allowed != 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "Playbook CI remediation blocked by policy gates."
+        cat .playbook/ci-remediation-policy.json
 
     - name: Run targeted CLI test filters
       shell: bash
@@ -126,3 +293,10 @@ runs:
       run: |
         echo "+ node packages/cli/dist/main.js docs audit --ci --json"
         node packages/cli/dist/main.js docs audit --ci --json
+
+    - name: Fail when primary tests failed
+      if: always() && steps.run-tests.outputs.test-exit-code != '0'
+      shell: bash
+      run: |
+        echo "Primary pnpm test failed earlier in Playbook CI; preserving failure after remediation reporting."
+        exit 1

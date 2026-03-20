@@ -51,6 +51,21 @@ Text mode highlights:
 
 JSON mode returns the full machine-readable remediation-status read model for automation.
 
+
+## CI + PR feedback transport
+
+CI and PR reporting should render deterministic remediation artifacts only.
+The repository workflow now uses `remediation-status` as the read-only reporting seam for sticky PR feedback and uploaded CI artifacts.
+
+That transport layer reads:
+
+- `.playbook/ci-remediation-policy.json`
+- `.playbook/test-autofix.json`
+- `.playbook/test-autofix-history.json`
+- `.playbook/remediation-status.json`
+
+The sticky PR summary is therefore an artifact-backed status view, not an independent GitHub-specific analysis layer.
+
 ## Missing artifacts
 
 By default the command reads:

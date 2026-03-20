@@ -1,3 +1,5 @@
+const { upsertStickyPrComment } = require('./upsert-sticky-pr-comment.cjs');
+
 const RIGHT_SIDE = 'RIGHT';
 
 const normalizeBody = (body, marker) => String(body || '').replace(marker, '').trim();
@@ -54,7 +56,7 @@ const validateAnnotationAnchor = (annotation, options) => {
   }
   const file = anchorIndex.get(annotation.path);
   if (!file) {
-    return { ok: false, reason: `File is not present in the current PR diff.` };
+    return { ok: false, reason: 'File is not present in the current PR diff.' };
   }
   if (side !== RIGHT_SIDE) {
     return { ok: false, reason: `Unsupported review side ${side}; only RIGHT is posted by Playbook.` };
@@ -79,22 +81,6 @@ const buildFallbackBody = (annotations, marker) => {
   }
   return lines.join('\n').trimEnd();
 };
-
-async function upsertIssueComment({ github, owner, repo, issue_number, marker, body }) {
-  const comments = await github.paginate(github.rest.issues.listComments, {
-    owner,
-    repo,
-    issue_number,
-    per_page: 100,
-  });
-  const existing = comments.find((comment) => typeof comment.body === 'string' && comment.body.includes(marker));
-  if (existing) {
-    await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
-    return { action: 'updated', id: existing.id };
-  }
-  const created = await github.rest.issues.createComment({ owner, repo, issue_number, body });
-  return { action: 'created', id: created.data.id };
-}
 
 async function deleteIssueCommentByMarker({ github, owner, repo, issue_number, marker }) {
   const comments = await github.paginate(github.rest.issues.listComments, {
@@ -189,7 +175,7 @@ async function syncAnalyzePrReviewComments({ github, core, context, diagnostics,
 
   if (fallback.length > 0) {
     const body = buildFallbackBody(fallback, fallbackMarker);
-    const result = await upsertIssueComment({ github, owner, repo, issue_number: pull_number, marker: fallbackMarker, body });
+    const result = await upsertStickyPrComment({ github, owner, repo, issue_number: pull_number, marker: fallbackMarker, body });
     core?.info?.(`Playbook inline fallback comment ${result.action}: ${result.id}`);
   } else {
     const deleted = await deleteIssueCommentByMarker({ github, owner, repo, issue_number: pull_number, marker: fallbackMarker });
