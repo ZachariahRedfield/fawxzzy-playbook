@@ -66,41 +66,21 @@ jobs:
         with:
           script: |
             const fs = require('node:fs');
+            const { upsertStickyPrComment } = require('./.github/scripts/upsert-sticky-pr-comment.cjs');
             const marker = process.env.PLAYBOOK_COMMENT_MARKER;
             const commentPath = process.env.PLAYBOOK_COMMENT_FILE;
             const formattedComment = fs.readFileSync(commentPath, 'utf8').trimEnd();
             const body = `${marker}\n${formattedComment}`;
-
             const { owner, repo } = context.repo;
-            const issue_number = context.issue.number;
-            const comments = await github.paginate(github.rest.issues.listComments, {
+            const result = await upsertStickyPrComment({
+              github,
               owner,
               repo,
-              issue_number,
-              per_page: 100,
+              issue_number: context.issue.number,
+              marker,
+              body,
             });
-
-            const existing = comments.find((comment) =>
-              comment.body && comment.body.includes(marker),
-            );
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: existing.id,
-                body,
-              });
-              core.info(`Updated Playbook PR comment: ${existing.id}`);
-            } else {
-              const created = await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number,
-                body,
-              });
-              core.info(`Created Playbook PR comment: ${created.data.id}`);
-            }
+            core.info(`${result.action === 'updated' ? 'Updated' : 'Created'} Playbook PR comment: ${result.id}`);
 
       - name: Sync inline Playbook diagnostics
         if: github.event.pull_request.head.repo.full_name == github.repository
