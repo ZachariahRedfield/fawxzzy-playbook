@@ -193,6 +193,16 @@ const decodePlanPayload = (buffer: Buffer): DecodedPlanPayload => {
   return { text: stripLeadingBom(buffer.toString('utf8')), likelyShellEncodingIssue: false };
 };
 
+
+const readRequiredNonNegativeInteger = (value: unknown, fieldName: string): number => {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+    throw new Error(`Invalid test-fix-plan payload: ${fieldName} must be a non-negative integer.`);
+  }
+
+  return value;
+};
+
+
 const normalizeApplyPlanArtifact = (payload: unknown): NormalizedPlanArtifact => {
   const normalizedPayload =
     payload && typeof payload === 'object' && !Array.isArray(payload) && 'data' in payload
@@ -223,14 +233,8 @@ const normalizeApplyPlanArtifact = (payload: unknown): NormalizedPlanArtifact =>
     }
 
     const typedSummary = summary as Record<string, unknown>;
-    const totalFindings = typedSummary.total_findings;
-    const excludedFindings = typedSummary.excluded_findings;
-    if (!Number.isInteger(totalFindings) || totalFindings < 0) {
-      throw new Error('Invalid test-fix-plan payload: summary.total_findings must be a non-negative integer.');
-    }
-    if (!Number.isInteger(excludedFindings) || excludedFindings < 0) {
-      throw new Error('Invalid test-fix-plan payload: summary.excluded_findings must be a non-negative integer.');
-    }
+    const totalFindings = readRequiredNonNegativeInteger(typedSummary.total_findings, 'summary.total_findings');
+    const excludedFindings = readRequiredNonNegativeInteger(typedSummary.excluded_findings, 'summary.excluded_findings');
 
     return {
       tasks: parsedPlan.tasks,
@@ -400,7 +404,7 @@ export const validatePolicyApplyResultArtifact = (artifact: PolicyApplyResultArt
     const summary = artifact.summary;
     for (const field of ['executed', 'skipped_requires_review', 'skipped_blocked', 'failed_execution', 'total'] as const) {
       const value = summary[field];
-      if (!Number.isInteger(value) || value < 0) {
+      if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
         errors.push(`summary.${field} must be a non-negative integer`);
       }
     }
