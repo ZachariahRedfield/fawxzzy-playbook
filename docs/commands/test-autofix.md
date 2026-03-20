@@ -21,6 +21,7 @@ It is an orchestration wrapper over the existing seams:
 2. bounded repair planning via `test-fix-plan`
 3. reviewed execution via `apply --from-plan`
 4. verification via the exact rerun plan already emitted by `test-triage`
+5. remediation history capture in `.playbook/test-autofix-history.json`
 
 Trust boundary wording stays explicit:
 
@@ -69,18 +70,21 @@ By default the command writes:
 
 - `.playbook/test-triage.json`
 - `.playbook/test-fix-plan.json`
+- `.playbook/test-autofix-apply.json`
 - `.playbook/test-autofix.json`
+- `.playbook/test-autofix-history.json`
 
 JSON output is the stable `test-autofix` artifact itself.
 It records:
 
-- triage and fix-plan source references
-- apply summary
-- verification summary
-- executed verification commands
+- deterministic `run_id` plus triage / fix-plan / apply source references
+- apply summary and files touched provenance via the apply artifact
+- verification summary and per-command outcomes
 - applied task ids
 - excluded finding summary
-- deterministic final status and reason
+- deterministic final status, stop reasons, and remediation history path
+
+The remediation history artifact is the trustable evidence layer for bounded self-repair. Each run stores stable failure signatures, triage classifications, admitted vs excluded findings, applied repair classes, verification outcomes, and provenance back to the failure log plus generated artifacts. Repeat detection and any future bounded retry policy must key off those stable signatures and recorded outcomes rather than raw console noise.
 
 Use `pnpm playbook schema test-autofix --json` to inspect the machine-readable schema.
 

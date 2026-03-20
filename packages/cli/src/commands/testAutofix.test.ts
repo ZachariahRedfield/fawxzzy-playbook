@@ -29,7 +29,7 @@ afterEach(() => {
 });
 
 describe('runTestAutofix', () => {
-  it('orchestrates triage -> fix-plan -> apply -> verification -> fixed', async () => {
+  it('orchestrates triage -> fix-plan -> apply -> verification -> fixed and records remediation history', async () => {
     const repo = createRepo();
     writeFailureLog(repo, [
       '@fawxzzy/playbook test: FAIL  packages/cli/src/commands/schema.test.ts',
@@ -43,7 +43,7 @@ describe('runTestAutofix', () => {
         command: 'apply',
         ok: true,
         exitCode: 0,
-        results: [{ id: 'task-123', status: 'applied' }],
+        results: [{ id: 'task-123', file: 'packages/cli/src/commands/schema.test.ts', ruleId: 'test-triage.snapshot-refresh', status: 'applied' }],
         summary: { applied: 1, skipped: 0, unsupported: 0, failed: 0 }
       }));
       return ExitCode.Success;
@@ -56,7 +56,9 @@ describe('runTestAutofix', () => {
 
     expect(exitCode).toBe(ExitCode.Success);
     expect(payload.final_status).toBe('fixed');
+    expect(payload.run_id).toBe('test-autofix-run-0001');
     expect(payload.applied_task_ids).toEqual(['task-123']);
+    expect(payload.source_apply.path).toBe('.playbook/test-autofix-apply.json');
     expect(payload.executed_verification_commands.map((entry: { command: string }) => entry.command)).toEqual([
       'pnpm --filter @fawxzzy/playbook exec vitest run packages/cli/src/commands/schema.test.ts',
       'pnpm --filter @fawxzzy/playbook test',
@@ -67,9 +69,48 @@ describe('runTestAutofix', () => {
     const written = JSON.parse(fs.readFileSync(path.join(repo, '.playbook', 'test-autofix.json'), 'utf8')) as { data: { final_status: string; source_triage: { path: string } } };
     expect(written.data.final_status).toBe('fixed');
     expect(written.data.source_triage.path).toBe('.playbook/test-triage.json');
+
+    const history = JSON.parse(fs.readFileSync(path.join(repo, '.playbook', 'test-autofix-history.json'), 'utf8')) as { data: { runs: Array<Record<string, any>> } };
+    expect(history.data.runs).toHaveLength(1);
+    expect(history.data.runs[0]?.files_touched).toEqual(['packages/cli/src/commands/schema.test.ts']);
+    expect(history.data.runs[0]?.failure_signatures).toHaveLength(1);
   });
 
-  it('stops without mutation for review-required-only findings', async () => {
+  it('maps repeated equivalent runs to the same failure signature in history', async () => {
+    const repo = createRepo();
+    vi.spyOn(applyCommand, 'runApply').mockImplementation(async () => {
+      console.log(JSON.stringify({
+        schemaVersion: '1.0',
+        command: 'apply',
+        ok: true,
+        exitCode: 0,
+        results: [{ id: 'task-123', file: 'packages/cli/src/commands/schema.test.ts', ruleId: 'test-triage.snapshot-refresh', status: 'applied' }],
+        summary: { applied: 1, skipped: 0, unsupported: 0, failed: 0 }
+      }));
+      return ExitCode.Success;
+    });
+    mockedRunSpawnSync.mockReturnValue({ status: 0, stdout: '', stderr: '', pid: 1, output: ['', '', ''], signal: null } as never);
+
+    writeFailureLog(repo, [
+      '@fawxzzy/playbook test: FAIL  packages/cli/src/commands/schema.test.ts',
+      '  × renders schema snapshot',
+      '    Snapshot `renders schema snapshot 1` mismatch'
+    ]);
+    await runTestAutofix(repo, { format: 'json', quiet: false, input: 'failure.log' });
+
+    writeFailureLog(repo, [
+      '@fawxzzy/playbook test: FAIL  packages/cli/src/commands/schema.test.ts',
+      '  × renders schema snapshot ',
+      '    Snapshot `renders schema snapshot 2` mismatch'
+    ]);
+    await runTestAutofix(repo, { format: 'json', quiet: false, input: 'failure.log' });
+
+    const history = JSON.parse(fs.readFileSync(path.join(repo, '.playbook', 'test-autofix-history.json'), 'utf8')) as { data: { runs: Array<Record<string, any>> } };
+    expect(history.data.runs).toHaveLength(2);
+    expect(history.data.runs[0]?.failure_signatures).toEqual(history.data.runs[1]?.failure_signatures);
+  });
+
+  it('stops without mutation for review-required-only findings and records the failed remediation run', async () => {
     const repo = createRepo();
     writeFailureLog(repo, [
       'Error: Cannot find module @esbuild/linux-x64',
@@ -86,6 +127,10 @@ describe('runTestAutofix', () => {
     expect(payload.apply_result.attempted).toBe(false);
     expect(applySpy).not.toHaveBeenCalled();
     expect(mockedRunSpawnSync).not.toHaveBeenCalled();
+
+    const history = JSON.parse(fs.readFileSync(path.join(repo, '.playbook', 'test-autofix-history.json'), 'utf8')) as { data: { runs: Array<Record<string, any>> } };
+    expect(history.data.runs[0]?.final_status).toBe('review_required_only');
+    expect(history.data.runs[0]?.provenance.apply_result_path).toBeNull();
   });
 
   it('classifies apply failures as blocked', async () => {
@@ -103,7 +148,7 @@ describe('runTestAutofix', () => {
         ok: false,
         exitCode: 1,
         message: 'handler failed',
-        results: [{ id: 'task-123', status: 'failed' }],
+        results: [{ id: 'task-123', file: 'packages/cli/src/commands/schema.test.ts', ruleId: 'test-triage.snapshot-refresh', status: 'failed' }],
         summary: { applied: 0, skipped: 0, unsupported: 0, failed: 1 }
       }));
       return ExitCode.Failure;
@@ -133,7 +178,7 @@ describe('runTestAutofix', () => {
         command: 'apply',
         ok: true,
         exitCode: 0,
-        results: [{ id: 'task-123', status: 'applied' }],
+        results: [{ id: 'task-123', file: 'packages/cli/src/commands/schema.test.ts', ruleId: 'test-triage.snapshot-refresh', status: 'applied' }],
         summary: { applied: 1, skipped: 0, unsupported: 0, failed: 0 }
       }));
       return ExitCode.Success;

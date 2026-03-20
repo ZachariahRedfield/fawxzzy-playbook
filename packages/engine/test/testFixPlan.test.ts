@@ -119,6 +119,7 @@ describe('test fix plan engine', () => {
                 "× keeps fixture data aligned",
               ],
               "failure_kind": "fixture_drift",
+              "failure_signature": "failsig-1540189e1723d657",
               "finding_index": 0,
               "repair_class": "autofix_plan_only",
               "summary": "@fawxzzy/playbook test: FAIL  packages/cli/src/commands/contract.test.ts",

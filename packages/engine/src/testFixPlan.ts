@@ -71,6 +71,7 @@ const toExclusion = (
   detail: string
 ): TestFixPlanExclusion => ({
   finding_index: findingIndex,
+  failure_signature: finding.failure_signature,
   failure_kind: finding.failure_kind,
   summary: finding.summary,
   reason,
@@ -89,6 +90,7 @@ const toTask = (finding: TestTriageFinding, findingIndex: number, mapping: Mappi
   task_kind: mapping.taskKind,
   provenance: {
     finding_index: findingIndex,
+    failure_signature: finding.failure_signature,
     failure_kind: finding.failure_kind,
     repair_class: finding.repair_class,
     summary: finding.summary,

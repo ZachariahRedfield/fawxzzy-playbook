@@ -9,15 +9,19 @@
     "kind",
     "command",
     "generatedAt",
+    "run_id",
     "input",
     "source_triage",
     "source_fix_plan",
+    "source_apply",
+    "remediation_history_path",
     "apply_result",
     "verification_result",
     "executed_verification_commands",
     "applied_task_ids",
     "excluded_finding_summary",
     "final_status",
+    "stop_reasons",
     "reason"
   ],
   "properties": {
@@ -25,6 +29,7 @@
     "kind": { "type": "string", "const": "test-autofix" },
     "command": { "type": "string", "const": "test-autofix" },
     "generatedAt": { "type": "string" },
+    "run_id": { "type": "string" },
     "input": { "type": "string" },
     "source_triage": {
       "type": "object",
@@ -44,6 +49,16 @@
         "command": { "type": "string", "const": "test-fix-plan" }
       }
     },
+    "source_apply": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "command"],
+      "properties": {
+        "path": { "type": ["string", "null"] },
+        "command": { "type": "string", "const": "apply" }
+      }
+    },
+    "remediation_history_path": { "type": "string" },
     "apply_result": {
       "type": "object",
       "additionalProperties": false,
@@ -112,6 +127,10 @@
     "final_status": {
       "type": "string",
       "enum": ["fixed", "partially_fixed", "not_fixed", "blocked", "review_required_only"]
+    },
+    "stop_reasons": {
+      "type": "array",
+      "items": { "type": "string" }
     },
     "reason": { "type": "string" }
   }

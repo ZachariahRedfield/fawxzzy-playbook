@@ -31,6 +31,7 @@ export const memoryArtifactSchemaRegistry: RegisteredSchemaContract[] = [
   { id: 'memory-replay-result', version: '1.0', path: `${memoryArtifactPaths.replayOutputs}/*.json`, kind: 'memory-artifact' },
   { id: 'knowledge-candidate-output', version: '1.0', path: '.playbook/knowledge/candidates.json', kind: 'memory-artifact' },
   { id: 'stories-backlog', version: '1.0', path: '.playbook/stories.json', kind: 'memory-artifact' },
+  { id: 'test-autofix-remediation-history', version: '1.0', path: '.playbook/test-autofix-history.json', kind: 'memory-artifact' },
   { id: 'transfer-plans', version: '1.0', path: '.playbook/transfer-plans.json', kind: 'memory-artifact' },
   { id: 'transfer-readiness', version: '1.0', path: '.playbook/transfer-readiness.json', kind: 'memory-artifact' },
   { id: 'pattern-transfer-package', version: '1.0', path: '.playbook/pattern-transfer-packages/*.json', kind: 'memory-artifact' },
@@ -109,7 +110,8 @@ export const additiveCommandFieldSchemaRegistry: RegisteredSchemaContract[] = [
   { id: 'analyze-pr.context.sources[].promoted-knowledge', version: '1.0', path: 'schema://cli/analyze-pr', kind: 'command-output' },
   { id: 'test-triage', version: '1.0', path: 'packages/contracts/src/test-triage.schema.json', kind: 'command-output' },
   { id: 'test-fix-plan', version: '1.0', path: 'packages/contracts/src/test-fix-plan.schema.json', kind: 'command-output' },
-  { id: 'test-autofix', version: '1.0', path: 'packages/contracts/src/test-autofix.schema.json', kind: 'command-output' }
+  { id: 'test-autofix', version: '1.0', path: 'packages/contracts/src/test-autofix.schema.json', kind: 'command-output' },
+  { id: 'test-autofix-remediation-history', version: '1.0', path: 'packages/contracts/src/test-autofix-remediation-history.schema.json', kind: 'command-output' }
 ] as const;
 
 export const getContractsSchemaRegistry = (): { memoryArtifacts: RegisteredSchemaContract[]; commandOutputs: RegisteredSchemaContract[] } => ({

@@ -141,6 +141,11 @@
         "id": "stories-backlog",
         "version": "1.0",
         "path": ".playbook/stories.json"
+      },
+      {
+        "id": "test-autofix-remediation-history",
+        "version": "1.0",
+        "path": ".playbook/test-autofix-history.json"
       }
     ],
     "commandOutputs": [
@@ -293,6 +298,11 @@
         "id": "test-autofix",
         "version": "1.0",
         "path": "packages/contracts/src/test-autofix.schema.json"
+      },
+      {
+        "id": "test-autofix-remediation-history",
+        "version": "1.0",
+        "path": "packages/contracts/src/test-autofix-remediation-history.schema.json"
       }
     ]
   }

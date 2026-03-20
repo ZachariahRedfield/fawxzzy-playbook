@@ -28,11 +28,51 @@ type TestAutofixOptions = {
   help?: boolean;
 };
 
+type RemediationHistoryClassification = {
+  failure_signature: string;
+  failure_kind: string;
+  repair_class: string;
+  package: string | null;
+  test_file: string | null;
+  test_name: string | null;
+};
+
+type RemediationHistoryEntry = {
+  run_id: string;
+  generatedAt: string;
+  input: { path: string };
+  failure_signatures: string[];
+  triage_classifications: RemediationHistoryClassification[];
+  admitted_findings: string[];
+  excluded_findings: string[];
+  applied_task_ids: string[];
+  applied_repair_classes: string[];
+  files_touched: string[];
+  verification_commands: string[];
+  verification_outcomes: TestAutofixVerificationCommandResult[];
+  final_status: TestAutofixFinalStatus;
+  stop_reasons: string[];
+  provenance: {
+    failure_log_path: string;
+    triage_artifact_path: string;
+    fix_plan_artifact_path: string;
+    apply_result_path: string | null;
+    autofix_result_path: string;
+  };
+};
+
+type RemediationHistoryArtifact = {
+  schemaVersion: '1.0';
+  kind: 'test-autofix-remediation-history';
+  generatedAt: string;
+  runs: RemediationHistoryEntry[];
+};
+
 type ApplyJsonPayload = {
   ok: boolean;
   exitCode: number;
   message?: string;
-  results: Array<{ id: string; status: 'applied' | 'skipped' | 'unsupported' | 'failed' }>;
+  results: Array<{ id: string; file: string | null; ruleId: string; status: 'applied' | 'skipped' | 'unsupported' | 'failed' }>;
   summary: {
     applied: number;
     skipped: number;
@@ -42,13 +82,20 @@ type ApplyJsonPayload = {
 };
 
 const engine = engineRuntime as unknown as {
-  buildTestTriageArtifact: (rawLog: string, source: { input: 'file' | 'stdin'; path: string | null }) => TestTriageArtifact;
+  appendRemediationHistoryEntry: (artifact: RemediationHistoryArtifact, entry: RemediationHistoryEntry) => RemediationHistoryArtifact;
   buildTestFixPlanArtifact: (triage: TestTriageArtifact) => TestFixPlanArtifact;
+  buildTestTriageArtifact: (rawLog: string, source: { input: 'file' | 'stdin'; path: string | null }) => TestTriageArtifact;
+  buildTriageClassifications: (entries: RemediationHistoryEntry['triage_classifications']) => RemediationHistoryEntry['triage_classifications'];
+  createEmptyRemediationHistoryArtifact: () => RemediationHistoryArtifact;
+  nextRemediationHistoryRunId: (artifact: RemediationHistoryArtifact) => string;
+  normalizeRemediationHistoryArtifact: (value: unknown) => RemediationHistoryArtifact;
 };
 
 const DEFAULT_RESULT_FILE = '.playbook/test-autofix.json' as const;
 const DEFAULT_TRIAGE_FILE = '.playbook/test-triage.json' as const;
 const DEFAULT_FIX_PLAN_FILE = '.playbook/test-fix-plan.json' as const;
+const DEFAULT_APPLY_FILE = '.playbook/test-autofix-apply.json' as const;
+const DEFAULT_HISTORY_FILE = '.playbook/test-autofix-history.json' as const;
 
 const readInputLog = (cwd: string, inputPath?: string): { rawLog: string; path: string } => {
   if (!inputPath) {
@@ -78,6 +125,9 @@ const emptyVerificationSummary = (): TestAutofixVerificationSummary => ({
   failed: 0
 });
 
+const compareStrings = (left: string, right: string): number => left.localeCompare(right);
+const uniqueSorted = (values: Array<string | null | undefined>): string[] => [...new Set(values.filter((value): value is string => Boolean(value)).map((value) => value.trim()).filter(Boolean))].sort(compareStrings);
+
 const summarizeExcludedFindings = (artifact: TestFixPlanArtifact): TestAutofixExcludedFindingSummary => {
   const counts = new Map<string, number>();
   for (const entry of artifact.excluded) {
@@ -86,7 +136,7 @@ const summarizeExcludedFindings = (artifact: TestFixPlanArtifact): TestAutofixEx
 
   return {
     total: artifact.excluded.length,
-    review_required: artifact.excluded.filter((entry: any) => entry.repair_class === 'review_required').length,
+    review_required: artifact.excluded.filter((entry: TestFixPlanArtifact['excluded'][number]) => entry.repair_class === 'review_required').length,
     by_reason: [...counts.entries()]
       .map(([reason, count]) => ({ reason, count }))
       .sort((left, right) => left.reason.localeCompare(right.reason))
@@ -135,7 +185,7 @@ const runVerificationPlan = (commands: string[], cwd: string): { results: TestAu
     results,
     summary: {
       attempted: commands.length > 0,
-      ok: commands.length > 0 && results.length === commands.length && results.every((entry) => entry.ok),
+      ok: commands.length > 0 && results.length === commands.length && results.every((entry: TestAutofixVerificationCommandResult) => entry.ok),
       total: commands.length,
       passed: results.filter((entry) => entry.ok).length,
       failed: results.filter((entry) => !entry.ok).length
@@ -148,11 +198,14 @@ const renderText = (artifact: TestAutofixArtifact, outFile: string): string => {
     'Test autofix',
     '────────────',
     `Input log: ${artifact.input}`,
+    `Run id: ${artifact.run_id}`,
     `Wrote artifact: ${outFile}`,
+    `History artifact: ${artifact.remediation_history_path}`,
     `Final status: ${artifact.final_status}`,
     `Reason: ${artifact.reason}`,
     `Triage artifact: ${artifact.source_triage.path ?? '(none)'}`,
     `Fix-plan artifact: ${artifact.source_fix_plan.path ?? '(none)'}`,
+    `Apply artifact: ${artifact.source_apply.path ?? '(none)'}`,
     `Apply attempted: ${artifact.apply_result.attempted ? 'yes' : 'no'}`,
     `Verification attempted: ${artifact.verification_result.attempted ? 'yes' : 'no'}`
   ];
@@ -168,6 +221,13 @@ const renderText = (artifact: TestAutofixArtifact, outFile: string): string => {
     lines.push('', 'Verification commands');
     for (const command of artifact.executed_verification_commands) {
       lines.push(`- [${command.ok ? 'ok' : 'fail'}] (${command.exitCode}) ${command.command}`);
+    }
+  }
+
+  if (artifact.stop_reasons.length > 0) {
+    lines.push('', 'Stop reasons');
+    for (const reason of artifact.stop_reasons) {
+      lines.push(`- ${reason}`);
     }
   }
 
@@ -189,7 +249,7 @@ const classifyStopWithoutMutation = (triage: TestTriageArtifact, fixPlan: TestFi
     };
   }
 
-  if (fixPlan.tasks.length === 0 && fixPlan.excluded.length > 0 && fixPlan.excluded.every((entry: any) => entry.repair_class === 'review_required')) {
+  if (fixPlan.tasks.length === 0 && fixPlan.excluded.length > 0 && fixPlan.excluded.every((entry: TestFixPlanArtifact['excluded'][number]) => entry.repair_class === 'review_required')) {
     return {
       finalStatus: 'review_required_only',
       reason: 'All findings were review-required exclusions, so test-autofix preserved the trust boundary and performed no mutation.'
@@ -209,25 +269,83 @@ const classifyStopWithoutMutation = (triage: TestTriageArtifact, fixPlan: TestFi
 const computeExitCode = (status: TestAutofixFinalStatus): number =>
   status === 'fixed' || status === 'review_required_only' ? ExitCode.Success : ExitCode.Failure;
 
+const readHistoryArtifact = (cwd: string): RemediationHistoryArtifact => {
+  const absolute = path.resolve(cwd, DEFAULT_HISTORY_FILE);
+  if (!fs.existsSync(absolute)) {
+    return engine.createEmptyRemediationHistoryArtifact();
+  }
+
+  const parsed = JSON.parse(fs.readFileSync(absolute, 'utf8')) as { data?: unknown } | unknown;
+  const payload = parsed && typeof parsed === 'object' && 'data' in (parsed as Record<string, unknown>)
+    ? (parsed as { data?: unknown }).data
+    : parsed;
+  return engine.normalizeRemediationHistoryArtifact(payload);
+};
+
+const buildHistoryEntry = (params: {
+  runId: string;
+  inputPath: string;
+  triage: TestTriageArtifact;
+  fixPlan: TestFixPlanArtifact;
+  artifact: TestAutofixArtifact;
+  applyArtifactPath: string | null;
+  outFile: string;
+  filesTouched: string[];
+}): RemediationHistoryEntry => {
+  const { runId, inputPath, triage, fixPlan, artifact, applyArtifactPath, outFile, filesTouched } = params;
+  return {
+    run_id: runId,
+    generatedAt: new Date(0).toISOString(),
+    input: { path: inputPath },
+    failure_signatures: uniqueSorted(triage.findings.map((finding: TestTriageArtifact['findings'][number]) => finding.failure_signature)),
+    triage_classifications: engine.buildTriageClassifications(triage.findings.map((finding: TestTriageArtifact['findings'][number]) => ({
+      failure_signature: finding.failure_signature,
+      failure_kind: finding.failure_kind,
+      repair_class: finding.repair_class,
+      package: finding.package,
+      test_file: finding.test_file,
+      test_name: finding.test_name
+    }))),
+    admitted_findings: uniqueSorted(fixPlan.tasks.map((task: TestFixPlanArtifact['tasks'][number]) => task.provenance.failure_signature)),
+    excluded_findings: uniqueSorted(fixPlan.excluded.map((entry: TestFixPlanArtifact['excluded'][number]) => entry.failure_signature)),
+    applied_task_ids: [...artifact.applied_task_ids],
+    applied_repair_classes: uniqueSorted(fixPlan.tasks.map((task: TestFixPlanArtifact['tasks'][number]) => task.task_kind)),
+    files_touched: filesTouched,
+    verification_commands: uniqueSorted(artifact.executed_verification_commands.map((entry: TestAutofixVerificationCommandResult) => entry.command)),
+    verification_outcomes: [...artifact.executed_verification_commands],
+    final_status: artifact.final_status,
+    stop_reasons: [...artifact.stop_reasons],
+    provenance: {
+      failure_log_path: inputPath,
+      triage_artifact_path: DEFAULT_TRIAGE_FILE,
+      fix_plan_artifact_path: DEFAULT_FIX_PLAN_FILE,
+      apply_result_path: applyArtifactPath,
+      autofix_result_path: outFile
+    }
+  };
+};
+
 export const runTestAutofix = async (cwd: string, options: TestAutofixOptions): Promise<number> => {
   if (options.help) {
     printCommandHelp({
       usage: 'playbook test-autofix --input <path> [--json] [--out <path>]',
       description:
-        'Orchestrate deterministic test failure diagnosis, bounded repair planning, reviewed apply execution, and narrow-first verification without introducing a new mutation executor.',
+        'Orchestrate deterministic test failure diagnosis, bounded repair planning, reviewed apply execution, narrow-first verification, and remediation history capture without introducing a new mutation executor.',
       options: [
         '--input <path>           Read a captured test failure log',
         `--out <path>             Write the result artifact (default ${DEFAULT_RESULT_FILE})`,
         '--json                   Print the stable test-autofix artifact as JSON',
         '--help                   Show help'
       ],
-      artifacts: [DEFAULT_TRIAGE_FILE, DEFAULT_FIX_PLAN_FILE, DEFAULT_RESULT_FILE]
+      artifacts: [DEFAULT_TRIAGE_FILE, DEFAULT_FIX_PLAN_FILE, DEFAULT_APPLY_FILE, DEFAULT_RESULT_FILE, DEFAULT_HISTORY_FILE]
     });
     return ExitCode.Success;
   }
 
   try {
     const source = readInputLog(cwd, options.input);
+    const historyBefore = readHistoryArtifact(cwd);
+    const runId = engine.nextRemediationHistoryRunId(historyBefore);
     const triage = engine.buildTestTriageArtifact(source.rawLog, { input: 'file', path: source.path });
     writeJsonArtifact(cwd, DEFAULT_TRIAGE_FILE, triage, 'test-autofix');
 
@@ -237,6 +355,8 @@ export const runTestAutofix = async (cwd: string, options: TestAutofixOptions): 
     const excludedSummary = summarizeExcludedFindings(fixPlan);
     const stop = classifyStopWithoutMutation(triage, fixPlan);
     const outFile = options.outFile ?? DEFAULT_RESULT_FILE;
+    let applyArtifactPath: string | null = null;
+    let filesTouched: string[] = [];
 
     if (stop) {
       const artifact: TestAutofixArtifact = {
@@ -244,18 +364,25 @@ export const runTestAutofix = async (cwd: string, options: TestAutofixOptions): 
         kind: TEST_AUTOFIX_ARTIFACT_KIND,
         command: 'test-autofix',
         generatedAt: new Date(0).toISOString(),
+        run_id: runId,
         input: source.path,
         source_triage: { path: DEFAULT_TRIAGE_FILE, command: 'test-triage' },
         source_fix_plan: { path: DEFAULT_FIX_PLAN_FILE, command: 'test-fix-plan' },
+        source_apply: { path: null, command: 'apply' },
+        remediation_history_path: DEFAULT_HISTORY_FILE,
         apply_result: emptyApplySummary(stop.reason),
         verification_result: emptyVerificationSummary(),
         executed_verification_commands: [],
         applied_task_ids: [],
         excluded_finding_summary: excludedSummary,
         final_status: stop.finalStatus,
+        stop_reasons: [stop.reason],
         reason: stop.reason
       };
       writeJsonArtifact(cwd, outFile, artifact, 'test-autofix');
+      const historyEntry = buildHistoryEntry({ runId, inputPath: source.path, triage, fixPlan, artifact, applyArtifactPath, outFile, filesTouched });
+      const nextHistory = engine.appendRemediationHistoryEntry(historyBefore, historyEntry);
+      writeJsonArtifact(cwd, DEFAULT_HISTORY_FILE, nextHistory, 'test-autofix');
       if (options.format === 'json') {
         emitJsonOutput({ cwd, command: 'test-autofix', payload: artifact });
       } else if (!options.quiet) {
@@ -267,6 +394,8 @@ export const runTestAutofix = async (cwd: string, options: TestAutofixOptions): 
     const applyExecution = await captureJsonConsoleOutput<ApplyJsonPayload>(() =>
       runApply(cwd, { format: 'json', quiet: false, ci: false, fromPlan: DEFAULT_FIX_PLAN_FILE })
     );
+    writeJsonArtifact(cwd, DEFAULT_APPLY_FILE, applyExecution.payload as unknown as Record<string, unknown>, 'test-autofix');
+    applyArtifactPath = DEFAULT_APPLY_FILE;
 
     const applySummary: TestAutofixApplySummary = {
       attempted: true,
@@ -283,6 +412,7 @@ export const runTestAutofix = async (cwd: string, options: TestAutofixOptions): 
       .filter((entry) => entry.status === 'applied')
       .map((entry) => entry.id)
       .sort((left, right) => left.localeCompare(right));
+    filesTouched = uniqueSorted(applyExecution.payload.results.filter((entry) => entry.status === 'applied').map((entry) => entry.file));
 
     let finalStatus: TestAutofixFinalStatus;
     let reason: string;
@@ -313,19 +443,26 @@ export const runTestAutofix = async (cwd: string, options: TestAutofixOptions): 
       kind: TEST_AUTOFIX_ARTIFACT_KIND,
       command: 'test-autofix',
       generatedAt: new Date(0).toISOString(),
+      run_id: runId,
       input: source.path,
       source_triage: { path: DEFAULT_TRIAGE_FILE, command: 'test-triage' },
       source_fix_plan: { path: DEFAULT_FIX_PLAN_FILE, command: 'test-fix-plan' },
+      source_apply: { path: applyArtifactPath, command: 'apply' },
+      remediation_history_path: DEFAULT_HISTORY_FILE,
       apply_result: applySummary,
       verification_result: verificationSummary,
       executed_verification_commands: verificationCommands,
       applied_task_ids: appliedTaskIds,
       excluded_finding_summary: excludedSummary,
       final_status: finalStatus,
+      stop_reasons: [reason],
       reason
     };
 
     writeJsonArtifact(cwd, outFile, artifact, 'test-autofix');
+    const historyEntry = buildHistoryEntry({ runId, inputPath: source.path, triage, fixPlan, artifact, applyArtifactPath, outFile, filesTouched });
+    const nextHistory = engine.appendRemediationHistoryEntry(historyBefore, historyEntry);
+    writeJsonArtifact(cwd, DEFAULT_HISTORY_FILE, nextHistory, 'test-autofix');
     if (options.format === 'json') {
       emitJsonOutput({ cwd, command: 'test-autofix', payload: artifact });
     } else if (!options.quiet) {

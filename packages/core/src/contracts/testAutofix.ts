@@ -12,7 +12,7 @@ export type TestAutofixFinalStatus = (typeof testAutofixFinalStatuses)[number];
 
 export type TestAutofixSourceReference = {
   path: string | null;
-  command: 'test-triage' | 'test-fix-plan';
+  command: 'test-triage' | 'test-fix-plan' | 'apply';
 };
 
 export type TestAutofixApplySummary = {
@@ -54,14 +54,18 @@ export type TestAutofixArtifact = {
   kind: typeof TEST_AUTOFIX_ARTIFACT_KIND;
   command: 'test-autofix';
   generatedAt: string;
+  run_id: string;
   input: string;
   source_triage: TestAutofixSourceReference;
   source_fix_plan: TestAutofixSourceReference;
+  source_apply: TestAutofixSourceReference;
+  remediation_history_path: string;
   apply_result: TestAutofixApplySummary;
   verification_result: TestAutofixVerificationSummary;
   executed_verification_commands: TestAutofixVerificationCommandResult[];
   applied_task_ids: string[];
   excluded_finding_summary: TestAutofixExcludedFindingSummary;
   final_status: TestAutofixFinalStatus;
+  stop_reasons: string[];
   reason: string;
 };

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- WHAT: Added first-class `test-autofix` remediation history with a governed `.playbook/test-autofix-history.json` artifact, stable failure signatures on triage findings, apply-result provenance, lookup helpers for repeated signatures/successful repair classes/failed retry attempts, and focused engine+CLI coverage. WHY: Self-repair systems must remember prior outcomes before they are allowed to make better future repair decisions, otherwise they keep retrying noisy bad repairs.
+- Rule: self-repair systems must remember prior outcomes before they are allowed to make better future repair decisions.
+- Pattern: diagnosis -> planning -> execution -> verification -> history is the minimal trustworthy remediation loop.
+- Failure Mode: an autofix system without stable failure signatures and recorded outcomes repeatedly retries bad repairs and becomes noisy instead of reliable.
+
 - WHAT: Added the first-class `pnpm playbook test-autofix --input <path> [--json] [--out <path>]` orchestration command, result artifact/schema, focused CLI tests, and docs updates so deterministic test diagnosis, bounded repair planning, reviewed execution, and narrow-first verification now compose through one governed wrapper without introducing a parallel mutation executor. WHY: This closes the bounded remediation loop while preserving the existing trust model that all mutation must still pass through `apply --from-plan`.
 - WHAT: Added explicit deterministic stop-condition and final-status classification for bounded self-repair (`fixed`, `partially_fixed`, `not_fixed`, `blocked`, `review_required_only`) plus preserved reasons, excluded-finding summaries, executed rerun commands, and applied task ids in the `test-autofix` artifact. WHY: Self-repair automation is only trustworthy when it explains exactly why it stopped, what it executed, and whether review-only findings remained outside the mutation boundary.
 - Rule: Mutation must always pass through a single governed execution boundary.
@@ -39,6 +44,11 @@
 - Failure Mode: Knowledge accumulation without retirement or recall turns governed memory into doctrine sprawl.
 
 ## Unreleased
+
+- WHAT: Added first-class `test-autofix` remediation history with a governed `.playbook/test-autofix-history.json` artifact, stable failure signatures on triage findings, apply-result provenance, lookup helpers for repeated signatures/successful repair classes/failed retry attempts, and focused engine+CLI coverage. WHY: Self-repair systems must remember prior outcomes before they are allowed to make better future repair decisions, otherwise they keep retrying noisy bad repairs.
+- Rule: self-repair systems must remember prior outcomes before they are allowed to make better future repair decisions.
+- Pattern: diagnosis -> planning -> execution -> verification -> history is the minimal trustworthy remediation loop.
+- Failure Mode: an autofix system without stable failure signatures and recorded outcomes repeatedly retries bad repairs and becomes noisy instead of reliable.
 
 - WHAT: Added the first-class `pnpm playbook test-autofix --input <path> [--json] [--out <path>]` orchestration command, result artifact/schema, focused CLI tests, and docs updates so deterministic test diagnosis, bounded repair planning, reviewed execution, and narrow-first verification now compose through one governed wrapper without introducing a parallel mutation executor. WHY: This closes the bounded remediation loop while preserving the existing trust model that all mutation must still pass through `apply --from-plan`.
 - WHAT: Added explicit deterministic stop-condition and final-status classification for bounded self-repair (`fixed`, `partially_fixed`, `not_fixed`, `blocked`, `review_required_only`) plus preserved reasons, excluded-finding summaries, executed rerun commands, and applied task ids in the `test-autofix` artifact. WHY: Self-repair automation is only trustworthy when it explains exactly why it stopped, what it executed, and whether review-only findings remained outside the mutation boundary.
@@ -190,6 +200,11 @@
 - WHAT: Added deterministic `.playbook/cycle-history.json` runtime evidence tracking derived from `.playbook/cycle-state.json` (schema contract, contracts registry wiring, explain support, and append-safe cycle runtime writes with chronological ordering) plus focused tests for creation, append behavior, duration aggregation, and success/failure guards. WHY: Preserves thin cycle orchestration behavior while providing governed historical evidence for runtime analysis and telemetry without recomputing orchestration logic.
 
 ## Unreleased
+
+- WHAT: Added first-class `test-autofix` remediation history with a governed `.playbook/test-autofix-history.json` artifact, stable failure signatures on triage findings, apply-result provenance, lookup helpers for repeated signatures/successful repair classes/failed retry attempts, and focused engine+CLI coverage. WHY: Self-repair systems must remember prior outcomes before they are allowed to make better future repair decisions, otherwise they keep retrying noisy bad repairs.
+- Rule: self-repair systems must remember prior outcomes before they are allowed to make better future repair decisions.
+- Pattern: diagnosis -> planning -> execution -> verification -> history is the minimal trustworthy remediation loop.
+- Failure Mode: an autofix system without stable failure signatures and recorded outcomes repeatedly retries bad repairs and becomes noisy instead of reliable.
 
 - WHAT: Added the first-class `pnpm playbook test-autofix --input <path> [--json] [--out <path>]` orchestration command, result artifact/schema, focused CLI tests, and docs updates so deterministic test diagnosis, bounded repair planning, reviewed execution, and narrow-first verification now compose through one governed wrapper without introducing a parallel mutation executor. WHY: This closes the bounded remediation loop while preserving the existing trust model that all mutation must still pass through `apply --from-plan`.
 - WHAT: Added explicit deterministic stop-condition and final-status classification for bounded self-repair (`fixed`, `partially_fixed`, `not_fixed`, `blocked`, `review_required_only`) plus preserved reasons, excluded-finding summaries, executed rerun commands, and applied task ids in the `test-autofix` artifact. WHY: Self-repair automation is only trustworthy when it explains exactly why it stopped, what it executed, and whether review-only findings remained outside the mutation boundary.

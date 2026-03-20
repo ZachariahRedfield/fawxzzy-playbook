@@ -6,6 +6,7 @@ import {
   type TestTriageFinding,
   type TestTriageRepairClass
 } from '@zachariahredfield/playbook-core';
+import { buildFailureSignature } from './testAutofix/failureSignature.js';
 
 type TriageInputSource = { input: 'file' | 'stdin'; path: string | null };
 
@@ -197,7 +198,7 @@ export const buildTestTriageArtifact = (rawLog: string, source: TriageInputSourc
     const classification = classifyFailure(joined);
     const repairClass: TestTriageRepairClass = LOW_RISK_KINDS.has(classification.kind) ? 'autofix_plan_only' : 'review_required';
     const verificationCommands = buildVerificationCommands(entry.packageName, entry.testFile);
-    return {
+    const baseFinding: Omit<TestTriageFinding, 'failure_signature'> = {
       failure_kind: classification.kind,
       confidence: clampConfidence(classification.confidence),
       package: entry.packageName,
@@ -211,6 +212,10 @@ export const buildTestTriageArtifact = (rawLog: string, source: TriageInputSourc
       repair_class: repairClass,
       summary: entry.block[0] ?? 'Unclassified test failure block',
       evidence: uniqueSorted(entry.block.map((line) => line.trim()).filter(Boolean)).slice(0, 8)
+    };
+    return {
+      failure_signature: buildFailureSignature(baseFinding),
+      ...baseFinding
     };
   }).sort((left, right) => {
     const packageOrder = (left.package ?? '').localeCompare(right.package ?? '');

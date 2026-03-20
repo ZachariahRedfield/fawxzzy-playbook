@@ -22,6 +22,7 @@ export type TestTriageFailureModeNote = {
 };
 
 export type TestTriageFinding = {
+  failure_signature: string;
   failure_kind: TestTriageFailureKind;
   confidence: number;
   package: string | null;

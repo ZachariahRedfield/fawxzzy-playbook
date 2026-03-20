@@ -14,6 +14,7 @@ describe('runContracts', () => {
     expect(Array.isArray(schemas.memoryArtifacts)).toBe(true);
     expect(Array.isArray(schemas.commandOutputs)).toBe(true);
     expect((schemas.memoryArtifacts as Array<{ id: string }>).map((entry) => entry.id)).toContain('stories-backlog');
+    expect((schemas.memoryArtifacts as Array<{ id: string }>).map((entry) => entry.id)).toContain('test-autofix-remediation-history');
     expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('query.memoryKnowledge');
     expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('knowledge');
     expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('pattern-graph');
@@ -55,7 +56,8 @@ describe('runContracts', () => {
         { id: 'retired-knowledge-record', version: '1.0.0', path: '.playbook/memory/knowledge/promoted/*.json' },
         { id: 'memory-replay-result', version: '1.0', path: '.playbook/memory/replay/*.json' },
         { id: 'knowledge-candidate-output', version: '1.0', path: '.playbook/knowledge/candidates.json' },
-        { id: 'stories-backlog', version: '1.0', path: '.playbook/stories.json' }
+        { id: 'stories-backlog', version: '1.0', path: '.playbook/stories.json' },
+        { id: 'test-autofix-remediation-history', version: '1.0', path: '.playbook/test-autofix-history.json' }
       ],
       commandOutputs: [
         // Intentional public schema additions must be reflected here to preserve strict contracts-registry stability coverage.
@@ -88,7 +90,8 @@ describe('runContracts', () => {
         { id: 'analyze-pr.context.sources[].promoted-knowledge', version: '1.0', path: 'schema://cli/analyze-pr' },
         { id: 'test-triage', version: '1.0', path: 'packages/contracts/src/test-triage.schema.json' },
         { id: 'test-fix-plan', version: '1.0', path: 'packages/contracts/src/test-fix-plan.schema.json' },
-        { id: 'test-autofix', version: '1.0', path: 'packages/contracts/src/test-autofix.schema.json' }
+        { id: 'test-autofix', version: '1.0', path: 'packages/contracts/src/test-autofix.schema.json' },
+        { id: 'test-autofix-remediation-history', version: '1.0', path: 'packages/contracts/src/test-autofix-remediation-history.schema.json' }
       ]
     });
 

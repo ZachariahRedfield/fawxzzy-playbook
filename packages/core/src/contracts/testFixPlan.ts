@@ -19,6 +19,7 @@ export type TestFixPlanExclusionReason = (typeof testFixPlanExclusionReasons)[nu
 
 export type TestFixPlanTaskProvenance = {
   finding_index: number;
+  failure_signature: string;
   failure_kind: string;
   repair_class: string;
   summary: string;
@@ -39,6 +40,7 @@ export type TestFixPlanTask = {
 
 export type TestFixPlanExclusion = {
   finding_index: number;
+  failure_signature: string;
   failure_kind: string;
   summary: string;
   reason: TestFixPlanExclusionReason;
