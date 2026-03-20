@@ -127,7 +127,7 @@ describe('test-autofix remediation history helpers', () => {
     ]);
   });
 
-  it('keeps mixed repeat history deterministic', () => {
+  it('keeps mixed repeat history deterministic when prior successful repair evidence exists', () => {
     const triage = buildTestTriageArtifact([
       '@fawxzzy/playbook test: FAIL  packages/cli/src/commands/schema.test.ts',
       '  × renders schema snapshot',
@@ -143,7 +143,9 @@ describe('test-autofix remediation history helpers', () => {
     history = appendHistoryRun(history, { signature: secondSignature!, runId: 'test-autofix-run-0002', finalStatus: 'not_fixed', repairClasses: ['stale_assertion_update'], verificationOk: false });
 
     const policy = evaluateRepeatRemediationPolicy(triage, fixPlan, history);
-    expect(policy.retry_policy_decision).toBe('review_required_repeat_failure');
+    expect(policy.retry_policy_decision).toBe('allow_with_preferred_repair_class');
+    expect(policy.preferred_repair_class).toBe('snapshot_refresh');
     expect(policy.history_summary.matched_signatures).toEqual([firstSignature, secondSignature].sort());
+    expect(policy.history_summary.prior_successful_repair_classes).toEqual(['snapshot_refresh']);
   });
 });
