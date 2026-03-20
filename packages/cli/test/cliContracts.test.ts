@@ -28,6 +28,8 @@ type CommandContract = {
   schemaCommand: 'rules' | 'explain' | 'index' | 'graph' | 'verify' | 'plan' | 'context' | 'ai-context' | 'ai-contract' | 'docs' | 'doctor' | 'analyze-pr' | 'contracts' | 'ignore' | 'knowledge';
 };
 
+// Under isolated fixtures, any contract that observes repo-index-backed availability or repository intelligence
+// must declare setupArgs explicitly because index is the producer and downstream consumers must seed it first.
 const commandContracts: readonly CommandContract[] = [
   { file: 'rules.snapshot.json', args: ['rules', '--json'], schemaCommand: 'rules' },
   { file: 'index.snapshot.json', args: ['index', '--json'], schemaCommand: 'index' },
@@ -37,7 +39,7 @@ const commandContracts: readonly CommandContract[] = [
   { file: 'verify.snapshot.json', args: ['verify', '--json'], schemaCommand: 'verify' },
   { file: 'plan.snapshot.json', args: ['plan', '--json'], schemaCommand: 'plan' },
   { file: 'context.snapshot.json', args: ['context', '--json'], schemaCommand: 'context' },
-  { file: 'ai-context.snapshot.json', args: ['ai-context', '--json'], schemaCommand: 'ai-context' },
+  { file: 'ai-context.snapshot.json', args: ['ai-context', '--json'], setupArgs: [['index', '--json']], schemaCommand: 'ai-context' },
   { file: 'ai-contract.snapshot.json', args: ['ai-contract', '--json'], schemaCommand: 'ai-contract' },
   { file: 'docs-audit.snapshot.json', args: ['docs', 'audit', '--json'], schemaCommand: 'docs' },
   { file: 'doctor.snapshot.json', args: ['doctor', '--json'], schemaCommand: 'doctor' },
