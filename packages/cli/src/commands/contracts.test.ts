@@ -58,6 +58,7 @@ describe('runContracts', () => {
         { id: 'stories-backlog', version: '1.0', path: '.playbook/stories.json' }
       ],
       commandOutputs: [
+        // Intentional public schema additions must be reflected here to preserve strict contracts-registry stability coverage.
         { id: 'query.memoryKnowledge', version: '1.0', path: 'schema://cli/query' },
         { id: 'knowledge', version: '1.0', path: 'packages/contracts/src/knowledge.schema.json' },
         { id: 'pattern-graph', version: '1.0', path: 'packages/contracts/src/pattern-graph.schema.json' },
@@ -84,7 +85,8 @@ describe('runContracts', () => {
         { id: 'explain.memoryKnowledge', version: '1.0', path: 'schema://cli/explain' },
         { id: 'plan.tasks[].advisory.outcomeLearning', version: '1.0', path: 'schema://cli/plan' },
         { id: 'analyze-pr.preventionGuidance', version: '1.0', path: 'schema://cli/analyze-pr' },
-        { id: 'analyze-pr.context.sources[].promoted-knowledge', version: '1.0', path: 'schema://cli/analyze-pr' }
+        { id: 'analyze-pr.context.sources[].promoted-knowledge', version: '1.0', path: 'schema://cli/analyze-pr' },
+        { id: 'test-triage', version: '1.0', path: 'packages/contracts/src/test-triage.schema.json' }
       ]
     });
 
