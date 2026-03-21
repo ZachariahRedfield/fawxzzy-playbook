@@ -191,6 +191,7 @@ const AUTO_SAFE_MINIMUM_RUNS = 1;
 
 const CONVERSATIONAL_MINIMUM_EVIDENCE = 3;
 const GOVERNANCE_MINIMUM_EVIDENCE = 2;
+const REMEDIATION_REVIEW_MINIMUM_EVIDENCE = 2;
 const ROUTER_RECOMMENDATION_MIN_EVIDENCE = 3;
 const ROUTER_RECOMMENDATION_MIN_CONFIDENCE = 0.65;
 
@@ -467,9 +468,10 @@ const evaluateGating = (input: {
   const gatingTier = toGatingTier(improvementTier);
   const blockingReasons: string[] = [];
   const governanceSensitive = gatingTier === 'GOVERNANCE';
+  const minimumEvidence = input.category === 'remediation_learning' ? REMEDIATION_REVIEW_MINIMUM_EVIDENCE : MINIMUM_RECURRENCE;
 
-  if (input.evidence.evidence_count < MINIMUM_RECURRENCE) {
-    blockingReasons.push(`insufficient_evidence_count:${input.evidence.evidence_count}<${MINIMUM_RECURRENCE}`);
+  if (input.evidence.evidence_count < minimumEvidence) {
+    blockingReasons.push(`insufficient_evidence_count:${input.evidence.evidence_count}<${minimumEvidence}`);
   }
 
   if (input.confidenceScore < MINIMUM_CONFIDENCE) {
@@ -844,7 +846,7 @@ const generateRemediationLearningCandidates = (
       proposalKind: 'verify_rule_improvement',
       observation: 'Repeated review-heavy remediation cases show candidate repair classes exist but still depend on manual review pressure.',
       recurrenceCount: reviewHeavySuccessfulEntries.length,
-      signalScore: 0.9,
+      signalScore: 0.95,
       learningConfidence,
       suggestedAction: 'propose verify/rule improvement candidates that better classify these failure signatures before execution, without changing queue or execution behavior',
       evidenceEvents: remediationEvidenceEvents(reviewHeavySuccessfulEntries),

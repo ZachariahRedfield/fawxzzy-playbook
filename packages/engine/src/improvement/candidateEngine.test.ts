@@ -684,8 +684,12 @@ describe('remediation learning candidates', () => {
     writeArtifact(repo, '.playbook/remediation-status.json', remediationStatus(historyArtifact, latestArtifact));
 
     const artifact = generateImprovementCandidates(repo);
-    const verifyCandidate = artifact.candidates.find((candidate) => candidate.proposal_kind === 'verify_rule_improvement');
-    const fixtureCandidate = artifact.candidates.find((candidate) => candidate.proposal_kind === 'fixture_contract_hardening');
+    const verifyCandidate = artifact.candidates.find(
+      (candidate) => candidate.candidate_id === 'remediation_verify_rule_improvement_review_pressure'
+    );
+    const fixtureCandidate = artifact.candidates.find(
+      (candidate) => candidate.candidate_id === 'remediation_fixture_contract_hardening_low_confidence_success'
+    );
     const verifyDoctrineCandidate = artifact.doctrine_candidates.candidates.find(
       (candidate) => candidate.candidate_id === 'improvement_remediation_verify_rule_improvement_review_pressure'
     );
@@ -693,8 +697,10 @@ describe('remediation learning candidates', () => {
       (candidate) => candidate.candidate_id === 'improvement_remediation_fixture_contract_hardening_low_confidence_success'
     );
 
+    expect(verifyCandidate?.proposal_kind).toBe('verify_rule_improvement');
     expect(verifyCandidate?.required_review).toBe(true);
     expect(verifyCandidate?.gating_tier).toBe('GOVERNANCE');
+    expect(fixtureCandidate?.proposal_kind).toBe('fixture_contract_hardening');
     expect(fixtureCandidate?.required_review).toBe(true);
     expect(fixtureCandidate?.gating_tier).toBe('CONVERSATIONAL');
     expect(artifact.candidates.some((candidate) => candidate.proposal_kind === 'docs_doctrine_update')).toBe(true);
