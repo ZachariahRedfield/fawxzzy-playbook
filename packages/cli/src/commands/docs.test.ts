@@ -7,19 +7,22 @@ import { ExitCode } from '../lib/cliContract.js';
 const createFixtureRepo = (): string => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-docs-audit-'));
   fs.mkdirSync(path.join(root, 'docs', 'archive'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'docs', 'stories'), { recursive: true });
 
   const files: Record<string, string> = {
     'README.md': '# README\nai-context ai-contract context verify plan apply\n',
     'AGENTS.md': '# AGENTS\n',
     'docs/index.md': '# Docs Index\nai-context ai-contract context verify plan apply\n',
     'docs/ARCHITECTURE.md': '# Architecture\n',
-    'docs/commands/README.md': '# Commands\n',
+    'docs/commands/README.md': '# Commands\n\nLifecycle, role, and discoverability are documented here.\n',
     'docs/commands/docs.md': '# docs audit\n',
-    'docs/PLAYBOOK_PRODUCT_ROADMAP.md': '# Strategic Roadmap\n',
+    'docs/PLAYBOOK_PRODUCT_ROADMAP.md':
+      '# Strategic Roadmap\n\n## Pillars\n- Pillar A\n\n## Active Stories\n- Story A\n\nRoadmap entries describe implementation intent.\ndocs/commands/README.md is the source of truth for live command availability.\n',
     'docs/PLAYBOOK_BUSINESS_STRATEGY.md': '# Business\n',
     'docs/CONSUMER_INTEGRATION_CONTRACT.md': '# Contract\n',
     'docs/AI_AGENT_CONTEXT.md': '# AI Context\nai-context ai-contract context verify plan apply\n',
-    'docs/ONBOARDING_DEMO.md': '# Demo\nai-context ai-contract context verify plan apply\n',
+    'docs/ONBOARDING_DEMO.md':
+      '# Demo\nai-context ai-contract context verify plan apply\n\nSupported question classes\nUnsupported question classes\nDeterministic fallback\n',
     'docs/REFERENCE/cli.md': '# CLI\n',
     'docs/FAQ.md': '# FAQ\nai-context ai-contract context verify plan apply\n',
     'docs/GITHUB_SETUP.md': '# Setup\n',
@@ -72,7 +75,7 @@ describe('runDocs', () => {
 
   it('detects duplicate roadmap files', { timeout: 15000 }, async () => {
     const repo = createFixtureRepo();
-    fs.writeFileSync(path.join(repo, 'docs', 'ROADMAP.md'), '# old roadmap\n', 'utf8');
+    fs.writeFileSync(path.join(repo, 'docs', 'PRODUCT_ROADMAP.md'), '# old roadmap\n', 'utf8');
     const { runDocs } = await import('./docs.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
@@ -81,7 +84,7 @@ describe('runDocs', () => {
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(payload.findings).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ ruleId: 'docs.single-roadmap.duplicate', path: 'docs/ROADMAP.md', level: 'error' })
+        expect.objectContaining({ ruleId: 'docs.single-roadmap.duplicate', path: 'docs/PRODUCT_ROADMAP.md', level: 'error' })
       ])
     );
   });
@@ -117,8 +120,94 @@ describe('runDocs', () => {
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(payload.schemaVersion).toBe('1.0');
     expect(payload.command).toBe('docs audit');
-    expect(payload.summary).toEqual(expect.objectContaining({ checksRun: 12 }));
+    expect(payload.summary).toEqual(expect.objectContaining({ checksRun: 13 }));
     expect(Array.isArray(payload.findings)).toBe(true);
+  });
+
+
+  it('validates repo-scoped roadmap/story contracts when opted in', async () => {
+    const repo = createFixtureRepo();
+    fs.writeFileSync(
+      path.join(repo, 'docs', 'ROADMAP.md'),
+      ['# Product Roadmap', '', '## Pillars', '- UX', '', '## Active Stories', '- UI-001 – Screen normalization (in-progress)', ''].join('\n'),
+      'utf8'
+    );
+    fs.mkdirSync(path.join(repo, 'docs', 'stories'), { recursive: true });
+    fs.writeFileSync(
+      path.join(repo, 'docs', 'stories', 'UI-001-screen-normalization.md'),
+      [
+        '# UI-001 – Screen normalization',
+        '',
+        '## Status',
+        'in-progress',
+        '',
+        '## Pillar',
+        'UI Normalization',
+        '',
+        '## Outcome',
+        'Normalize screen layout.',
+        '',
+        '## Scope',
+        'Included work.',
+        '',
+        '## Non-Goals',
+        'Excluded work.',
+        '',
+        '## Surfaces',
+        'Screen A',
+        '',
+        '## Dependencies',
+        'None.',
+        '',
+        '## Done When',
+        'Layout is consistent.',
+        '',
+        '## Evidence',
+        'PR pending.',
+        ''
+      ].join('\n'),
+      'utf8'
+    );
+    const { runDocs } = await import('./docs.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runDocs(repo, ['audit'], { ci: false, format: 'json', quiet: true });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.findings).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ ruleId: 'docs.repo-roadmap.contract-missing-sections' }),
+        expect.objectContaining({ ruleId: 'docs.story-contract.missing-sections' })
+      ])
+    );
+  });
+
+  it('fails when story docs miss required sections', async () => {
+    const repo = createFixtureRepo();
+    fs.writeFileSync(
+      path.join(repo, 'docs', 'ROADMAP.md'),
+      ['# Product Roadmap', '', '## Pillars', '- UX', '', '## Active Stories', '- UI-001 – Screen normalization (in-progress)', ''].join('\n'),
+      'utf8'
+    );
+    fs.mkdirSync(path.join(repo, 'docs', 'stories'), { recursive: true });
+    fs.writeFileSync(
+      path.join(repo, 'docs', 'stories', 'UI-001-screen-normalization.md'),
+      ['# UI-001 – Screen normalization', '', '## Status', 'in-progress', ''].join('\n'),
+      'utf8'
+    );
+    const { runDocs } = await import('./docs.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runDocs(repo, ['audit'], { ci: false, format: 'json', quiet: true });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ ruleId: 'docs.story-contract.missing-sections', path: 'docs/stories/UI-001-screen-normalization.md', level: 'error' })
+      ])
+    );
   });
 
   it('returns policy failure in ci mode when errors are present', async () => {

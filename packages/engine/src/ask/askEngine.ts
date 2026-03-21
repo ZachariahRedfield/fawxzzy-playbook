@@ -243,6 +243,26 @@ const governanceQuestionAnswer = (
     };
   }
 
+  if (normalizedQuestion.includes('what story should this change belong to')) {
+    return {
+      answer:
+        'Use the repo-scoped roadmap contract: map the change to an active pillar in docs/ROADMAP.md, then attach it to the smallest independently shippable story in docs/stories/<STORY_ID>.md. If no existing story has matching outcome, scope, and done-when criteria, create a new story before opening the PR.',
+      reason: 'Derived from the repo-scoped roadmap and story documentation contract.',
+      state: 'answered-from-trusted-artifact',
+      artifact: 'docs/roadmap/REPO_ROADMAP_SYSTEM.md'
+    };
+  }
+
+  if (normalizedQuestion.includes('what pillar does this feature map to')) {
+    return {
+      answer:
+        'Map the feature to the pillar in docs/ROADMAP.md whose outcome boundary best matches the user-visible product change. Choose the pillar that can own the story outcome without hidden cross-story dependencies; if none fit cleanly, introduce a new pillar or refine roadmap boundaries before implementation.',
+      reason: 'Derived from the repo-scoped roadmap and story documentation contract.',
+      state: 'answered-from-trusted-artifact',
+      artifact: 'docs/roadmap/REPO_ROADMAP_SYSTEM.md'
+    };
+  }
+
   return undefined;
 };
 

@@ -304,6 +304,46 @@ describe('answerRepositoryQuestion', () => {
     });
   });
 
+
+  it('answers repo-scoped story mapping questions from the roadmap contract', () => {
+    const repo = createRepo('playbook-ask-engine-story-map');
+    writeRepoIndex(repo, {
+      schemaVersion: '1.0',
+      framework: 'node',
+      language: 'typescript',
+      architecture: 'modular-monolith',
+      modules: ['app'],
+      database: 'postgres',
+      rules: []
+    });
+
+    const result = answerRepositoryQuestion(repo, 'what story should this change belong to?');
+
+    expect(result.answer).toContain('docs/ROADMAP.md');
+    expect(result.answerability).toEqual({
+      state: 'answered-from-trusted-artifact',
+      artifact: 'docs/roadmap/REPO_ROADMAP_SYSTEM.md'
+    });
+  });
+
+  it('answers repo-scoped pillar mapping questions from the roadmap contract', () => {
+    const repo = createRepo('playbook-ask-engine-pillar-map');
+    writeRepoIndex(repo, {
+      schemaVersion: '1.0',
+      framework: 'node',
+      language: 'typescript',
+      architecture: 'modular-monolith',
+      modules: ['app'],
+      database: 'postgres',
+      rules: []
+    });
+
+    const result = answerRepositoryQuestion(repo, 'what pillar does this feature map to?');
+
+    expect(result.answer).toContain('docs/ROADMAP.md');
+    expect(result.answerability.artifact).toBe('docs/roadmap/REPO_ROADMAP_SYSTEM.md');
+  });
+
   it('returns architecture from repository intelligence', () => {
     const repo = createRepo('playbook-ask-engine-architecture');
     writeRepoIndex(repo, {

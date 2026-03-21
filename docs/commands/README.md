@@ -191,6 +191,17 @@ Implementation note: shared staging helpers live in `scripts/staged-artifact-wor
 - Failure Mode: Ad hoc workflow promotion metadata fragments governance semantics and makes Observer/orchestration reasoning inconsistent.
 - Snapshot refresh invariant: `node scripts/update-contract-snapshots.mjs` now refreshes snapshots through a built-CLI generator path that avoids Vitest/Vite/esbuild optional-native resolution; the only prerequisite is a current local build (`pnpm -r build`).
 
+## Repo-scoped roadmap/story docs-first contract
+
+Playbook now recommends an optional repo-scoped product-direction contract for consumer repositories:
+
+- `docs/ROADMAP.md` defines pillars, active stories, and lightweight priority
+- `docs/stories/<STORY_ID>.md` defines one independently shippable vertical slice
+- `pnpm playbook docs audit --json` validates the contract when a repo opts in
+- `pnpm playbook ask ... --repo-context` can answer lightweight story/pillar mapping prompts
+
+This remains a documentation contract first, not a new heavy workflow command surface.
+
 ## Product-state anchoring rule
 
 When command/workflow state changes, update these surfaces in the same change (or immediately after):
