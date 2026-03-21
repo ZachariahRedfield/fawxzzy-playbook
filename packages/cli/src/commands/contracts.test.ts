@@ -93,7 +93,8 @@ describe('runContracts', () => {
         { id: 'test-triage', version: '1.0', path: 'packages/contracts/src/test-triage.schema.json' },
         { id: 'test-fix-plan', version: '1.0', path: 'packages/contracts/src/test-fix-plan.schema.json' },
         { id: 'test-autofix', version: '1.0', path: 'packages/contracts/src/test-autofix.schema.json' },
-        { id: 'test-autofix-remediation-history', version: '1.0', path: 'packages/contracts/src/test-autofix-remediation-history.schema.json' }
+        { id: 'test-autofix-remediation-history', version: '1.0', path: 'packages/contracts/src/test-autofix-remediation-history.schema.json' },
+        { id: 'docs-consolidation-plan', version: '1.0', path: 'packages/contracts/src/docs-consolidation-plan.schema.json' }
       ]
     });
 
