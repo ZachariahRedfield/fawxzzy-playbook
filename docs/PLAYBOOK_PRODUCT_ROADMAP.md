@@ -266,6 +266,44 @@ Current slice establishes:
 - safe-default-only managed `.playbookignore` updates with review-only handling for lower-confidence recommendations
 - runtime coverage honors explicit `.playbookignore` rules so follow-up pilot/index cycles reflect tightened scan boundaries
 
+Next planned external-consumer hardening slice: **Managed-vs-Local Upgrade Boundaries**.
+
+This future slice formalizes upgrade safety as a trust-boundary problem for external consumer repositories rather than a generic docs note. The intent is to let Playbook evolve its own managed surfaces without collapsing repo-local product truth into framework-global doctrine. Runtime support for manifest-based protection does **not** exist yet; this roadmap entry defines the doctrine and dependency order for that future work.
+
+Planned direction:
+
+- Split external consumer repositories into a **Managed Layer** and a **Local Layer**.
+- Treat repo-local `AGENT.md` as the consumer repo's product-truth and execution-identity surface so product-specific rules remain local.
+- Evolve `playbook upgrade` toward mutating only Playbook-managed artifacts and explicitly Playbook-owned generated surfaces.
+- Keep repo-owned product files protected unless an explicit migration path exists.
+- Add a future manifest or equivalent contract that marks managed vs protected paths so upgrade decisions are deterministic and reviewable.
+
+Managed Layer examples:
+
+- `.playbook/**`
+- Playbook-owned generated artifacts
+- Playbook-owned scripts/docs/contracts that are explicitly marked managed
+
+Local Layer examples:
+
+- `AGENT.md`
+- app source files
+- product docs
+- styling/UI conventions
+- repo-specific architecture and domain docs
+
+Rule: Upgrade must be scoped to managed artifacts only; repo-owned files are immutable unless explicitly migrated.
+
+Pattern: A safe framework upgrade system separates Playbook-managed surfaces from repo-local product truth.
+
+Pattern: Repo-local `AGENT.md` is the consumer repo’s execution identity layer.
+
+Pattern: Playbook-global doctrine governs framework behavior; repo-local `AGENT.md` governs product-specific execution guidance.
+
+Failure Mode: Upgrade flows that cannot distinguish managed from local files eventually overwrite product intent and make external consumers distrust framework updates.
+
+Failure Mode: Framework upgrades that overwrite repo-local product intent create silent regression in UX, architecture, and operator trust.
+
 Reference plan:
 
 - `docs/roadmap/EXTERNAL_PILOT_FAWXZZY_FITNESS.md`

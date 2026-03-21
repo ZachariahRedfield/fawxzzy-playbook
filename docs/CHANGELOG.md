@@ -3,6 +3,12 @@
 
 ## Unreleased
 
+- WHAT: Added an external-consumer roadmap/backlog slice for managed-vs-local upgrade boundary hardening, including repo-local `AGENT.md` as product-truth doctrine, future manifest/protected-path guidance for `playbook upgrade`, and explicit trust-boundary language that upgrades must stay scoped to Playbook-managed surfaces. WHY: External consumers need upgrade safety that preserves repo-owned intent instead of letting framework evolution silently overwrite local product rules, UX, or architecture.
+- Rule: Upgrade must be scoped to managed artifacts only; repo-owned files are immutable unless explicitly migrated.
+- Pattern: A safe framework upgrade system separates Playbook-managed surfaces from repo-local product truth.
+- Pattern: Repo-local `AGENT.md` is the consumer repo’s execution identity layer.
+- Failure Mode: Upgrade flows that cannot distinguish managed from local files eventually overwrite product intent and make external consumers distrust framework updates.
+
 - WHAT: Added deterministic cross-run remediation-history hydration and merge support for CI by preserving per-entry source provenance, canonically renumbering merged runs, hydrating prior `test-autofix-history` artifacts before reusable CI transport executes `test-autofix`, and re-uploading the merged canonical history artifact with focused engine/CLI coverage. WHY: Retry policy and confidence calibration are only trustworthy when the history they read survives across workflow runs without inventing a CI-only state format.
 - Rule: Retry policy is only as trustworthy as the durability of the history it reads.
 - Pattern: Transport should hydrate canonical artifacts, not invent workflow-local state.

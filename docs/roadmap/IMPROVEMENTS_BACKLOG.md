@@ -65,3 +65,18 @@ Failure Mode: Agents operating outside the Playbook control plane create invisib
 - Keep items short and exploratory.
 - Avoid repeating architecture slices or roadmap sequencing already defined elsewhere.
 - Split broad ideas into one unresolved question per entry when possible.
+
+---
+
+### 5) External consumer upgrade boundary manifest follow-on
+
+- Define the thinnest viable manifest or equivalent contract that distinguishes Playbook-managed paths from repo-local protected paths for external consumer repos.
+- Clarify the first migration-safe upgrade behaviors after doctrine is committed: managed-surface detection, protected-path refusal, and explicit migration hooks for repo-owned files.
+- Keep the consumer-repo local layer explicit, including repo-local `AGENT.md` as product truth rather than framework-owned doctrine.
+- Treat upgrade safety as a trust boundary: future `playbook upgrade` work should mutate managed surfaces only and refuse silent writes into repo-owned product files.
+
+Rule: Upgrade must be scoped to managed artifacts only; repo-owned files are immutable unless explicitly migrated.
+Pattern: A safe framework upgrade system separates Playbook-managed surfaces from repo-local product truth.
+Pattern: Repo-local `AGENT.md` is the consumer repo’s execution identity layer.
+Failure Mode: Upgrade flows that cannot distinguish managed from local files eventually overwrite product intent and make external consumers distrust framework updates.
+
