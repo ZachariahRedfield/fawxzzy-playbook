@@ -100,6 +100,10 @@ const REQUIRED_ANCHORS = [
   'packages/cli/README.md'
 ] as const;
 
+
+const REPO_ROADMAP_REQUIRED_SECTIONS = ['pillars', 'active stories'] as const;
+const STORY_REQUIRED_SECTIONS = ['status', 'pillar', 'outcome', 'scope', 'non-goals', 'surfaces', 'dependencies', 'done when', 'evidence'] as const;
+
 const PLANNING_ALLOWED_PATHS = new Set([
   'docs/PLAYBOOK_PRODUCT_ROADMAP.md',
   'docs/roadmap/README.md',
@@ -236,6 +240,25 @@ const hasAllMarkers = (content: string, markers: readonly string[]): boolean => 
 };
 
 
+
+const hasRequiredSections = (content: string, requiredSections: readonly string[]): string[] => {
+  const headings = new Set(extractHeadings(content).map((heading) => normalizeHeading(heading)));
+  return requiredSections.filter((section) => !headings.has(section));
+};
+
+const listStoryDocs = (repoRoot: string): string[] => {
+  const storiesPath = path.join(repoRoot, 'docs', 'stories');
+  if (!fs.existsSync(storiesPath)) {
+    return [];
+  }
+
+  return fs
+    .readdirSync(storiesPath, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.md'))
+    .map((entry) => `docs/stories/${entry.name}`)
+    .sort();
+};
+
 const extractManagedCommandStatusNames = (content: string): string[] => {
   const startMarker = '<!-- PLAYBOOK:DOCS_COMMAND_STATUS_START -->';
   const endMarker = '<!-- PLAYBOOK:DOCS_COMMAND_STATUS_END -->';
@@ -302,7 +325,7 @@ export const runDocsAudit = (repoRoot: string): DocsAuditResult => {
   }
 
   const topLevelDocs = listDocsTopLevelMarkdown(repoRoot);
-  const duplicateRoadmapCandidates = new Set(['docs/ROADMAP.md', 'docs/PRODUCT_ROADMAP.md', 'docs/PLAYBOOK_ROADMAP.md']);
+  const duplicateRoadmapCandidates = new Set(['docs/PRODUCT_ROADMAP.md', 'docs/PLAYBOOK_ROADMAP.md']);
   for (const duplicatePath of topLevelDocs.filter((relativePath) => duplicateRoadmapCandidates.has(relativePath))) {
     findings.push({
       ruleId: 'docs.single-roadmap.duplicate',
@@ -311,6 +334,57 @@ export const runDocsAudit = (repoRoot: string): DocsAuditResult => {
       path: duplicatePath,
       suggestedDestination: 'docs/PLAYBOOK_PRODUCT_ROADMAP.md'
     });
+  }
+
+  const repoRoadmapPath = 'docs/ROADMAP.md';
+  const repoRoadmap = readTextIfExists(repoRoot, repoRoadmapPath);
+  const storyDocs = listStoryDocs(repoRoot);
+
+  if (repoRoadmap) {
+    const missingSections = hasRequiredSections(repoRoadmap, REPO_ROADMAP_REQUIRED_SECTIONS);
+    if (missingSections.length > 0) {
+      findings.push({
+        ruleId: 'docs.repo-roadmap.contract-missing-sections',
+        level: 'error',
+        message: `Repo roadmap is missing required sections: ${missingSections.join(', ')}.`,
+        path: repoRoadmapPath
+      });
+    }
+
+    if (!fs.existsSync(path.join(repoRoot, 'docs', 'stories'))) {
+      findings.push({
+        ruleId: 'docs.repo-roadmap.stories-dir-missing',
+        level: 'error',
+        message: 'Repo roadmap contract requires docs/stories/ for repo-scoped story documents.',
+        path: 'docs/stories'
+      });
+    }
+  }
+
+  if (storyDocs.length > 0 && !repoRoadmap) {
+    findings.push({
+      ruleId: 'docs.repo-roadmap.roadmap-missing',
+      level: 'error',
+      message: 'Story documents require a companion docs/ROADMAP.md repo roadmap.',
+      path: repoRoadmapPath
+    });
+  }
+
+  for (const storyDoc of storyDocs) {
+    const content = readTextIfExists(repoRoot, storyDoc);
+    if (!content) {
+      continue;
+    }
+
+    const missingSections = hasRequiredSections(content, STORY_REQUIRED_SECTIONS);
+    if (missingSections.length > 0) {
+      findings.push({
+        ruleId: 'docs.story-contract.missing-sections',
+        level: 'error',
+        message: `Story document is missing required sections: ${missingSections.join(', ')}.`,
+        path: storyDoc
+      });
+    }
   }
 
   for (const relativePath of ACTIVE_DOC_PATHS) {
@@ -573,7 +647,7 @@ export const runDocsAudit = (repoRoot: string): DocsAuditResult => {
     summary: {
       errors,
       warnings,
-      checksRun: 12
+      checksRun: 13
     },
     findings
   };

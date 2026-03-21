@@ -17,7 +17,8 @@ pnpm playbook docs audit --ci --json
 3. Active-surface package/install consistency (`@fawxzzy/playbook` and no unscoped/legacy package examples).
 4. Active-surface legacy-link detection for superseded compatibility-stub doc paths.
 5. Front-door canonical-ladder drift checks (`ai-context -> ai-contract -> context -> index/query/explain/ask --repo-context -> verify -> plan -> apply -> verify`) with `analyze` treated as compatibility/lightweight.
-6. Archive and compatibility-stub hygiene (general archive naming conventions, intentional redirect stubs, and cleanup-candidate reporting for ad hoc trackers).
+6. Repo-scoped roadmap/story contract checks when a repository opts into `docs/ROADMAP.md`, including required roadmap sections, required `docs/stories/`, and required story headings.
+7. Archive and compatibility-stub hygiene (general archive naming conventions, intentional redirect stubs, and cleanup-candidate reporting for ad hoc trackers).
 
 ## CI behavior
 

@@ -146,6 +146,15 @@
 - Pattern: Candidate stories require grouping, dedupe, and explicit promotion.
 - Failure Mode: Raw finding -> automatic story conversion creates backlog spam and weak planning signal.
 
+## 2026-03-21 — Repo-scoped roadmap and story documentation system
+
+- WHAT: Added `docs/roadmap/REPO_ROADMAP_SYSTEM.md` plus `docs/templates/story.template.md` to define a docs-first repo-scoped roadmap contract built around `docs/ROADMAP.md` and `docs/stories/<STORY_ID>.md`. WHY: Consumer repos can now express product direction, shippable stories, and PR mapping with a lightweight structured documentation system instead of scattered ad hoc planning notes.
+- WHAT: Extended `pnpm playbook docs audit --json` to validate repo-scoped roadmap/story adoption boundaries when a repo opts in, including `docs/ROADMAP.md`, `docs/stories/`, and required story sections. WHY: The contract now has deterministic documentation governance without introducing a new heavy command surface.
+- WHAT: Extended `pnpm playbook ask ... --repo-context` to answer story-belonging and pillar-mapping questions from the roadmap/story contract. WHY: Teams can use existing Playbook repository-intelligence flows to route changes back to product intent.
+- Pattern: Product direction should be expressed as small, shippable stories rather than large, vague initiatives.
+- Rule: Systems are adopted as documentation contracts before becoming enforced tooling.
+- Failure Mode: Introducing workflow tooling before teams have consistent conceptual usage leads to abandonment.
+
 ## 2026-03-18 — Deterministic execution replay and drift inspection
 
 - WHAT: Extended Observer with a read-only repo backlog planning surface sourced from the canonical `.playbook/stories.json` artifact, including backlog summary counts, highest-priority ready story, blocked-story visibility, story detail drilldown, and linked evidence/route/status context in repo view. WHY: Observer can now surface durable planning state between findings and execution without becoming a second story system.

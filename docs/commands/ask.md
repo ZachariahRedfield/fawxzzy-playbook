@@ -27,6 +27,14 @@ pnpm playbook ask "summarize risk for this diff" --diff-context --with-diff-cont
 
 ## Behavior
 
+Supported repo-context governance questions now also include lightweight product-direction prompts such as:
+
+- `what story should this change belong to?`
+- `what pillar does this feature map to?`
+
+These answers rely on the repo-scoped roadmap/story contract documented in `docs/roadmap/REPO_ROADMAP_SYSTEM.md`.
+
+
 - Uses Playbook-managed intelligence instead of broad repository scanning.
 - Returns deterministic answerability state in JSON (`answered-from-trusted-artifact`, `artifact-missing`, `artifact-stale`, or `unsupported-question`).
 - Includes provenance descriptors in `context.sources` (for example `repo-index`, `repo-graph`, `module`, `diff`, `docs`, `ai-contract`).
