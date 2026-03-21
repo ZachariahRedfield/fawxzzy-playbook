@@ -1,7 +1,15 @@
+- WHAT: Added `pnpm playbook docs consolidate-plan --json`, a first-class `docs-consolidation-plan` contract/schema, engine compilation of `.playbook/docs-consolidation.json` into bounded managed-write tasks, and `apply --from-plan` support for reviewed singleton-doc writes while leaving conflicts and missing seams excluded. WHY: Protected singleton docs now have a reviewed write seam without introducing a second mutation executor.
+- Rule: Consolidation planning may prepare reviewed writes, but `apply` remains the only mutation boundary.
+- Pattern: Workers propose, consolidator compiles, apply executes.
+- Failure Mode: Letting docs consolidation mutate directly creates a shadow executor and breaks the single reviewed write boundary.
 - WHAT: Added deterministic `autofix_confidence` scoring, `confidence_reasoning`, `--dry-run` support, and confidence-threshold mutation gating to `test-autofix`, then wired CI/PR reporting to render those artifact-backed decisions while protected branches stay dry-run-only. WHY: Self-repair earns trust only when mutation is explainable, previewable, and gated by canonical runtime artifacts rather than workflow-local heuristics.
 # Changelog
 
 ## Unreleased
+- WHAT: Synced `packages/core/src/contracts/schemaRegistry.ts` with the new `docs-consolidation-plan` command-output schema and added a focused core contract test so reviewed plan artifacts stay registered consistently across Playbook packages. WHY: CI contract tests should fail on the first real registry drift, not on later remediation/reporting steps.
+- Rule: CI remediation/reporting steps are not the root cause when the workflow explicitly says it is preserving an earlier `pnpm test` failure.
+- Pattern: Fix the first failing test block in the log, not trailing warning/reporting steps.
+- Failure Mode: Chasing post-failure audit warnings instead of the original failing suite causes wasted cycles and no CI recovery.
 
 - WHAT: Updated docs consolidation fixture assertions to pin the current canonical worker-fragment lane ids (`lane-1`, etc.) and verify byte-stable artifact text plus stable fragment ordering across repeated runs. WHY: Once `lane_id` is part of the persisted worker-fragment contract, determinism tests must assert canonical contract fields instead of stale legacy fixture nicknames. 
 - Rule: Determinism tests should pin canonical contract fields, not outdated fixture nicknames.

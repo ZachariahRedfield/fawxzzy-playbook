@@ -12,7 +12,7 @@ import {
   createRunId,
   createTaskId
 } from '../src/contracts/controlPlaneRuntime.js';
-import { memoryArtifactSchemaRegistry } from '../src/contracts/schemaRegistry.js';
+import { additiveCommandFieldSchemaRegistry, memoryArtifactSchemaRegistry } from '../src/contracts/schemaRegistry.js';
 
 describe('control plane runtime contracts', () => {
   it('creates deterministic ids for agent, run, and task contracts', () => {
@@ -133,6 +133,20 @@ describe('control plane runtime contracts', () => {
     expect(dryRunA.approval.approvalRequired).toBe(true);
     expect(dryRunA.approval.approvalRequiredTaskCount).toBe(1);
     expect(dryRunA.approval.reason).toBe('manual-remediation-tasks-present');
+  });
+
+
+  it('keeps additive command-output schema registry in sync for reviewed plan artifacts', () => {
+    const ids = additiveCommandFieldSchemaRegistry.map((entry) => entry.id);
+    expect(ids).toContain('docs-consolidation-plan');
+
+    const entry = additiveCommandFieldSchemaRegistry.find((item) => item.id === 'docs-consolidation-plan');
+    expect(entry).toEqual({
+      id: 'docs-consolidation-plan',
+      version: '1.0',
+      path: 'packages/contracts/src/docs-consolidation-plan.schema.json',
+      kind: 'command-output'
+    });
   });
 
   it('registers control plane runtime artifacts in schema registry', () => {
