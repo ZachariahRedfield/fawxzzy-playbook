@@ -70,8 +70,11 @@ Memory-aware retrieval should compose:
 4. committed governance doctrine where explicitly reviewed and adopted
 
 Rule: **Retrieval Must Return Provenance**.
+Rule: **All global pattern storage read surfaces must derive source metadata from one canonical helper, not per-surface ad hoc record construction**.
 Pattern: **Scope-First Resolution Beats Path Inference**.
+Pattern: **Promote, Compat, and Knowledge Records Should Share One Normalization Layer for Storage Provenance Fields**.
 Failure Mode: **Storage-Path Drift Makes Governance Legible In Code But Confusing To Operators**.
+Failure Mode: **Projection-Specific Record Builders Silently Omit Provenance Fields, Causing Contract Drift While the Underlying Storage Logic Still Appears to Work**.
 
 ## Failure modes
 

@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { listKnowledge } from "@zachariahredfield/playbook-core";
 import {
+  buildStoryPatternContext,
   createDefaultGlobalPatternsArtifact,
   readGlobalPatternsArtifact,
   resolvePatternKnowledgeStore,
@@ -84,6 +85,45 @@ describe("pattern storage contract", () => {
       expect(promoted.patterns.map((pattern) => pattern.id)).toEqual([
         "pattern.global.compat",
       ]);
+
+      const compatContext = buildStoryPatternContext(
+        {
+          id: "story.compat",
+          repo: "repo-a",
+          title: "Adopt pattern.global.compat",
+          type: "governance",
+          source: "manual",
+          severity: "medium",
+          priority: "high",
+          confidence: "high",
+          status: "ready",
+          evidence: ["pattern.global.compat"],
+          rationale: "Promote compat-backed doctrine safely.",
+          acceptance_criteria: ["Keep compat projection provenance stable."],
+          dependencies: [],
+          execution_lane: null,
+          suggested_route: "governance_only",
+        },
+        { playbookHome },
+      );
+      const compatPattern = compatContext.patterns.find(
+        (record) => record.pattern_id === "pattern.global.compat",
+      );
+      expect(compatPattern?.source).toEqual({
+        kind: "global-pattern-memory",
+        path: "patterns.json",
+      });
+      expect(compatContext.pattern_store).toMatchObject({
+        scope: "global_reusable_pattern_memory",
+        artifact_path: "patterns.json",
+        canonical_artifact_path: ".playbook/patterns.json",
+        compat_artifact_paths: ["patterns.json"],
+        resolution: "compatibility",
+        source: {
+          kind: "global-pattern-memory",
+          path: "patterns.json",
+        },
+      });
 
       const knowledge = listKnowledge(repoRoot, {
         lifecycle: "active",

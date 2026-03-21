@@ -1,14 +1,17 @@
-import path from 'node:path';
 import {
   resolvePlaybookHome,
   readGlobalPatternsArtifact,
   type PatternRecord,
 } from "../promotion/globalPatterns.js";
-import { resolvePatternKnowledgeStore } from "../patternStore.js";
+import { buildGlobalPatternStorageSourceMetadata } from "../patternStorageSource.js";
 import type { StoryRecord } from "./stories.js";
 
 export type StoryPatternContextMatch = {
   pattern_id: string;
+  source: {
+    kind: "global-pattern-memory";
+    path: string;
+  };
   why_matched: string;
   provenance_refs: string[];
   freshness: {
@@ -25,11 +28,15 @@ export type StoryPatternContextMatch = {
 export type StoryPatternContext = {
   patterns: StoryPatternContextMatch[];
   pattern_store: {
-    scope: 'global_reusable_pattern_memory';
+    scope: "global_reusable_pattern_memory";
     artifact_path: string;
     canonical_artifact_path: string;
     compat_artifact_paths: string[];
-    resolution: 'canonical' | 'compatibility' | 'default';
+    resolution: "canonical" | "compatibility" | "default";
+    source: {
+      kind: "global-pattern-memory";
+      path: string;
+    };
   };
 };
 
@@ -43,8 +50,6 @@ type ExtendedPatternRecord = PatternRecord & {
     | string
     | { title?: string; summary?: string; acceptance?: string[] };
 };
-
-const pathRelative = (root: string, target: string): string => path.relative(root, target).replaceAll('\\', '/');
 
 const sortUnique = (values: string[]): string[] =>
   [...new Set(values.filter((value) => value.trim().length > 0))].sort(
@@ -163,10 +168,12 @@ export const buildStoryPatternContext = (
   options?: { playbookHome?: string },
 ): StoryPatternContext => {
   const playbookHome = options?.playbookHome ?? resolvePlaybookHome();
-  const patternStore = resolvePatternKnowledgeStore('global_reusable_pattern_memory', { playbookHome });
-  const patterns = readGlobalPatternsArtifact(playbookHome)
-    .patterns
-    .filter((pattern) => pattern.status === "active") as ExtendedPatternRecord[];
+  const patternStore = buildGlobalPatternStorageSourceMetadata(playbookHome, {
+    playbookHome,
+  });
+  const patterns = readGlobalPatternsArtifact(playbookHome).patterns.filter(
+    (pattern) => pattern.status === "active",
+  ) as ExtendedPatternRecord[];
   const matches = patterns
     .flatMap((pattern) => {
       const reason = matchPattern(story, pattern);
@@ -175,6 +182,7 @@ export const buildStoryPatternContext = (
         {
           pattern_id: pattern.id,
           why_matched: reason.label,
+          source: patternStore.source,
           provenance_refs: collectProvenanceRefs(pattern),
           freshness: {
             status: pattern.status,
@@ -182,14 +190,25 @@ export const buildStoryPatternContext = (
           },
           lifecycle: {
             state: pattern.status,
-            warnings: pattern.status === 'active'
-              ? []
-              : [`Pattern ${pattern.id} is ${pattern.status}; inspect lifecycle metadata before reusing it.`],
-            superseded_by: Array.isArray((pattern as PatternRecord & { superseded_by?: unknown }).superseded_by)
-              ? ((pattern as PatternRecord & { superseded_by?: unknown }).superseded_by as string[])
-              : typeof (pattern as PatternRecord & { superseded_by?: unknown }).superseded_by === 'string'
-                ? [(pattern as PatternRecord & { superseded_by?: unknown }).superseded_by as string]
-                : []
+            warnings:
+              pattern.status === "active"
+                ? []
+                : [
+                    `Pattern ${pattern.id} is ${pattern.status}; inspect lifecycle metadata before reusing it.`,
+                  ],
+            superseded_by: Array.isArray(
+              (pattern as PatternRecord & { superseded_by?: unknown })
+                .superseded_by,
+            )
+              ? ((pattern as PatternRecord & { superseded_by?: unknown })
+                  .superseded_by as string[])
+              : typeof (pattern as PatternRecord & { superseded_by?: unknown })
+                    .superseded_by === "string"
+                ? [
+                    (pattern as PatternRecord & { superseded_by?: unknown })
+                      .superseded_by as string,
+                  ]
+                : [],
           },
           _rank: reason.rank,
         },
@@ -205,11 +224,12 @@ export const buildStoryPatternContext = (
   return {
     patterns: matches,
     pattern_store: {
-      scope: 'global_reusable_pattern_memory',
-      artifact_path: pathRelative(patternStore.rootPath, patternStore.resolvedPath),
-      canonical_artifact_path: patternStore.canonicalRelativePath,
-      compat_artifact_paths: patternStore.compatibilityRelativePaths,
-      resolution: patternStore.resolvedFrom,
+      scope: patternStore.scope,
+      artifact_path: patternStore.source.path,
+      canonical_artifact_path: patternStore.canonical_artifact_path,
+      compat_artifact_paths: patternStore.compat_artifact_paths,
+      resolution: patternStore.resolution,
+      source: patternStore.source,
     },
   };
 };

@@ -118,6 +118,7 @@ describe("buildStoryPatternContext", () => {
     ]);
     expect(context.patterns[0]).toMatchObject({
       why_matched: "explicit_pattern_reference",
+      source: { kind: "global-pattern-memory", path: "patterns.json" },
     });
     expect(context.patterns[1]).toMatchObject({
       why_matched: "normalization_key_match",
@@ -218,6 +219,10 @@ describe("buildStoryPatternContext", () => {
       canonical_artifact_path: ".playbook/patterns.json",
       compat_artifact_paths: ["patterns.json"],
       resolution: "canonical",
+      source: {
+        kind: "global-pattern-memory",
+        path: ".playbook/patterns.json",
+      },
     });
   });
 });
