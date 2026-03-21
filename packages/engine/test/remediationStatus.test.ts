@@ -115,6 +115,55 @@ describe('buildRemediationStatusArtifact', () => {
     expect(artifact.telemetry.failure_classes).toEqual([
       { failure_class: 'snapshot_drift', total_runs: 2, fixed: 1, partially_fixed: 0, not_fixed: 1, blocked: 0, success_rate: 0.5 }
     ]);
+    expect(artifact.telemetry.failure_class_rollup).toEqual([
+      {
+        failure_class: 'snapshot_drift',
+        total_runs: 2,
+        fixed: 1,
+        partially_fixed: 0,
+        not_fixed: 1,
+        blocked: 0,
+        success_rate: 0.5,
+        dry_run_runs: 0,
+        apply_runs: 2,
+        latest_run_id: 'test-autofix-run-0002',
+        sample_failure_signatures: ['sig-a', 'sig-b']
+      }
+    ]);
+    expect(artifact.telemetry.repair_class_rollup).toEqual([
+      {
+        repair_class: 'snapshot_refresh',
+        total_runs: 2,
+        successful_runs: 1,
+        blocked_runs: 0,
+        not_fixed_runs: 1,
+        success_rate: 0.5,
+        latest_run_id: 'test-autofix-run-0002',
+        failure_classes: ['snapshot_drift']
+      }
+    ]);
+    expect(artifact.telemetry.threshold_counterfactuals).toEqual([
+      { threshold: 0.5, eligible_runs: 1, successful_eligible_runs: 1, blocked_low_confidence_runs: 0, blocked_runs_that_would_clear: 0, latest_run_would_clear: true, advisory_note: 'Advisory only: no blocked_low_confidence runs would have cleared this threshold.' },
+      { threshold: 0.7, eligible_runs: 1, successful_eligible_runs: 1, blocked_low_confidence_runs: 0, blocked_runs_that_would_clear: 0, latest_run_would_clear: true, advisory_note: 'Advisory only: no blocked_low_confidence runs would have cleared this threshold.' },
+      { threshold: 0.85, eligible_runs: 1, successful_eligible_runs: 1, blocked_low_confidence_runs: 0, blocked_runs_that_would_clear: 0, latest_run_would_clear: true, advisory_note: 'Advisory only: no blocked_low_confidence runs would have cleared this threshold.' }
+    ]);
+    expect(artifact.telemetry.dry_run_vs_apply_delta).toEqual({
+      dry_run_runs: 0,
+      apply_runs: 2,
+      dry_run_success_rate: 0,
+      apply_success_rate: 0.5,
+      success_rate_delta: 0.5,
+      blocked_delta: 0,
+      advisory_note: 'Advisory only: compares read-only historical outcomes by execution mode without changing policy.'
+    });
+    expect(artifact.telemetry.manual_review_pressure).toEqual({
+      review_required_runs: 0,
+      blocked_runs: 0,
+      total_manual_pressure_runs: 0,
+      top_review_required_signatures: [],
+      top_blocked_signatures: [],
+      advisory_note: 'Advisory only: highlights where operators may need to inspect recurring failures before tuning thresholds.'
+    });
   });
 
 
@@ -212,6 +261,29 @@ describe('buildRemediationStatusArtifact', () => {
         historical_success_count: 1
       }
     ]);
+    expect(artifact.telemetry.blocked_signature_rollup).toEqual([
+      {
+        failure_signature: 'sig-b',
+        blocked_count: 1,
+        latest_run_id: 'test-autofix-run-0004',
+        latest_generatedAt: '2026-03-20T00:00:00.000Z',
+        historical_success_count: 1
+      }
+    ]);
+    expect(artifact.telemetry.threshold_counterfactuals).toEqual([
+      { threshold: 0.5, eligible_runs: 2, successful_eligible_runs: 1, blocked_low_confidence_runs: 1, blocked_runs_that_would_clear: 1, latest_run_would_clear: true, advisory_note: 'Advisory only: some blocked_low_confidence runs would have cleared this threshold.' },
+      { threshold: 0.7, eligible_runs: 1, successful_eligible_runs: 1, blocked_low_confidence_runs: 1, blocked_runs_that_would_clear: 0, latest_run_would_clear: false, advisory_note: 'Advisory only: no blocked_low_confidence runs would have cleared this threshold.' },
+      { threshold: 0.85, eligible_runs: 1, successful_eligible_runs: 1, blocked_low_confidence_runs: 1, blocked_runs_that_would_clear: 0, latest_run_would_clear: false, advisory_note: 'Advisory only: no blocked_low_confidence runs would have cleared this threshold.' }
+    ]);
+    expect(artifact.telemetry.dry_run_vs_apply_delta).toEqual({
+      dry_run_runs: 1,
+      apply_runs: 2,
+      dry_run_success_rate: 0,
+      apply_success_rate: 0.5,
+      success_rate_delta: 0.5,
+      blocked_delta: -1,
+      advisory_note: 'Advisory only: compares read-only historical outcomes by execution mode without changing policy.'
+    });
     expect(artifact.telemetry.conservative_confidence_signal).toEqual({
       confidence_may_be_conservative: true,
       reasoning: 'Latest run was blocked_low_confidence, but prior history contains successful outcomes for matching signatures, so the threshold may be conservative.',
@@ -219,4 +291,85 @@ describe('buildRemediationStatusArtifact', () => {
       supporting_failure_classes: ['snapshot_drift']
     });
   });
+});
+
+
+it('is deterministic for identical history presented in different order and degrades safely for older partial entries', () => {
+  const unorderedHistory = history();
+  unorderedHistory.runs = [unorderedHistory.runs[1]!, unorderedHistory.runs[0]!];
+  unorderedHistory.runs.push({
+    run_id: 'test-autofix-run-0000',
+    generatedAt: '2026-03-17T00:00:00.000Z',
+    input: { path: 'failure.log' },
+    failure_signatures: ['sig-c'],
+    triage_classifications: [],
+    admitted_findings: [],
+    excluded_findings: [],
+    applied_task_ids: [],
+    applied_repair_classes: [],
+    files_touched: [],
+    verification_commands: [],
+    verification_outcomes: [],
+    final_status: 'review_required_only',
+    stop_reasons: ['manual review'],
+    provenance: { failure_log_path: 'failure.log', triage_artifact_path: 't', fix_plan_artifact_path: 'f', apply_result_path: null, autofix_result_path: 'r' }
+  } as TestAutofixRemediationHistoryArtifact['runs'][number]);
+
+  const artifactA = buildRemediationStatusArtifact({ latestResult: latestResult(), history: history(), latestResultPath: '.playbook/test-autofix.json', remediationHistoryPath: '.playbook/test-autofix-history.json' });
+  const artifactB = buildRemediationStatusArtifact({ latestResult: latestResult(), history: unorderedHistory, latestResultPath: '.playbook/test-autofix.json', remediationHistoryPath: '.playbook/test-autofix-history.json' });
+
+  expect(artifactA.telemetry.failure_class_rollup).toEqual([{
+    failure_class: 'snapshot_drift',
+    total_runs: 2,
+    fixed: 1,
+    partially_fixed: 0,
+    not_fixed: 1,
+    blocked: 0,
+    success_rate: 0.5,
+    dry_run_runs: 0,
+    apply_runs: 2,
+    latest_run_id: 'test-autofix-run-0002',
+    sample_failure_signatures: ['sig-a', 'sig-b']
+  }]);
+  expect(artifactB.telemetry.failure_class_rollup).toEqual([
+    {
+      failure_class: 'snapshot_drift',
+      total_runs: 2,
+      fixed: 1,
+      partially_fixed: 0,
+      not_fixed: 1,
+      blocked: 0,
+      success_rate: 0.5,
+      dry_run_runs: 0,
+      apply_runs: 2,
+      latest_run_id: 'test-autofix-run-0002',
+      sample_failure_signatures: ['sig-a', 'sig-b']
+    }
+  ]);
+  expect(artifactB.telemetry.manual_review_pressure).toEqual({
+    review_required_runs: 1,
+    blocked_runs: 0,
+    total_manual_pressure_runs: 1,
+    top_review_required_signatures: [{
+      failure_signature: 'sig-c',
+      blocked_count: 1,
+      latest_run_id: 'test-autofix-run-0000',
+      latest_generatedAt: '2026-03-17T00:00:00.000Z',
+      historical_success_count: 0
+    }],
+    top_blocked_signatures: [],
+    advisory_note: 'Advisory only: highlights where operators may need to inspect recurring failures before tuning thresholds.'
+  });
+  expect(artifactB.telemetry.repair_class_rollup).toEqual([
+    {
+      repair_class: 'snapshot_refresh',
+      total_runs: 2,
+      successful_runs: 1,
+      blocked_runs: 0,
+      not_fixed_runs: 1,
+      success_rate: 0.5,
+      latest_run_id: 'test-autofix-run-0002',
+      failure_classes: ['snapshot_drift']
+    }
+  ]);
 });
