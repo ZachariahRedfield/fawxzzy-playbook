@@ -104,6 +104,7 @@ export const additiveCommandFieldSchemaRegistry: RegisteredSchemaContract[] = [
   { id: 'policy-evaluation', version: '1.0', path: 'packages/contracts/src/policy-evaluation.schema.json', kind: 'command-output' },
   { id: 'story', version: '1.0', path: 'packages/contracts/src/story.schema.json', kind: 'command-output' },
   { id: 'stories', version: '1.0', path: 'packages/contracts/src/stories.schema.json', kind: 'command-output' },
+  { id: 'docs-consolidation-plan', version: '1.0', path: 'packages/contracts/src/docs-consolidation-plan.schema.json', kind: 'command-output' },
   { id: 'explain.memoryKnowledge', version: '1.0', path: 'schema://cli/explain', kind: 'command-output' },
   { id: 'plan.tasks[].advisory.outcomeLearning', version: '1.0', path: 'schema://cli/plan', kind: 'command-output' },
   { id: 'analyze-pr.preventionGuidance', version: '1.0', path: 'schema://cli/analyze-pr', kind: 'command-output' },
