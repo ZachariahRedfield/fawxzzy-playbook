@@ -68,6 +68,7 @@ These suggestions preserve provenance back to stable failure signatures, repair 
 Governance constraints:
 
 - Rule: Runtime outcomes may suggest system improvements, but may not mutate doctrine or policy automatically.
+- Rule: New remediation-learning candidate families must declare a review tier explicitly when they can influence doctrine, policy, or operator guidance.
 - Pattern: Self-repair becomes compounding only when outcomes are distilled back into candidate knowledge.
 - Failure Mode: Rich remediation history that never feeds learning becomes a dead-end log.
 - Rule: Repeated blocked signatures should generate investigation/tuning candidates instead of widening execution authority.

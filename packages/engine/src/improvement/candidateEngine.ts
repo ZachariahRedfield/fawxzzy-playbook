@@ -387,8 +387,24 @@ const generateRouterRecommendations = (input: {
   };
 };
 
-const buildTier = (input: { category: ImprovementCandidateCategory; suggestedAction: string }): ImprovementTier => {
+const buildTier = (input: {
+  category: ImprovementCandidateCategory;
+  suggestedAction: string;
+  proposalKind?: ImprovementCandidate['proposal_kind'];
+}): ImprovementTier => {
   const suggestedAction = input.suggestedAction.toLowerCase();
+
+  if (input.category === 'remediation_learning') {
+    if (
+      input.proposalKind === 'threshold_tuning' ||
+      input.proposalKind === 'verify_rule_improvement' ||
+      input.proposalKind === 'docs_doctrine_update'
+    ) {
+      return 'governance';
+    }
+
+    return 'conversation';
+  }
 
   if (
     input.category === 'ontology' ||
@@ -434,6 +450,7 @@ const buildEvidence = (events: Array<{ event_id: string; timestamp: string }>): 
 const evaluateGating = (input: {
   category: ImprovementCandidateCategory;
   suggestedAction: string;
+  proposalKind?: ImprovementCandidate['proposal_kind'];
   confidenceScore: number;
   evidence: ProposalEvidence;
 }): {
@@ -442,7 +459,11 @@ const evaluateGating = (input: {
   requiredReview: boolean;
   blockingReasons: string[];
 } => {
-  const improvementTier = buildTier({ category: input.category, suggestedAction: input.suggestedAction });
+  const improvementTier = buildTier({
+    category: input.category,
+    suggestedAction: input.suggestedAction,
+    proposalKind: input.proposalKind
+  });
   const gatingTier = toGatingTier(improvementTier);
   const blockingReasons: string[] = [];
   const governanceSensitive = gatingTier === 'GOVERNANCE';
@@ -500,6 +521,7 @@ const emitCandidate = (input: {
   const gating = evaluateGating({
     category: input.category,
     suggestedAction: input.suggestedAction,
+    proposalKind: input.proposalKind,
     confidenceScore,
     evidence
   });

@@ -593,13 +593,19 @@ describe('remediation learning candidates', () => {
     const artifact = generateImprovementCandidates(repo);
     const blockedCandidate = artifact.candidates.find((candidate) => candidate.proposal_kind === 'repair_class_investigation');
     const thresholdCandidate = artifact.candidates.find((candidate) => candidate.proposal_kind === 'threshold_tuning');
+    const blockedDoctrineCandidate = artifact.doctrine_candidates.candidates.find((candidate) => candidate.candidate_id === 'improvement_remediation_blocked_signature_sig_repeat');
 
     expect(blockedCandidate).toBeDefined();
     expect(blockedCandidate?.category).toBe('remediation_learning');
     expect(blockedCandidate?.required_review).toBe(true);
+    expect(blockedCandidate?.gating_tier).toBe('CONVERSATIONAL');
     expect(blockedCandidate?.provenance?.failure_signatures).toContain('sig-repeat');
     expect(blockedCandidate?.provenance?.repair_classes).toContain('snapshot_refresh');
+    expect(thresholdCandidate?.required_review).toBe(true);
+    expect(thresholdCandidate?.gating_tier).toBe('GOVERNANCE');
     expect(thresholdCandidate?.suggested_action).toContain('candidate-only threshold tuning review');
+    expect(blockedDoctrineCandidate).toBeDefined();
+    expect(blockedDoctrineCandidate?.gating_tier).toBe('CONVERSATIONAL');
 
     fs.rmSync(repo, { recursive: true, force: true });
   });
@@ -678,11 +684,108 @@ describe('remediation learning candidates', () => {
     writeArtifact(repo, '.playbook/remediation-status.json', remediationStatus(historyArtifact, latestArtifact));
 
     const artifact = generateImprovementCandidates(repo);
+    const verifyCandidate = artifact.candidates.find((candidate) => candidate.proposal_kind === 'verify_rule_improvement');
+    const fixtureCandidate = artifact.candidates.find((candidate) => candidate.proposal_kind === 'fixture_contract_hardening');
+    const verifyDoctrineCandidate = artifact.doctrine_candidates.candidates.find(
+      (candidate) => candidate.candidate_id === 'improvement_remediation_verify_rule_improvement_review_pressure'
+    );
+    const fixtureDoctrineCandidate = artifact.doctrine_candidates.candidates.find(
+      (candidate) => candidate.candidate_id === 'improvement_remediation_fixture_contract_hardening_low_confidence_success'
+    );
 
-    expect(artifact.candidates.some((candidate) => candidate.proposal_kind === 'verify_rule_improvement')).toBe(true);
-    expect(artifact.candidates.some((candidate) => candidate.proposal_kind === 'fixture_contract_hardening')).toBe(true);
+    expect(verifyCandidate?.required_review).toBe(true);
+    expect(verifyCandidate?.gating_tier).toBe('GOVERNANCE');
+    expect(fixtureCandidate?.required_review).toBe(true);
+    expect(fixtureCandidate?.gating_tier).toBe('CONVERSATIONAL');
     expect(artifact.candidates.some((candidate) => candidate.proposal_kind === 'docs_doctrine_update')).toBe(true);
+    expect(verifyDoctrineCandidate).toBeDefined();
+    expect(verifyDoctrineCandidate?.gating_tier).toBe('GOVERNANCE');
+    expect(fixtureDoctrineCandidate).toBeDefined();
+    expect(fixtureDoctrineCandidate?.gating_tier).toBe('CONVERSATIONAL');
     expect(artifact.candidates.every((candidate) => candidate.category !== 'routing' || candidate.provenance?.remediation_source === undefined)).toBe(true);
+
+    fs.rmSync(repo, { recursive: true, force: true });
+  });
+
+  it('keeps remediation-learning proposals review-gated even when action text would otherwise fall through generic tier matching', () => {
+    const repo = createRepo();
+    writeLearningState(repo, 0.4);
+    const historyArtifact = remediationHistory([
+      {
+        run_id: 'test-autofix-run-0001',
+        generatedAt: '2026-03-18T00:00:00.000Z',
+        input: { path: 'failure.log' },
+        mode: 'apply',
+        retry_policy_decision: 'allow_with_preferred_repair_class',
+        confidence_threshold: 0.7,
+        autofix_confidence: 0.75,
+        failure_signatures: ['sig-repeat'],
+        triage_classifications: [],
+        admitted_findings: ['sig-repeat'],
+        excluded_findings: [],
+        applied_task_ids: ['task-1'],
+        applied_repair_classes: ['snapshot_refresh'],
+        files_touched: [],
+        verification_commands: [],
+        verification_outcomes: [],
+        final_status: 'blocked_low_confidence',
+        stop_reasons: ['blocked'],
+        provenance: { failure_log_path: 'failure.log', triage_artifact_path: 'triage.json', fix_plan_artifact_path: 'plan.json', apply_result_path: 'apply.json', autofix_result_path: 'autofix.json' }
+      },
+      {
+        run_id: 'test-autofix-run-0002',
+        generatedAt: '2026-03-19T00:00:00.000Z',
+        input: { path: 'failure.log' },
+        mode: 'apply',
+        retry_policy_decision: 'allow_with_preferred_repair_class',
+        confidence_threshold: 0.7,
+        autofix_confidence: 0.77,
+        failure_signatures: ['sig-repeat'],
+        triage_classifications: [],
+        admitted_findings: ['sig-repeat'],
+        excluded_findings: [],
+        applied_task_ids: ['task-2'],
+        applied_repair_classes: ['snapshot_refresh'],
+        files_touched: [],
+        verification_commands: [],
+        verification_outcomes: [],
+        final_status: 'review_required_only',
+        stop_reasons: ['review'],
+        provenance: { failure_log_path: 'failure.log', triage_artifact_path: 'triage.json', fix_plan_artifact_path: 'plan.json', apply_result_path: 'apply.json', autofix_result_path: 'autofix.json' }
+      },
+      {
+        run_id: 'test-autofix-run-0003',
+        generatedAt: '2026-03-20T00:00:00.000Z',
+        input: { path: 'failure.log' },
+        mode: 'apply',
+        retry_policy_decision: 'allow_with_preferred_repair_class',
+        confidence_threshold: 0.7,
+        autofix_confidence: 0.79,
+        failure_signatures: ['sig-repeat'],
+        triage_classifications: [],
+        admitted_findings: ['sig-repeat'],
+        excluded_findings: [],
+        applied_task_ids: ['task-3'],
+        applied_repair_classes: ['snapshot_refresh'],
+        files_touched: [],
+        verification_commands: [],
+        verification_outcomes: [],
+        final_status: 'fixed',
+        stop_reasons: ['fixed'],
+        provenance: { failure_log_path: 'failure.log', triage_artifact_path: 'triage.json', fix_plan_artifact_path: 'plan.json', apply_result_path: 'apply.json', autofix_result_path: 'autofix.json' }
+      }
+    ]);
+    const latestArtifact = remediationLatest({ run_id: 'test-autofix-run-0003', final_status: 'fixed', autofix_confidence: 0.79 });
+    writeArtifact(repo, '.playbook/test-autofix-history.json', historyArtifact);
+    writeArtifact(repo, '.playbook/test-autofix.json', latestArtifact);
+    writeArtifact(repo, '.playbook/remediation-status.json', remediationStatus(historyArtifact, latestArtifact));
+
+    const artifact = generateImprovementCandidates(repo);
+    const remediationCandidates = artifact.candidates.filter((candidate) => candidate.category === 'remediation_learning');
+
+    expect(remediationCandidates.length).toBeGreaterThan(0);
+    expect(remediationCandidates.every((candidate) => candidate.required_review)).toBe(true);
+    expect(remediationCandidates.every((candidate) => candidate.gating_tier !== 'AUTO-SAFE')).toBe(true);
 
     fs.rmSync(repo, { recursive: true, force: true });
   });
