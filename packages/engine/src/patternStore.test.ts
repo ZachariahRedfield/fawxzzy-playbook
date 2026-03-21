@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { resolvePatternKnowledgeStore } from './patternStore.js';
-import { readGlobalPatternsArtifact, writeGlobalPatternsArtifact, type PatternArtifact } from './promotion/globalPatterns.js';
+import { canonicalizePatternArtifact, readGlobalPatternsArtifact, writeGlobalPatternsArtifact, type PatternArtifact } from './promotion/globalPatterns.js';
 import { buildStoryPatternContext } from './story/patternContext.js';
 
 const tempDirs: string[] = [];
@@ -59,7 +59,7 @@ describe('pattern storage contract', () => {
     expect(resolvedCompat.resolvedFrom).toBe('compatibility');
     expect(path.relative(playbookHome, resolvedCompat.resolvedPath).replaceAll('\\', '/')).toBe('patterns.json');
 
-    expect(readGlobalPatternsArtifact(playbookHome)).toEqual(legacyArtifact);
+    expect(readGlobalPatternsArtifact(playbookHome)).toEqual(canonicalizePatternArtifact(legacyArtifact));
 
     const storyContext = buildStoryPatternContext(
       {
@@ -110,7 +110,7 @@ describe('pattern storage contract', () => {
     const resolvedCanonical = resolvePatternKnowledgeStore('global_reusable_pattern_memory', { playbookHome });
     expect(resolvedCanonical.resolvedFrom).toBe('canonical');
     expect(path.relative(playbookHome, resolvedCanonical.resolvedPath).replaceAll('\\', '/')).toBe('.playbook/patterns.json');
-    expect(readGlobalPatternsArtifact(playbookHome)).toEqual(canonicalArtifact);
+    expect(readGlobalPatternsArtifact(playbookHome)).toEqual(canonicalizePatternArtifact(canonicalArtifact));
     expect(fs.existsSync(path.join(playbookHome, 'patterns.json'))).toBe(true);
     expect(fs.existsSync(path.join(playbookHome, '.playbook', 'patterns.json'))).toBe(true);
 
