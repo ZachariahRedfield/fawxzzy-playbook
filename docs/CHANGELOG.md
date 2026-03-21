@@ -3,6 +3,11 @@
 
 ## Unreleased
 
+- WHAT: Updated docs consolidation fixture assertions to pin the current canonical worker-fragment lane ids (`lane-1`, etc.) and verify byte-stable artifact text plus stable fragment ordering across repeated runs. WHY: Once `lane_id` is part of the persisted worker-fragment contract, determinism tests must assert canonical contract fields instead of stale legacy fixture nicknames. 
+- Rule: Determinism tests should pin canonical contract fields, not outdated fixture nicknames.
+- Pattern: Workers emit fragments; consolidator owns final singleton narrative artifact.
+- Failure Mode: Legacy fixture lane names can make deterministic consolidation look broken when only canonical lane-id normalization changed.
+
 - WHAT: Added proposal-only `pnpm playbook docs consolidate --json`, backed by a deterministic engine consolidation helper that reads worker fragments plus the protected-surface registry, writes `.playbook/docs-consolidation.json`, emits one compact lead-agent integration brief, and reports duplicate/conflicting fragment targets explicitly. WHY: Protected singleton narrative docs need one governed consolidation seam before any future automation can safely integrate parallel worker proposals without creating a new mutation executor.
 - Rule: Consolidation is the only write boundary for protected singleton narrative docs.
 - Pattern: Workers propose; consolidator integrates.

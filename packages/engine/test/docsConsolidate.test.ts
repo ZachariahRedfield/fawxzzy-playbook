@@ -70,11 +70,21 @@ describe('runDocsConsolidation', () => {
     const firstArtifactText = fs.readFileSync(path.join(root, '.playbook', 'docs-consolidation.json'), 'utf8');
     const second = runDocsConsolidation(root);
     const secondArtifactText = fs.readFileSync(path.join(root, '.playbook', 'docs-consolidation.json'), 'utf8');
+    const firstLaneIds = first.artifact.fragments.map((fragment) => fragment.lane_id);
+    const secondLaneIds = second.artifact.fragments.map((fragment) => fragment.lane_id);
+    const firstOrderingKeys = first.artifact.fragments.map((fragment) => fragment.ordering_key);
+    const secondOrderingKeys = second.artifact.fragments.map((fragment) => fragment.ordering_key);
 
     expect(first.ok).toBe(true);
     expect(second.ok).toBe(true);
     expect(firstArtifactText).toBe(secondArtifactText);
-    expect(first.artifact.fragments.map((fragment) => fragment.lane_id)).toEqual(['lane-a', 'lane-b']);
+    expect(firstLaneIds).toEqual(['lane-1', 'lane-b']);
+    expect(secondLaneIds).toEqual(firstLaneIds);
+    expect(firstOrderingKeys).toEqual([
+      '0001:docs/CHANGELOG.md::release-notes::lane-1',
+      '0002:docs/PLAYBOOK_PRODUCT_ROADMAP.md::roadmap::lane-b'
+    ]);
+    expect(secondOrderingKeys).toEqual(firstOrderingKeys);
   });
 
   it('surfaces duplicate and conflicting fragments explicitly', () => {
