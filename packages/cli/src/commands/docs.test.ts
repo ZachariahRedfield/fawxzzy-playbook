@@ -124,46 +124,45 @@ describe('runDocs', () => {
 
   it('validates repo-scoped roadmap/story contracts when opted in', async () => {
     const repo = createFixtureRepo();
-    fs.writeFileSync(path.join(repo, 'docs', 'ROADMAP.md'), '# Product Roadmap
-
-## Pillars
-- UX
-
-## Active Stories
-- UI-001 – Screen normalization (in-progress)
-', 'utf8');
+    fs.writeFileSync(
+      path.join(repo, 'docs', 'ROADMAP.md'),
+      ['# Product Roadmap', '', '## Pillars', '- UX', '', '## Active Stories', '- UI-001 – Screen normalization (in-progress)', ''].join('\n'),
+      'utf8'
+    );
     fs.mkdirSync(path.join(repo, 'docs', 'stories'), { recursive: true });
     fs.writeFileSync(
       path.join(repo, 'docs', 'stories', 'UI-001-screen-normalization.md'),
-      '# UI-001 – Screen normalization
-
-## Status
-in-progress
-
-## Pillar
-UI Normalization
-
-## Outcome
-Normalize screen layout.
-
-## Scope
-Included work.
-
-## Non-Goals
-Excluded work.
-
-## Surfaces
-Screen A
-
-## Dependencies
-None.
-
-## Done When
-Layout is consistent.
-
-## Evidence
-PR pending.
-',
+      [
+        '# UI-001 – Screen normalization',
+        '',
+        '## Status',
+        'in-progress',
+        '',
+        '## Pillar',
+        'UI Normalization',
+        '',
+        '## Outcome',
+        'Normalize screen layout.',
+        '',
+        '## Scope',
+        'Included work.',
+        '',
+        '## Non-Goals',
+        'Excluded work.',
+        '',
+        '## Surfaces',
+        'Screen A',
+        '',
+        '## Dependencies',
+        'None.',
+        '',
+        '## Done When',
+        'Layout is consistent.',
+        '',
+        '## Evidence',
+        'PR pending.',
+        ''
+      ].join('\n'),
       'utf8'
     );
     const { runDocs } = await import('./docs.js');
@@ -183,20 +182,17 @@ PR pending.
 
   it('fails when story docs miss required sections', async () => {
     const repo = createFixtureRepo();
-    fs.writeFileSync(path.join(repo, 'docs', 'ROADMAP.md'), '# Product Roadmap
-
-## Pillars
-- UX
-
-## Active Stories
-- UI-001 – Screen normalization (in-progress)
-', 'utf8');
+    fs.writeFileSync(
+      path.join(repo, 'docs', 'ROADMAP.md'),
+      ['# Product Roadmap', '', '## Pillars', '- UX', '', '## Active Stories', '- UI-001 – Screen normalization (in-progress)', ''].join('\n'),
+      'utf8'
+    );
     fs.mkdirSync(path.join(repo, 'docs', 'stories'), { recursive: true });
-    fs.writeFileSync(path.join(repo, 'docs', 'stories', 'UI-001-screen-normalization.md'), '# UI-001 – Screen normalization
-
-## Status
-in-progress
-', 'utf8');
+    fs.writeFileSync(
+      path.join(repo, 'docs', 'stories', 'UI-001-screen-normalization.md'),
+      ['# UI-001 – Screen normalization', '', '## Status', 'in-progress', ''].join('\n'),
+      'utf8'
+    );
     const { runDocs } = await import('./docs.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 

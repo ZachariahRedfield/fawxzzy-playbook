@@ -149,7 +149,9 @@
 ## 2026-03-21 — Repo-scoped roadmap and story documentation system
 
 - WHAT: Added `docs/roadmap/REPO_ROADMAP_SYSTEM.md` plus `docs/templates/story.template.md` to define a docs-first repo-scoped roadmap contract built around `docs/ROADMAP.md` and `docs/stories/<STORY_ID>.md`. WHY: Consumer repos can now express product direction, shippable stories, and PR mapping with a lightweight structured documentation system instead of scattered ad hoc planning notes.
-- WHAT: Extended `pnpm playbook docs audit --json` to validate repo-scoped roadmap/story adoption boundaries when a repo opts in, including `docs/ROADMAP.md`, `docs/stories/`, and required story sections. WHY: The contract now has deterministic documentation governance without introducing a new heavy command surface.
+- WHAT: Extended `pnpm playbook docs audit --json` to validate repo-scoped roadmap/story adoption boundaries when a repo opts in, including `docs/ROADMAP.md`, `docs/stories/`, required story sections, and the incremented stable `summary.checksRun` contract output. WHY: The contract now has deterministic documentation governance without introducing a new heavy command surface, and the JSON envelope now accurately counts the added validation check.
+- Rule: When adding a new contract check, update stable JSON snapshots in the same PR.
+- Failure Mode: Multiline markdown fixtures in TypeScript tests must use template literals or explicit `join('\n')`, never raw single-quoted multiline strings.
 - WHAT: Extended `pnpm playbook ask ... --repo-context` to answer story-belonging and pillar-mapping questions from the roadmap/story contract. WHY: Teams can use existing Playbook repository-intelligence flows to route changes back to product intent.
 - Pattern: Product direction should be expressed as small, shippable stories rather than large, vague initiatives.
 - Rule: Systems are adopted as documentation contracts before becoming enforced tooling.
