@@ -256,11 +256,29 @@ runs:
         pnpm test:targeted
 
     - name: Run Playbook verification (primary contract gate)
+      id: run-verify
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        echo "+ node packages/cli/dist/main.js verify --json"
-        node packages/cli/dist/main.js verify --json
+        mkdir -p .playbook
+        echo "+ node packages/cli/dist/main.js verify --json | tee .playbook/verify.json"
+        set +e
+        node packages/cli/dist/main.js verify --json | tee .playbook/verify.json
+        verify_exit_code=${PIPESTATUS[0]}
+        set -e
+        echo "verify-exit-code=$verify_exit_code" >> "$GITHUB_OUTPUT"
+        if [[ "$verify_exit_code" -ne 0 ]]; then
+          exit "$verify_exit_code"
+        fi
+
+    - name: Surface canonical merge-guard summary
+      if: always()
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        node "$GITHUB_WORKSPACE/.github/scripts/render-verify-merge-guard-summary.cjs" \
+          --verify .playbook/verify.json \
+          --out .playbook/merge-guard-comment.md
 
     - name: Validate roadmap contract (deterministic delivery gate)
       shell: bash
