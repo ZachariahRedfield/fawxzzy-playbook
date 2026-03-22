@@ -138,6 +138,13 @@ describe('analyze-pr', () => {
     expect(payload.summary.changedFileCount).toBe(1);
     expect(Array.isArray(payload.findings)).toBe(true);
     expect(Array.isArray(payload.reviewGuidance)).toBe(true);
+    expect(payload.contractSurface).toEqual({
+      hasImpact: false,
+      categories: [],
+      changedFiles: [],
+      requiredUpdates: [],
+      changelogUpdated: false
+    });
 
     logSpy.mockRestore();
   });
@@ -164,6 +171,7 @@ describe('analyze-pr', () => {
     expect(output).toContain('## 🧠 Playbook PR Analysis');
     expect(output).toContain('### Affected Modules');
     expect(output).toContain('### Governance Findings');
+    expect(output).toContain('Confirm contract-surface impact');
 
     logSpy.mockRestore();
   });
@@ -308,6 +316,43 @@ describe('analyze-pr', () => {
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(payload.command).toBe('analyze-pr');
     expect(payload.summary.changedFileCount).toBeGreaterThan(0);
+
+    logSpy.mockRestore();
+  });
+
+  it('detects contract-surface changes and recommends snapshot-first follow-up', async () => {
+    const repo = createRepo('playbook-cli-analyze-pr-contract-surface');
+    initGitRepo(repo);
+    writeRepoIndex(repo);
+
+    fs.mkdirSync(path.join(repo, 'packages', 'cli', 'src', 'commands'), { recursive: true });
+    fs.mkdirSync(path.join(repo, 'tests', 'contracts'), { recursive: true });
+    fs.mkdirSync(path.join(repo, 'docs'), { recursive: true });
+    fs.writeFileSync(path.join(repo, 'packages', 'cli', 'src', 'commands', 'demo.ts'), 'export const demo = 1;\n');
+    fs.writeFileSync(path.join(repo, 'tests', 'contracts', 'demo.snapshot.json'), '{"ok":true}\n');
+    fs.writeFileSync(path.join(repo, 'docs', 'CHANGELOG.md'), '# Changelog\n');
+    runGit(repo, ['add', '.']);
+    runGit(repo, ['commit', '-m', 'initial']);
+
+    fs.writeFileSync(path.join(repo, 'packages', 'cli', 'src', 'commands', 'demo.ts'), 'export const demo = 2;\n');
+    fs.writeFileSync(path.join(repo, 'tests', 'contracts', 'demo.snapshot.json'), '{"ok":false}\n');
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runAnalyzePr(repo, ['--json'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.contractSurface.hasImpact).toBe(true);
+    expect(payload.contractSurface.categories).toEqual(['cli-json-output', 'snapshot-fixture']);
+    expect(payload.contractSurface.changedFiles).toEqual([
+      'packages/cli/src/commands/demo.ts',
+      'tests/contracts/demo.snapshot.json'
+    ]);
+    expect(payload.contractSurface.changelogUpdated).toBe(false);
+    expect(payload.reviewGuidance).toContain(
+      'Run `pnpm exec vitest run packages/cli/test/cliContracts.test.ts` before broader verification when contract surfaces change.'
+    );
+    expect(payload.findings).toContainEqual(expect.objectContaining({ ruleId: 'playbook.pr.contract-surface' }));
 
     logSpy.mockRestore();
   });

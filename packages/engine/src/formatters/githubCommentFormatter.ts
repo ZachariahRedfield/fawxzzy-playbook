@@ -56,10 +56,17 @@ export const formatAnalyzePrGithubComment = (analysis: AnalyzePullRequestResult)
   lines.push('');
 
   lines.push('### Reviewer Checklist');
+  lines.push(`- [ ] Confirm contract-surface impact (${analysis.contractSurface.hasImpact ? analysis.contractSurface.categories.join(', ') || 'none' : 'none'}) is intentional`);
   lines.push('- [ ] Confirm snapshot updates intentional');
   lines.push('- [ ] Validate new command docs');
   lines.push('- [ ] Verify CLI contract stability');
   lines.push('');
+
+  if (analysis.contractSurface.hasImpact) {
+    lines.push('### Contract Surface');
+    lines.push(...toBulletList(analysis.contractSurface.changedFiles, 'none'));
+    lines.push('');
+  }
 
   lines.push('### Review Guidance');
   lines.push(...toBulletList(analysis.reviewGuidance, 'No additional guidance'));

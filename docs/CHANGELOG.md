@@ -14,6 +14,11 @@
 # Changelog
 
 ## Unreleased
+- WHAT: Extended `pnpm playbook analyze-pr --json|--format github-comment` with deterministic contract-surface detection that classifies schema/knowledge/CLI-output/persisted-artifact/snapshot fixture changes, points reviewers at same-pass snapshot/changelog follow-up, and keeps the new machine-readable guidance ordered for stable automation consumption. WHY: Contract-surface changes should be treated as planned implementation work so snapshot drift is handled intentionally before the final broad test run instead of surfacing as late surprise cleanup.
+- Rule: When a PR changes machine-readable contract surfaces, update snapshots and changelog guidance in the same implementation pass.
+- Pattern: Detect contract-surface impact early, run focused contract checks first, then widen verification.
+- Failure Mode: Treating snapshots as cleanup turns predictable contract changes into repeated end-of-run failures.
+
 - WHAT: Restored one shared backward-compatible temporal memory event normalizer across write/read/replay surfaces by guaranteeing top-level `eventInstanceId`, defaulting missing legacy/new scope inputs to `{ modules: [], ruleIds: [] }`, and rehydrating legacy provenance fields (`eventInstanceId`, `subjectModules`, `ruleIds`) before inspection, provenance expansion, replay, and explain/ask enrichment. WHY: Persisted artifact shapes that feed multiple downstream readers need one canonical normalization layer so schema evolution does not create half-working enrichment paths or delayed replay crashes.
 
 - WHAT: Extended workset/lane/execution orchestration state with compact protected-doc consolidation status so merge readiness now stays false until protected singleton doc consolidation is either not applicable or fully applied, while text surfaces only emit short human summaries plus the next command and `.playbook` artifacts retain raw details. WHY: Prevents lanes with unresolved singleton-doc work from appearing merge-ready before the reviewed consolidation boundary is actually resolved.

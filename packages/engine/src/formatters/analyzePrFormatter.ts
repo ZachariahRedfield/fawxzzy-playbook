@@ -25,6 +25,11 @@ export const formatAnalyzePrText = (analysis: AnalyzePullRequestResult): string 
 
   lines.push('Review guidance');
   lines.push(...analysis.reviewGuidance.map((entry) => `  - ${entry}`));
+  lines.push('');
+
+  lines.push('Contract surface');
+  lines.push(`  - impact: ${analysis.contractSurface.hasImpact ? 'yes' : 'no'}`);
+  lines.push(...(analysis.contractSurface.changedFiles.length === 0 ? ['  - changed files: none'] : analysis.contractSurface.changedFiles.map((file) => `  - ${file}`)));
 
   return lines.join('\n');
 };

@@ -21,6 +21,8 @@ type AnalyzePrContextSource =
   | { type: 'rule-owners'; rules: string[] }
   | { type: 'promoted-knowledge'; knowledgeIds: string[] };
 
+type ContractImpactCategory = 'schema-registry' | 'knowledge-list' | 'cli-json-output' | 'persisted-artifact' | 'snapshot-fixture';
+
 type PreventionGuidance = {
   target: {
     module: string;
@@ -102,6 +104,13 @@ export type AnalyzePullRequestResult = {
     line?: number;
   }>;
   reviewGuidance: string[];
+  contractSurface: {
+    hasImpact: boolean;
+    categories: ContractImpactCategory[];
+    changedFiles: string[];
+    requiredUpdates: string[];
+    changelogUpdated: boolean;
+  };
   preventionGuidance: PreventionGuidance[];
   context: {
     sources: AnalyzePrContextSource[];
@@ -362,6 +371,60 @@ const deriveArchitectureBoundaries = (changedFiles: string[]): string[] => {
 
 const isDocsPath = (filePath: string): boolean => filePath.startsWith('docs/') || filePath.toLowerCase().includes('readme');
 
+const CONTRACT_SURFACE_PATTERNS: Array<{
+  category: ContractImpactCategory;
+  match: (filePath: string) => boolean;
+}> = [
+  {
+    category: 'schema-registry',
+    match: (filePath) => filePath.startsWith('packages/contracts/src/') || filePath === 'packages/cli/src/commands/contracts.ts' || filePath === 'packages/engine/src/schema/cliSchemas.ts'
+  },
+  {
+    category: 'knowledge-list',
+    match: (filePath) => filePath.startsWith('packages/cli/src/commands/knowledge/') || filePath === 'packages/engine/src/query/knowledge.ts' || filePath === 'packages/contracts/src/knowledge.schema.json' || filePath === 'docs/commands/knowledge.md'
+  },
+  {
+    category: 'cli-json-output',
+    match: (filePath) => filePath.startsWith('packages/cli/src/commands/') || filePath.startsWith('packages/engine/src/formatters/') || filePath === 'packages/engine/src/schema/cliSchemas.ts'
+  },
+  {
+    category: 'persisted-artifact',
+    match: (filePath) => filePath.startsWith('.playbook/') || filePath.startsWith('packages/engine/src/observer/') || filePath.startsWith('packages/engine/src/session') || filePath.startsWith('packages/cli/src/lib/jsonArtifact')
+  },
+  {
+    category: 'snapshot-fixture',
+    match: (filePath) => filePath.startsWith('tests/contracts/') || filePath.startsWith('packages/cli/test/')
+  }
+];
+
+const CONTRACT_REQUIRED_UPDATES: Record<ContractImpactCategory, string> = {
+  'schema-registry': 'Update schema registry/contracts surfaces and keep entry ordering deterministic.',
+  'knowledge-list': 'Refresh knowledge list/query snapshots and docs if knowledge records or ordering changed.',
+  'cli-json-output': 'Run focused CLI contract coverage and refresh snapshots before the full suite.',
+  'persisted-artifact': 'Review artifact ids/paths/versions for intentional compatibility and deterministic ordering.',
+  'snapshot-fixture': 'Treat snapshot fixture edits as implementation work, not end-of-run cleanup.'
+};
+
+const deriveContractSurface = (changedFiles: string[]): AnalyzePullRequestResult['contractSurface'] => {
+  const categories = CONTRACT_SURFACE_PATTERNS
+    .filter(({ match }) => changedFiles.some((filePath) => match(filePath)))
+    .map(({ category }) => category)
+    .filter((category, index, array) => array.indexOf(category) === index)
+    .sort((left, right) => left.localeCompare(right));
+
+  const changedContractFiles = changedFiles
+    .filter((filePath) => CONTRACT_SURFACE_PATTERNS.some(({ match }) => match(filePath)))
+    .sort((left, right) => left.localeCompare(right));
+
+  return {
+    hasImpact: categories.length > 0,
+    categories,
+    changedFiles: changedContractFiles,
+    requiredUpdates: categories.map((category) => CONTRACT_REQUIRED_UPDATES[category]),
+    changelogUpdated: changedFiles.includes('docs/CHANGELOG.md')
+  };
+};
+
 const deriveRelatedRules = (input: {
   candidateRules: string[];
   changedFiles: string[];
@@ -414,6 +477,7 @@ const deriveReviewGuidance = (analysis: {
   riskLevel: RiskLevel;
   relatedRules: string[];
   boundariesTouched: string[];
+  contractSurface: AnalyzePullRequestResult['contractSurface'];
 }): string[] => {
   const guidance: string[] = [
     'Run `playbook verify --json` before merge to validate governance and testing expectations.',
@@ -438,6 +502,15 @@ const deriveReviewGuidance = (analysis: {
 
   if (analysis.boundariesTouched.length > 1) {
     guidance.push(`Multiple repository boundaries are touched (${analysis.boundariesTouched.join(', ')}); prioritize architecture-aware review.`);
+  }
+
+  if (analysis.contractSurface.hasImpact) {
+    guidance.push(`Contract-surface impact detected (${analysis.contractSurface.categories.join(', ')}); update machine-readable artifacts and snapshots in the same implementation pass.`);
+    guidance.push('Run `pnpm exec vitest run packages/cli/test/cliContracts.test.ts` before broader verification when contract surfaces change.');
+
+    if (!analysis.contractSurface.changelogUpdated) {
+      guidance.push('Add a `docs/CHANGELOG.md` note for intentional contract-surface expansion before merge.');
+    }
   }
 
   return guidance;
@@ -524,12 +597,15 @@ export const analyzePullRequest = (projectRoot: string, options?: { baseRef?: st
   const riskLevel = resolveRiskLevel(moduleRisk.map((entry) => entry.level));
   const riskSignals = uniqueSorted(moduleRisk.flatMap((entry) => entry.signals));
 
+  const contractSurface = deriveContractSurface(diffContext.changedFiles);
+
   const reviewGuidance = deriveReviewGuidance({
     affectedModules,
     docsChanged,
     riskLevel,
     relatedRules,
-    boundariesTouched
+    boundariesTouched,
+    contractSurface
   });
   const changedLineMap = resolveChangedLineMap(projectRoot, diffContext.baseRef, diffContext.changedFiles);
 
@@ -561,6 +637,21 @@ export const analyzePullRequest = (projectRoot: string, options?: { baseRef?: st
       recommendation: 'Run `playbook verify --json` and resolve any findings before merge.',
       ...(firstChangedFile ? { file: firstChangedFile } : {}),
       ...(typeof changedLine === 'number' ? { line: changedLine } : {})
+    });
+  }
+
+  if (contractSurface.hasImpact) {
+    const firstContractFile = contractSurface.changedFiles[0];
+    const contractLine = firstContractFile ? changedLineMap.get(firstContractFile) : undefined;
+    findings.push({
+      ruleId: 'playbook.pr.contract-surface',
+      severity: contractSurface.changelogUpdated ? 'info' : 'warning',
+      message: `Contract-surface change detected: ${contractSurface.categories.join(', ')}.`,
+      recommendation: contractSurface.changelogUpdated
+        ? 'Run focused contract checks first and confirm snapshots/registry ordering are intentional.'
+        : 'Update contract artifacts/snapshots in the same PR and add a docs/CHANGELOG.md note before merge.',
+      ...(firstContractFile ? { file: firstContractFile } : {}),
+      ...(typeof contractLine === 'number' ? { line: contractLine } : {})
     });
   }
 
@@ -601,6 +692,7 @@ export const analyzePullRequest = (projectRoot: string, options?: { baseRef?: st
     moduleOwners: affectedModuleOwners,
     findings,
     reviewGuidance,
+    contractSurface,
     preventionGuidance,
     context: {
       sources: [
@@ -647,6 +739,8 @@ export const analyzePullRequest = (projectRoot: string, options?: { baseRef?: st
       trigger: `analyze-pr:${result.baseRef}`,
       triggerChangedFileCount: result.changedFiles.length,
       triggerAffectedModuleCount: result.affectedModules.length,
+      contractSurfaceCategories: result.contractSurface.categories,
+      contractSurfaceChangedFileCount: result.contractSurface.changedFiles.length,
       findingClasses: uniqueSorted(result.findings.map((finding) => classifyFinding(finding))),
       actionClassSummary: summarizeActionClasses(result.reviewGuidance, result.findings),
       evidenceRefs: uniqueSorted([
