@@ -640,6 +640,7 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
           'moduleOwners',
           'findings',
           'reviewGuidance',
+          'contractSurface',
           'context'
         ],
         properties: {
@@ -764,6 +765,21 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
             }
           },
           reviewGuidance: { type: 'array', items: { type: 'string' } },
+          contractSurface: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['hasImpact', 'categories', 'changedFiles', 'requiredUpdates', 'changelogUpdated'],
+            properties: {
+              hasImpact: { type: 'boolean' },
+              categories: {
+                type: 'array',
+                items: { enum: ['schema-registry', 'knowledge-list', 'cli-json-output', 'persisted-artifact', 'snapshot-fixture'] }
+              },
+              changedFiles: { type: 'array', items: { type: 'string' } },
+              requiredUpdates: { type: 'array', items: { type: 'string' } },
+              changelogUpdated: { type: 'boolean' }
+            }
+          },
           context: {
             type: 'object',
             additionalProperties: false,

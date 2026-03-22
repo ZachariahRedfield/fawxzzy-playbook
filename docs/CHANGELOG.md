@@ -14,6 +14,15 @@
 # Changelog
 
 ## Unreleased
+- WHAT: Refined PR contract-surface review so ephemeral runtime telemetry under `.playbook/memory/events/**` no longer counts as persisted contract evidence for `analyze-pr` / `review-pr`, while stable automation-facing `.playbook` artifacts remain reviewable. WHY: Deterministic review commands must not consume their own runtime emissions and invent second-run-only findings.
+- Rule: Review surfaces must exclude self-generated runtime telemetry from contract-surface evidence.
+- Pattern: Classify stable automation artifacts separately from ephemeral execution artifacts before emitting review findings.
+- Failure Mode: Self-observing review logic creates second-run-only findings and makes deterministic review output look flaky.
+
+- WHAT: Extended `pnpm playbook analyze-pr --json|--format github-comment` with deterministic contract-surface detection that classifies schema/knowledge/CLI-output/persisted-artifact/snapshot fixture changes, points reviewers at same-pass snapshot/changelog follow-up, and keeps the new machine-readable guidance ordered for stable automation consumption. WHY: Contract-surface changes should be treated as planned implementation work so snapshot drift is handled intentionally before the final broad test run instead of surfacing as late surprise cleanup.
+- Rule: When a PR changes machine-readable contract surfaces, update snapshots and changelog guidance in the same implementation pass.
+- Pattern: Detect contract-surface impact early, run focused contract checks first, then widen verification.
+- Failure Mode: Treating snapshots as cleanup turns predictable contract changes into repeated end-of-run failures.
 - WHAT: Finalized replay artifact contract semantics by making `replay-candidates` the canonical stable replay artifact id, pointing `session-replay-evidence` at `.playbook/memory/replay-candidates.json#replayEvidence`, removing the obsolete `memory-replay-result` registry entry, and adding an early `pnpm contracts:check` guard plus CI/PR workflow notes so contract drift fails before the broader test suite. WHY: Contract-surface changes need one canonical replay id and an explicit fail-fast review loop so snapshot churn is intentional instead of accidental.
 - Rule: Confirm contract ids, versions, and paths before refreshing committed snapshots.
 - Failure Mode: Treating replay artifact renames as snapshot noise hides broken automation assumptions until much later in CI.
