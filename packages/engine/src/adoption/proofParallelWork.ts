@@ -120,7 +120,7 @@ export const readProofParallelWorkSummary = (repoRoot: string): ProofParallelWor
   const pendingLanes = uniqueSorted([
     ...((laneState?.lanes ?? []).filter((lane) => laneIsPending(lane)).map((lane) => lane.lane_id)),
     ...((workerResults?.results ?? []).filter((result: WorkerResultEntry) => result.completion_status === 'in_progress').map((result) => result.lane_id))
-  ]).filter((laneId) => !blockedLanes.includes(laneId) && !mergeReadyLanes.includes(laneId) && !planReadyLanes.includes(laneId));
+  ]).filter((laneId) => !blockedLanes.includes(laneId) && !mergeReadyLanes.includes(laneId));
 
   const skippedBlocked = uniqueSorted((guardedApply?.skipped_blocked ?? []).map((entry) => entry.proposal_id));
   const failedExecution = uniqueSorted((guardedApply?.failed_execution ?? []).map((entry) => entry.proposal_id));
