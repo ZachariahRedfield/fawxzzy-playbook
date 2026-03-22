@@ -225,6 +225,8 @@ Do not hand-edit entries inside the managed markers.
   - Example: `pnpm playbook ignore suggest --repo ../target-repo --json`
 - `contracts`: Emit deterministic contract registry for schemas, artifacts, and roadmap status
   - Example: `pnpm playbook contracts --json`
+- `release`: Plan deterministic installable release/version decisions from repo evidence
+  - Example: `pnpm playbook release plan --json --out .playbook/release-plan.json`
 - `architecture`: Verify subsystem registry ownership and architecture mapping integrity
   - Example: `pnpm playbook architecture verify --json`
 - `promote`: Promote reviewed repo-local stories and reusable pattern candidates into canonical artifacts
@@ -317,6 +319,7 @@ Do not hand-edit entries inside the managed markers.
 | `remediation-status` | `pnpm playbook remediation-status --json` |
 | `ignore` | `pnpm playbook ignore suggest --repo ../target-repo --json` |
 | `contracts` | `pnpm playbook contracts --json` |
+| `release` | `pnpm playbook release plan --json --out .playbook/release-plan.json` |
 | `index` | `pnpm playbook index --json` |
 | `graph` | `pnpm playbook graph --json` |
 | `query` | `pnpm playbook query modules --json` |

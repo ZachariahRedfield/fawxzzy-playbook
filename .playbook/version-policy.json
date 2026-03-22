@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "playbook-version-policy",
+  "breakingChangeMarkers": [
+    "BREAKING CHANGE",
+    "PLAYBOOK_BREAKING_CHANGE"
+  ],
+  "versionGroups": [
+    {
+      "name": "playbook-installable-workspace",
+      "packages": [
+        "@fawxzzy/playbook",
+        "@fawxzzy/playbook-cli",
+        "@zachariahredfield/playbook-core",
+        "@zachariahredfield/playbook-engine",
+        "@zachariahredfield/playbook-node"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schema/version-policy.schema.json",
+  "title": "PlaybookVersionPolicy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "breakingChangeMarkers", "versionGroups"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "kind": { "const": "playbook-version-policy" },
+    "breakingChangeMarkers": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "versionGroups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "packages"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "packages": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "minItems": 1,
+            "uniqueItems": true
+          }
+        }
+      }
+    }
+  }
+}

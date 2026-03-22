@@ -374,6 +374,10 @@ const commandRunners: Record<
       quiet,
     });
   },
+  release: async ({ cwd, commandArgs, format, quiet }) => {
+    const { runRelease } = await import("./release.js");
+    return runRelease(cwd, commandArgs, { format, quiet });
+  },
   docs: async ({ cwd, commandArgs, ci, format, quiet }) => {
     const { runDocs } = await import("./docs.js");
     return runDocs(cwd, commandArgs, { ci, format, quiet });
@@ -659,6 +663,7 @@ const commandOrder = [
   "ai-context",
   "ai-contract",
   "contracts",
+  "release",
   "docs",
   "audit",
   "schema",

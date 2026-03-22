@@ -33,5 +33,7 @@ export const PLAYBOOK_SCHEMA_PATHS = {
   testTriage: 'packages/contracts/src/test-triage.schema.json',
   testFixPlan: 'packages/contracts/src/test-fix-plan.schema.json',
   testAutofix: 'packages/contracts/src/test-autofix.schema.json',
-  remediationStatus: 'packages/contracts/src/remediation-status.schema.json'
+  remediationStatus: 'packages/contracts/src/remediation-status.schema.json',
+  versionPolicy: 'packages/contracts/src/version-policy.schema.json',
+  releasePlan: 'packages/contracts/src/release-plan.schema.json'
 } as const;

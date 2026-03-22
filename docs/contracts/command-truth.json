@@ -460,6 +460,18 @@
       "example": "pnpm playbook receipt ingest execution-results.json --json"
     },
     {
+      "name": "release",
+      "category": "Repository tools",
+      "role": "governance",
+      "lifecycle": "canonical",
+      "discoverability": "secondary",
+      "onboardingPriority": null,
+      "canonicalSequence": null,
+      "productFacing": true,
+      "machineReadable": true,
+      "example": "pnpm playbook release plan --json --out .playbook/release-plan.json"
+    },
+    {
       "name": "remediation-status",
       "category": "Repository tools",
       "role": "remediation",
@@ -680,6 +692,7 @@
     "promote",
     "query",
     "receipt",
+    "release",
     "remediation-status",
     "review-pr",
     "route",

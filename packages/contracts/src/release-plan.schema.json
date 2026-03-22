@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schema/release-plan.schema.json",
+  "title": "PlaybookReleasePlan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "generatedAt", "policy", "diff", "summary", "packages", "versionGroups"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "kind": { "const": "playbook-release-plan" },
+    "generatedAt": { "type": "string" },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "breakingChangeMarkers", "versionGroups"],
+      "properties": {
+        "path": { "type": "string" },
+        "breakingChangeMarkers": { "type": "array", "items": { "type": "string" } },
+        "versionGroups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "packages"],
+            "properties": {
+              "name": { "type": "string" },
+              "packages": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "diff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseRef", "baseSha", "headSha", "changedFiles"],
+      "properties": {
+        "baseRef": { "type": "string" },
+        "baseSha": { "type": "string" },
+        "headSha": { "type": "string" },
+        "changedFiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "status", "bump", "reasons"],
+            "properties": {
+              "path": { "type": "string" },
+              "status": { "type": "string" },
+              "bump": { "enum": ["none", "patch", "minor", "major"] },
+              "reasons": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recommendedBump", "reasons"],
+      "properties": {
+        "recommendedBump": { "enum": ["none", "patch", "minor", "major"] },
+        "reasons": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "path", "currentVersion", "recommendedBump", "reasons", "evidence"],
+        "properties": {
+          "name": { "type": "string" },
+          "path": { "type": "string" },
+          "currentVersion": { "type": "string" },
+          "recommendedBump": { "enum": ["none", "patch", "minor", "major"] },
+          "versionGroup": { "type": ["string", "null"] },
+          "reasons": { "type": "array", "items": { "type": "string" } },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "status", "bump", "reasons"],
+              "properties": {
+                "path": { "type": "string" },
+                "status": { "type": "string" },
+                "bump": { "enum": ["none", "patch", "minor", "major"] },
+                "reasons": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "versionGroups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "packages", "recommendedBump", "reasons"],
+        "properties": {
+          "name": { "type": "string" },
+          "packages": { "type": "array", "items": { "type": "string" } },
+          "recommendedBump": { "enum": ["none", "patch", "minor", "major"] },
+          "reasons": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}
