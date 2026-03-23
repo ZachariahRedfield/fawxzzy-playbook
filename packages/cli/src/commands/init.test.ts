@@ -5,7 +5,7 @@ import path from 'node:path';
 import { runInit } from './init.js';
 
 describe('runInit', () => {
-  it('seeds version policy for publishable pnpm workspace repos', () => {
+  it('seeds release governance scaffolding for publishable pnpm workspace repos', () => {
     const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-init-'));
     try {
       fs.mkdirSync(path.join(repoRoot, 'packages', 'pkg-a'), { recursive: true });
@@ -34,6 +34,26 @@ describe('runInit', () => {
           packages: ['packages/pkg-a', 'packages/pkg-b']
         }
       ]);
+      expect(fs.existsSync(path.join(repoRoot, '.github', 'workflows', 'release-prep.yml'))).toBe(true);
+      const changelog = fs.readFileSync(path.join(repoRoot, 'docs', 'CHANGELOG.md'), 'utf8');
+      expect(changelog).toContain('<!-- PLAYBOOK:CHANGELOG_RELEASE_NOTES_START -->');
+      expect(changelog).toContain('<!-- PLAYBOOK:CHANGELOG_RELEASE_NOTES_END -->');
+    } finally {
+      fs.rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('does not seed release governance scaffolding for ineligible repos', () => {
+    const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-init-ineligible-'));
+    try {
+      fs.writeFileSync(path.join(repoRoot, 'package.json'), JSON.stringify({ name: 'repo-root', private: true }, null, 2));
+
+      const exitCode = runInit(repoRoot, { format: 'json', quiet: false, ci: false, force: false, help: false });
+
+      expect(exitCode).toBe(0);
+      expect(fs.existsSync(path.join(repoRoot, '.playbook', 'version-policy.json'))).toBe(false);
+      expect(fs.existsSync(path.join(repoRoot, '.github', 'workflows', 'release-prep.yml'))).toBe(false);
+      expect(fs.existsSync(path.join(repoRoot, 'docs', 'CHANGELOG.md'))).toBe(false);
     } finally {
       fs.rmSync(repoRoot, { recursive: true, force: true });
     }

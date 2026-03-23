@@ -1,4 +1,8 @@
 <!-- PLAYBOOK:CHANGELOG_RELEASE_NOTES_START -->
+- WHAT: Added installable release-governance scaffolding to repo templates by shipping `.github/workflows/release-prep.yml` and `docs/CHANGELOG.md` with the managed `PLAYBOOK:CHANGELOG_RELEASE_NOTES` seam, taught `pnpm playbook init` to seed those files alongside `.playbook/version-policy.json` only for eligible publishable pnpm/node repos, and taught `pnpm playbook upgrade --apply` migrations to retrofit any missing workflow/changelog scaffolding without overwriting existing custom workflow or policy content. WHY: Portable release governance is only real when the trusted/manual reviewed executor path ships with the policy and changelog seam instead of remaining repo-specific setup lore.
+- Rule: Installable workflow policy is incomplete until the trusted/manual mutation path is installable too.
+- Pattern: Seed policy, seed reviewed executor, keep normal CI plan-only.
+- Failure Mode: Shipping only the policy file makes release governance look portable while leaving the actual release path repo-specific.
 - WHAT: Corrected `playbook upgrade` exit semantics so successful migration application now returns success even when the Playbook dependency version was already aligned, while unchanged repos with remaining migrations still return warnings. WHY: Final command classification should reflect the overall upgrade outcome rather than letting an aligned-version subcondition poison successful migration work.
 - Pattern: State classification should be based on final command outcome, not on one intermediate subcondition.
 - Failure Mode: A no-op package-version branch can accidentally poison the final command exit code even when the overall upgrade work succeeded.

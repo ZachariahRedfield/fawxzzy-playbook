@@ -163,11 +163,11 @@ The CLI registry currently also exposes utility commands not treated as part of 
 - `session`
 <!-- PLAYBOOK:DOCS_UTILITY_COMMANDS_END -->
 
-Installable workflow note: `pnpm playbook init` now ships template-managed `.playbook/version-policy.json` by default, and `pnpm playbook upgrade --apply` retrofits that policy into eligible publishable pnpm/node repositories without overwriting an existing custom policy.
+Installable workflow note: `pnpm playbook init` now seeds the full trusted/manual release-governance loop for eligible publishable pnpm/node repositories by installing `.playbook/version-policy.json`, `.github/workflows/release-prep.yml`, and `docs/CHANGELOG.md` with the managed `PLAYBOOK:CHANGELOG_RELEASE_NOTES` seam. `pnpm playbook upgrade --apply` retrofits any missing pieces without overwriting existing custom workflow or policy content.
 
-- Rule: Installable workflow policy belongs in templates, not tribal setup steps.
-- Pattern: Seed policy once, then let verify/release use it everywhere.
-- Failure Mode: Repo-by-repo manual version conventions never become reliable workflow.
+- Rule: Installable workflow policy is incomplete until the trusted/manual mutation path is installable too.
+- Pattern: Seed policy, seed reviewed executor, keep normal CI plan-only.
+- Failure Mode: Shipping only the policy file makes release governance look portable while leaving the actual release path repo-specific.
 - Rule: Version governance should be auto-materialized as an artifact, not inferred late by humans.
 - Pattern: Plan everywhere, apply only through reviewed boundaries.
 - Failure Mode: Release logic that exists only as a command and never enters CI becomes optional in practice.
