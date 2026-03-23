@@ -63,17 +63,21 @@ describe('test fix plan engine', () => {
       'Snapshot `renders schema snapshot 1` mismatch',
       '× renders schema snapshot'
     ]);
-    expect(plan.excluded[0]?.evidence.map(normalizeWhitespace)).toEqual([
-      'Error: Cannot find module @esbuild/linux-x64',
-      'ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL @fawxzzy/playbook test: `node ./scripts/run-tests.mjs`'
-    ]);
-    expect(plan.excluded).toEqual([
+    expect(plan.excluded).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        failure_kind: 'recursive_workspace_failure',
+        reason: 'risky_or_review_required',
+        repair_class: 'review_required',
+        summary: 'ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL @fawxzzy/playbook test: `node ./scripts/run-tests.mjs`',
+        evidence: expect.arrayContaining(['ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL @fawxzzy/playbook test: `node ./scripts/run-tests.mjs`'])
+      }),
       expect.objectContaining({
         failure_kind: 'environment_limitation',
         reason: 'risky_or_review_required',
-        repair_class: 'review_required'
+        repair_class: 'review_required',
+        summary: 'Error: Cannot find module @esbuild/linux-x64'
       })
-    ]);
+    ]));
   });
 
   it('keeps the full artifact deterministic for the same triage input', () => {
