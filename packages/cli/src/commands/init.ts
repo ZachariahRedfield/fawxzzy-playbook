@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { emitResult, ExitCode } from '../lib/cliContract.js';
-import { buildVersionPolicy, versionPolicyRelativePath } from '../lib/versionPolicy.js';
+import { buildVersionPolicy, shouldSeedDefaultVersionPolicy, versionPolicyRelativePath } from '../lib/versionPolicy.js';
 
 type InitOptions = {
   format: 'text' | 'json';
@@ -15,6 +15,7 @@ type InitOptions = {
 type TemplateFile = {
   relativePath: string;
   content: string;
+  requiresReleaseGovernance?: boolean;
 };
 
 const resolveTemplateRoot = (): string => {
@@ -35,6 +36,14 @@ const resolveTemplateRoot = (): string => {
   throw new Error(`Playbook init templates are missing. Checked: ${candidates.join(', ')}`);
 };
 
+const normalizeForOutput = (relativePath: string): string => relativePath.split(path.sep).join('/');
+
+const releaseGovernanceTemplateFiles = new Set([
+  normalizeForOutput(versionPolicyRelativePath),
+  '.github/workflows/release-prep.yml',
+  'docs/CHANGELOG.md'
+]);
+
 const readTemplateFiles = (repoRoot: string, templateRoot: string, currentDir = templateRoot, files: TemplateFile[] = []): TemplateFile[] => {
   for (const entry of fs.readdirSync(currentDir, { withFileTypes: true })) {
     const absolutePath = path.join(currentDir, entry.name);
@@ -44,18 +53,20 @@ const readTemplateFiles = (repoRoot: string, templateRoot: string, currentDir = 
     }
 
     const relativePath = path.relative(templateRoot, absolutePath);
+    const normalizedPath = normalizeForOutput(relativePath);
     const content =
       relativePath === versionPolicyRelativePath
         ? `${JSON.stringify(buildVersionPolicy(repoRoot), null, 2)}\n`
         : fs.readFileSync(absolutePath, 'utf8');
-    files.push({ relativePath, content });
+    files.push({
+      relativePath,
+      content,
+      requiresReleaseGovernance: releaseGovernanceTemplateFiles.has(normalizedPath)
+    });
   }
 
   return files.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
 };
-
-
-const normalizeForOutput = (relativePath: string): string => relativePath.split(path.sep).join('/');
 
 const showInitHelp = (): void => {
   console.log(`Usage: playbook init [options]
@@ -78,8 +89,12 @@ export const runInit = (cwd: string, options: InitOptions): number => {
   const skipped: string[] = [];
   const templateRoot = resolveTemplateRoot();
   const templateFiles = readTemplateFiles(cwd, templateRoot);
+  const shouldInstallReleaseGovernance = shouldSeedDefaultVersionPolicy(cwd);
 
   for (const file of templateFiles) {
+    if (file.requiresReleaseGovernance && !shouldInstallReleaseGovernance) {
+      continue;
+    }
     const destination = path.join(cwd, file.relativePath);
     const outputPath = normalizeForOutput(file.relativePath);
     const alreadyExists = fs.existsSync(destination);

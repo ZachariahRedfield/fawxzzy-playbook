@@ -1,6 +1,6 @@
 # `pnpm playbook release plan`
 
-`pnpm playbook release plan --json --out .playbook/release-plan.json` builds a deterministic reviewed release-governance artifact from the current branch/worktree diff plus `.playbook/version-policy.json`.
+`pnpm playbook release plan --json --out .playbook/release-plan.json` builds a deterministic reviewed release-governance artifact from the current branch/worktree diff plus `.playbook/version-policy.json`. `pnpm playbook init` now installs the trusted/manual executor path too by seeding `.playbook/version-policy.json`, `.github/workflows/release-prep.yml`, and `docs/CHANGELOG.md` with the managed `PLAYBOOK:CHANGELOG_RELEASE_NOTES` seam in eligible publishable pnpm/node repositories; `pnpm playbook upgrade --apply` retrofits the same workflow/policy/changelog scaffolding without overwriting existing custom workflow or policy files.
 
 ## What it does
 
@@ -44,6 +44,9 @@ pnpm playbook apply --from-plan .playbook/release-plan.json
 - Pattern: Detect -> plan -> apply -> verify is the safe release-governance loop.
 - Failure Mode: Catching version drift only at tag/package time turns release into late-stage cleanup.
 - Failure Mode: Release logic that exists only as a command and never enters CI becomes optional in practice.
+- Rule: Installable workflow policy is incomplete until the trusted/manual mutation path is installable too.
+- Pattern: Seed policy, seed reviewed executor, keep normal CI plan-only.
+- Failure Mode: Shipping only the policy file makes release governance look portable while leaving the actual release path repo-specific.
 
 
 ## Verify integration

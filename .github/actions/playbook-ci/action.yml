@@ -205,8 +205,8 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: |
         mkdir -p .playbook
-        echo "+ node packages/cli/dist/main.js release plan --json --out .playbook/release-plan.json > /dev/null"
-        node packages/cli/dist/main.js release plan --json --out .playbook/release-plan.json > /dev/null
+        echo "+ node packages/cli/dist/main.js release plan --json --out .playbook/release-plan.json"
+        node packages/cli/dist/main.js release plan --json --out .playbook/release-plan.json
 
     - name: Run tests and capture deterministic failure log
       if: inputs.execution-path == 'ci'

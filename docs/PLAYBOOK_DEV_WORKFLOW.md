@@ -74,6 +74,10 @@ pnpm playbook apply --from-plan .playbook/release-plan.json
 
 The GitHub Actions workflow `.github/workflows/release-prep.yml` is the only automation that should commit the resulting reviewed package-version, linked-workspace-dependency, and managed changelog updates into the single release-prep PR branch. Normal PR CI remains detect/plan/report only and must never auto-apply release mutations.
 
+Rule: Installable workflow policy is incomplete until the trusted/manual mutation path is installable too.
+Pattern: Seed policy, seed reviewed executor, keep normal CI plan-only.
+Failure Mode: Shipping only the policy file makes release governance look portable while leaving the actual release path repo-specific.
+
 ## Smoke testing
 
 Run the repository smoke test:
@@ -126,13 +130,18 @@ Baseline scaffold outputs include:
 
 - `docs/PLAYBOOK_NOTES.md`
 - `playbook.config.json`
+
+For eligible publishable Node/pnpm repositories, init should detect the root/workspace package layout and seed the full portable release-governance loop:
+
 - `.playbook/version-policy.json`
+- `.github/workflows/release-prep.yml`
+- `docs/CHANGELOG.md` with the managed `PLAYBOOK:CHANGELOG_RELEASE_NOTES` block
 
-For publishable Node/pnpm repositories, init should detect the root/workspace package layout and seed one explicit opt-out-capable `default` lockstep version group so release governance starts from installable policy rather than repo-by-repo setup drift.
+`pnpm playbook upgrade --apply` should retrofit any missing release-governance scaffolding into the same eligible repos without clobbering existing custom workflow or policy content.
 
-Rule: Installable workflow policy belongs in templates, not tribal setup steps.
-Pattern: Seed policy once, then let verify/release use it everywhere.
-Failure Mode: Repo-by-repo manual version conventions never become reliable workflow.
+Rule: Installable workflow policy is incomplete until the trusted/manual mutation path is installable too.
+Pattern: Seed policy, seed reviewed executor, keep normal CI plan-only.
+Failure Mode: Shipping only the policy file makes release governance look portable while leaving the actual release path repo-specific.
 
 ## Pull request guidelines
 

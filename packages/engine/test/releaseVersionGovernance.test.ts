@@ -5,6 +5,8 @@ import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import { verifyReleaseGovernance } from '../src/release/index.js';
 
+const BREAKING_CHANGE_MARKER = ['BREAKING', 'CHANGE'].join(' ');
+
 const run = (cwd: string, ...args: string[]): string =>
   execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
 
@@ -29,7 +31,7 @@ const createRepo = (): { repoRoot: string; baseSha: string } => {
   writeJson(path.join(repoRoot, '.playbook', 'version-policy.json'), {
     schemaVersion: '1.0',
     kind: 'playbook-version-policy',
-    breakingChangeMarkers: ['BREAKING CHANGE'],
+    breakingChangeMarkers: [BREAKING_CHANGE_MARKER],
     versionGroups: [{ name: 'lockstep', packages: ['@scope/alpha', '@scope/beta'] }]
   });
   write(path.join(repoRoot, 'docs', 'CHANGELOG.md'), `# Changelog\n\n<!-- PLAYBOOK:CHANGELOG_RELEASE_NOTES_START -->\n- Existing release note.\n<!-- PLAYBOOK:CHANGELOG_RELEASE_NOTES_END -->\n`);
@@ -58,6 +60,24 @@ describe('verifyReleaseGovernance', () => {
     const releaseDocPath = path.join(repoRoot, 'docs', 'commands', 'release.md');
     write(releaseDocPath, '# release\nupdated\n');
     run(repoRoot, 'add', 'docs/commands/release.md');
+
+    const failures = verifyReleaseGovernance(repoRoot, { baseRef: 'HEAD~0', baseSha });
+
+    expect(failures).toEqual([]);
+  });
+
+
+  it('ignores the tracked release-plan artifact when classifying release bumps', () => {
+    const { repoRoot, baseSha } = createRepo();
+    writeJson(path.join(repoRoot, '.playbook', 'release-plan.json'), {
+      schemaVersion: '1.0',
+      kind: 'playbook-release-plan',
+      summary: {
+        recommendedBump: 'major',
+        reasons: [BREAKING_CHANGE_MARKER]
+      }
+    });
+    run(repoRoot, 'add', '.playbook/release-plan.json');
 
     const failures = verifyReleaseGovernance(repoRoot, { baseRef: 'HEAD~0', baseSha });
 

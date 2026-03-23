@@ -1,4 +1,36 @@
 <!-- PLAYBOOK:CHANGELOG_RELEASE_NOTES_START -->
+## 0.2.0 - 2026-03-23
+- Recommended bump: minor
+- @fawxzzy/playbook: 0.1.9 -> 0.2.0 (playbook-installable-workspace)
+- @fawxzzy/playbook-cli: 0.1.9 -> 0.2.0 (playbook-installable-workspace)
+- @zachariahredfield/playbook-core: 0.1.9 -> 0.2.0 (playbook-installable-workspace)
+- @zachariahredfield/playbook-engine: 0.1.9 -> 0.2.0 (playbook-installable-workspace)
+- @zachariahredfield/playbook-node: 0.1.9 -> 0.2.0 (playbook-installable-workspace)
+
+## 0.1.9 - 2026-03-23
+- Recommended bump: patch
+- @fawxzzy/playbook: 0.1.8 -> 0.1.9 (playbook-installable-workspace)
+- @fawxzzy/playbook-cli: 0.1.8 -> 0.1.9 (playbook-installable-workspace)
+- @zachariahredfield/playbook-core: 0.1.8 -> 0.1.9 (playbook-installable-workspace)
+- @zachariahredfield/playbook-engine: 0.1.8 -> 0.1.9 (playbook-installable-workspace)
+- @zachariahredfield/playbook-node: 0.1.8 -> 0.1.9 (playbook-installable-workspace)
+
+- WHAT: Rewired the legacy `.github/workflows/playbook.yml` entrypoint to invoke the shared Playbook CI composite action instead of running a standalone `node packages/cli/dist/main.js verify --ci` path. WHY: Workflow/runtime skew can preserve stale release-governance behavior even after the composite action is fixed, so every CI entrypoint must share the same release-plan + verify-json implementation.
+- Rule: When CI behavior changes, validate against the exact workflow path GitHub executed and keep all entrypoints on the same composite action implementation.
+- Pattern: One composite action owns release-plan materialization and verify wiring; workflows should delegate to it instead of re-encoding old gates.
+- Failure Mode: A repo can pass local tests and the shared action path while GitHub still fails on a legacy workflow entrypoint that calls stale `verify --ci` directly.
+- WHAT: Added the deterministic `.playbook/release-plan.json` artifact for the CI history/planner visibility change and kept the workspace at `0.1.8` because the reviewed release plan classified the diff as docs/CI-only plus non-shipping template changes (`recommendedBump: none`). WHY: Release governance for governed surfaces requires the mirrored reviewed artifact and changelog note even when the correct outcome is explicitly no version bump.
+- Rule: When a governed surface changes, the PR must carry the deterministic release artifact even if the reviewed bump result is `none`.
+- Pattern: Commit the reviewed plan, mirror the changelog rationale, and let verify enforce that pairing.
+- Failure Mode: CI-only governance changes can still fail `verify --ci` if the reviewed release artifact is missing from the PR.
+- WHAT: Fixed the Playbook CI checkout/release-planning path by making the reusable and installable Playbook CI workflows request full git history (`fetch-depth: 0`) and by stopping the canonical CI release-plan step from redirecting planner output to `/dev/null`. WHY: Any release/version planning step that computes diffs must provision its own git history or base ref in CI, and hidden planner stderr makes shallow-checkout failures unnecessarily hard to diagnose.
+- Rule: Any release/version planning step that computes diffs must provision its own git history or base ref in CI.
+- Pattern: Fetch comparison history before diff-based governance, and keep planner output visible while debugging CI.
+- Failure Mode: Shallow feature-branch-only checkouts can make release planning fail even when install/build/contracts all succeed.
+- WHAT: Added installable release-governance scaffolding to repo templates by shipping `.github/workflows/release-prep.yml` and `docs/CHANGELOG.md` with the managed `PLAYBOOK:CHANGELOG_RELEASE_NOTES` seam, taught `pnpm playbook init` to seed those files alongside `.playbook/version-policy.json` only for eligible publishable pnpm/node repos, and taught `pnpm playbook upgrade --apply` migrations to retrofit any missing workflow/changelog scaffolding without overwriting existing custom workflow or policy content. WHY: Portable release governance is only real when the trusted/manual reviewed executor path ships with the policy and changelog seam instead of remaining repo-specific setup lore.
+- Rule: Installable workflow policy is incomplete until the trusted/manual mutation path is installable too.
+- Pattern: Seed policy, seed reviewed executor, keep normal CI plan-only.
+- Failure Mode: Shipping only the policy file makes release governance look portable while leaving the actual release path repo-specific.
 - WHAT: Corrected `playbook upgrade` exit semantics so successful migration application now returns success even when the Playbook dependency version was already aligned, while unchanged repos with remaining migrations still return warnings. WHY: Final command classification should reflect the overall upgrade outcome rather than letting an aligned-version subcondition poison successful migration work.
 - Pattern: State classification should be based on final command outcome, not on one intermediate subcondition.
 - Failure Mode: A no-op package-version branch can accidentally poison the final command exit code even when the overall upgrade work succeeded.

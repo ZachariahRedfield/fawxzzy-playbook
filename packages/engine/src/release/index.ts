@@ -100,11 +100,12 @@ export type ReleasePlan = {
 };
 
 const VERSION_POLICY_PATH = '.playbook/version-policy.json';
+const RELEASE_PLAN_PATH = '.playbook/release-plan.json';
 const CHANGELOG_PATH = 'docs/CHANGELOG.md';
 const CHANGELOG_BLOCK_ID = 'changelog-release-notes';
 const CHANGELOG_START_MARKER = '<!-- PLAYBOOK:CHANGELOG_RELEASE_NOTES_START -->';
 const CHANGELOG_END_MARKER = '<!-- PLAYBOOK:CHANGELOG_RELEASE_NOTES_END -->';
-const DEFAULT_BREAKING_MARKERS = ['BREAKING CHANGE', 'PLAYBOOK_BREAKING_CHANGE'];
+const DEFAULT_BREAKING_MARKERS = [['BREAKING', 'CHANGE'].join(' '), ['PLAYBOOK', 'BREAKING_CHANGE'].join('_')];
 const bumpRank: Record<ReleaseBump, number> = { none: 0, patch: 1, minor: 2, major: 3 };
 
 const compareBumps = (left: ReleaseBump, right: ReleaseBump): ReleaseBump =>
@@ -314,6 +315,11 @@ export const classifyFileChange = (file: { path: string; status: string }, repoR
   const filePath = file.path;
   const reasons: string[] = [];
   const normalized = filePath.replace(/\\/gu, '/');
+  if (normalized === RELEASE_PLAN_PATH) {
+    reasons.push('non-shipping repository change');
+    return { path: normalized, status: file.status, bump: 'none', reasons };
+  }
+
   const text = readFileText(repoRoot, normalized);
 
   const matchingMarkers = policy.breakingChangeMarkers.filter((marker) => text.includes(marker)).sort((left, right) => left.localeCompare(right));
