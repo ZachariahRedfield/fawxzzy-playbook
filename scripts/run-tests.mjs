@@ -71,9 +71,12 @@ const runRootScriptTests = () => {
 };
 
 if (args.length === 0) {
-  const contractCheckResult = run(PNPM_BIN, ['contracts:check']);
-  if (contractCheckResult.status !== 0) {
-    process.exit(typeof contractCheckResult.status === 'number' ? contractCheckResult.status : 1);
+  const skipContractCheck = process.env.PLAYBOOK_SKIP_CONTRACTS_CHECK === '1';
+  if (!skipContractCheck) {
+    const contractCheckResult = run(PNPM_BIN, ['contracts:check']);
+    if (contractCheckResult.status !== 0) {
+      process.exit(typeof contractCheckResult.status === 'number' ? contractCheckResult.status : 1);
+    }
   }
 
   const scriptTestResult = runRootScriptTests();

@@ -3,6 +3,10 @@ name: Playbook CI
 description: Reusable CI action for deterministic Playbook install and primary verify gate validation.
 
 inputs:
+  execution-path:
+    description: Which CI path to run after setup/build. Use `ci` for the full gate and `demo-validate` for setup/build-only demo validation support.
+    required: false
+    default: "ci"
   node-version:
     description: Node.js version to use.
     required: false
@@ -151,6 +155,7 @@ runs:
         pnpm -r build
 
     - name: Check contract surface snapshots early
+      if: inputs.execution-path == 'ci'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -158,6 +163,7 @@ runs:
         pnpm contracts:check
 
     - name: Detect release governance eligibility
+      if: inputs.execution-path == 'ci'
       id: release-governance
       shell: bash
       working-directory: ${{ inputs.working-directory }}
@@ -194,7 +200,7 @@ runs:
         fi
 
     - name: Materialize canonical release plan artifact
-      if: steps.release-governance.outputs.eligible == 'true'
+      if: inputs.execution-path == 'ci' && steps.release-governance.outputs.eligible == 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -202,10 +208,23 @@ runs:
         echo "+ node packages/cli/dist/main.js release plan --json --out .playbook/release-plan.json > /dev/null"
         node packages/cli/dist/main.js release plan --json --out .playbook/release-plan.json > /dev/null
 
+    - name: Surface compact release summary from canonical artifact
+      if: inputs.execution-path == 'ci' && steps.release-governance.outputs.eligible == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        node "$GITHUB_WORKSPACE/.github/scripts/render-release-summary.cjs" \
+          --plan .playbook/release-plan.json \
+          --out .playbook/release-summary.md \
+          --comment-out .playbook/release-summary-comment.md
+
     - name: Run tests and capture deterministic failure log
+      if: inputs.execution-path == 'ci'
       id: run-tests
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      env:
+        PLAYBOOK_SKIP_CONTRACTS_CHECK: "1"
       run: |
         mkdir -p .playbook
         log_path=".playbook/ci-failure.log"
@@ -224,7 +243,7 @@ runs:
         fi
 
     - name: Emit deterministic failure summary artifacts
-      if: env.PLAYBOOK_TEST_EXIT_CODE != '0'
+      if: inputs.execution-path == 'ci' && env.PLAYBOOK_TEST_EXIT_CODE != '0'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -236,8 +255,8 @@ runs:
         pnpm playbook test-triage --input .playbook/ci-failure.log > .playbook/failure-summary.md
 
     - name: Evaluate CI remediation policy gates
+      if: inputs.execution-path == 'ci'
       id: remediation-policy
-      if: always()
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:
@@ -268,7 +287,7 @@ runs:
         echo "mode=$mode" >> "$GITHUB_OUTPUT"
 
     - name: Hydrate prior canonical remediation history
-      if: env.PLAYBOOK_TEST_EXIT_CODE != '0' && steps.remediation-policy.outputs.mutation-allowed == 'true'
+      if: inputs.execution-path == 'ci' && env.PLAYBOOK_TEST_EXIT_CODE != '0' && steps.remediation-policy.outputs.mutation-allowed == 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:
@@ -282,7 +301,7 @@ runs:
         node "$GITHUB_WORKSPACE/.github/scripts/hydrate-remediation-history.cjs" --cwd . --out .playbook/test-autofix-history.json
 
     - name: Run canonical bounded test-autofix
-      if: env.PLAYBOOK_TEST_EXIT_CODE != '0' && steps.remediation-policy.outputs.mutation-allowed == 'true'
+      if: inputs.execution-path == 'ci' && env.PLAYBOOK_TEST_EXIT_CODE != '0' && steps.remediation-policy.outputs.mutation-allowed == 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:
@@ -297,7 +316,7 @@ runs:
         pnpm playbook test-autofix --input .playbook/ci-failure.log "${EXTRA_ARGS[@]}" --json | tee .playbook/test-autofix.json
 
     - name: Run canonical remediation-status read model
-      if: env.PLAYBOOK_TEST_EXIT_CODE != '0' && steps.remediation-policy.outputs.mutation-allowed == 'true'
+      if: inputs.execution-path == 'ci' && env.PLAYBOOK_TEST_EXIT_CODE != '0' && steps.remediation-policy.outputs.mutation-allowed == 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -305,7 +324,7 @@ runs:
         pnpm playbook remediation-status --json | tee .playbook/remediation-status.json
 
     - name: Log blocked-by-policy CI remediation state
-      if: env.PLAYBOOK_TEST_EXIT_CODE != '0' && steps.remediation-policy.outputs.mutation-allowed != 'true'
+      if: inputs.execution-path == 'ci' && env.PLAYBOOK_TEST_EXIT_CODE != '0' && steps.remediation-policy.outputs.mutation-allowed != 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -313,6 +332,7 @@ runs:
         cat .playbook/ci-remediation-policy.json
 
     - name: Run targeted CLI test filters
+      if: inputs.execution-path == 'ci'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -320,6 +340,7 @@ runs:
         pnpm test:targeted
 
     - name: Run Playbook verification (primary contract gate)
+      if: inputs.execution-path == 'ci'
       id: run-verify
       shell: bash
       working-directory: ${{ inputs.working-directory }}
@@ -337,6 +358,33 @@ runs:
 
     - name: Render unified Playbook CI Summary from canonical artifacts
       if: always()
+    - name: Surface compact verify summary from canonical artifact
+      if: inputs.execution-path == 'ci' && always()
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        node - <<'NODE'
+        const fs = require('node:fs');
+        const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+        const verifyPath = '.playbook/verify.json';
+        if (!summaryPath || !fs.existsSync(verifyPath)) process.exit(0);
+        const payload = JSON.parse(fs.readFileSync(verifyPath, 'utf8'));
+        const findings = Array.isArray(payload.findings) ? payload.findings.filter((finding) => finding.level === 'error').slice(0, 5) : [];
+        const nextActions = Array.isArray(payload.nextActions) ? payload.nextActions.slice(0, 3) : [];
+        const lines = ['## Playbook Verify', '', `- Status: ${payload.ok ? 'PASS' : 'FAIL'}`, `- Artifact: \`.playbook/verify.json\``];
+        if (findings.length > 0) {
+          lines.push('- Findings:');
+          for (const finding of findings) lines.push(`  - ${finding.id}: ${finding.message}`);
+        }
+        if (nextActions.length > 0) {
+          lines.push('- Next actions:');
+          for (const action of nextActions) lines.push(`  - ${action}`);
+        }
+        fs.appendFileSync(summaryPath, `${lines.join('\n')}\n\n`, 'utf8');
+        NODE
+
+    - name: Surface canonical merge-guard summary
+      if: inputs.execution-path == 'ci' && always()
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -350,6 +398,7 @@ runs:
           --comment-out .playbook/ci-summary-comment.md
 
     - name: Validate roadmap contract (deterministic delivery gate)
+      if: inputs.execution-path == 'ci'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -357,6 +406,7 @@ runs:
         node scripts/validate-roadmap-contract.mjs --ci --enforce-pr-feature-id
 
     - name: Run docs audit (governance drift gate)
+      if: inputs.execution-path == 'ci'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -364,7 +414,7 @@ runs:
         node packages/cli/dist/main.js docs audit --ci --json
 
     - name: Fail when primary tests failed
-      if: always() && steps.run-tests.outputs.test-exit-code != '0'
+      if: inputs.execution-path == 'ci' && always() && steps.run-tests.outputs.test-exit-code != '0'
       shell: bash
       run: |
         echo "Primary pnpm test failed earlier in Playbook CI; preserving failure after remediation reporting."
