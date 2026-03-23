@@ -1,4 +1,16 @@
 <!-- PLAYBOOK:CHANGELOG_RELEASE_NOTES_START -->
+## 0.5.0 - 2026-03-23
+- Recommended bump: minor
+- @fawxzzy/playbook: 0.4.0 -> 0.5.0 (playbook-installable-workspace)
+- @fawxzzy/playbook-cli: 0.4.0 -> 0.5.0 (playbook-installable-workspace)
+- @zachariahredfield/playbook-core: 0.4.0 -> 0.5.0 (playbook-installable-workspace)
+- @zachariahredfield/playbook-engine: 0.4.0 -> 0.5.0 (playbook-installable-workspace)
+- @zachariahredfield/playbook-node: 0.4.0 -> 0.5.0 (playbook-installable-workspace)
+- WHAT: Added the first-class memory compaction review release surface by shipping `.playbook/memory/compaction-review.json`, expanding consolidation lineage and replay provenance contracts, and exposing `pnpm playbook memory compaction` as a stable review path. WHY: Stable public contract expansion must ship with the matching version bump and changelog note so release-governance preflight can prove the change is intentional.
+- Rule: Any stable contract expansion must ship in the same PR as the required installable version bump and changelog update.
+- Pattern: Treat `.playbook/release-plan.json` as canonical, then mirror its approved bump and changelog note across installable package manifests in one pass.
+- Failure Mode: Updating schemas, command surfaces, or contract snapshots without the paired release-governance bump leaves preflight red even when the implementation is correct.
+
 ## 0.4.0 - 2026-03-23
 - Recommended bump: minor
 - @fawxzzy/playbook: 0.3.0 -> 0.4.0 (playbook-installable-workspace)
