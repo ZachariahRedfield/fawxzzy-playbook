@@ -43,6 +43,7 @@ jobs:
         id: playbook-ci
         uses: ./.github/actions/playbook-ci
         with:
+          execution-path: "ci"
           node-version: "22"
           working-directory: "."
           enable-test-autofix: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_test_autofix && 'true' || 'false' }}
@@ -178,9 +179,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run Playbook CI composite action
+      - name: Run Playbook setup/build path for demo validation
         uses: ./.github/actions/playbook-ci
         with:
+          execution-path: "demo-validate"
           node-version: "22"
           working-directory: "."
           remediation-history-artifact-name: "playbook-remediation-artifacts-demo-validate"

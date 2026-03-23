@@ -678,6 +678,11 @@
 
 - WHAT: Enhanced `pnpm playbook session cleanup` with an explicit knowledge hygiene pipeline (`--hygiene`) that normalizes, deduplicates, truncates, prunes junk placeholders, and emits structured cleanup reports (including `--json-report`). WHY: Reduces session junk accretion while preserving deterministic, auditable local-first behavior.
 
+- WHAT: Split the reusable `.github/actions/playbook-ci` composite into a full `ci` gate path and a slim `demo-validate` setup/build path, and taught `scripts/run-tests.mjs` to skip the root `contracts:check` rerun when CI already executed the explicit early fail-fast contract gate. WHY: Removes duplicated execution in normal CI, keeps `pnpm test`, `pnpm test:targeted`, and `verify` coverage intact, and lets demo compatibility validation reuse setup/build outputs without rerunning the full gate.
+- Rule: Reduce duplicated execution before reducing coverage.
+- Pattern: One authoritative gate per concern.
+- Failure Mode: Running the same gate twice makes CI slower without making it safer.
+
 - WHAT: Synced product-state docs to the current command surface by adding an authoritative command index (`docs/commands/README.md`), aligning README/CLI reference/demo docs/roadmap language around `analyze`, `verify`, `rules`, `doctor`, `diagram`, `plan`, `apply`, the implemented AI/repository-intelligence surface (`ai-context`, `index`, `query`, `deps`, `ask`, `explain`), and the `playbook-demo` artifact. WHY: Prevents AI/human command-surface drift and keeps roadmap + onboarding + command docs consistent with implemented behavior.
 - WHAT: Added a `playbook-diagrams` GitHub Actions workflow that regenerates `docs/ARCHITECTURE_DIAGRAMS.md` on `main` pushes for architecture-relevant paths and auto-commits only that file, plus README architecture automation guidance. WHY: Keeps architecture docs deterministic and continuously synced to repository state without manual updates.
 - WHAT: Added a first-class `pnpm playbook demo` command with deterministic text and JSON onboarding contracts, registered it in CLI help/command registry, added command tests, and documented the CLI-first demo discovery path. WHY: Makes the demo repository discoverable from the product surface and gives humans/agents a stable side-effect-free onboarding workflow without environment-dependent behavior.
