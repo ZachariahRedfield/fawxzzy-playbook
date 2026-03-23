@@ -157,6 +157,61 @@ runs:
         echo "+ pnpm contracts:check"
         pnpm contracts:check
 
+    - name: Detect release governance eligibility
+      id: release-governance
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        mkdir -p .playbook
+        eligible=$(node - <<'NODE'
+        const fs = require('node:fs');
+        const path = require('node:path');
+        const { pathToFileURL } = require('node:url');
+
+        const repoRoot = process.cwd();
+        const policyPath = path.join(repoRoot, '.playbook', 'version-policy.json');
+
+        (async () => {
+          if (fs.existsSync(policyPath)) {
+            process.stdout.write('true');
+            return;
+          }
+
+          const modulePath = pathToFileURL(path.join(repoRoot, 'packages/cli/dist/lib/versionPolicy.js')).href;
+          const { shouldSeedDefaultVersionPolicy } = await import(modulePath);
+          process.stdout.write(shouldSeedDefaultVersionPolicy(repoRoot) ? 'true' : 'false');
+        })().catch((error) => {
+          console.error(error instanceof Error ? error.stack : String(error));
+          process.exit(1);
+        });
+        NODE
+        )
+        echo "eligible=$eligible" >> "$GITHUB_OUTPUT"
+        if [[ "$eligible" == "true" ]]; then
+          echo "Release governance present or repo eligible; CI will materialize .playbook/release-plan.json."
+        else
+          echo "Release governance not present and repo not eligible; skipping release-plan materialization."
+        fi
+
+    - name: Materialize canonical release plan artifact
+      if: steps.release-governance.outputs.eligible == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        mkdir -p .playbook
+        echo "+ node packages/cli/dist/main.js release plan --json --out .playbook/release-plan.json > /dev/null"
+        node packages/cli/dist/main.js release plan --json --out .playbook/release-plan.json > /dev/null
+
+    - name: Surface compact release summary from canonical artifact
+      if: steps.release-governance.outputs.eligible == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        node "$GITHUB_WORKSPACE/.github/scripts/render-release-summary.cjs" \
+          --plan .playbook/release-plan.json \
+          --out .playbook/release-summary.md \
+          --comment-out .playbook/release-summary-comment.md
+
     - name: Run tests and capture deterministic failure log
       id: run-tests
       shell: bash

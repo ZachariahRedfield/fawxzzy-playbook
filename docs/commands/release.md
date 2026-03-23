@@ -13,6 +13,7 @@
   - `major` only when an explicit configured breaking marker is present
 - Emits evidence-backed reasons for every file, package, and version group.
 - Writes a deterministic reviewed mutation artifact sorted by path/name.
+- Lets CI materialize the same canonical `.playbook/release-plan.json` artifact early, then render one compact release summary from that artifact instead of re-implementing semver logic in workflow YAML.
 - Precompiles bounded `apply --from-plan` tasks for exactly three mutation classes:
   - package `version` field updates
   - linked workspace dependency spec rewrites when the reviewed plan bumps the referenced package version
@@ -37,9 +38,12 @@ pnpm playbook apply --from-plan .playbook/release-plan.json
 ## Governance notes
 
 - Rule: Version decisions must be artifact-backed, not inferred late during packaging.
+- Rule: Version governance should be auto-materialized as an artifact, not inferred late by humans.
 - Rule: Reviewed release artifacts may prepare bounded mutations, but `apply` remains the only mutation boundary.
+- Pattern: Plan everywhere, apply only through reviewed boundaries.
 - Pattern: Detect -> plan -> apply -> verify is the safe release-governance loop.
 - Failure Mode: Catching version drift only at tag/package time turns release into late-stage cleanup.
+- Failure Mode: Release logic that exists only as a command and never enters CI becomes optional in practice.
 
 
 ## Verify integration
@@ -53,3 +57,5 @@ pnpm playbook release plan --json --out .playbook/release-plan.json
 pnpm playbook apply --from-plan .playbook/release-plan.json
 pnpm playbook verify --json
 ```
+
+In normal Playbook CI, the reusable action now materializes `.playbook/release-plan.json` before `verify` whenever release governance already exists or the repository is eligible for installable version governance. CI then renders a compact release summary from that canonical artifact, appends it to the GitHub step summary, and uploads both the plan and rendered markdown summary as artifacts. Normal PR CI stays plan-only: it does not auto-mutate versions.

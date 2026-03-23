@@ -42,3 +42,5 @@ It checks three deterministic cases from repository evidence:
 - stable contract expansion without the corresponding applied package/changelog release updates
 
 In text mode, failed runs also print compact `Next actions` so CI and local shells can reuse the canonical verify output instead of custom workflow logic.
+
+Normal Playbook CI now materializes `.playbook/release-plan.json` before `verify` whenever release governance is present or the repository is eligible for it, and renders a compact release summary from that artifact into the step summary / PR transport. That summary is advisory and artifact-backed; `verify` still owns merge authority.
