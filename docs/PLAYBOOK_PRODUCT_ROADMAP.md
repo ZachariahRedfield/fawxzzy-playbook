@@ -252,6 +252,54 @@ Pattern: Compaction is the trust-preserving bridge between extraction and promot
 Failure Mode: Unbounded pattern accumulation turns deterministic intelligence into low-trust memory sprawl.
 Failure Mode: Promoting observations directly into reusable guidance without lifecycle gates causes duplication and semantic drift.
 
+## Constraint-shaped architecture and controlled knowledge revision
+
+Playbook should treat structure as an outcome of constraints, interfaces, cost surfaces, and coordination needs rather than as an aesthetic preference. Geometry analogies can be useful only when they make those constraints easier to reason about; they are not architecture doctrine by themselves.
+
+Evidence-backed substrate:
+
+- In engineering systems, local constraints and optimization pressures produce different stable structures depending on adjacency, communication cost, ownership boundaries, and failure tolerance.
+- In neuroscience, memory reconsolidation is a bounded finding: retrieval can reopen a stored memory trace for modification before it restabilizes, but this is not evidence for fabricated memory as a safe operating mode or for unconstrained identity rewriting.
+
+Productive Playbook design lens:
+
+- Treat "ultimate shape" examples such as hexagons as illustrations of constraint-driven optimization, not as universal blueprints.
+- Treat review, recall, postmortems, and documentation refreshes as controlled retrieval loops where existing knowledge can be inspected, corrected, reframed, and then restabilized with provenance.
+- Translate both ideas into one reusable product pattern: `constraint -> optimization -> emergent structure`, with retrieval acting as a temporary edit mode for knowledge already in circulation.
+
+What Playbook should do with this:
+
+- Build architecture guidance around explicit constraint discovery first: interface count, ownership seams, mutation risk, latency/cost surfaces, and coordination load.
+- Make learning loops artifact-first so retrieval events (`review`, `postmortem`, `memory`, `learn`, `promote`) can update doctrine through explicit evidence and review rather than silent overwrite.
+- Separate fact, interpretation, and narrative in docs and postmortems so revision can happen without rewriting provenance.
+- Extend the same loop to personal operating-system patterns: checkpoints, retrospectives, and plan refreshes should be explicit state-review moments, not vague self-storytelling.
+
+Non-goals and guardrails:
+
+- Do not present any shape, topology, or metaphor as intrinsically optimal independent of operating constraints.
+- Do not overclaim neuroscience; Playbook uses reconsolidation as a bounded model for controlled update loops, not as evidence for memory manufacture or magic identity edits.
+- Do not let retrieval mutate promoted knowledge invisibly; all meaningful updates must remain provenance-linked, reviewable, and deterministic at the contract boundary.
+
+Practical initiatives to stage from this doctrine:
+
+1. **Constraint-driven architecture rubric**
+   - Add a lightweight architecture decision rubric that records governing constraints, competing cost surfaces, expected interface pressure, and why a chosen structure fits that environment.
+2. **Postmortem reconsolidation loop**
+   - Add a postmortem template/flow that explicitly distinguishes observed facts, interpreted causes, changed mental models, and the doctrine candidates that should or should not be promoted.
+3. **Documentation revision protocol**
+   - Add a docs maintenance protocol that separates `fact`, `interpretation`, and `narrative` layers so updates can refine meaning without blurring truth surfaces.
+4. **Retrieval-based review workflow**
+   - Add a bounded review cadence where high-value docs, rules, and promoted patterns are periodically recalled, checked against fresh evidence, and either reaffirmed, revised, or superseded.
+5. **Personal operating-system checkpoint ritual**
+   - Add an optional operator ritual for weekly plan review: recall current commitments, compare them to real outcomes, revise goals/notes deliberately, and emit a small explicit next-state artifact.
+
+Rule: Design systems from constraints first; let structure emerge from interface, cost, and coordination realities.
+Rule: Retrieval is the only safe moment to revise active knowledge, and revision must preserve provenance.
+Pattern: Constraint -> optimization -> emergent structure.
+Pattern: Retrieval opens a controlled edit window; promotion restabilizes knowledge.
+Failure Mode: Teams copy fashionable architectures or metaphors without mapping the constraints that made them work elsewhere.
+Failure Mode: Review loops that blend fact, interpretation, and narrative silently rewrite doctrine and erode trust.
+
 Toroidal Flow framing (additive overlay):
 
 - Treat the lifecycle as a deterministic closed loop: `observe -> verify -> plan -> apply -> extract -> canonicalize -> compact -> promote -> retire`.
