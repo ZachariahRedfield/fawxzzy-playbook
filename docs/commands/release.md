@@ -13,7 +13,7 @@
   - `major` only when an explicit configured breaking marker is present
 - Emits evidence-backed reasons for every file, package, and version group.
 - Writes a deterministic reviewed mutation artifact sorted by path/name.
-- Lets CI materialize the same canonical `.playbook/release-plan.json` artifact early, then render one compact release summary from that artifact instead of re-implementing semver logic in workflow YAML.
+- Lets CI materialize the same canonical `.playbook/release-plan.json` artifact early, then feed one compact Playbook CI Summary renderer from canonical artifacts instead of re-implementing semver logic in workflow YAML.
 - Precompiles bounded `apply --from-plan` tasks for exactly three mutation classes:
   - package `version` field updates
   - linked workspace dependency spec rewrites when the reviewed plan bumps the referenced package version
@@ -58,7 +58,7 @@ pnpm playbook apply --from-plan .playbook/release-plan.json
 pnpm playbook verify --json
 ```
 
-In normal Playbook CI, the reusable action now materializes `.playbook/release-plan.json` before `verify` whenever release governance already exists or the repository is eligible for installable version governance. CI then renders a compact release summary from that canonical artifact, appends it to the GitHub step summary, and uploads both the plan and rendered markdown summary as artifacts. Normal PR CI stays plan-only: it does not auto-mutate versions.
+In normal Playbook CI, the reusable action now materializes `.playbook/release-plan.json` before `verify` whenever release governance already exists or the repository is eligible for installable version governance. CI then renders one compact Playbook CI Summary from canonical artifacts, appends that operator brief once to the GitHub step summary, and uploads the canonical plan plus rendered summary artifacts unchanged. Normal PR CI stays plan-only: it does not auto-mutate versions.
 
 ## Trusted/manual release prep
 
