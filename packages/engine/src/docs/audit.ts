@@ -104,6 +104,14 @@ const REQUIRED_ANCHORS = [
 const REPO_ROADMAP_REQUIRED_SECTIONS = ['pillars', 'active stories'] as const;
 const STORY_REQUIRED_SECTIONS = ['status', 'pillar', 'outcome', 'scope', 'non-goals', 'surfaces', 'dependencies', 'done when', 'evidence'] as const;
 
+const POSTMORTEM_REQUIRED_SECTIONS = [
+  'facts',
+  'interpretation',
+  'model changes',
+  'promotion candidates',
+  'non-promotion notes'
+] as const;
+
 const PLANNING_ALLOWED_PATHS = new Set([
   'docs/PLAYBOOK_PRODUCT_ROADMAP.md',
   'docs/roadmap/README.md',
@@ -398,6 +406,34 @@ export const runDocsAudit = (repoRoot: string): DocsAuditResult => {
     }
   }
 
+
+  const postmortemDocsPath = path.join(repoRoot, 'docs', 'postmortems');
+  if (fs.existsSync(postmortemDocsPath)) {
+    const postmortemDocs = fs
+      .readdirSync(postmortemDocsPath, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.md'))
+      .map((entry) => `docs/postmortems/${entry.name}`)
+      .sort();
+
+    for (const postmortemDoc of postmortemDocs) {
+      const content = readTextIfExists(repoRoot, postmortemDoc);
+      if (!content) {
+        continue;
+      }
+
+      const missingSections = hasRequiredSections(content, POSTMORTEM_REQUIRED_SECTIONS);
+      if (missingSections.length > 0) {
+        findings.push({
+          ruleId: 'docs.postmortem.required-sections',
+          level: 'error',
+          message: `Postmortem document is missing required sections: ${missingSections.join(', ')}.`,
+          path: postmortemDoc,
+          suggestedDestination: 'templates/repo/docs/postmortems/PLAYBOOK_POSTMORTEM_TEMPLATE.md'
+        });
+      }
+    }
+  }
+
   for (const relativePath of ACTIVE_DOC_PATHS) {
     const content = readTextIfExists(repoRoot, relativePath);
     if (!content) {
@@ -676,7 +712,7 @@ export const runDocsAudit = (repoRoot: string): DocsAuditResult => {
     summary: {
       errors,
       warnings,
-      checksRun: 14
+      checksRun: 15
     },
     findings
   };

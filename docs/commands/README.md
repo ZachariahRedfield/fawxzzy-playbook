@@ -225,6 +225,7 @@ Playbook now recommends an optional repo-scoped product-direction contract for c
 - `docs/ROADMAP.md` defines pillars, active stories, and lightweight priority
 - `docs/stories/<STORY_ID>.md` defines one independently shippable vertical slice
 - `pnpm playbook docs audit --json` validates the contract when a repo opts in
+- `docs/postmortems/*.md` now get a narrow path-scoped contract check for required reconsolidation headings so existing non-postmortem docs remain unaffected
 - `pnpm playbook ask ... --repo-context` can answer lightweight story/pillar mapping prompts
 
 This remains a documentation contract first, not a new heavy workflow command surface.
@@ -324,6 +325,9 @@ Doctrine summary anchors:
 - `memory show <id>` resolves either a candidate id or knowledge id, including provenance expansion for candidates.
 - `memory promote <candidate-id>` and `memory retire <knowledge-id>` provide explicit, human-driven lifecycle actions.
 - Postmortem reconsolidation stays inside this existing review boundary: incidents/changes should produce a structured postmortem, explicit candidate extraction, and then reviewed movement through `memory` / `promote` surfaces rather than any new command family or auto-promotion path.
+- Rule: Postmortems must separate observed facts from interpretation and promotion candidates.
+- Pattern: Recall -> reinterpret -> promote -> restabilize becomes concrete through structured postmortems.
+- Failure Mode: Blending fact, explanation, and doctrine in one narrative rewrites history and weakens promotion quality.
 
 Examples:
 

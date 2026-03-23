@@ -164,7 +164,7 @@ Use the new structured postmortem template as the first operational realization 
 Compact operator workflow:
 
 1. Incident or meaningful change happens.
-2. Write a postmortem in the structured template so facts, interpretations, changed mental models, and candidate updates stay separated.
+2. Write a postmortem in the structured template (`templates/repo/docs/postmortems/PLAYBOOK_POSTMORTEM_TEMPLATE.md`) so facts, interpretations, changed mental models, and candidate updates stay separated.
 3. Extract promotion candidates explicitly from the reviewed postmortem artifact.
 4. Review those candidates through existing `memory` / `promote` surfaces before any doctrine changes land.
 5. Restabilize the system by updating the right reviewed surfaces only: memory candidates, doctrine candidates, and docs revisions.
@@ -176,8 +176,11 @@ Postmortem outputs should feed three reviewed destinations:
 - **Docs revision** when the reviewed postmortem shows workflow, roadmap, or operator guidance should be clarified.
 
 Rule: Retrieval-based revision must enter the system through explicit evidence-bearing review artifacts.
+Rule: Postmortems must separate observed facts from interpretation and promotion candidates.
 Pattern: Structured postmortem -> candidate extraction -> explicit promotion.
+Pattern: Recall -> reinterpret -> promote -> restabilize becomes concrete through structured postmortems.
 Failure Mode: Doctrine updates sourced from memory of the incident instead of the reviewed postmortem artifact create silent drift.
+Failure Mode: Blending fact, explanation, and doctrine in one narrative rewrites history and weakens promotion quality.
 
 ## Deterministic delivery protocol (v1)
 

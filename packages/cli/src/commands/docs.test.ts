@@ -188,6 +188,38 @@ describe('runDocs', () => {
     );
   });
 
+  it('fails postmortem docs missing required sections without affecting other docs', async () => {
+    const repo = createFixtureRepo();
+    fs.mkdirSync(path.join(repo, 'docs', 'postmortems'), { recursive: true });
+    fs.writeFileSync(
+      path.join(repo, 'docs', 'postmortems', 'incident-003.md'),
+      ['# Incident 003', '', '## Facts', 'Observed evidence.', '', '## Interpretation', 'Meaning.', '', '## Promotion Candidates', 'Candidate.', '', '## Non-Promotion Notes', 'Local context.', ''].join('\n'),
+      'utf8'
+    );
+    fs.writeFileSync(path.join(repo, 'docs', 'random-notes.md'), '# Random notes\n\nNo contract headings required here.\n', 'utf8');
+    const { runDocs } = await import('./docs.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runDocs(repo, ['audit'], { ci: false, format: 'json', quiet: true });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'docs.postmortem.required-sections',
+          path: 'docs/postmortems/incident-003.md',
+          level: 'error'
+        })
+      ])
+    );
+    expect(payload.findings).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'docs/random-notes.md', ruleId: 'docs.postmortem.required-sections' })
+      ])
+    );
+  });
+
   it('emits stable JSON envelope', async () => {
     const repo = createFixtureRepo();
     const { runDocs } = await import('./docs.js');
