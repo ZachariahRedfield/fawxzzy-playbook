@@ -152,16 +152,8 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        if node "$GITHUB_WORKSPACE/.github/scripts/check-esbuild-runtime.cjs"; then
-          echo "esbuild runtime capability check passed."
-          exit 0
-        fi
-
-        echo "esbuild runtime capability check failed; attempting pnpm rebuild esbuild."
-        pnpm rebuild esbuild
-
         if ! node "$GITHUB_WORKSPACE/.github/scripts/check-esbuild-runtime.cjs"; then
-          echo "esbuild runtime contract still failed after rebuild; failing early with explicit environment/runtime diagnostics."
+          echo "esbuild runtime contract failed. Root-level CI scripts must declare runtime dependencies directly in root package.json."
           exit 1
         fi
 
