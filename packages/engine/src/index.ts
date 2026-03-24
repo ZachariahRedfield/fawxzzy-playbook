@@ -178,6 +178,22 @@ export { listCandidateKnowledge, loadCandidateKnowledgeById, promoteMemoryCandid
 export type { MemoryKnowledgeKind, MemoryKnowledgeEntry, MemoryKnowledgeArtifact, MemoryPromotionResult, MemoryRetireResult, MemorySupersedeResult, MemoryPruneResult } from './memory/knowledge.js';
 export { REVIEW_QUEUE_SCHEMA_VERSION, REVIEW_QUEUE_RELATIVE_PATH, buildReviewQueue, writeReviewQueueArtifact } from './retrieval/reviewQueue.js';
 export type { ReviewRecommendedAction, ReviewPriority, ReviewTargetKind, ReviewQueueEntry, ReviewQueueArtifact, BuildReviewQueueOptions } from './retrieval/reviewQueue.js';
+export {
+  KNOWLEDGE_REVIEW_RECEIPTS_SCHEMA_VERSION,
+  KNOWLEDGE_REVIEW_RECEIPTS_RELATIVE_PATH,
+  createEmptyKnowledgeReviewReceiptsArtifact,
+  normalizeKnowledgeReviewReceiptsArtifact,
+  readKnowledgeReviewReceiptsArtifact,
+  writeKnowledgeReviewReceiptsArtifact,
+  writeKnowledgeReviewReceipt
+} from './retrieval/reviewReceipts.js';
+export type {
+  KnowledgeReviewDecision,
+  KnowledgeReviewTargetKind,
+  KnowledgeReviewReceiptEntry,
+  KnowledgeReviewReceiptsArtifact,
+  WriteKnowledgeReviewReceiptInput
+} from './retrieval/reviewReceipts.js';
 export type { MemoryCandidateKind, MemoryReplayResult, MemoryReplayCandidate, MemoryReplayCandidateProvenance, MemoryReplaySalienceFactors, MemoryReplayIndex, MemoryReplayEventReference } from './schema/memoryReplay.js';
 export type { LearnDraftResult, KnowledgeCandidate, KnowledgeCandidateEvidencePointer, KnowledgeCandidateDedupe } from './schema/knowledgeCandidate.js';
 export { analyzePullRequest } from './pr/analyzePr.js';

@@ -123,3 +123,6 @@ pnpm playbook knowledge review --kind doc
 - Rule: One canonical storage contract per knowledge scope.
 - Pattern: Scope-first resolution beats path inference.
 - Failure Mode: Storage-path drift makes governance legible in code but confusing to operators.
+- Rule: Retrieval review is incomplete until the review decision is recorded as a durable artifact.
+- Pattern: Recall -> reinterpret -> receipt -> explicit promotion/supersession.
+- Failure Mode: A review queue without receipts becomes a repeating reminder list instead of a governed maintenance loop.

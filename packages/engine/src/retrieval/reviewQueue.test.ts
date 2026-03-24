@@ -71,6 +71,7 @@ describe('buildReviewQueue', () => {
     expect(left).toEqual(right);
     expect(left.entries.length).toBe(1);
     expect(left.entries[0]?.targetId).toBe('k-1');
+    expect(left.entries[0]?.queueEntryId).toBeTypeOf('string');
   });
 
   it('adds review entries for stale active knowledge', () => {
@@ -214,6 +215,230 @@ describe('buildReviewQueue', () => {
 
     expect(queue.proposalOnly).toBe(true);
     expect(queue.authority).toBe('read-only');
+  });
+
+  it('suppresses reaffirmed entries until the next review window', () => {
+    const repoRoot = createTempRepo();
+    writeJson(repoRoot, '.playbook/memory/knowledge/decisions.json', {
+      schemaVersion: '1.0',
+      artifact: 'memory-knowledge',
+      kind: 'decision',
+      generatedAt: '2026-01-01T00:00:00.000Z',
+      entries: [
+        {
+          knowledgeId: 'k-reaffirm',
+          candidateId: 'c-reaffirm',
+          sourceCandidateIds: ['c-reaffirm'],
+          sourceEventFingerprints: ['e-reaffirm'],
+          kind: 'decision',
+          title: 'Knowledge reaffirm',
+          summary: 'Summary',
+          fingerprint: 'f-reaffirm',
+          module: 'docs',
+          ruleId: 'docs.rule',
+          failureShape: 'shape',
+          promotedAt: '2025-01-01T00:00:00.000Z',
+          provenance: [],
+          status: 'active',
+          supersedes: [],
+          supersededBy: []
+        }
+      ]
+    });
+
+    const firstQueue = buildReviewQueue(repoRoot, { generatedAt: '2026-03-24T00:00:00.000Z', staleKnowledgeDays: 30 });
+    const firstEntry = firstQueue.entries[0];
+    expect(firstEntry).toBeDefined();
+
+    writeJson(repoRoot, '.playbook/knowledge-review-receipts.json', {
+      schemaVersion: '1.0',
+      kind: 'playbook-knowledge-review-receipts',
+      generatedAt: '2026-03-24T01:00:00.000Z',
+      receipts: [
+        {
+          receiptId: 'r-reaffirm-1',
+          queueEntryId: firstEntry?.queueEntryId,
+          targetKind: 'knowledge',
+          targetId: 'k-reaffirm',
+          sourceSurface: 'memory-knowledge',
+          reasonCode: 'stale-active-knowledge',
+          decision: 'reaffirm',
+          evidenceRefs: ['candidate:c-reaffirm'],
+          decidedAt: '2026-03-24T01:00:00.000Z'
+        }
+      ]
+    });
+
+    const suppressedQueue = buildReviewQueue(repoRoot, { generatedAt: '2026-03-25T00:00:00.000Z', staleKnowledgeDays: 30 });
+    expect(suppressedQueue.entries.some((entry) => entry.targetId === 'k-reaffirm')).toBe(false);
+
+    const resurfacedQueue = buildReviewQueue(repoRoot, { generatedAt: '2026-05-01T00:00:00.000Z', staleKnowledgeDays: 30 });
+    expect(resurfacedQueue.entries.some((entry) => entry.targetId === 'k-reaffirm')).toBe(true);
+  });
+
+  it('keeps deferred entries with lower priority and future-dated generatedAt', () => {
+    const repoRoot = createTempRepo();
+    writeJson(repoRoot, '.playbook/memory/knowledge/patterns.json', {
+      schemaVersion: '1.0',
+      artifact: 'memory-knowledge',
+      kind: 'pattern',
+      generatedAt: '2026-01-01T00:00:00.000Z',
+      entries: [
+        {
+          knowledgeId: 'k-defer',
+          candidateId: 'c-defer',
+          sourceCandidateIds: ['c-defer'],
+          sourceEventFingerprints: ['e-defer'],
+          kind: 'pattern',
+          title: 'Deferred pattern',
+          summary: 'Summary',
+          fingerprint: 'fp-defer',
+          module: 'engine',
+          ruleId: 'engine.rule',
+          failureShape: 'shape',
+          promotedAt: '2025-01-01T00:00:00.000Z',
+          provenance: [],
+          status: 'active',
+          supersedes: [],
+          supersededBy: []
+        }
+      ]
+    });
+
+    const firstQueue = buildReviewQueue(repoRoot, { generatedAt: '2026-03-24T00:00:00.000Z', staleKnowledgeDays: 30 });
+    const firstEntry = firstQueue.entries[0];
+
+    writeJson(repoRoot, '.playbook/knowledge-review-receipts.json', {
+      schemaVersion: '1.0',
+      kind: 'playbook-knowledge-review-receipts',
+      generatedAt: '2026-03-24T01:00:00.000Z',
+      receipts: [
+        {
+          receiptId: 'r-defer-1',
+          queueEntryId: firstEntry?.queueEntryId,
+          targetKind: 'knowledge',
+          targetId: 'k-defer',
+          sourceSurface: 'memory-knowledge',
+          reasonCode: 'stale-active-knowledge',
+          decision: 'defer',
+          evidenceRefs: ['candidate:c-defer'],
+          decidedAt: '2026-03-24T01:00:00.000Z'
+        }
+      ]
+    });
+
+    const deferredQueue = buildReviewQueue(repoRoot, { generatedAt: '2026-03-24T12:00:00.000Z', staleKnowledgeDays: 30, deferWindowDays: 10 });
+    const deferredEntry = deferredQueue.entries.find((entry) => entry.targetId === 'k-defer');
+    expect(deferredEntry?.reviewPriority).toBe('low');
+    expect(deferredEntry?.generatedAt).toBe('2026-04-03T01:00:00.000Z');
+  });
+
+  it('suppresses superseded receipts and keeps revise visible until follow-up exists', () => {
+    const repoRoot = createTempRepo();
+    writeJson(repoRoot, '.playbook/memory/knowledge/failure-modes.json', {
+      schemaVersion: '1.0',
+      artifact: 'memory-knowledge',
+      kind: 'failure_mode',
+      generatedAt: '2026-02-01T00:00:00.000Z',
+      entries: [
+        {
+          knowledgeId: 'k-super',
+          candidateId: 'c-super',
+          sourceCandidateIds: ['c-super'],
+          sourceEventFingerprints: ['e-super'],
+          kind: 'failure_mode',
+          title: 'Supersede me',
+          summary: 'Old summary',
+          fingerprint: 'fp-super',
+          module: 'engine',
+          ruleId: 'engine.rule',
+          failureShape: 'shape-old',
+          promotedAt: '2025-01-01T00:00:00.000Z',
+          provenance: [],
+          status: 'superseded',
+          supersedes: [],
+          supersededBy: ['k-new']
+        }
+      ]
+    });
+    writeText(repoRoot, 'docs/postmortems/revise-me.md', '# revise\n', new Date('2025-01-01T00:00:00.000Z'));
+    writeJson(repoRoot, '.playbook/memory/candidates.json', {
+      schemaVersion: '1.0',
+      kind: 'playbook-memory-replay',
+      generatedAt: '2026-03-24T00:00:00.000Z',
+      candidates: [
+        {
+          candidateId: 'cand-revise',
+          kind: 'pattern',
+          module: 'docs',
+          ruleId: 'docs.rule',
+          failureShape: 'none',
+          title: 'Candidate',
+          summary: 'Candidate summary',
+          fingerprint: 'candidate-fp',
+          provenance: [
+            {
+              eventId: 'event-1',
+              sourcePath: 'docs/postmortems/revise-me.md',
+              fingerprint: 'prov-1'
+            }
+          ]
+        }
+      ]
+    });
+
+    const queue = buildReviewQueue(repoRoot, { generatedAt: '2026-03-24T00:00:00.000Z', staleKnowledgeDays: 30, docReviewWindowDays: 30 });
+    const supersedeEntry = queue.entries.find((entry) => entry.targetId === 'k-super');
+    const reviseEntry = queue.entries.find((entry) => entry.reasonCode === 'postmortem-candidate-context');
+    expect(supersedeEntry).toBeDefined();
+    expect(reviseEntry).toBeDefined();
+
+    writeJson(repoRoot, '.playbook/knowledge-review-receipts.json', {
+      schemaVersion: '1.0',
+      kind: 'playbook-knowledge-review-receipts',
+      generatedAt: '2026-03-24T01:00:00.000Z',
+      receipts: [
+        {
+          receiptId: 'r-super-1',
+          queueEntryId: supersedeEntry?.queueEntryId,
+          targetKind: 'knowledge',
+          targetId: 'k-super',
+          sourceSurface: 'memory-knowledge',
+          reasonCode: 'superseded-knowledge-lineage-check',
+          decision: 'supersede',
+          evidenceRefs: ['knowledge:k-new'],
+          decidedAt: '2026-03-24T01:00:00.000Z'
+        },
+        {
+          receiptId: 'r-revise-1',
+          queueEntryId: reviseEntry?.queueEntryId,
+          targetKind: 'doc',
+          path: 'docs/postmortems/revise-me.md',
+          sourceSurface: 'memory-candidates',
+          reasonCode: 'postmortem-candidate-context',
+          decision: 'revise',
+          evidenceRefs: ['candidate:cand-revise'],
+          decidedAt: '2026-03-24T01:00:00.000Z',
+          followUpArtifactPath: '.playbook/follow-up/revise-me.json'
+        }
+      ]
+    });
+
+    const beforeFollowUp = buildReviewQueue(repoRoot, {
+      generatedAt: '2026-03-25T00:00:00.000Z',
+      staleKnowledgeDays: 30,
+      docReviewWindowDays: 30
+    });
+    expect(beforeFollowUp.entries.some((entry) => entry.targetId === 'k-super')).toBe(false);
+    expect(beforeFollowUp.entries.some((entry) => entry.path === 'docs/postmortems/revise-me.md')).toBe(true);
+
+    writeJson(repoRoot, '.playbook/follow-up/revise-me.json', { ok: true });
+    const afterFollowUp = buildReviewQueue(repoRoot, {
+      generatedAt: '2026-03-25T00:00:00.000Z',
+      staleKnowledgeDays: 30,
+      docReviewWindowDays: 30
+    });
+    expect(afterFollowUp.entries.some((entry) => entry.path === 'docs/postmortems/revise-me.md')).toBe(false);
   });
 
   it('dedupes equivalent entries while merging evidence refs deterministically', () => {
