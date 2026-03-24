@@ -86,6 +86,8 @@ pnpm playbook apply --from-plan .playbook/release-plan.json
 
 The GitHub Actions workflow `.github/workflows/release-prep.yml` is the only automation that should commit the resulting reviewed package-version, linked-workspace-dependency, and managed changelog updates into the single release-prep PR branch. Normal PR CI remains detect/plan/report only and must never auto-apply release mutations.
 
+Release-governance note: `release plan` evidence alone is advisory. `verify` continues to fail until the planned version/changelog updates are mirrored in committed branch state.
+
 Rule: Installable workflow policy is incomplete until the trusted/manual mutation path is installable too.
 Pattern: Seed policy, seed reviewed executor, keep normal CI plan-only.
 Failure Mode: Shipping only the policy file makes release governance look portable while leaving the actual release path repo-specific.
