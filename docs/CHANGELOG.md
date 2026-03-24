@@ -1,4 +1,13 @@
 <!-- PLAYBOOK:CHANGELOG_RELEASE_NOTES_START -->
+## 0.14.0 - 2026-03-24
+- Recommended bump: minor
+- @fawxzzy/playbook: 0.13.0 -> 0.14.0 (playbook-installable-workspace)
+- @fawxzzy/playbook-cli: 0.13.0 -> 0.14.0 (playbook-installable-workspace)
+- @zachariahredfield/playbook-core: 0.13.0 -> 0.14.0 (playbook-installable-workspace)
+- @zachariahredfield/playbook-engine: 0.13.0 -> 0.14.0 (playbook-installable-workspace)
+- @zachariahredfield/playbook-node: 0.13.0 -> 0.14.0 (playbook-installable-workspace)
+- WHAT: Exposed cadence-aware retrieval review on the existing `knowledge review` command surface by adding deterministic due-state filtering (`--due now|overdue|all`) and additive scheduling fields in JSON/text outputs. WHY: Keeping cadence inside the existing review surface avoids workflow fragmentation while satisfying release-governance preflight requirements through lockstep version/changelog mirroring.
+
 ## 0.13.0 - 2026-03-24
 - Recommended bump: minor
 - @fawxzzy/playbook: 0.12.0 -> 0.13.0 (playbook-installable-workspace)
