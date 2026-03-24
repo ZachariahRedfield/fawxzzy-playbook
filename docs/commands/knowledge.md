@@ -32,6 +32,7 @@ Compact filters:
 
 - `--action reaffirm|revise|supersede`
 - `--kind knowledge|doc|rule|pattern`
+  - `pattern` is a focused subset of `knowledge` entries tied to promoted pattern memory evidence (for example `.playbook/memory/knowledge/patterns.json`).
 
 Output contract:
 

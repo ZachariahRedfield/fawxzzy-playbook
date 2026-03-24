@@ -287,10 +287,10 @@ describe('runKnowledge', () => {
     exitCode = await runKnowledge('/repo', ['review', '--kind', 'pattern'], { format: 'text', quiet: false });
     expect(exitCode).toBe(ExitCode.Success);
     const rendered = String(logSpy.mock.calls[0]?.[0]);
-    expect(rendered).toContain('Status: review-only queue ready (0 entries)');
-    expect(rendered).toContain('Affected targets: none');
-    expect(rendered).toContain('Blockers / reason: none');
-    expect(rendered).toContain('Next action: none');
+    expect(rendered).toContain('Status: review-only queue ready (1 entries)');
+    expect(rendered).toContain('Affected targets: knowledge.contracts.review');
+    expect(rendered).toContain('Blockers / reason: stale-active-knowledge');
+    expect(rendered).toContain('Next action: reaffirm');
 
     logSpy.mockRestore();
   });

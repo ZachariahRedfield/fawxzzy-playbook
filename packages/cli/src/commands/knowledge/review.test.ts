@@ -60,7 +60,8 @@ describe('runKnowledgeReview', () => {
     expect(filtered.entries[0].targetKind).toBe('knowledge');
 
     const noPatternKind = runKnowledgeReview('/repo', ['review', '--kind', 'pattern']);
-    expect(noPatternKind.entries).toHaveLength(0);
+    expect(noPatternKind.entries).toHaveLength(1);
+    expect(noPatternKind.entries[0].targetKind).toBe('knowledge');
   });
 
   it('rejects unsupported filter values', async () => {

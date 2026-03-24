@@ -44,6 +44,13 @@ const matchesKind = (entry: ReviewQueueEntry, kind: ReviewKindFilter | undefined
   if (kind === 'knowledge' || kind === 'doc') {
     return entry.targetKind === kind;
   }
+  if (kind === 'pattern') {
+    return (
+      entry.targetKind === 'knowledge' &&
+      (entry.targetId?.toLowerCase().includes('pattern') ||
+        entry.evidenceRefs.some((reference: string) => reference.toLowerCase().includes('/knowledge/patterns.json')))
+    );
+  }
   return false;
 };
 
