@@ -962,6 +962,7 @@ describe('runApply warning-only remediation handling', () => {
 
   it('treats warning-only verify output as apply no-op instead of unavailable remediation', async () => {
     const { runApply } = await import('./apply.js');
+    const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-apply-warning-only-'));
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
     generatePlanContract.mockReturnValue({
@@ -974,7 +975,7 @@ describe('runApply warning-only remediation handling', () => {
       tasks: []
     });
 
-    const exitCode = await runApply('/repo', { format: 'json', ci: false, quiet: false });
+    const exitCode = await runApply(repoDir, { format: 'json', ci: false, quiet: false });
 
     expect(exitCode).toBe(ExitCode.Success);
     expect(applyExecutionPlan).not.toHaveBeenCalled();
@@ -985,5 +986,6 @@ describe('runApply warning-only remediation handling', () => {
     expect(payload.message).toBe('No verify failures were detected.');
 
     logSpy.mockRestore();
+    fs.rmSync(repoDir, { recursive: true, force: true });
   });
 });

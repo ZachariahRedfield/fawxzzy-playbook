@@ -112,6 +112,7 @@ describe('runPlan', () => {
 
   it('reports explicit unavailable remediation state when failures have no tasks', async () => {
     const { runPlan } = await import('./plan.js');
+    const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-plan-unavailable-'));
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
     generatePlanContract.mockReturnValue({
@@ -127,7 +128,7 @@ describe('runPlan', () => {
       tasks: []
     });
 
-    const exitCode = await runPlan('/repo', { format: 'json', ci: false, quiet: false });
+    const exitCode = await runPlan(repoDir, { format: 'json', ci: false, quiet: false });
 
     expect(exitCode).toBe(ExitCode.Success);
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
@@ -139,10 +140,12 @@ describe('runPlan', () => {
     });
 
     logSpy.mockRestore();
+    fs.rmSync(repoDir, { recursive: true, force: true });
   });
 
   it('treats warning-only verify.findings payloads as remediation not_needed', async () => {
     const { runPlan } = await import('./plan.js');
+    const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-plan-warnings-only-'));
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
     generatePlanContract.mockReturnValue({
@@ -154,7 +157,7 @@ describe('runPlan', () => {
       tasks: []
     });
 
-    const exitCode = await runPlan('/repo', { format: 'json', ci: false, quiet: false });
+    const exitCode = await runPlan(repoDir, { format: 'json', ci: false, quiet: false });
 
     expect(exitCode).toBe(ExitCode.Success);
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
@@ -166,10 +169,12 @@ describe('runPlan', () => {
     });
 
     logSpy.mockRestore();
+    fs.rmSync(repoDir, { recursive: true, force: true });
   });
 
   it('treats failure-backed verify.findings payloads with no tasks as remediation unavailable', async () => {
     const { runPlan } = await import('./plan.js');
+    const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-plan-findings-failure-'));
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
     generatePlanContract.mockReturnValue({
@@ -181,7 +186,7 @@ describe('runPlan', () => {
       tasks: []
     });
 
-    const exitCode = await runPlan('/repo', { format: 'json', ci: false, quiet: false });
+    const exitCode = await runPlan(repoDir, { format: 'json', ci: false, quiet: false });
 
     expect(exitCode).toBe(ExitCode.Success);
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
@@ -193,6 +198,7 @@ describe('runPlan', () => {
     });
 
     logSpy.mockRestore();
+    fs.rmSync(repoDir, { recursive: true, force: true });
   });
 
   it('writes deterministic json artifacts with --out', async () => {
