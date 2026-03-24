@@ -201,11 +201,16 @@ Postmortem outputs should feed three reviewed destinations:
 - **Doctrine candidates** for reusable Rule / Pattern / Failure Mode updates that still require explicit review and promotion.
 - **Docs revision** when the reviewed postmortem shows workflow, roadmap, or operator guidance should be clarified.
 
+Retrieval review should stay on existing read-only surfaces: `pnpm playbook knowledge review --json` materializes and inspects `.playbook/review-queue.json` for reaffirm/revise/supersede decisions with compact filters, but it does not auto-promote and does not introduce a new mutation path.
+
 Rule: Retrieval-based revision must enter the system through explicit evidence-bearing review artifacts.
+Rule: Review surfaces recall governed knowledge without mutating it.
 Rule: Postmortems must separate observed facts from interpretation and promotion candidates.
 Pattern: Structured postmortem -> candidate extraction -> explicit promotion.
+Pattern: Use existing review families before inventing new top-level command families.
 Pattern: Recall -> reinterpret -> promote -> restabilize becomes concrete through structured postmortems.
 Failure Mode: Doctrine updates sourced from memory of the incident instead of the reviewed postmortem artifact create silent drift.
+Failure Mode: Retrieval review that lands as a new command silo instead of an existing review surface fragments the workflow.
 Failure Mode: Blending fact, explanation, and doctrine in one narrative rewrites history and weakens promotion quality.
 
 ## Deterministic delivery protocol (v1)
