@@ -15,6 +15,7 @@ Roadmap and planning docs may describe sequencing intent, but they are not comma
 
 ## Deterministic governance gates
 
+- High-value doctrine/process doc revisions should follow `docs/architecture/PLAYBOOK_DOCUMENTATION_REVISION_PROTOCOL.md` so fact, interpretation, and narrative changes are reviewable as distinct layers.
 - `pnpm docs:check` blocks managed command-state drift (`AGENTS.md`, this command index, and `docs/contracts/command-truth.json`) by regenerating candidate outputs first, validating roadmap/docs governance against the regenerated set, and only then reporting whether promotion would be required.
 - `node scripts/validate-roadmap-contract.mjs --ci` blocks roadmap/live-command boundary drift by validating roadmap `commands` against `docs/contracts/command-truth.json`.
 - `pnpm playbook docs audit --ci --json` blocks command-truth drift findings marked as errors (for example duplicate command metadata or managed status-table mismatch).

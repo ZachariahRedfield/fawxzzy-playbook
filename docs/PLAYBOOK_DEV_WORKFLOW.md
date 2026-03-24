@@ -157,6 +157,20 @@ PRs should remain focused and reviewable.
 
 Record major repository decisions in `docs/PLAYBOOK_NOTES.md` and keep `docs/CHANGELOG.md` aligned with released behavior.
 
+## Documentation revision protocol (fact vs interpretation vs narrative)
+
+For high-value documentation updates, follow `docs/architecture/PLAYBOOK_DOCUMENTATION_REVISION_PROTOCOL.md` before opening a PR.
+
+Required classification for substantive edits:
+
+- **Fact**: observed evidence only (commands, artifacts, chronology).
+- **Interpretation**: meaning derived from facts.
+- **Narrative**: communication framing and readability.
+
+Rule: Documentation updates must preserve the difference between observed fact, interpretation, and narrative framing.
+Pattern: Revise meaning without rewriting provenance.
+Failure Mode: High-value docs that blend fact and interpretation silently mutate doctrine.
+
 ## Operator postmortem reconsolidation loop
 
 Use the new structured postmortem template as the first operational realization of `Recall -> reinterpret -> promote -> restabilize`. Keep this flow artifact-first and review-gated; it does not introduce a new command family or any automatic promotion path.

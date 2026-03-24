@@ -7,6 +7,7 @@ Deterministic Repo Runtime and Trust Layer for Software Engineering
 Build the deterministic runtime and trust layer between humans/AI agents and real repositories.
 
 Truth-boundary note: this document captures **future intent and sequencing**. For current command implementation truth, use `docs/commands/README.md`. For machine-readable committed delivery state, use `docs/roadmap/ROADMAP.json`.
+Documentation revision boundary: for high-value doctrine docs, apply `docs/architecture/PLAYBOOK_DOCUMENTATION_REVISION_PROTOCOL.md` to keep fact, interpretation, and narrative updates explicitly separated.
 
 ## Document job and alignment boundaries
 
