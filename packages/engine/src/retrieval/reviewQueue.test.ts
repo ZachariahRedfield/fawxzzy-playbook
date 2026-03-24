@@ -118,6 +118,51 @@ describe('buildReviewQueue', () => {
     );
   });
 
+  it('adds superseded knowledge lineage checks with supersede action', () => {
+    const repoRoot = createTempRepo();
+    writeJson(repoRoot, '.playbook/memory/knowledge/failure-modes.json', {
+      schemaVersion: '1.0',
+      artifact: 'memory-knowledge',
+      kind: 'failure_mode',
+      generatedAt: '2026-02-01T00:00:00.000Z',
+      entries: [
+        {
+          knowledgeId: 'k-old',
+          candidateId: 'c-old',
+          sourceCandidateIds: ['c-old'],
+          sourceEventFingerprints: ['e-old'],
+          kind: 'failure_mode',
+          title: 'Old failure mode',
+          summary: 'Old summary',
+          fingerprint: 'fp-old',
+          module: 'engine',
+          ruleId: 'engine.rule',
+          failureShape: 'shape-old',
+          promotedAt: '2025-01-01T00:00:00.000Z',
+          provenance: [],
+          status: 'superseded',
+          supersedes: [],
+          supersededBy: ['k-new']
+        }
+      ]
+    });
+
+    const queue = buildReviewQueue(repoRoot, {
+      generatedAt: '2026-03-24T00:00:00.000Z',
+      staleKnowledgeDays: 30
+    });
+
+    expect(queue.entries).toContainEqual(
+      expect.objectContaining({
+        targetKind: 'knowledge',
+        targetId: 'k-old',
+        reasonCode: 'superseded-knowledge-lineage-check',
+        recommendedAction: 'supersede',
+        reviewPriority: 'medium'
+      })
+    );
+  });
+
   it('keeps non-governed docs out of the queue while including governed docs and postmortem context', () => {
     const repoRoot = createTempRepo();
     const oldDate = new Date('2025-01-01T00:00:00.000Z');
@@ -169,5 +214,39 @@ describe('buildReviewQueue', () => {
 
     expect(queue.proposalOnly).toBe(true);
     expect(queue.authority).toBe('read-only');
+  });
+
+  it('dedupes equivalent entries while merging evidence refs deterministically', () => {
+    const repoRoot = createTempRepo();
+    writeJson(repoRoot, '.playbook/memory/candidates.json', {
+      schemaVersion: '1.0',
+      kind: 'playbook-memory-replay',
+      generatedAt: '2026-03-24T00:00:00.000Z',
+      candidates: [
+        {
+          candidateId: 'cand-a',
+          kind: 'pattern',
+          module: 'docs',
+          ruleId: 'docs.rule',
+          failureShape: 'none',
+          title: 'Candidate A',
+          summary: 'Candidate summary A',
+          fingerprint: 'candidate-fp-a',
+          provenance: [
+            { eventId: 'event-a', sourcePath: 'docs/postmortems/incident.md', fingerprint: 'prov-a' },
+            { eventId: 'event-b', sourcePath: 'docs/postmortems/incident.md', fingerprint: 'prov-b' }
+          ]
+        }
+      ]
+    });
+
+    const queue = buildReviewQueue(repoRoot, {
+      generatedAt: '2026-03-24T00:00:00.000Z',
+      docReviewWindowDays: 30
+    });
+
+    const postmortemEntries = queue.entries.filter((entry) => entry.path === 'docs/postmortems/incident.md' && entry.reasonCode === 'postmortem-candidate-context');
+    expect(postmortemEntries).toHaveLength(1);
+    expect(postmortemEntries[0]?.evidenceRefs).toEqual(['.playbook/memory/candidates.json', 'candidate:cand-a']);
   });
 });

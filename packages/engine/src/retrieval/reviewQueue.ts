@@ -133,8 +133,39 @@ const sortQueueEntries = (entries: ReviewQueueEntry[]): ReviewQueueEntry[] =>
     left.targetKind.localeCompare(right.targetKind) ||
     (left.targetId ?? left.path ?? '').localeCompare(right.targetId ?? right.path ?? '') ||
     left.reasonCode.localeCompare(right.reasonCode) ||
-    left.sourceSurface.localeCompare(right.sourceSurface)
+    left.sourceSurface.localeCompare(right.sourceSurface) ||
+    left.recommendedAction.localeCompare(right.recommendedAction) ||
+    left.evidenceRefs.join('|').localeCompare(right.evidenceRefs.join('|'))
   );
+
+const dedupeQueueEntries = (entries: ReviewQueueEntry[]): ReviewQueueEntry[] => {
+  const byKey = new Map<string, ReviewQueueEntry>();
+
+  for (const entry of entries) {
+    const entryKey = [
+      entry.targetKind,
+      entry.targetId ?? '',
+      entry.path ?? '',
+      entry.sourceSurface,
+      entry.reasonCode,
+      entry.recommendedAction,
+      entry.reviewPriority
+    ].join('|');
+
+    const existing = byKey.get(entryKey);
+    if (!existing) {
+      byKey.set(entryKey, { ...entry, evidenceRefs: [...entry.evidenceRefs].sort((a, b) => a.localeCompare(b)) });
+      continue;
+    }
+
+    const mergedEvidence = [...existing.evidenceRefs, ...entry.evidenceRefs]
+      .filter((value, index, all) => all.indexOf(value) === index)
+      .sort((a, b) => a.localeCompare(b));
+    byKey.set(entryKey, { ...existing, evidenceRefs: mergedEvidence });
+  }
+
+  return [...byKey.values()];
+};
 
 export const buildReviewQueue = (repoRoot: string, options: BuildReviewQueueOptions = {}): ReviewQueueArtifact => {
   const generatedAt = safeIso(options.generatedAt, new Date().toISOString());
@@ -247,7 +278,7 @@ export const buildReviewQueue = (repoRoot: string, options: BuildReviewQueueOpti
     proposalOnly: true,
     authority: 'read-only',
     generatedAt,
-    entries: sortQueueEntries(entries)
+    entries: sortQueueEntries(dedupeQueueEntries(entries))
   };
 };
 
