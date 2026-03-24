@@ -1802,7 +1802,7 @@ const observerServerResponse = (
     repo_count: registry.repos.length,
   };
 
-  if (pathname === "/health") {
+  if (pathname === "/health" || pathname === "/healthz") {
     return {
       statusCode: 200,
       payload: { ...base, kind: "observer-server-health", status: "ok" },

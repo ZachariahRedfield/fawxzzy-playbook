@@ -1,0 +1,11 @@
+name: playbook
+archetype: node-web
+port: 4300
+healthcheckPath: /healthz
+
+deploy:
+  workingDirectory: .
+  startCommand: pnpm start:lifeline
+
+env:
+  requiredKeys: []
