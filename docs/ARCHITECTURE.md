@@ -25,6 +25,17 @@ Playbook uses two first-class design doctrines:
 - **Simple Rule Theory** (`[docs/architecture/SIMPLE_RULE_THEORY.md](./architecture/SIMPLE_RULE_THEORY.md)`): all automatable behavior should be expressed through explicit rules; rules should extract invariants, preserve minimal sufficient representation, and derive downstream behaviors/views from compact rule state rather than duplicating expanded state.
 - **Triadic System Pattern** (`[docs/architecture/TRIAD_SYSTEM_PATTERN.md](./architecture/TRIAD_SYSTEM_PATTERN.md)`): stable workflows should prefer `state -> transformation -> enforcement`, with `verify -> plan -> apply` as the canonical Playbook workflow shape.
 
+## Reusable execution/governance pattern: Singleton Consolidation Pattern
+
+This pattern complements (and does not replace) Simple Rule Theory and the Triadic System Pattern.
+
+- parallelizable work is not automatically parallel-safe
+- protected singleton docs require governed consolidation
+- worker fragments are the parallel surface
+- final consolidation is the singleton authorship surface
+
+Reference: [Singleton Consolidation Pattern](./architecture/SINGLETON_CONSOLIDATION_PATTERN.md).
+
 ## External pilot doctrine boundary
 
 The first external pilot clarified a core architecture need: deterministic system truth is necessary but not sufficient for adoption.

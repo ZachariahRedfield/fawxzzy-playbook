@@ -92,9 +92,9 @@ interface ScmContext {
   - touched command/docs/contracts map to roadmap entry.
 - Merge automation updates roadmap item status (`planned -> in-progress -> implemented-hardening`) and appends release note fragment.
 
-### Parallel-safe narrative consolidation slice (implemented) and next hardening layer
+### Singleton Consolidation Pattern slice (implemented) and next hardening layer
 
-Playbook now ships the first-class proposal-only **Worker Fragment Consolidation for Shared Singleton Docs** safety slice.
+Playbook now ships the first-class reusable **Singleton Consolidation Pattern** (proposal-only implementation slice) for shared singleton docs.
 
 Implemented seam:
 - workers write structured lane-local fragments / receipts
@@ -104,7 +104,7 @@ Implemented seam:
 
 Why it exists:
 - worker partitioning can isolate code ownership and still leave merge hotspots on singleton narrative docs such as `docs/CHANGELOG.md`, roadmap rollups, and shared architecture summaries
-- parallelizable work is not automatically parallel-safe when canonical narrative surfaces remain shared write targets
+- the Rule applies directly: parallelizable work is not automatically parallel-safe when canonical narrative surfaces remain shared write targets
 
 Next hardening step:
 - add reviewed consolidation execution for canonical narrative docs
@@ -120,12 +120,19 @@ Planned consolidation-governance contract slice (incomplete):
 - keep parallel worker edits on implementation surfaces only, routing singleton narrative updates through consolidation
 - preserve dependency order: worker partitioning safety first, singleton-doc consolidation boundary second, managed subagents/hooks expansion later
 
-Rule: Shared singleton docs should be updated through worker-local fragments plus a reviewed deterministic consolidation boundary, not direct concurrent edits from multiple workers.
-Rule: Implemented state and next-state must never overlap in roadmap language.
-Pattern: Workers own isolated implementation changes; a final consolidator worker owns canonical narrative artifacts such as changelogs, roadmap rollups, and shared summary docs.
-Pattern: Roadmap truth should lag implementation by zero slices on active operator surfaces.
-Failure Mode: Allowing every worker to edit the same root-level docs creates merge hotspots, inconsistent summaries, and doc drift even when code ownership is otherwise well partitioned.
-Failure Mode: Shipping a slice while still describing it as next causes planning drift and weakens trust in product docs.
+Rule:
+- Parallelizable work is not automatically parallel-safe.
+- Implemented state and next-state must never overlap in roadmap language.
+
+Pattern:
+- Worker fragments + final consolidation for protected singleton docs.
+- Workers own isolated implementation changes; a final consolidator worker owns canonical narrative artifacts such as changelogs, roadmap rollups, and shared summary docs.
+- Roadmap truth should lag implementation by zero slices on active operator surfaces.
+
+Failure Mode:
+- Direct concurrent authorship of singleton narrative surfaces.
+- Allowing every worker to edit the same root-level docs creates merge hotspots, inconsistent summaries, and doc drift even when code ownership is otherwise well partitioned.
+- Shipping a slice while still describing it as next causes planning drift and weakens trust in product docs.
 
 ## 6. Contract / docs / tests enforcement model
 

@@ -205,7 +205,7 @@ Boundary:
 
 Parallelizable work is not automatically parallel-safe. Even when implementation ownership is partitioned cleanly across lanes, singleton narrative docs (for example root changelog, roadmap rollups, or shared summary docs) become merge hotspots if every worker edits them directly.
 
-Design principle for orchestration planning:
+This runtime architecture note follows the reusable [Singleton Consolidation Pattern](./SINGLETON_CONSOLIDATION_PATTERN.md):
 - workers own implementation surfaces and can edit those directly within scope
 - workers emit lane-local fragments / receipts for protected singleton narrative docs
 - one deterministic final consolidation step updates canonical singleton narrative docs
