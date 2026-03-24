@@ -94,7 +94,7 @@ const parseKindFilter = (raw: string | null): ReviewKind | undefined => {
 
 const parseDueFilter = (raw: string | null): DueFilter => {
   if (raw === null) {
-    return 'now';
+    return 'all';
   }
   if ((dueFilters as readonly string[]).includes(raw)) {
     return raw as DueFilter;

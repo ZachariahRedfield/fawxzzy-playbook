@@ -28,7 +28,7 @@ test('buildSummary renders compact success summary with verify, release, and mer
     remediationPolicy: null,
     remediationPolicyArtifactPath: '.playbook/ci-remediation-policy.json',
     failureSummary: null,
-    failureSummaryArtifactPath: '.playbook/failure-summary.json',
+    failureSummaryArtifactPath: '.playbook/test-triage.json',
     remediationStatus: null,
     remediationStatusArtifactPath: '.playbook/remediation-status.json',
   });
@@ -59,7 +59,7 @@ test('buildSummary includes remediation only when a test failure artifact exists
       primaryFailureClass: 'vitest_assertion',
       summary: { totalFailures: 3 },
     },
-    failureSummaryArtifactPath: '.playbook/failure-summary.json',
+    failureSummaryArtifactPath: '.playbook/test-triage.json',
     remediationStatus: {
       latest_run: {
         final_status: 'blocked_low_confidence',
@@ -84,7 +84,7 @@ test('renderMarkdown uses one compact operator brief', () => {
     mergeGuard: { decision: 'fail_closed', status: 'merge guard blocked', blockers: ['lane:docs'], nextAction: 'Resolve docs lane.' },
     release: { recommendedBump: 'patch', status: 'release plan ready', currentVersion: '1.2.3', nextVersion: '1.2.4', affected: '@scope/alpha' },
     remediation: { status: 'blocked_low_confidence', failureClass: 'vitest_assertion', failureCount: 2, retryDecision: 'hold', preferredRepairClass: 'snapshot_refresh', nextAction: 'Manual review required.' },
-    artifacts: ['.playbook/verify.json', '.playbook/release-plan.json', '.playbook/ci-remediation-policy.json', '.playbook/failure-summary.json', '.playbook/remediation-status.json'],
+    artifacts: ['.playbook/verify.json', '.playbook/release-plan.json', '.playbook/ci-remediation-policy.json', '.playbook/test-triage.json', '.playbook/remediation-status.json'],
   }, { marker: '<!-- marker -->', title: 'Playbook CI Summary' });
 
   assert.match(markdown, /Overall decision \/ status \| verify blocked \/ blocked · test failure/);
@@ -106,14 +106,14 @@ test('readJsonIfExists parses pure JSON artifacts', () => {
 
 test('readJsonIfExists names offending file when JSON is contaminated', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-summary-json-bad-'));
-  const artifactPath = path.join(tmpDir, 'failure-summary.json');
+  const artifactPath = path.join(tmpDir, 'test-triage.json');
   fs.writeFileSync(artifactPath, '> playbook-monorepo@0.1.8 playbook\n{"ok":true}', 'utf8');
 
   assert.throws(
     () => readJsonIfExists(artifactPath),
     (error) => {
       assert.match(String(error.message), /Invalid JSON artifact at/);
-      assert.match(String(error.message), /failure-summary\.json/);
+      assert.match(String(error.message), /test-triage\.json/);
       assert.match(String(error.message), /pure JSON/);
       return true;
     }

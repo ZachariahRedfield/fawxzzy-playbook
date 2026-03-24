@@ -42,7 +42,7 @@ Options:
   --days <n>                   Override stale threshold in days
   --action <action>            Review filter (reaffirm|revise|supersede)
   --kind <kind>                Review filter (knowledge|doc|rule|pattern)
-  --due <scope>               Review cadence filter (now|overdue|all; default now)
+  --due <scope>               Review cadence filter (now|overdue|all; default all)
   --from <queueEntryId>        Review record source queue entry id
   --decision <decision>        Review record decision (reaffirm|revise|supersede|defer)
   --reason-code <id>           Optional review record reason-code override

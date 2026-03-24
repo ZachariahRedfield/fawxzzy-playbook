@@ -79,7 +79,7 @@ Filters:
 
 - `--action reaffirm|revise|supersede`
 - `--kind knowledge|doc|rule|pattern`
-- `--due now|overdue|all` (default `now`)
+- `--due now|overdue|all` (default `all`)
 
 Cadence fields surfaced in JSON (`entries[*]` when present and additive summaries):
 

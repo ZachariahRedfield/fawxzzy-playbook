@@ -135,7 +135,7 @@ function buildRemediationSummary(policy, failureSummary, remediationStatus) {
     preferredRepairClass,
     nextAction: Array.isArray(policy?.reasons) && policy.reasons.length > 0
       ? policy.reasons[0]
-      : (latestRun.next_action ?? 'Review `.playbook/failure-summary.json` and `.playbook/remediation-status.json` for deterministic remediation guidance.'),
+      : (latestRun.next_action ?? 'Review `.playbook/test-triage.json` and `.playbook/remediation-status.json` for deterministic remediation guidance.'),
   };
 }
 
@@ -204,7 +204,7 @@ function parseArgs(argv) {
     verifyPreflight: '.playbook/verify-preflight.json',
     releasePlan: '.playbook/release-plan.json',
     remediationPolicy: '.playbook/ci-remediation-policy.json',
-    failureSummary: '.playbook/failure-summary.json',
+    failureSummary: '.playbook/test-triage.json',
     remediationStatus: '.playbook/remediation-status.json',
     out: '.playbook/ci-summary.md',
     commentOut: '.playbook/ci-summary-comment.md',

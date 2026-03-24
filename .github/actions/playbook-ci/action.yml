@@ -256,9 +256,8 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: |
         mkdir -p .playbook
-        echo "+ node packages/cli/dist/main.js test-triage --input .playbook/ci-failure.log --json --out .playbook/failure-summary.json"
-        node packages/cli/dist/main.js test-triage --input .playbook/ci-failure.log --json --out .playbook/failure-summary.json
-        cp .playbook/failure-summary.json .playbook/test-triage.json
+        echo "+ node packages/cli/dist/main.js test-triage --input .playbook/ci-failure.log --json --out .playbook/test-triage.json"
+        node packages/cli/dist/main.js test-triage --input .playbook/ci-failure.log --json --out .playbook/test-triage.json
         echo "+ node packages/cli/dist/main.js test-triage --input .playbook/ci-failure.log > .playbook/failure-summary.md"
         node packages/cli/dist/main.js test-triage --input .playbook/ci-failure.log > .playbook/failure-summary.md
 
@@ -374,7 +373,7 @@ runs:
           --verify-preflight .playbook/verify-preflight.json \
           --release-plan .playbook/release-plan.json \
           --remediation-policy .playbook/ci-remediation-policy.json \
-          --failure-summary .playbook/failure-summary.json \
+          --failure-summary .playbook/test-triage.json \
           --remediation-status .playbook/remediation-status.json \
           --out .playbook/ci-summary.md \
           --comment-out .playbook/ci-summary-comment.md

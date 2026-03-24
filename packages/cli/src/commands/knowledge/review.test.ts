@@ -128,12 +128,12 @@ describe('knowledge review', () => {
     expect(payload.artifactPath).toBe('.playbook/review-queue.json');
     expect(payload.summary).toMatchObject({
       total: 4,
-      returned: 3,
-      byAction: { reaffirm: 2, revise: 0, supersede: 1 },
-      byKind: { knowledge: 1, doc: 0, rule: 1, pattern: 1 },
-      cadence: { dueNow: 3, overdue: 2, deferred: 0 }
+      returned: 4,
+      byAction: { reaffirm: 2, revise: 1, supersede: 1 },
+      byKind: { knowledge: 1, doc: 1, rule: 1, pattern: 1 },
+      cadence: { dueNow: 3, overdue: 2, deferred: 1 }
     });
-    expect(payload.entries).toHaveLength(3);
+    expect(payload.entries).toHaveLength(4);
     logSpy.mockRestore();
   });
 
@@ -234,10 +234,10 @@ describe('knowledge review', () => {
     expect(exitCode).toBe(ExitCode.Success);
 
     const rendered = String(logSpy.mock.calls[0]?.[0]);
-    expect(rendered).toContain('Status: 3 review item(s) pending');
+    expect(rendered).toContain('Status: 4 review item(s) pending');
     expect(rendered).toContain('Due now: 3');
     expect(rendered).toContain('Overdue: 2');
-    expect(rendered).toContain('Deferred: 0');
+    expect(rendered).toContain('Deferred: 1');
     expect(rendered).toContain('Next action: reaffirm knowledge:stale-runtime-guard');
     logSpy.mockRestore();
   });
