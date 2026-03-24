@@ -58,6 +58,25 @@ Pattern: **config/plugins/rule packs over forks** for project-specific customiza
 
 Playbook uses `.playbook/` as the default home for local runtime artifacts (for example repository intelligence indexes, plans, and machine-readable reports).
 Playbook also publishes checked-in machine-readable Lifeline presets under `exports/lifeline/` so external tooling can consume stable defaults directly from a local Playbook checkout without starting the Playbook UI.
+
+### Run Playbook with Lifeline
+
+Playbook can be used as both the Lifeline convention source and the app target runtime from the same local checkout:
+
+- `exports/lifeline/` provides machine-readable archetype defaults for Lifeline resolution.
+- `.lifeline/playbook.lifeline.yml` defines how to run the Playbook observer app from this repo.
+
+From a machine with both repositories checked out locally:
+
+```bash
+lifeline resolve .lifeline/playbook.lifeline.yml --playbook-path <path-to-playbook>
+lifeline up .lifeline/playbook.lifeline.yml --playbook-path <path-to-playbook>
+lifeline status playbook
+lifeline logs playbook
+lifeline down playbook
+```
+
+The app process started by Lifeline is `pnpm start:lifeline`, which preserves the normal local Playbook CLI and terminal-based development flow.
 Playbook routing inspection emits deterministic proposal-only execution plans at `.playbook/execution-plan.json` via `pnpm playbook route "<task>" --json`.
 
 - Generated runtime artifacts should generally be gitignored unless intentionally committed as stable contracts/examples.
