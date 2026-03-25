@@ -39,6 +39,7 @@ type KnowledgeReviewListPayload = {
     kind?: ReviewKind;
     due?: DueFilter;
     trigger?: TriggerFilter;
+    triggerSource?: string;
   };
   summary: {
     total: number;
@@ -269,6 +270,7 @@ const runKnowledgeReviewList = (cwd: string, args: string[]): KnowledgeReviewLis
   const kindFilter = parseKindFilter(readOptionValue(args, '--kind'));
   const dueFilter = parseDueFilter(readOptionValue(args, '--due'));
   const triggerFilter = parseTriggerFilter(readOptionValue(args, '--trigger'));
+  const triggerSourceFilter = readOptionValue(args, '--trigger-source') ?? undefined;
 
   const reviewQueue = materializeReviewQueue(cwd);
 
@@ -284,6 +286,9 @@ const runKnowledgeReviewList = (cwd: string, args: string[]): KnowledgeReviewLis
       return false;
     }
     if (!matchesTriggerFilter(entry, triggerFilter)) {
+      return false;
+    }
+    if (triggerSourceFilter && entry.triggerSource !== triggerSourceFilter) {
       return false;
     }
     return true;
@@ -309,7 +314,8 @@ const runKnowledgeReviewList = (cwd: string, args: string[]): KnowledgeReviewLis
       ...(actionFilter ? { action: actionFilter } : {}),
       ...(kindFilter ? { kind: kindFilter } : {}),
       due: dueFilter,
-      trigger: triggerFilter
+      trigger: triggerFilter,
+      ...(triggerSourceFilter ? { triggerSource: triggerSourceFilter } : {})
     },
     summary: {
       total: reviewQueue.entries.length,

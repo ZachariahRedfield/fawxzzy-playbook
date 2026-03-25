@@ -81,6 +81,7 @@ Filters:
 - `--kind knowledge|doc|rule|pattern`
 - `--due now|overdue|all` (default `all`)
 - `--trigger cadence|evidence|all` (default `all`)
+- `--trigger-source <source>` (exact trigger source match, e.g. `architecture-decision`)
 
 Trigger metadata surfaced in JSON (`entries[*]` and persisted queue artifact):
 
@@ -98,10 +99,8 @@ Cadence fields surfaced in JSON (`entries[*]` when present and additive summarie
 Text output remains compact and operator-facing:
 
 - status
-- Due now
 - Evidence-triggered
-- Overdue
-- Deferred
+- affected targets
 - Next action
 
 Cadence schedules recall, while evidence can reopen or raise recall priority without creating a new command family.
@@ -114,9 +113,9 @@ Architecture-decision recall is trigger-driven: `docs/architecture/decisions/*.m
 
 Rule: Architecture decisions should be recalled through explicit trigger metadata, not ad hoc memory.
 
-Pattern: Architecture decision -> trigger hit -> retrieval review.
+Pattern: Queue + receipt + cadence + evidence + decision triggers = governed review.
 
-Failure Mode: Architecture decisions get written once and never re-evaluated when their own assumptions change.
+Failure Mode: Architecture review triggers live only in docs and never become operational review signals.
 
 ### `knowledge review handoffs`
 

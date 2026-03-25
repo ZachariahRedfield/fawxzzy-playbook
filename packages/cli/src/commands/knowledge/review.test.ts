@@ -101,6 +101,23 @@ const reviewQueueFixture = () => ({
       generatedAt: '2026-03-24T00:00:00.000Z',
       nextReviewAt: '2026-03-26T00:00:00.000Z',
       overdue: false
+    },
+    {
+      queueEntryId: 'q-architecture-1',
+      targetKind: 'doc',
+      path: 'docs/architecture/decisions/decision-a.md',
+      sourceSurface: 'architecture-decisions',
+      reasonCode: 'architecture-decision-review-trigger',
+      evidenceRefs: ['.playbook/memory/lifecycle-candidates.json', 'docs/architecture/decisions/decision-a.md'],
+      triggerType: 'evidence',
+      triggerSource: 'architecture-decision',
+      triggerReasonCode: 'assumption-evidence-updated',
+      triggerEvidenceRefs: ['.playbook/memory/lifecycle-candidates.json', 'docs/architecture/decisions/decision-a.md'],
+      recommendedAction: 'reaffirm',
+      reviewPriority: 'medium',
+      generatedAt: '2026-03-24T00:00:00.000Z',
+      nextReviewAt: '2026-03-24T00:00:00.000Z',
+      overdue: false
     }
   ]
 });
@@ -185,14 +202,14 @@ describe('knowledge review', () => {
     expect(payload.command).toBe('knowledge-review');
     expect(payload.artifactPath).toBe('.playbook/review-queue.json');
     expect(payload.summary).toMatchObject({
-      total: 4,
-      returned: 4,
-      byAction: { reaffirm: 2, revise: 1, supersede: 1 },
-      byKind: { knowledge: 1, doc: 1, rule: 1, pattern: 1 },
-      cadence: { dueNow: 3, overdue: 2, deferred: 1, evidenceTriggered: 2 },
-      triggers: { cadence: 2, evidence: 1, mixed: 1 }
+      total: 5,
+      returned: 5,
+      byAction: { reaffirm: 3, revise: 1, supersede: 1 },
+      byKind: { knowledge: 1, doc: 2, rule: 1, pattern: 1 },
+      cadence: { dueNow: 4, overdue: 2, deferred: 1, evidenceTriggered: 3 },
+      triggers: { cadence: 2, evidence: 2, mixed: 1 }
     });
-    expect(payload.entries).toHaveLength(4);
+    expect(payload.entries).toHaveLength(5);
     logSpy.mockRestore();
   });
 
@@ -211,8 +228,8 @@ describe('knowledge review', () => {
     exitCode = await runKnowledge('/repo', ['review', '--kind', 'doc'], { format: 'json', quiet: false });
     expect(exitCode).toBe(ExitCode.Success);
     payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
-    expect(payload.summary.returned).toBe(1);
-    expect(payload.entries[0].targetKind).toBe('doc');
+    expect(payload.summary.returned).toBe(2);
+    expect(payload.entries.every((entry: { targetKind?: string }) => entry.targetKind === 'doc')).toBe(true);
 
     logSpy.mockClear();
     exitCode = await runKnowledge('/repo', ['review', '--kind', 'pattern'], { format: 'json', quiet: false });
@@ -232,14 +249,25 @@ describe('knowledge review', () => {
     exitCode = await runKnowledge('/repo', ['review', '--due', 'all'], { format: 'json', quiet: false });
     expect(exitCode).toBe(ExitCode.Success);
     payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
-    expect(payload.summary.returned).toBe(4);
+    expect(payload.summary.returned).toBe(5);
 
     logSpy.mockClear();
     exitCode = await runKnowledge('/repo', ['review', '--trigger', 'evidence'], { format: 'json', quiet: false });
     expect(exitCode).toBe(ExitCode.Success);
     payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
-    expect(payload.summary.returned).toBe(2);
+    expect(payload.summary.returned).toBe(3);
     expect(payload.entries.every((entry: { triggerType?: string }) => entry.triggerType === 'evidence' || entry.triggerType === 'cadence+evidence')).toBe(true);
+
+    logSpy.mockClear();
+    exitCode = await runKnowledge('/repo', ['review', '--trigger', 'evidence', '--trigger-source', 'architecture-decision'], {
+      format: 'json',
+      quiet: false
+    });
+    expect(exitCode).toBe(ExitCode.Success);
+    payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.summary.returned).toBe(1);
+    expect(payload.filters.triggerSource).toBe('architecture-decision');
+    expect(payload.entries[0].queueEntryId).toBe('q-architecture-1');
 
     logSpy.mockRestore();
   });
@@ -300,11 +328,9 @@ describe('knowledge review', () => {
     expect(exitCode).toBe(ExitCode.Success);
 
     const rendered = String(logSpy.mock.calls[0]?.[0]);
-    expect(rendered).toContain('Status: 4 review item(s) pending');
-    expect(rendered).toContain('Due now: 3');
-    expect(rendered).toContain('Evidence-triggered: 2');
-    expect(rendered).toContain('Overdue: 2');
-    expect(rendered).toContain('Deferred: 1');
+    expect(rendered).toContain('Status: 5 review item(s) pending');
+    expect(rendered).toContain('Evidence-triggered: 3');
+    expect(rendered).toContain('Affected targets: knowledge:stale-runtime-guard, docs/PLAYBOOK_DEV_WORKFLOW.md, rule:review-surface-only');
     expect(rendered).toContain('Next action: reaffirm knowledge:stale-runtime-guard');
     logSpy.mockRestore();
   });
