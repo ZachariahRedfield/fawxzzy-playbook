@@ -1512,8 +1512,8 @@ Use a layered phase model so each phase compounds directly on the previous one:
    - Problem addressed: parallel workers can be isolated across implementation surfaces and still collide on singleton narrative docs such as `docs/CHANGELOG.md`, roadmap rollups, and shared architecture summaries.
    - Current behavior: workers write structured lane-local fragments / receipts, workers do not directly edit protected singleton narrative docs during parallel execution, and `pnpm playbook docs consolidate --json` emits a deterministic review artifact rather than mutating canonical docs.
    - Worker-owned implementation surfaces remain safe for direct edits; narrative singleton surfaces are updated through consolidation only.
-   - Next hardening step: add verify/CI protected-doc merge-guard enforcement so already-reviewed, target-locked consolidation plans become an explicitly enforced merge boundary with deterministic conflict checks on canonical narrative docs.
-   - Dependency positioning: this slice now sits after worker partitioning / lane safety and before verify/CI protected-doc merge-guard enforcement for future managed subagents / hooks execution.
+   - Implemented hardening step: verify/CI protected-doc merge-guard enforcement now makes already-reviewed, target-locked consolidation plans an explicitly enforced merge boundary with deterministic conflict checks on canonical narrative docs.
+   - Dependency positioning: this slice now sits after worker partitioning / lane safety and before future managed subagents / hooks execution.
    - Planned next contract slice (incomplete): **Worker Fragment Consolidation for Shared Singleton Docs - consolidation governance hardening**.
      - Scope: keep worker-local fragment/receipt production as the only parallel worker write path for protected singleton narrative surfaces, then require one deterministic final consolidation boundary for canonical docs.
      - Acceptance criteria:
@@ -1588,12 +1588,11 @@ TODO (roadmap contract alignment): add explicit feature IDs, dependencies, and v
    - Requires provenance-preserving retrieval and review queues before any doctrine promotion/demotion/supersession.
    - Keeps candidate generation high-recall while preventing low-signal promotion through explicit salience and approval gates.
 
-3. **Verify/CI protected-doc merge-guard enforcement**
-   - Adds the remaining missing hardening seam after the already implemented worker-fragment, submit, consolidate, consolidate-plan, and drift-locked apply safety slice.
-   - Narrows the remaining gap to enforcement: proposal-only consolidation artifacts, reviewed consolidation plans, and guarded canonical doc mutation already exist for protected singleton narrative surfaces (`docs/CHANGELOG.md`, roadmap rollups, shared summaries).
-   - Requires deterministic verify/CI merge/conflict enforcement so unresolved or drifted protected-doc consolidation state blocks merge readiness before canonical narrative updates land.
-   - Provides the dependency-ordered path `worker partitioning / overlap detection -> worker-local fragments / receipts -> workers submit -> proposal-only docs consolidate -> docs consolidate-plan -> drift-locked apply guards -> verify/CI protected-doc merge-guard enforcement -> managed subagents / hooks`.
-   - Makes parallel execution safer without re-describing the already implemented slice as future work.
+3. **Managed subagents / hooks execution hardening (next seam)**
+   - The verify/CI protected-doc merge-guard seam is already implemented and remains the enforced boundary for unresolved or drifted protected-doc consolidation state.
+   - The next genuinely missing seam is controlled managed subagents/hooks execution layered on top of the existing merge-guard boundary.
+   - Keeps the dependency-ordered path explicit: `worker partitioning / overlap detection -> worker-local fragments / receipts -> workers submit -> proposal-only docs consolidate -> docs consolidate-plan -> drift-locked apply guards -> verify/CI protected-doc merge-guard enforcement -> managed subagents / hooks`.
+   - Focuses future work on execution orchestration and policy gates without reclassifying already-implemented verify/CI enforcement as incomplete.
 
 4. **Control Plane / Agent Runtime v1**
    - Builds on memory + replay/consolidation + evidence + policy boundaries, not in parallel with them.
@@ -2605,7 +2604,7 @@ Execution state is persisted under `.playbook/runs/<run-id>.json` and is queryab
 - Pattern — Shared narrative work is complete only when consolidation is complete.
 - Failure Mode — Parallel docs work without consolidation becomes a merge-management problem, not a productivity gain.
 - Failure Mode — Marking lanes merge-ready before protected-doc integration recreates manual merge hotspots under a deterministic-looking surface.
-- Next planned safety slice: **Verify/CI protected-doc merge-guard enforcement**, requiring deterministic merge-readiness / CI enforcement for unresolved or drifted protected-doc consolidation state now that worker fragments, `workers submit`, `docs consolidate`, `docs consolidate-plan`, drift-locked apply guards, and the compact `status proof` parallel-work brief are already implemented before future managed subagents/hooks execution.
+- Next planned safety slice: **managed subagents/hooks execution hardening**, now that deterministic verify/CI protected-doc merge-guard enforcement for unresolved or drifted protected-doc consolidation state is already implemented alongside worker fragments, `workers submit`, `docs consolidate`, `docs consolidate-plan`, drift-locked apply guards, and the compact `status proof` parallel-work brief.
 - Rule — Shared singleton docs should be updated through worker-local fragments plus a reviewed deterministic consolidation boundary, not direct concurrent edits from multiple workers.
 - Rule — Implemented state and next-state must never overlap in roadmap language.
 - Rule — Human prompt surfaces should carry only bounded execution instructions, not full machine state.
