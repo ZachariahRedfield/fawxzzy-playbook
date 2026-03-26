@@ -243,6 +243,74 @@ describe('runMemory', () => {
     logSpy.mockRestore();
   });
 
+  it('supports pressure followups subcommand with deterministic filters', async () => {
+    const { runMemory } = await import('./memory.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-memory-pressure-followups-'));
+
+    fs.mkdirSync(path.join(repoRoot, '.playbook'), { recursive: true });
+    fs.writeFileSync(
+      path.join(repoRoot, '.playbook', 'memory-pressure-followups.json'),
+      `${JSON.stringify({
+        schemaVersion: '1.0',
+        kind: 'playbook-memory-pressure-followups',
+        command: 'memory-pressure-followups',
+        currentBand: 'pressure',
+        retentionClasses: {
+          canonical: ['.playbook/memory/knowledge/decisions.json'],
+          compactable: ['.playbook/memory/events/1.json', '.playbook/memory/index.json'],
+          disposable: ['.playbook/tmp/a.json']
+        },
+        rowsByBand: {
+          warm: [{ followupId: 'f-w-1', action: 'dedupe', priority: 'P3', reason: 'w', targets: ['.playbook/memory/events/1.json'], excludedCanonicalTargets: [] }],
+          pressure: [
+            {
+              followupId: 'f-p-1',
+              action: 'summarize',
+              priority: 'P1',
+              reason: 'p1',
+              targets: ['.playbook/memory/events/1.json'],
+              excludedCanonicalTargets: ['.playbook/memory/knowledge/decisions.json']
+            },
+            { followupId: 'f-p-2', action: 'compact', priority: 'P2', reason: 'p2', targets: ['.playbook/memory/index.json'], excludedCanonicalTargets: [] }
+          ],
+          critical: [{ followupId: 'f-c-1', action: 'evict-disposable', priority: 'P4', reason: 'c', targets: ['.playbook/tmp/a.json'], excludedCanonicalTargets: [] }]
+        }
+      }, null, 2)}\n`,
+      'utf8'
+    );
+
+    const exitCode = await runMemory(
+      repoRoot,
+      ['pressure', 'followups', '--band', 'pressure', '--action', 'compact', '--class', 'compactable'],
+      { format: 'json', quiet: false }
+    );
+    expect(exitCode).toBe(ExitCode.Success);
+
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.command).toBe('memory-pressure-followups');
+    expect(payload.current_band).toBe('pressure');
+    expect(payload.followups).toHaveLength(1);
+    expect(payload.followups[0].followupId).toBe('f-p-2');
+    expect(payload.top_recommended_actions).toEqual([{ action: 'compact', count: 1 }]);
+    expect(payload.affected_targets).toEqual(['.playbook/memory/index.json']);
+    logSpy.mockRestore();
+  });
+
+  it('returns deterministic failure envelope when pressure followups artifact is missing', async () => {
+    const { runMemory } = await import('./memory.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-memory-pressure-followups-missing-'));
+
+    const exitCode = await runMemory(repoRoot, ['pressure', 'followups'], { format: 'json', quiet: false });
+    expect(exitCode).toBe(ExitCode.Failure);
+
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.command).toBe('memory-pressure');
+    expect(payload.error).toContain('missing required artifact .playbook/memory-pressure-followups.json');
+    logSpy.mockRestore();
+  });
+
   it('returns deterministic failure envelope for unsupported subcommands', async () => {
     const { runMemory } = await import('./memory.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);

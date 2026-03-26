@@ -22,6 +22,7 @@ type MemoryOptions = {
 type MemorySubcommand = 'events' | 'query' | 'candidates' | 'knowledge' | 'compaction' | 'pressure' | 'show' | 'promote' | 'retire';
 type MemoryPressureBand = 'normal' | 'warm' | 'pressure' | 'critical';
 type MemoryPressureActionFilter = 'dedupe' | 'compact' | 'summarize' | 'evict';
+type MemoryClassFilter = 'canonical' | 'compactable' | 'disposable';
 
 const printMemoryHelp = (): void => {
   console.log(`Usage: playbook memory <subcommand> [options]
@@ -58,6 +59,7 @@ Options:
   --decision <name>            Filter compaction review by decision bucket
   --band <name>                Filter memory pressure by band (normal|warm|pressure|critical)
   --action <name>              Filter memory pressure plan actions (dedupe|compact|summarize|evict)
+  --class <name>               Filter pressure followups by retention class (canonical|compactable|disposable)
   --json                       Print machine-readable JSON output
   --help                       Show help`);
 };
@@ -133,6 +135,14 @@ const parseMemoryPressureActionOption = (raw: string | null): MemoryPressureActi
     return raw;
   }
   throw new Error(`playbook memory pressure: invalid --action value "${raw}"; expected dedupe, compact, summarize, or evict`);
+};
+
+const parseMemoryClassOption = (raw: string | null): MemoryClassFilter | undefined => {
+  if (raw === null) return undefined;
+  if (raw === 'canonical' || raw === 'compactable' || raw === 'disposable') {
+    return raw;
+  }
+  throw new Error(`playbook memory pressure followups: invalid --class value "${raw}"; expected canonical, compactable, or disposable`);
 };
 
 const emitMemoryResult = (
@@ -319,6 +329,122 @@ export const runMemory = async (cwd: string, args: string[], options: MemoryOpti
     }
 
     if (subcommand === 'pressure') {
+      const pressureSubcommand = resolveSubcommandArgument(args);
+      if (pressureSubcommand && pressureSubcommand !== 'followups') {
+        throw new Error('playbook memory pressure: unsupported nested subcommand. Use followups or omit nested subcommand.');
+      }
+
+      if (pressureSubcommand === 'followups') {
+        const bandFilter = (() => {
+          const raw = readOptionValue(args, '--band');
+          if (raw === null) return undefined;
+          if (raw === 'warm' || raw === 'pressure' || raw === 'critical') return raw;
+          throw new Error('playbook memory pressure followups: invalid --band value; expected warm, pressure, or critical');
+        })();
+        const actionFilter = parseMemoryPressureActionOption(readOptionValue(args, '--action'));
+        const classFilter = parseMemoryClassOption(readOptionValue(args, '--class'));
+        const followupsPath = path.join(cwd, '.playbook/memory-pressure-followups.json');
+        if (!fs.existsSync(followupsPath)) {
+          throw new Error('playbook memory pressure followups: missing required artifact .playbook/memory-pressure-followups.json');
+        }
+
+        const followupsArtifact = JSON.parse(fs.readFileSync(followupsPath, 'utf8')) as {
+          currentBand?: MemoryPressureBand;
+          rowsByBand?: Partial<Record<'warm' | 'pressure' | 'critical', Array<{
+            followupId?: string;
+            action?: 'dedupe' | 'compact' | 'summarize' | 'evict-disposable';
+            priority?: string;
+            targets?: string[];
+            excludedCanonicalTargets?: string[];
+            reason?: string;
+          }>>>;
+          retentionClasses?: { canonical?: string[]; compactable?: string[]; disposable?: string[] };
+        };
+
+        const bands: Array<'warm' | 'pressure' | 'critical'> = bandFilter ? [bandFilter] : ['warm', 'pressure', 'critical'];
+        const rows = bands.flatMap((band) =>
+          (followupsArtifact.rowsByBand?.[band] ?? []).map((row) => ({ band, ...row }))
+        );
+        const normalizedRows = rows.map((row) => ({
+          ...row,
+          action: row.action === 'evict-disposable' ? 'evict' : row.action
+        }));
+        const actionFilteredRows = actionFilter
+          ? normalizedRows.filter((row) => row.action === actionFilter)
+          : normalizedRows;
+
+        const retentionClassLookup = {
+          canonical: new Set(followupsArtifact.retentionClasses?.canonical ?? []),
+          compactable: new Set(followupsArtifact.retentionClasses?.compactable ?? []),
+          disposable: new Set(followupsArtifact.retentionClasses?.disposable ?? [])
+        };
+        const classAnnotatedRows = actionFilteredRows.map((row) => {
+          const paths = [...(row.targets ?? []), ...(row.excludedCanonicalTargets ?? [])];
+          const matchedClasses = (['canonical', 'compactable', 'disposable'] as const).filter((className) =>
+            paths.some((target) => retentionClassLookup[className].has(target))
+          );
+          return {
+            ...row,
+            matchedClasses
+          };
+        });
+        const filteredRows = classFilter
+          ? classAnnotatedRows.filter((row) => row.matchedClasses.includes(classFilter))
+          : classAnnotatedRows;
+
+        const actionCounts = filteredRows.reduce<Record<string, number>>((acc, row) => {
+          const key = String(row.action ?? 'unknown');
+          acc[key] = (acc[key] ?? 0) + 1;
+          return acc;
+        }, {});
+        const topRecommendedActions = Object.entries(actionCounts)
+          .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+          .slice(0, 3)
+          .map(([action, count]) => ({ action, count }));
+        const affectedTargets = [...new Set(filteredRows.flatMap((row) => row.targets ?? []))].sort((a, b) => a.localeCompare(b));
+        const nextAction = filteredRows[0]
+          ? {
+              followupId: filteredRows[0].followupId ?? null,
+              action: filteredRows[0].action ?? null,
+              band: filteredRows[0].band,
+              priority: filteredRows[0].priority ?? null,
+              reason: filteredRows[0].reason ?? null,
+              targets: filteredRows[0].targets ?? []
+            }
+          : null;
+
+        const payload = {
+          schemaVersion: '1.0',
+          command: 'memory-pressure-followups',
+          artifactPath: '.playbook/memory-pressure-followups.json',
+          filters: {
+            ...(bandFilter ? { band: bandFilter } : {}),
+            ...(actionFilter ? { action: actionFilter } : {}),
+            ...(classFilter ? { class: classFilter } : {})
+          },
+          current_band: followupsArtifact.currentBand ?? 'normal',
+          affected_targets: affectedTargets,
+          top_recommended_actions: topRecommendedActions,
+          next_action: nextAction,
+          followups: filteredRows,
+          full_followups_artifact: followupsArtifact
+        };
+
+        emitMemoryResult(
+          cwd,
+          options,
+          'memory pressure followups',
+          payload,
+          [
+            `Current band: ${payload.current_band}`,
+            `Affected targets: ${payload.affected_targets.length}`,
+            `Top recommended actions: ${payload.top_recommended_actions.map((entry) => `${entry.action}(${entry.count})`).join(', ') || 'none'}`,
+            `Next action: ${payload.next_action ? `${payload.next_action.action} (${payload.next_action.band})` : 'none'}`
+          ].join('\n')
+        );
+        return ExitCode.Success;
+      }
+
       const bandFilter = parseMemoryPressureBandOption(readOptionValue(args, '--band'));
       const actionFilter = parseMemoryPressureActionOption(readOptionValue(args, '--action'));
       const statusPath = path.join(cwd, '.playbook/memory-pressure.json');
