@@ -2,17 +2,23 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   KNOWLEDGE_REVIEW_RECEIPTS_RELATIVE_PATH,
+  REVIEW_DOWNSTREAM_FOLLOWUPS_RELATIVE_PATH,
   REVIEW_HANDOFF_ROUTES_RELATIVE_PATH,
   REVIEW_HANDOFFS_RELATIVE_PATH,
   REVIEW_QUEUE_RELATIVE_PATH,
+  buildReviewDownstreamFollowupsArtifact,
   buildReviewHandoffRoutesArtifact,
   buildReviewQueue,
   buildReviewHandoffsArtifact,
+  writeReviewDownstreamFollowupsArtifact,
   writeReviewHandoffRoutesArtifact,
   writeKnowledgeReviewReceipt,
   writeReviewHandoffsArtifact,
   writeReviewQueueArtifact,
   type KnowledgeReviewDecision,
+  type ReviewDownstreamFollowupEntry,
+  type ReviewDownstreamFollowupType,
+  type ReviewDownstreamFollowupsArtifact,
   type ReviewHandoffDecision,
   type ReviewHandoffEntry,
   type ReviewHandoffsArtifact,
@@ -131,7 +137,34 @@ type KnowledgeReviewRoutesPayload = {
   routes: ReviewHandoffRouteEntry[];
 };
 
-export type KnowledgeReviewPayload = KnowledgeReviewListPayload | KnowledgeReviewRecordPayload | KnowledgeReviewHandoffsPayload | KnowledgeReviewRoutesPayload;
+type KnowledgeReviewFollowupsPayload = {
+  schemaVersion: '1.0';
+  command: 'knowledge-review-followups';
+  artifactPath: typeof REVIEW_DOWNSTREAM_FOLLOWUPS_RELATIVE_PATH;
+  generatedAt: string;
+  reviewOnly: true;
+  authority: 'read-only';
+  proposalOnly: true;
+  filters: {
+    kind?: ReviewKind;
+    surface?: RouteSurfaceFilter;
+  };
+  summary: {
+    total: number;
+    returned: number;
+    byType: Record<ReviewDownstreamFollowupType, number>;
+    bySurface: Record<RouteSurfaceFilter, number>;
+    byKind: Record<ReviewKind, number>;
+  };
+  followups: ReviewDownstreamFollowupEntry[];
+};
+
+export type KnowledgeReviewPayload =
+  | KnowledgeReviewListPayload
+  | KnowledgeReviewRecordPayload
+  | KnowledgeReviewHandoffsPayload
+  | KnowledgeReviewRoutesPayload
+  | KnowledgeReviewFollowupsPayload;
 
 const reviewActions: readonly ReviewAction[] = ['reaffirm', 'revise', 'supersede'] as const;
 const reviewKinds: readonly ReviewKind[] = ['knowledge', 'doc', 'rule', 'pattern'] as const;
@@ -202,14 +235,14 @@ const parseHandoffDecisionFilter = (raw: string | null): HandoffDecisionFilter |
   throw new Error(`playbook knowledge review handoffs: invalid --decision value "${raw}"; expected revise or supersede`);
 };
 
-const parseRouteSurfaceFilter = (raw: string | null): RouteSurfaceFilter | undefined => {
+const parseRouteSurfaceFilter = (raw: string | null, surfaceName: 'routes' | 'followups' = 'routes'): RouteSurfaceFilter | undefined => {
   if (raw === null) {
     return undefined;
   }
   if (raw === 'story' || raw === 'promote' || raw === 'docs' || raw === 'memory') {
     return raw;
   }
-  throw new Error(`playbook knowledge review routes: invalid --surface value "${raw}"; expected story, promote, docs, or memory`);
+  throw new Error(`playbook knowledge review ${surfaceName}: invalid --surface value "${raw}"; expected story, promote, docs, or memory`);
 };
 
 const readReviewQueueArtifact = (cwd: string): ReviewQueueArtifact => {
@@ -263,6 +296,16 @@ const materializeReviewHandoffRoutes = (cwd: string): ReviewHandoffRoutesArtifac
     throw new Error(`playbook knowledge review routes: missing artifact at ${REVIEW_HANDOFF_ROUTES_RELATIVE_PATH}`);
   }
   return JSON.parse(fs.readFileSync(fullPath, 'utf8')) as ReviewHandoffRoutesArtifact;
+};
+
+const materializeReviewDownstreamFollowups = (cwd: string): ReviewDownstreamFollowupsArtifact => {
+  const materialized = buildReviewDownstreamFollowupsArtifact(cwd);
+  writeReviewDownstreamFollowupsArtifact(cwd, materialized);
+  const fullPath = path.join(cwd, REVIEW_DOWNSTREAM_FOLLOWUPS_RELATIVE_PATH);
+  if (!fs.existsSync(fullPath)) {
+    throw new Error(`playbook knowledge review followups: missing artifact at ${REVIEW_DOWNSTREAM_FOLLOWUPS_RELATIVE_PATH}`);
+  }
+  return JSON.parse(fs.readFileSync(fullPath, 'utf8')) as ReviewDownstreamFollowupsArtifact;
 };
 
 const isOverdueEntry = (entry: ReviewQueueEntry): boolean => entry.overdue === true;
@@ -481,6 +524,58 @@ const runKnowledgeReviewRoutes = (cwd: string, args: string[]): KnowledgeReviewR
   };
 };
 
+const runKnowledgeReviewFollowups = (cwd: string, args: string[]): KnowledgeReviewFollowupsPayload => {
+  const surfaceFilter = parseRouteSurfaceFilter(readOptionValue(args, '--surface'), 'followups');
+  const kindFilter = parseKindFilter(readOptionValue(args, '--kind'));
+  const artifact = materializeReviewDownstreamFollowups(cwd);
+
+  const followups = artifact.followups.filter((followup: ReviewDownstreamFollowupEntry) => {
+    if (surfaceFilter && followup.recommendedSurface !== surfaceFilter) {
+      return false;
+    }
+    if (kindFilter && asReviewKindValue(followup.targetKind) !== kindFilter) {
+      return false;
+    }
+    return true;
+  });
+
+  const byType: Record<ReviewDownstreamFollowupType, number> = {
+    'docs-revision': 0,
+    'promote-memory': 0,
+    'story-seed': 0,
+    supersession: 0
+  };
+  const bySurface: Record<RouteSurfaceFilter, number> = { story: 0, promote: 0, docs: 0, memory: 0 };
+  const byKind = zeroKindSummary();
+  for (const followup of followups) {
+    byType[followup.type] += 1;
+    bySurface[followup.recommendedSurface] += 1;
+    byKind[asReviewKindValue(followup.targetKind)] += 1;
+  }
+
+  return {
+    schemaVersion: '1.0',
+    command: 'knowledge-review-followups',
+    artifactPath: REVIEW_DOWNSTREAM_FOLLOWUPS_RELATIVE_PATH,
+    generatedAt: artifact.generatedAt,
+    reviewOnly: true,
+    authority: 'read-only',
+    proposalOnly: true,
+    filters: {
+      ...(kindFilter ? { kind: kindFilter } : {}),
+      ...(surfaceFilter ? { surface: surfaceFilter } : {})
+    },
+    summary: {
+      total: artifact.followups.length,
+      returned: followups.length,
+      byType,
+      bySurface,
+      byKind
+    },
+    followups
+  };
+};
+
 const asRecordableTargetKind = (targetKind: ReviewQueueEntry['targetKind']): RecordableReviewKind => {
   if (targetKind === 'knowledge' || targetKind === 'doc') {
     return targetKind;
@@ -592,6 +687,9 @@ export const runKnowledgeReview = (cwd: string, args: string[]): KnowledgeReview
   }
   if (reviewSubcommand === 'routes') {
     return runKnowledgeReviewRoutes(cwd, args);
+  }
+  if (reviewSubcommand === 'followups') {
+    return runKnowledgeReviewFollowups(cwd, args);
   }
 
   return runKnowledgeReviewList(cwd, args);

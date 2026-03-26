@@ -178,6 +178,28 @@ Behavior guarantees:
 - no auto-supersession
 - full route detail retained in JSON output and `.playbook/review-handoff-routes.json`
 
+### `knowledge review followups`
+
+Materialize and inspect compiled downstream follow-up suggestions using `.playbook/review-downstream-followups.json`.
+
+Filters:
+
+- `--kind knowledge|doc|rule|pattern`
+- `--surface story|promote|docs|memory`
+
+Text output stays brief-thin:
+
+- status
+- affected targets
+- recommended surface
+- next action
+
+Behavior guarantees:
+
+- proposal-only follow-up visibility
+- no write or mutation path
+- full deterministic detail retained in JSON output and `.playbook/review-downstream-followups.json`
+
 ### `knowledge review record`
 
 Record a durable retrieval review outcome in `.playbook/knowledge-review-receipts.json` from an existing queue entry.
@@ -235,6 +257,8 @@ pnpm playbook knowledge review handoffs --json
 pnpm playbook knowledge review handoffs --decision revise --kind doc --json
 pnpm playbook knowledge review routes --json
 pnpm playbook knowledge review routes --surface docs --decision revise --kind doc --json
+pnpm playbook knowledge review followups --json
+pnpm playbook knowledge review followups --kind doc --surface docs --json
 pnpm playbook knowledge review record --from <queue-entry-id> --decision defer --json
 ```
 

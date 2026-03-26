@@ -30,6 +30,7 @@ Subcommands:
   review                          Materialize and inspect retrieval review queue entries
   review handoffs                 Materialize and inspect review follow-up handoffs
   review routes                   Materialize and inspect routed review follow-up suggestions
+  review followups                Materialize and inspect compiled downstream follow-up suggestions
   review record                   Record a durable retrieval review receipt
 
 Options:

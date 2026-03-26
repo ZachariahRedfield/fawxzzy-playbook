@@ -95,6 +95,13 @@ declare module "@zachariahredfield/playbook-engine" {
   export type ReviewHandoffRouteSurface = any;
   export type ReviewHandoffRouteEntry = any;
   export type ReviewHandoffRoutesArtifact = any;
+  export const REVIEW_DOWNSTREAM_FOLLOWUPS_SCHEMA_VERSION: any;
+  export const REVIEW_DOWNSTREAM_FOLLOWUPS_RELATIVE_PATH: '.playbook/review-downstream-followups.json';
+  export const buildReviewDownstreamFollowupsArtifact: (...args: any[]) => any;
+  export const writeReviewDownstreamFollowupsArtifact: (...args: any[]) => any;
+  export type ReviewDownstreamFollowupType = any;
+  export type ReviewDownstreamFollowupEntry = any;
+  export type ReviewDownstreamFollowupsArtifact = any;
   export const KNOWLEDGE_REVIEW_RECEIPTS_SCHEMA_VERSION: any;
   export const KNOWLEDGE_REVIEW_RECEIPTS_RELATIVE_PATH: '.playbook/knowledge-review-receipts.json';
   export const readKnowledgeReviewReceiptsArtifact: (...args: any[]) => any;

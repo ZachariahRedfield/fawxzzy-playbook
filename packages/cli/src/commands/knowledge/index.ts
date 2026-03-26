@@ -210,6 +210,26 @@ const renderText = (subcommand: string, payload: Record<string, unknown>): strin
       ].join('\n');
     }
 
+    if (String(payload.command ?? '') === 'knowledge-review-followups') {
+      const followups = payload.followups as Array<Record<string, unknown>> | undefined;
+      if (!followups || followups.length === 0) {
+        return 'Status: no downstream follow-up suggestions.\nAffected targets: none\nRecommended surface: none\nNext action: continue via existing review surfaces.';
+      }
+
+      const first = followups[0]!;
+      const affectedTargets = followups
+        .slice(0, 3)
+        .map((followup) => String(followup.targetId ?? followup.path ?? 'target'))
+        .join(', ');
+
+      return [
+        `Status: ${followups.length} downstream follow-up suggestion(s)`,
+        `Affected targets: ${affectedTargets}`,
+        `Recommended surface: ${String(first.recommendedSurface ?? 'n/a')}`,
+        `Next action: ${String(first.nextActionText ?? 'review downstream follow-up suggestions')}`
+      ].join('\n');
+    }
+
     if (String(payload.command ?? '') === 'knowledge-review-handoffs') {
       const handoffs = payload.handoffs as Array<Record<string, unknown>> | undefined;
       if (!handoffs || handoffs.length === 0) {
@@ -310,7 +330,9 @@ export const runKnowledge = async (cwd: string, args: string[], options: Knowled
         return runKnowledgeReview(cwd, args);
       }
 
-      throw new Error('playbook knowledge: unsupported subcommand. Use list, query, inspect, compare, timeline, provenance, supersession, stale, portability, review, or review record.');
+      throw new Error(
+        'playbook knowledge: unsupported subcommand. Use list, query, inspect, compare, timeline, provenance, supersession, stale, portability, review, review handoffs, review routes, review followups, or review record.'
+      );
     })();
 
     if (options.format === 'json') {
