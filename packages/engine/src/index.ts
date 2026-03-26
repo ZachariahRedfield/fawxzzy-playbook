@@ -173,6 +173,17 @@ export type {
   MemoryCompactionReviewEntry,
   MemoryCompactionReviewArtifact
 } from './memory/compactionReview.js';
+export {
+  MEMORY_PRESSURE_STATUS_RELATIVE_PATH,
+  computeMemoryPressureScore,
+  resolveMemoryPressureBand,
+  classifyMemoryArtifact,
+  recommendedActionsForBand,
+  buildMemoryPressureStatusArtifact,
+  writeMemoryPressureStatusArtifact,
+  evaluateMemoryPressurePolicy
+} from './memory/pressurePolicy.js';
+export type { MemoryPressureAction, MemoryPressureBand, MemoryClass, MemoryPressureStatusArtifact } from './memory/pressurePolicy.js';
 export { lookupMemoryCompactionReview } from './memory/inspection.js';
 export { listCandidateKnowledge, loadCandidateKnowledgeById, promoteMemoryCandidate, retirePromotedKnowledge, supersedePromotedKnowledge, pruneMemoryKnowledge } from './memory/knowledge.js';
 export type { MemoryKnowledgeKind, MemoryKnowledgeEntry, MemoryKnowledgeArtifact, MemoryPromotionResult, MemoryRetireResult, MemorySupersedeResult, MemoryPruneResult } from './memory/knowledge.js';

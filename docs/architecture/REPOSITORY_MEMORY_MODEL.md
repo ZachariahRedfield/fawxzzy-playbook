@@ -52,6 +52,9 @@ Rule: Promotion Required for Durable Doctrine.
 Rule: Replay Is Human-Review-Oriented, Not Autonomous Mutation.
 
 Pattern: Fast Episodic Store, Slow Doctrine Store.
+Rule: Canonical governance artifacts are preserved; everything else earns retention under pressure.
+Pattern: Admit -> dedupe -> compact -> summarize -> evict.
+Failure Mode: Hard-cap or random deletion policies destabilize memory and destroy useful context.
 
 - Episodic artifacts may update quickly as commands execute.
 - Doctrine artifacts update slowly and only through explicit review/promotion workflows.

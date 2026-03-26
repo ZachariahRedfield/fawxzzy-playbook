@@ -235,6 +235,18 @@ export const buildSessionReplayEvidence = (entries: SessionReplayEvidenceInput[]
 
 export const computeMemoryEventFingerprint = toEventFingerprint;
 
+export {
+  MEMORY_PRESSURE_STATUS_RELATIVE_PATH,
+  computeMemoryPressureScore,
+  resolveMemoryPressureBand,
+  classifyMemoryArtifact,
+  recommendedActionsForBand,
+  buildMemoryPressureStatusArtifact,
+  writeMemoryPressureStatusArtifact,
+  evaluateMemoryPressurePolicy
+} from './pressurePolicy.js';
+export type { MemoryPressureAction, MemoryPressureBand, MemoryClass, MemoryPressureStatusArtifact } from './pressurePolicy.js';
+
 export type { MemoryEvent, MemoryEventInput, MemoryIndex, MemoryIndexEntry, MemoryScope, SessionReplayEvidence, SessionReplayEvidenceInput } from './types.js';
 
 export {

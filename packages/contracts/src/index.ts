@@ -28,6 +28,7 @@ export const PLAYBOOK_SCHEMA_PATHS = {
   replayCandidates: 'packages/contracts/src/replay-candidates.schema.json',
   consolidationCandidates: 'packages/contracts/src/consolidation-candidates.schema.json',
   memoryCompactionReview: 'packages/contracts/src/memory-compaction-review.schema.json',
+  memoryPressureStatus: 'packages/contracts/src/memory-pressure-status.schema.json',
   prReview: 'packages/contracts/src/pr-review.schema.json',
   story: 'packages/contracts/src/story.schema.json',
   stories: 'packages/contracts/src/stories.schema.json',

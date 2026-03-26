@@ -21,6 +21,18 @@ export const loadConfig = (repoRoot: string): { config: PlaybookConfig; warning?
         ...defaultConfig.verify.rules,
         ...parsed.verify?.rules
       }
+    },
+    memory: {
+      ...defaultConfig.memory,
+      ...parsed.memory,
+      pressurePolicy: {
+        ...defaultConfig.memory.pressurePolicy,
+        ...parsed.memory?.pressurePolicy,
+        watermarks: {
+          ...defaultConfig.memory.pressurePolicy.watermarks,
+          ...parsed.memory?.pressurePolicy?.watermarks
+        }
+      }
     }
   };
 

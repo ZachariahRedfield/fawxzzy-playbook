@@ -21,6 +21,19 @@ export type PlaybookConfig = {
       }>;
     };
   };
+  memory: {
+    pressurePolicy: {
+      budgetBytes: number;
+      budgetFiles: number;
+      budgetEvents: number;
+      watermarks: {
+        warm: number;
+        pressure: number;
+        critical: number;
+      };
+      hysteresis: number;
+    };
+  };
 };
 
 export const defaultConfig: PlaybookConfig = {
@@ -46,6 +59,19 @@ export const defaultConfig: PlaybookConfig = {
           mustTouch: ['docs/PLAYBOOK_NOTES.md']
         }
       ]
+    }
+  },
+  memory: {
+    pressurePolicy: {
+      budgetBytes: 50 * 1024 * 1024,
+      budgetFiles: 2000,
+      budgetEvents: 5000,
+      watermarks: {
+        warm: 0.65,
+        pressure: 0.85,
+        critical: 1
+      },
+      hysteresis: 0.05
     }
   }
 };
