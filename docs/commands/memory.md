@@ -87,6 +87,22 @@ Retire an existing promoted knowledge record without deleting provenance.
 - Rule: **Retrieval Must Return Provenance**.
 - Failure Mode: **Memory Hoarding**.
 
+## Retention classes (canonical policy inputs)
+
+Pressure-control and compaction policy should classify memory artifacts into one of three classes:
+
+| Class | Definition | Expected handling | Examples |
+| --- | --- | --- | --- |
+| `canonical` | Repository truth or audited policy/governance outputs that must remain stable and inspectable. | Never dropped by memory-pressure routines. Mutations only through canonical command boundaries. | `.playbook/repo-index.json`, `.playbook/repo-graph.json`, `.playbook/plan.json`, `.playbook/policy-apply-result.json`, `.playbook/policy-evaluation.json`, promoted knowledge under `.playbook/memory/knowledge/*.json`. |
+| `compactable` | Valuable temporal evidence that should be reduced/summarized, not discarded first. | Prefer deterministic compaction (bucket/rewrite/attach/merge) before disposal. | `.playbook/memory/events/*.json`, `.playbook/memory/index.json`, `.playbook/memory/replay-candidates.json`, `.playbook/memory/consolidation-candidates.json`, `.playbook/memory/compaction-review.json`, `.playbook/memory/lifecycle-candidates.json`, `.playbook/test-autofix-history.json`. |
+| `disposable` | Rebuildable, transient, or transport-local artifacts that do not carry canonical truth. | May be evicted first under pressure when not needed for active review/audit. | local temp/debug exports, intermediate CI transport snapshots, and one-off scratch artifacts outside canonical `.playbook/` contracts. |
+
+Policy boundary notes:
+
+- Structural intelligence (`repo-index`, `repo-graph`) stays canonical and is not temporal memory.
+- Candidate/review artifacts remain non-doctrine until explicit promotion.
+- This classification does **not** widen mutation authority; canonical remediation and promotion boundaries are unchanged.
+
 ## Examples
 
 ```bash

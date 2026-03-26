@@ -122,6 +122,22 @@ Failure Mode: Introducing workflow tooling before teams have consistent conceptu
 - Loaders and writers must stay deterministic and scope-first so replay, inspection, and promotion review can reason over module/rule-scoped history without mutating graph artifacts.
 - This phase does **not** widen mutation authority or doctrine promotion: replay evidence remains read-only and promotion remains explicit review-required behavior.
 
+### Initial compact-memory retention class matrix (policy input)
+
+To keep pressure-control behavior explicit and aligned with current engine/runtime boundaries, memory artifacts should be classified as:
+
+| Class | Policy intent | Examples |
+| --- | --- | --- |
+| `canonical` | Protected truth surfaces. Keep under pressure; mutate only via governed command boundaries. | `.playbook/repo-index.json`, `.playbook/repo-graph.json`, `.playbook/plan.json`, `.playbook/policy-apply-result.json`, canonical policy/evaluation artifacts, promoted knowledge artifacts. |
+| `compactable` | Preserve signal through deterministic reduction before considering eviction. | `.playbook/memory/events/*.json`, `.playbook/memory/index.json`, replay/consolidation/compaction review artifacts, lifecycle recommendation candidates, remediation-history artifacts. |
+| `disposable` | Rebuildable/transient scaffolding with no canonical truth role. | temp diagnostics, intermediate transport-only snapshots, and scratch outputs outside canonical artifact contracts. |
+
+Rules for this matrix:
+
+- Structural graph artifacts are canonical structural intelligence, not temporal memory.
+- Candidate/review memory remains advisory until explicit promotion.
+- Retention classing is a pressure-policy input only and does not add new mutation authority.
+
 Recent implementation note: `pnpm playbook test-autofix --input <path> --json` now closes the bounded test-remediation loop using the existing seams only: diagnosis through `test-triage`, planning through `test-fix-plan`, reviewed mutation through `apply --from-plan`, and narrow-first verification through the rerun commands already emitted by triage. The result is recorded as a first-class `test-autofix` artifact with deterministic stop conditions and final-status classification, while risky findings remain review-required and never become executable automatically. It now also appends first-class remediation history under `.playbook/test-autofix-history.json`, making diagnosis -> planning -> execution -> verification -> history the minimal trustworthy remediation loop for future repeat detection and bounded retry policy. Stable failure signatures and recorded outcomes now form the evidence layer that self-repair must consult before it is allowed to make better future repair decisions.
 Recent implementation note: `pnpm playbook test-fix-plan --from-triage <artifact> --json` now turns first-class `test-triage` diagnosis artifacts into stable bounded remediation artifacts, keeping low-risk auto-fix planning explicit and rejecting risky findings as review-only exclusions instead of hidden mutation behavior. The trust-model wording is now explicit across docs: `test-triage` is diagnosis, `test-fix-plan` is bounded repair planning, and `apply --from-plan` is reviewed execution. Risky findings remain review-required and do not cross into executable tasks automatically. `apply --from-plan` consumes that artifact through the existing reviewed-plan execution boundary rather than creating a parallel mutation executor.
 
