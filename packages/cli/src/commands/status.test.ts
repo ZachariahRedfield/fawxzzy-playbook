@@ -22,11 +22,13 @@ const buildFleetCodexExecutionPlan = vi.fn();
 const buildFleetExecutionReceipt = vi.fn();
 const buildFleetUpdatedAdoptionState = vi.fn();
 const deriveNextAdoptionQueueFromUpdatedState = vi.fn();
+const buildMemoryPressureStatusArtifact = vi.fn();
+const loadConfig = vi.fn();
 const runBootstrapProof = vi.fn();
 const readProofParallelWorkSummary = vi.fn();
 const defaultBootstrapCliResolutionCommands = vi.fn();
 
-vi.mock('@zachariahredfield/playbook-engine', () => ({ buildRepoAdoptionReadiness, buildFleetAdoptionReadinessSummary, buildFleetAdoptionWorkQueue, buildFleetCodexExecutionPlan, buildFleetExecutionReceipt, buildFleetUpdatedAdoptionState, deriveNextAdoptionQueueFromUpdatedState, runBootstrapProof, readProofParallelWorkSummary, defaultBootstrapCliResolutionCommands }));
+vi.mock('@zachariahredfield/playbook-engine', () => ({ buildRepoAdoptionReadiness, buildFleetAdoptionReadinessSummary, buildFleetAdoptionWorkQueue, buildFleetCodexExecutionPlan, buildFleetExecutionReceipt, buildFleetUpdatedAdoptionState, deriveNextAdoptionQueueFromUpdatedState, buildMemoryPressureStatusArtifact, loadConfig, runBootstrapProof, readProofParallelWorkSummary, defaultBootstrapCliResolutionCommands }));
 
 const makeAnalyzeReport = (overrides?: Partial<AnalyzeReport>): AnalyzeReport => ({
   repoPath: '/tmp/repo',
@@ -61,10 +63,38 @@ describe('runStatus', () => {
     buildFleetExecutionReceipt.mockReset();
     buildFleetUpdatedAdoptionState.mockReset();
     deriveNextAdoptionQueueFromUpdatedState.mockReset();
+    buildMemoryPressureStatusArtifact.mockReset();
+    loadConfig.mockReset();
     runBootstrapProof.mockReset();
     readProofParallelWorkSummary.mockReset();
     defaultBootstrapCliResolutionCommands.mockReset();
     defaultBootstrapCliResolutionCommands.mockReturnValue([]);
+    loadConfig.mockReturnValue({
+      config: {
+        memory: {
+          pressurePolicy: {
+            budgetBytes: 1000,
+            budgetFiles: 100,
+            budgetEvents: 100,
+            hysteresis: 0.05,
+            watermarks: { warm: 0.6, pressure: 0.8, critical: 0.95 }
+          }
+        }
+      }
+    });
+    buildMemoryPressureStatusArtifact.mockReturnValue({
+      usage: { usedBytes: 256, fileCount: 3, eventCount: 2 },
+      score: { bytes: 0.256, files: 0.03, events: 0.02, normalized: 0.256 },
+      band: 'normal',
+      policy: {
+        budgetBytes: 1000,
+        budgetFiles: 100,
+        budgetEvents: 100,
+        hysteresis: 0.05,
+        watermarks: { warm: 0.6, pressure: 0.8, critical: 0.95 }
+      },
+      recommendedActions: []
+    });
     readProofParallelWorkSummary.mockReturnValue({
       decision: 'parallel_clear',
       status: 'parallel integration clear',
@@ -265,7 +295,7 @@ describe('runStatus', () => {
     logSpy.mockRestore();
   });
 
-  it('keeps json output unchanged', async () => {
+  it('keeps json output additive and includes memory pressure inspection', async () => {
     const { runStatus } = await import('./status.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
@@ -281,6 +311,11 @@ describe('runStatus', () => {
     expect(payload.interpretation.progressive_disclosure.default_view.next_step).toBeDefined();
     expect(payload).not.toHaveProperty('topIssue');
     expect(payload).toHaveProperty('adoption.lifecycle_stage', 'ready');
+    expect(payload).toHaveProperty('memory_pressure.band', 'normal');
+    expect(payload).toHaveProperty('memory_pressure.score', 0.256);
+    expect(payload).toHaveProperty('memory_pressure.hysteresis_thresholds.pressure', 0.8);
+    expect(payload).toHaveProperty('memory_pressure.usage.usedBytes', 256);
+    expect(payload).toHaveProperty('memory_pressure.recommended_actions');
 
     logSpy.mockRestore();
   });

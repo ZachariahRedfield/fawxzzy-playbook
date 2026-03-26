@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { PlaybookConfig } from '../config/schema.js';
 
-export const MEMORY_PRESSURE_STATUS_RELATIVE_PATH = '.playbook/memory/pressure-status.json' as const;
+export const MEMORY_PRESSURE_STATUS_RELATIVE_PATH = '.playbook/memory-pressure.json' as const;
+export const MEMORY_PRESSURE_STATUS_LEGACY_RELATIVE_PATH = '.playbook/memory/pressure-status.json' as const;
 
 const CANONICAL_MEMORY_ARTIFACTS = new Set<string>([
   '.playbook/memory/knowledge/decisions.json',
@@ -182,14 +183,18 @@ export const recommendedActionsForBand = (band: MemoryPressureBand): MemoryPress
 };
 
 const readPreviousBand = (repoRoot: string): MemoryPressureBand | null => {
-  const statusPath = path.join(repoRoot, MEMORY_PRESSURE_STATUS_RELATIVE_PATH);
-  if (!fs.existsSync(statusPath)) return null;
-  try {
-    const parsed = JSON.parse(fs.readFileSync(statusPath, 'utf8')) as { band?: MemoryPressureBand };
-    return parsed.band ?? null;
-  } catch {
-    return null;
+  const candidatePaths = [MEMORY_PRESSURE_STATUS_RELATIVE_PATH, MEMORY_PRESSURE_STATUS_LEGACY_RELATIVE_PATH];
+  for (const relativePath of candidatePaths) {
+    const statusPath = path.join(repoRoot, relativePath);
+    if (!fs.existsSync(statusPath)) continue;
+    try {
+      const parsed = JSON.parse(fs.readFileSync(statusPath, 'utf8')) as { band?: MemoryPressureBand };
+      return parsed.band ?? null;
+    } catch {
+      continue;
+    }
   }
+  return null;
 };
 
 export const buildMemoryPressureStatusArtifact = (input: {
@@ -246,6 +251,9 @@ export const writeMemoryPressureStatusArtifact = (repoRoot: string, artifact: Me
   const outputPath = path.join(repoRoot, MEMORY_PRESSURE_STATUS_RELATIVE_PATH);
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, `${JSON.stringify(artifact, null, 2)}\n`, 'utf8');
+  const legacyPath = path.join(repoRoot, MEMORY_PRESSURE_STATUS_LEGACY_RELATIVE_PATH);
+  fs.mkdirSync(path.dirname(legacyPath), { recursive: true });
+  fs.writeFileSync(legacyPath, `${JSON.stringify(artifact, null, 2)}\n`, 'utf8');
   return outputPath;
 };
 

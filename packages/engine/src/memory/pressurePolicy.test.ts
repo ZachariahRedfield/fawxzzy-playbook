@@ -2,7 +2,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildMemoryPressureStatusArtifact, resolveMemoryPressureBand } from './pressurePolicy.js';
+import {
+  MEMORY_PRESSURE_STATUS_LEGACY_RELATIVE_PATH,
+  MEMORY_PRESSURE_STATUS_RELATIVE_PATH,
+  buildMemoryPressureStatusArtifact,
+  resolveMemoryPressureBand,
+  writeMemoryPressureStatusArtifact
+} from './pressurePolicy.js';
 import { defaultConfig } from '../config/schema.js';
 
 const makeRepo = (): string => fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-memory-pressure-'));
@@ -93,5 +99,22 @@ describe('memory pressure policy', () => {
     expect(actions).toContain('evict-disposable-after-summary');
     expect(actions.indexOf('summarize-runtime-events-into-rollups')).toBeLessThan(actions.indexOf('evict-disposable-after-summary'));
     expect(actions.indexOf('aggressive-compaction')).toBeLessThan(actions.indexOf('evict-disposable-after-summary'));
+  });
+
+  it('writes canonical and compatibility memory pressure artifacts', () => {
+    const repoRoot = makeRepo();
+    const artifact = buildMemoryPressureStatusArtifact({
+      repoRoot,
+      policy: defaultConfig.memory.pressurePolicy,
+      previousBand: 'normal'
+    });
+
+    writeMemoryPressureStatusArtifact(repoRoot, artifact);
+
+    const canonicalPath = path.join(repoRoot, MEMORY_PRESSURE_STATUS_RELATIVE_PATH);
+    const legacyPath = path.join(repoRoot, MEMORY_PRESSURE_STATUS_LEGACY_RELATIVE_PATH);
+    expect(fs.existsSync(canonicalPath)).toBe(true);
+    expect(fs.existsSync(legacyPath)).toBe(true);
+    expect(fs.readFileSync(canonicalPath, 'utf8')).toBe(fs.readFileSync(legacyPath, 'utf8'));
   });
 });

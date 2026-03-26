@@ -336,6 +336,7 @@ Doctrine summary anchors:
 - `memory show <id>` resolves either a candidate id or knowledge id, including provenance expansion for candidates.
 - `memory promote <candidate-id>` and `memory retire <knowledge-id>` provide explicit, human-driven lifecycle actions.
 - Postmortem reconsolidation stays inside this existing review boundary: incidents/changes should produce a structured postmortem, explicit candidate extraction, and then reviewed movement through `memory` / `promote` surfaces rather than any new command family or auto-promotion path.
+- `status` now exposes additive read-only memory pressure inspection (`memory_pressure`) with score, band, hysteresis thresholds, usage totals, and recommended actions; canonical artifact path is `.playbook/memory-pressure.json`.
 - Rule: Postmortems must separate observed facts from interpretation and promotion candidates.
 - Pattern: Recall -> reinterpret -> promote -> restabilize becomes concrete through structured postmortems.
 - Failure Mode: Blending fact, explanation, and doctrine in one narrative rewrites history and weakens promotion quality.
@@ -355,6 +356,9 @@ Command boundary note:
 
 - `memory` = lifecycle/review/mutation surfaces over raw memory artifacts (events, candidates, promoted records).
 - Temporal memory artifacts are scope-first under `.playbook/memory/*` (`index.json`, `events/*.json`, `.playbook/memory/replay-candidates.json`, and `.playbook/memory/consolidation-candidates.json` with replay evidence embedded at `.playbook/memory/replay-candidates.json#replayEvidence`); structural repository intelligence remains separate in `.playbook/repo-index.json` and `.playbook/repo-graph.json`.
+- Rule: Pressure policy should be inspectable before it is made more aggressive.
+- Pattern: Inspect first, then tighten automation.
+- Failure Mode: Hidden memory pressure logic feels random even when the policy is deterministic.
 - `knowledge` = normalized, read-only inspection/query surface for governed knowledge retrieval and provenance.
 
 `pnpm playbook knowledge` is the read-only inspection surface for normalized knowledge records.

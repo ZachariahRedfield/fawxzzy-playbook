@@ -175,6 +175,7 @@ export type {
 } from './memory/compactionReview.js';
 export {
   MEMORY_PRESSURE_STATUS_RELATIVE_PATH,
+  MEMORY_PRESSURE_STATUS_LEGACY_RELATIVE_PATH,
   computeMemoryPressureScore,
   resolveMemoryPressureBand,
   classifyMemoryArtifact,

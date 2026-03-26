@@ -237,6 +237,7 @@ export const computeMemoryEventFingerprint = toEventFingerprint;
 
 export {
   MEMORY_PRESSURE_STATUS_RELATIVE_PATH,
+  MEMORY_PRESSURE_STATUS_LEGACY_RELATIVE_PATH,
   computeMemoryPressureScore,
   resolveMemoryPressureBand,
   classifyMemoryArtifact,

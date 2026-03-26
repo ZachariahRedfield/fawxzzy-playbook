@@ -103,6 +103,23 @@ Policy boundary notes:
 - Candidate/review artifacts remain non-doctrine until explicit promotion.
 - This classification does **not** widen mutation authority; canonical remediation and promotion boundaries are unchanged.
 
+## Memory pressure inspection (read-only)
+
+`pnpm playbook status` now includes additive memory-pressure inspection fields and points to the read-only artifact `.playbook/memory-pressure.json`.
+
+Inspection payload includes:
+
+- current pressure score and band
+- hysteresis thresholds (`warm`, `pressure`, `critical`, and `hysteresis`)
+- current usage totals (`usedBytes`, `fileCount`, `eventCount`)
+- recommended actions already selected by the current pressure band
+
+Governance framing:
+
+- Rule: **Pressure policy should be inspectable before it is made more aggressive.**
+- Pattern: **Inspect first, then tighten automation.**
+- Failure Mode: **Hidden memory pressure logic feels random even when the policy is deterministic.**
+
 ## Examples
 
 ```bash

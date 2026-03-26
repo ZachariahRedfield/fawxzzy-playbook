@@ -22,7 +22,9 @@ import {
   type FleetExecutionOutcomeInput,
   type FleetExecutionReceipt,
   type FleetUpdatedAdoptionState,
-  type RepoAdoptionReadiness
+  type RepoAdoptionReadiness,
+  buildMemoryPressureStatusArtifact,
+  loadConfig
 } from '@zachariahredfield/playbook-engine';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -59,6 +61,23 @@ type StatusResult = {
   summary: {
     warnings: number;
     errors: number;
+  };
+  memory_pressure: {
+    artifact_path: string;
+    score: number;
+    band: string;
+    hysteresis_thresholds: {
+      warm: number;
+      pressure: number;
+      critical: number;
+      hysteresis: number;
+    };
+    usage: {
+      usedBytes: number;
+      fileCount: number;
+      eventCount: number;
+    };
+    recommended_actions: string[];
   };
   adoption: RepoAdoptionReadiness;
   interpretation: InterpretationLayer;
@@ -178,6 +197,27 @@ const readRepoIndexSummary = (cwd: string): RepoIndexSummary | null => {
   };
 };
 
+const readMemoryPressureStatus = async (repoRoot: string): Promise<StatusResult['memory_pressure']> => {
+  const { config } = await Promise.resolve(loadConfig(repoRoot));
+  const pressure = buildMemoryPressureStatusArtifact({
+    repoRoot,
+    policy: config.memory.pressurePolicy
+  });
+  return {
+    artifact_path: '.playbook/memory-pressure.json',
+    score: pressure.score.normalized,
+    band: pressure.band,
+    hysteresis_thresholds: {
+      warm: pressure.policy.watermarks.warm,
+      pressure: pressure.policy.watermarks.pressure,
+      critical: pressure.policy.watermarks.critical,
+      hysteresis: pressure.policy.hysteresis
+    },
+    usage: pressure.usage,
+    recommended_actions: pressure.recommendedActions
+  };
+};
+
 const resolveTopIssue = async (
   cwd: string,
   verify: VerifyReport,
@@ -227,6 +267,7 @@ const toStatusResult = async (cwd: string): Promise<{ result: StatusResult; exit
     analysis: { warnings, errors },
     verification: { ok: verify.ok },
     summary: { warnings, errors },
+    memory_pressure: await readMemoryPressureStatus(analyze.repoPath),
     adoption,
     interpretation: buildRepoStatusInterpretation({
       ok: repoOk,
@@ -435,7 +476,8 @@ const printHuman = (
       `analysis warnings=${result.analysis.warnings}`,
       `verification=${result.verification.ok ? 'ok' : 'failed'}`,
       `lifecycle=${result.adoption.lifecycle_stage}`,
-      repoIndexSummary ? `framework=${repoIndexSummary.framework}` : ''
+      repoIndexSummary ? `framework=${repoIndexSummary.framework}` : '',
+      `memory=${result.memory_pressure.band}@${result.memory_pressure.score.toFixed(2)}`
     ].filter(Boolean),
     blockers: [
       ...result.interpretation.progressive_disclosure.secondary_view.blockers.slice(0, 3),
@@ -449,7 +491,9 @@ const printHuman = (
       items: [
         `Environment: ${result.environment.ok ? 'ok' : 'failed'}`,
         `Playbook detected: ${result.adoption.playbook_detected ? 'yes' : 'no'}`,
-        `Cross-repo eligible: ${result.adoption.cross_repo_eligible ? 'yes' : 'no'}`
+        `Cross-repo eligible: ${result.adoption.cross_repo_eligible ? 'yes' : 'no'}`,
+        `Memory usage: ${result.memory_pressure.usage.usedBytes}B / ${result.memory_pressure.usage.fileCount} file(s) / ${result.memory_pressure.usage.eventCount} event(s)`,
+        `Memory action: ${result.memory_pressure.recommended_actions[0] ?? 'none'}`
       ]
     }]
   }));
