@@ -316,6 +316,62 @@ describe('runStatus', () => {
     expect(payload).toHaveProperty('memory_pressure.hysteresis_thresholds.pressure', 0.8);
     expect(payload).toHaveProperty('memory_pressure.usage.usedBytes', 256);
     expect(payload).toHaveProperty('memory_pressure.recommended_actions');
+    expect(payload).toHaveProperty('memory_pressure.action_plan.current_band', 'normal');
+    expect(payload).toHaveProperty('memory_pressure.action_plan.highest_priority_recommended_actions');
+    expect(payload).toHaveProperty('memory_pressure.action_plan.counts_by_action_type.summarize', 0);
+
+    logSpy.mockRestore();
+  });
+
+
+  it('reads memory pressure plan summary without introducing mutation paths', async () => {
+    const { runStatus } = await import('./status.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'status-memory-plan-'));
+    fs.mkdirSync(path.join(repoRoot, '.playbook'), { recursive: true });
+    fs.writeFileSync(
+      path.join(repoRoot, '.playbook', 'memory-pressure-plan.json'),
+      `${JSON.stringify({
+        schemaVersion: '1.0',
+        kind: 'playbook-memory-pressure-plan',
+        command: 'memory-pressure-plan',
+        recommendedByBand: {
+          warm: [{ action: 'dedupe' }, { action: 'compact' }],
+          pressure: [{ action: 'summarize' }, { action: 'compact' }, { action: 'dedupe' }],
+          critical: [{ action: 'summarize' }, { action: 'compact' }, { action: 'evict' }]
+        }
+      }, null, 2)}\n`,
+      'utf8'
+    );
+
+    collectDoctorReport.mockResolvedValue({ governanceStatus: [{ id: 'playbook-config', ok: true }], verifySummary: { failures: 0 } });
+    collectAnalyzeReport.mockResolvedValue(makeAnalyzeReport({ repoPath: repoRoot }));
+    collectVerifyReport.mockResolvedValue(makeVerifyReport());
+    buildMemoryPressureStatusArtifact.mockReturnValue({
+      usage: { usedBytes: 1024, fileCount: 5, eventCount: 8 },
+      score: { bytes: 1.024, files: 0.05, events: 0.08, normalized: 1.024 },
+      band: 'pressure',
+      policy: {
+        budgetBytes: 1000,
+        budgetFiles: 100,
+        budgetEvents: 100,
+        hysteresis: 0.05,
+        watermarks: { warm: 0.6, pressure: 0.8, critical: 0.95 }
+      },
+      recommendedActions: ['summarize-runtime-events-into-rollups']
+    });
+
+    const exitCode = await runStatus(process.cwd(), { ci: false, format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.memory_pressure.action_plan).toEqual({
+      artifact_path: '.playbook/memory-pressure-plan.json',
+      current_band: 'pressure',
+      highest_priority_recommended_actions: ['summarize', 'compact'],
+      counts_by_action_type: { dedupe: 1, compact: 1, summarize: 1, evict: 0 }
+    });
 
     logSpy.mockRestore();
   });

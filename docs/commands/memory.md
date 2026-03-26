@@ -113,6 +113,10 @@ Inspection payload includes:
 - hysteresis thresholds (`warm`, `pressure`, `critical`, and `hysteresis`)
 - current usage totals (`usedBytes`, `fileCount`, `eventCount`)
 - recommended actions already selected by the current pressure band
+- action-plan summary from `.playbook/memory-pressure-plan.json`:
+  - `current_band`
+  - `highest_priority_recommended_actions` (compact top actions)
+  - `counts_by_action_type` (`dedupe`, `compact`, `summarize`, `evict`)
 - deterministic proposal-only action lanes by band (`warm`, `pressure`, `critical`) that sequence dedupe/compact/summarize/evict without automatic sweeping
 - deterministic intake posture by band before any deletion is considered:
   - `normal`: admit normally

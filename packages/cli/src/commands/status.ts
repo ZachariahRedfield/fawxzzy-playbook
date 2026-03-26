@@ -78,6 +78,7 @@ type StatusResult = {
       eventCount: number;
     };
     recommended_actions: string[];
+    action_plan: MemoryPressurePlanSummary;
   };
   adoption: RepoAdoptionReadiness;
   interpretation: InterpretationLayer;
@@ -154,6 +155,15 @@ type TopIssue = {
   description: string;
 };
 
+type MemoryPressureBand = 'normal' | 'warm' | 'pressure' | 'critical';
+type MemoryPressurePlanStepAction = 'dedupe' | 'compact' | 'summarize' | 'evict';
+
+type MemoryPressurePlanSummary = {
+  artifact_path: string;
+  current_band: MemoryPressureBand;
+  highest_priority_recommended_actions: string[];
+  counts_by_action_type: Record<MemoryPressurePlanStepAction, number>;
+};
 
 const EXECUTION_OUTCOME_INPUT_RELATIVE_PATH = path.join('.playbook', 'execution-outcome-input.json');
 const UPDATED_STATE_RELATIVE_PATH = path.join('.playbook', 'execution-updated-state.json');
@@ -197,6 +207,59 @@ const readRepoIndexSummary = (cwd: string): RepoIndexSummary | null => {
   };
 };
 
+const summarizeMemoryPressurePlan = (repoRoot: string, band: MemoryPressureBand): MemoryPressurePlanSummary => {
+  const artifactPath = '.playbook/memory-pressure-plan.json';
+  const zeroCounts: Record<MemoryPressurePlanStepAction, number> = { dedupe: 0, compact: 0, summarize: 0, evict: 0 };
+
+  if (band === 'normal') {
+    return {
+      artifact_path: artifactPath,
+      current_band: band,
+      highest_priority_recommended_actions: [],
+      counts_by_action_type: zeroCounts
+    };
+  }
+
+  const absolutePath = path.join(repoRoot, artifactPath);
+  if (!fs.existsSync(absolutePath)) {
+    return {
+      artifact_path: artifactPath,
+      current_band: band,
+      highest_priority_recommended_actions: [],
+      counts_by_action_type: zeroCounts
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(absolutePath, 'utf8')) as {
+      recommendedByBand?: Partial<Record<Exclude<MemoryPressureBand, 'normal'>, Array<{ action?: MemoryPressurePlanStepAction }>>>;
+    };
+    const steps = parsed.recommendedByBand?.[band as Exclude<MemoryPressureBand, 'normal'>] ?? [];
+    const counts = steps.reduce<Record<MemoryPressurePlanStepAction, number>>(
+      (summary, step) => {
+        if (!step.action) return summary;
+        summary[step.action] += 1;
+        return summary;
+      },
+      { ...zeroCounts }
+    );
+
+    return {
+      artifact_path: artifactPath,
+      current_band: band,
+      highest_priority_recommended_actions: steps.slice(0, 2).flatMap((step) => (step.action ? [step.action] : [])),
+      counts_by_action_type: counts
+    };
+  } catch {
+    return {
+      artifact_path: artifactPath,
+      current_band: band,
+      highest_priority_recommended_actions: [],
+      counts_by_action_type: zeroCounts
+    };
+  }
+};
+
 const readMemoryPressureStatus = async (repoRoot: string): Promise<StatusResult['memory_pressure']> => {
   const { config } = await Promise.resolve(loadConfig(repoRoot));
   const pressure = buildMemoryPressureStatusArtifact({
@@ -214,7 +277,8 @@ const readMemoryPressureStatus = async (repoRoot: string): Promise<StatusResult[
       hysteresis: pressure.policy.hysteresis
     },
     usage: pressure.usage,
-    recommended_actions: pressure.recommendedActions
+    recommended_actions: pressure.recommendedActions,
+    action_plan: summarizeMemoryPressurePlan(repoRoot, pressure.band)
   };
 };
 
@@ -493,7 +557,8 @@ const printHuman = (
         `Playbook detected: ${result.adoption.playbook_detected ? 'yes' : 'no'}`,
         `Cross-repo eligible: ${result.adoption.cross_repo_eligible ? 'yes' : 'no'}`,
         `Memory usage: ${result.memory_pressure.usage.usedBytes}B / ${result.memory_pressure.usage.fileCount} file(s) / ${result.memory_pressure.usage.eventCount} event(s)`,
-        `Memory action: ${result.memory_pressure.recommended_actions[0] ?? 'none'}`
+        `Memory action: ${result.memory_pressure.recommended_actions[0] ?? 'none'}`,
+        `Memory plan: band=${result.memory_pressure.action_plan.current_band} top=${result.memory_pressure.action_plan.highest_priority_recommended_actions.join(',') || 'none'} counts=${Object.entries(result.memory_pressure.action_plan.counts_by_action_type).map(([action, count]) => `${action}:${count}`).join(',')}`
       ]
     }]
   }));

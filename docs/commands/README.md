@@ -336,7 +336,7 @@ Doctrine summary anchors:
 - `memory show <id>` resolves either a candidate id or knowledge id, including provenance expansion for candidates.
 - `memory promote <candidate-id>` and `memory retire <knowledge-id>` provide explicit, human-driven lifecycle actions.
 - Postmortem reconsolidation stays inside this existing review boundary: incidents/changes should produce a structured postmortem, explicit candidate extraction, and then reviewed movement through `memory` / `promote` surfaces rather than any new command family or auto-promotion path.
-- `status` now exposes additive read-only memory pressure inspection (`memory_pressure`) with score, band, hysteresis thresholds, usage totals, and recommended actions; canonical artifact path is `.playbook/memory-pressure.json`.
+- `status` now exposes additive read-only memory pressure inspection (`memory_pressure`) with score, band, hysteresis thresholds, usage totals, recommended actions, and an action-plan summary (`current_band`, highest-priority actions, and counts by action type) sourced from `.playbook/memory-pressure-plan.json`; canonical pressure artifact path remains `.playbook/memory-pressure.json`.
 - Rule: Postmortems must separate observed facts from interpretation and promotion candidates.
 - Pattern: Recall -> reinterpret -> promote -> restabilize becomes concrete through structured postmortems.
 - Failure Mode: Blending fact, explanation, and doctrine in one narrative rewrites history and weakens promotion quality.
