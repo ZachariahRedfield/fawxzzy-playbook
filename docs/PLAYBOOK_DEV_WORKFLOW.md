@@ -131,6 +131,9 @@ Failure Mode: Iterative release sync runs compound version increments and create
 Rule: Generated artifacts must not be enforced as committed repo state.
 Pattern: Compute -> validate -> discard (not compute -> commit -> compare).
 Failure Mode: Enforcing generated artifacts as committed state causes perpetual drift and CI instability.
+Rule: Managed release artifacts must remain idempotent after first successful apply.
+Pattern: Apply once, verify many times.
+Failure Mode: Duplicate managed changelog prepends create permanent false drift.
 
 ## Smoke testing
 

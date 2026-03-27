@@ -105,6 +105,9 @@ describe('verifyReleaseGovernance', () => {
     const alphaTask = initial.plan.tasks.find((task) => task.task_kind === 'release-package-version' && task.file === 'packages/alpha/package.json');
     expect(alphaTask?.provenance.next_version).toBe('1.2.4');
     expect(initial.hasDrift).toBe(true);
+    const initialChangelogTask = initial.plan.tasks.find((task) => task.task_kind === 'docs-managed-write');
+    const initialManagedBlock = initialChangelogTask?.write?.content ?? '';
+    expect((initialManagedBlock.match(/## 1\.2\.4 - 2026-03-27/g) ?? []).length).toBe(1);
 
     writeJson(path.join(repoRoot, 'packages', 'alpha', 'package.json'), { name: '@scope/alpha', version: '1.2.4' });
     writeJson(path.join(repoRoot, 'packages', 'beta', 'package.json'), { name: '@scope/beta', version: '1.2.4' });
@@ -122,6 +125,12 @@ describe('verifyReleaseGovernance', () => {
     expect(afterApplyAlphaTask?.provenance.base_version).toBe('1.2.3');
     expect(afterApplyAlphaTask?.provenance.next_version).toBe('1.2.4');
     expect(afterApply.hasDrift).toBe(false);
+    expect(afterApply.drift).toEqual([]);
+    expect(afterApply.actionableTasks).toEqual([]);
+
+    const changelogTaskAfterApply = afterApply.plan.tasks.find((task) => task.task_kind === 'docs-managed-write');
+    const updatedManagedBlock = changelogTaskAfterApply?.write?.content ?? '';
+    expect((updatedManagedBlock.match(/## 1\.2\.4 - 2026-03-27/g) ?? []).length).toBe(1);
   });
 
   it('passes generated-artifact mode when release-plan file is absent and durable outputs are aligned', () => {

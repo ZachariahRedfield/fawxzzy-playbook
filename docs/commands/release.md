@@ -40,6 +40,7 @@ This enforces the rule **Compute → Apply → Verify** and prevents recurring C
 
 Idempotency guarantee: release version computation is anchored to the selected `baseRef` package versions (base snapshot), not the current working version after local bumps. Re-running `release sync` against the same `baseRef` yields the same next-version targets instead of incrementing repeatedly.
 Generated-artifact mode: `.playbook/release-plan.json` may be absent in source control and is regenerated at runtime; enforcement checks durable version/changelog outputs rather than plan-file parity.
+Idempotent managed changelog behavior: once a release entry is already at the top of the managed block, repeated `release sync --check` runs keep the block byte-stable and do not prepend duplicate entries.
 
 ## Apply compatibility
 

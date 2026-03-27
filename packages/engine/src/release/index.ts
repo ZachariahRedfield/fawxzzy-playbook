@@ -173,6 +173,13 @@ const validateVersionGroupCompleteness = (workspacePackages: WorkspacePackage[],
 
 const buildReleaseTaskId = (parts: string[]): string => parts.join('::').replace(/[^a-zA-Z0-9:._-]+/gu, '-');
 
+const startsWithEntry = (bodyLines: string[], entryLines: string[]): boolean => {
+  if (entryLines.length === 0 || bodyLines.length < entryLines.length) {
+    return false;
+  }
+  return entryLines.every((line, index) => bodyLines[index] === line);
+};
+
 const buildChangelogTask = (
   repoRoot: string,
   generatedAt: string,
@@ -204,7 +211,11 @@ const buildChangelogTask = (
     `- Recommended bump: ${recommendedBump}`,
     ...packageLines
   ];
-  const contentParts = [CHANGELOG_START_MARKER, ...entryLines, ...(existingBody ? ['', existingBody] : []), CHANGELOG_END_MARKER];
+  const existingBodyLines = existingBody.length > 0 ? existingBody.split('\n') : [];
+  const alreadyAtTop = startsWithEntry(existingBodyLines, entryLines);
+  const contentParts = alreadyAtTop
+    ? [CHANGELOG_START_MARKER, existingBody, CHANGELOG_END_MARKER]
+    : [CHANGELOG_START_MARKER, ...entryLines, ...(existingBody ? ['', existingBody] : []), CHANGELOG_END_MARKER];
   const content = contentParts.join('\n');
 
   return {
@@ -787,6 +798,15 @@ export const assessReleaseSync = (repoRoot: string, options: { baseRef?: string;
   const plan = buildReleasePlan(repoRoot, { baseRef: options.baseRef });
   const governanceFailures = verifyReleaseGovernance(repoRoot, { baseRef: plan.diff.baseRef, baseSha: plan.diff.baseSha });
   const drift = detectReleasePlanDrift(repoRoot, plan);
+  const actionableTaskIds = new Set(drift.map((entry) => entry.taskId));
+  const actionableTasks = plan.tasks
+    .filter((task) => actionableTaskIds.has(task.id))
+    .map((task) => ({
+      id: task.id,
+      file: task.file,
+      action: task.action,
+      task_kind: task.task_kind
+    }));
   const hasGovernanceDrift = governanceFailures.some((failure) => (
     failure.id === 'release.requiredVersionBump.missing'
     || failure.id === 'release.contractExpansion.releasePlan.required'
@@ -802,11 +822,6 @@ export const assessReleaseSync = (repoRoot: string, options: { baseRef?: string;
     hasDrift: drift.length > 0 || hasGovernanceDrift,
     drift,
     governanceFailures,
-    actionableTasks: plan.tasks.map((task) => ({
-      id: task.id,
-      file: task.file,
-      action: task.action,
-      task_kind: task.task_kind
-    }))
+    actionableTasks
   };
 };

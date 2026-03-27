@@ -84,4 +84,27 @@ describe('runRelease', () => {
     expect(applySpy).toHaveBeenCalledTimes(1);
     expect(assessReleaseSyncSpy).toHaveBeenCalledTimes(2);
   });
+
+  it('suppresses actionable-task text output when sync is already aligned', async () => {
+    const repoRoot = createRepo();
+    assessReleaseSyncSpy.mockReturnValue({
+      schemaVersion: '1.0',
+      kind: 'playbook-release-sync',
+      hasDrift: false,
+      plan: { summary: { recommendedBump: 'minor', reasons: [] }, tasks: [] },
+      governanceFailures: [],
+      actionableTasks: [],
+      drift: [],
+      generatedAt: '2026-03-27T00:00:00.000Z',
+      mode: 'check'
+    });
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runRelease(repoRoot, ['sync', '--check'], { format: 'text', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+    const output = logSpy.mock.calls.map((call) => String(call[0])).join('\n');
+    expect(output).toContain('playbook release sync: aligned');
+    expect(output).not.toContain('Actionable tasks:');
+    logSpy.mockRestore();
+  });
 });
