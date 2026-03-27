@@ -57,6 +57,19 @@ Rule: Knowledge must cross explicit promotion and lifecycle gates before executi
 Pattern: `verify -> plan -> apply -> verify` is the operational realization of CODE/PARA once mapped to deterministic contracts.
 Failure Mode: Routing raw notes directly into execution creates high-confidence drift and low-trust automation behavior.
 
+### Pattern Engine doctrine (canonical architecture surface)
+
+Status: documented doctrine with future architecture expansion
+
+- Canonical reference: `docs/architecture/PATTERN_ENGINE.md`
+- Current doctrine alignment: evidence -> compaction -> promoted doctrine with deterministic contracts and provenance-linked promotion.
+- Canonical flow shape: Signal -> Compression -> Convergence -> Reuse.
+- Constraint: convergence is evidence of shared constraints and does not itself prove hidden coordination or causation.
+
+Rule: Stable input signals produce convergent abstractions across independent systems.
+Pattern: Signal -> Compression -> Convergence -> Reuse.
+Failure Mode: Mistaking convergence for hidden coordination instead of shared constraint.
+
 ## Phase 9 — Unified Doctrine Loop (Self-Improving Playbook Core)
 
 Phase 9 unifies Phase 7/8 knowledge, promotion, story, and lifecycle systems into one closed deterministic product loop.

@@ -112,7 +112,14 @@ Result: you move from a static second brain to a deterministic learning engine w
 
 - Simple Rule Theory defines invariant-first compression and derive-don't-duplicate behavior.
 - Triadic System Pattern defines the stable execution shape (`state -> transformation -> enforcement`).
+- Pattern Engine defines the canonical architecture for Signal -> Compression -> Convergence -> Reuse across provenance-linked doctrine promotion.
 
 This document connects those doctrines to a broader evolution path:
 
 `second brain -> deterministic knowledge system -> governed engineering/runtime intelligence`
+
+
+## See also
+
+- [Pattern Engine](./PATTERN_ENGINE.md)
+- [Simple Rule Theory](./SIMPLE_RULE_THEORY.md)
