@@ -57,4 +57,5 @@ Simple Rule Theory does not claim information recovery beyond retained evidence.
 
 ## See also
 
+- [Pattern Engine](./PATTERN_ENGINE.md)
 - [Second Brain to Playbook Evolution](./SECOND_BRAIN_TO_PLAYBOOK_EVOLUTION.md)
