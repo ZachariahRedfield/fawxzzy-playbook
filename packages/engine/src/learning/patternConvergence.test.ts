@@ -120,6 +120,19 @@ describe('buildPatternConvergenceArtifact', () => {
     writePromotedPatterns(repo);
 
     const artifact = buildPatternConvergenceArtifact(repo);
+    const clusterInventory = artifact.clusters.map((entry) => ({
+      clusterId: entry.clusterId,
+      intent: entry.intent,
+      constraint_class: entry.constraint_class,
+      resolution_strategy: entry.resolution_strategy,
+      memberIds: entry.members.map((member) => member.id)
+    }));
+
+    expect(clusterInventory.length).toBeGreaterThan(0);
+    expect(
+      clusterInventory.some((entry) => entry.memberIds.includes('candidate-deterministic-query') && entry.memberIds.includes('pattern-query-before-mutate'))
+    ).toBe(true);
+
     const convergenceCluster = artifact.clusters.find((entry) => {
       const ids = entry.members.map((member) => member.id);
       return ids.includes('candidate-deterministic-query') && ids.includes('pattern-query-before-mutate');

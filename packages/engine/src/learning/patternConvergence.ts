@@ -102,9 +102,9 @@ const classifyConstraint = (summary: string): string => {
 };
 
 const classifyResolution = (summary: string): string => {
+  if (hasAny(summary, [/index/, /query/, /artifact/, /read-only/])) return 'read-only-artifact-synthesis';
   if (hasAny(summary, [/cluster/, /normaliz/, /group/, /converg/])) return 'normalize-and-cluster';
   if (hasAny(summary, [/queue/, /review/, /gate/, /approval/])) return 'review-gated-promotion';
-  if (hasAny(summary, [/index/, /query/, /artifact/, /read-only/])) return 'read-only-artifact-synthesis';
   if (hasAny(summary, [/score/, /confidence/, /signal/])) return 'evidence-driven-ranking';
   return 'deterministic-classification';
 };
