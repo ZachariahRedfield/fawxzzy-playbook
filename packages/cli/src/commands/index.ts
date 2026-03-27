@@ -198,6 +198,14 @@ const commandRunners: Record<
       help: parseFlag(commandArgs, '--help') || parseFlag(commandArgs, '-h')
     });
   },
+  interop: async ({ cwd, commandArgs, format, quiet }) => {
+    const { runInterop } = await import("./interop.js");
+    return runInterop(cwd, commandArgs, {
+      format,
+      quiet,
+      help: parseFlag(commandArgs, '--help') || parseFlag(commandArgs, '-h')
+    });
+  },
   "analyze-pr": async ({ cwd, commandArgs, format, quiet }) => {
     const { runAnalyzePr } = await import("./analyzePr.js");
     return runAnalyzePr(cwd, commandArgs, {
@@ -656,6 +664,7 @@ const commandOrder = [
   "test-autofix",
   "remediation-status",
   "rendezvous",
+  "interop",
   "verify",
   "plan",
   "orchestrate",

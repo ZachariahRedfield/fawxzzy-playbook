@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/remediation-interop-store.schema.json",
+  "title": "Remediation Interop Store",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "capabilities", "requests", "receipts", "health", "reconcile"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "kind": { "type": "string", "const": "remediation-interop-store" },
+    "capabilities": {
+      "type": "array",
+      "items": { "$ref": "./remediation-interop-capability-registration.schema.json" }
+    },
+    "requests": {
+      "type": "array",
+      "items": { "$ref": "./remediation-interop-action-request.schema.json" }
+    },
+    "receipts": {
+      "type": "array",
+      "items": { "$ref": "./remediation-interop-execution-receipt.schema.json" }
+    },
+    "health": {
+      "type": "array",
+      "items": { "$ref": "./remediation-interop-heartbeat.schema.json" }
+    },
+    "reconcile": { "$ref": "./remediation-interop-retry-reconcile-state.schema.json" }
+  }
+}

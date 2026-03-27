@@ -28,6 +28,19 @@ export { TEST_TRIAGE_ARTIFACT_KIND, TEST_TRIAGE_SCHEMA_VERSION, testTriageFailur
 export type { SessionContract, SessionPinnedArtifact, SessionPinnedArtifactKind, SessionStep, ResumeSessionResult } from './contracts/session.js';
 export { RENDEZVOUS_MANIFEST_SCHEMA_VERSION, RENDEZVOUS_MANIFEST_ARTIFACT_KIND, rendezvousArtifactIds, rendezvousVerificationStatuses, rendezvousEvaluationStates } from './contracts/rendezvousManifest.js';
 export type { RendezvousArtifactId, RendezvousVerificationStatus, RendezvousEvaluationState, RendezvousManifestArtifact, RendezvousManifestArtifactMap, RendezvousManifestArtifactObservation, RendezvousManifestArtifactObservations, RendezvousManifestArtifactBlocker, RendezvousManifest, RendezvousManifestEvaluation } from './contracts/rendezvousManifest.js';
+export { REMEDIATION_INTEROP_SCHEMA_VERSION, remediationInteropActionKinds, remediationInteropExecutionStates } from './contracts/remediationInterop.js';
+export type {
+  RemediationInteropActionKind,
+  RemediationInteropExecutionState,
+  RemediationInteropCapabilityRegistration,
+  RemediationInteropBlockedReason,
+  RemediationInteropActionRequest,
+  RemediationInteropActionStatus,
+  RemediationInteropExecutionReceipt,
+  RemediationInteropHealthSnapshot,
+  RemediationInteropRetryReconcileState,
+  RemediationInteropStore
+} from './contracts/remediationInterop.js';
 export type { ArchitectureRegistry, ArtifactLineage, ArtifactOwnership, CommandInspection, Subsystem, SubsystemDependencies } from './architecture/types.js';
 export type { ArtifactOwnershipDetails, CommandInspectionDetails, SubsystemOwnership } from './architecture/introspection.js';
 export type { ExecutionIntent, ExecutionRun, ExecutionStep, ExecutionEvidence, ExecutionOutcome, ExecutionCheckpoint, ExecutionStepKind, ExecutionStepStatus, ExecutionRequestedBy } from './contracts/execution.js';

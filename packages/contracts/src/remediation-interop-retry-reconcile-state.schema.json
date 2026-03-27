@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/remediation-interop-retry-reconcile-state.schema.json",
+  "title": "Remediation Interop Retry Reconcile State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "generatedAt", "pending", "running", "failed", "completed", "blocked", "rejected"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "kind": { "type": "string", "const": "remediation-interop-retry-reconcile-state" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "pending": { "$ref": "#/$defs/idArray" },
+    "running": { "$ref": "#/$defs/idArray" },
+    "failed": { "$ref": "#/$defs/idArray" },
+    "completed": { "$ref": "#/$defs/idArray" },
+    "blocked": { "$ref": "#/$defs/idArray" },
+    "rejected": { "$ref": "#/$defs/idArray" }
+  },
+  "$defs": {
+    "idArray": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    }
+  }
+}

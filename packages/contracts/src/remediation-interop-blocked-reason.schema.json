@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/remediation-interop-blocked-reason.schema.json",
+  "title": "Remediation Interop Blocked Reason",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "code", "message"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "kind": { "type": "string", "const": "remediation-interop-blocked-reason" },
+    "code": {
+      "type": "string",
+      "enum": ["not-release-ready", "capability-missing", "explicit-rejection", "runtime-error"]
+    },
+    "message": { "type": "string", "minLength": 1 },
+    "details": { "type": "object" }
+  }
+}
