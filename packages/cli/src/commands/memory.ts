@@ -108,18 +108,6 @@ const resolveSubcommandArgument = (args: string[]): string | null => {
   return positional[1] ?? null;
 };
 
-const resolvePressureNestedSubcommand = (args: string[]): string | null => {
-  const pressureIndex = args.findIndex((arg) => arg === 'pressure');
-  if (pressureIndex < 0) {
-    return null;
-  }
-  const nested = args[pressureIndex + 1];
-  if (!nested || nested.startsWith('-')) {
-    return null;
-  }
-  return nested;
-};
-
 const parseSubcommand = (args: string[]): MemorySubcommand | null => {
   const subcommand = args.find((arg) => !arg.startsWith('-'));
   if (!subcommand) {
@@ -341,7 +329,7 @@ export const runMemory = async (cwd: string, args: string[], options: MemoryOpti
     }
 
     if (subcommand === 'pressure') {
-      const pressureSubcommand = resolvePressureNestedSubcommand(args);
+      const pressureSubcommand = resolveSubcommandArgument(args);
       if (pressureSubcommand && pressureSubcommand !== 'followups') {
         throw new Error('playbook memory pressure: unsupported nested subcommand. Use followups or omit nested subcommand.');
       }
