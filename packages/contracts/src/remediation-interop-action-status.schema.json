@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/remediation-interop-action-status.schema.json",
+  "title": "Remediation Interop Action Status",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "requestId", "state", "updatedAt"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "kind": { "type": "string", "const": "remediation-interop-action-status" },
+    "requestId": { "type": "string", "minLength": 1 },
+    "state": { "$ref": "./remediation-interop-action-request.schema.json#/$defs/executionState" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "workerId": { "type": "string", "minLength": 1 },
+    "blockedReason": { "$ref": "./remediation-interop-blocked-reason.schema.json" }
+  }
+}

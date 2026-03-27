@@ -49,6 +49,14 @@ describe('runContracts', () => {
     expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('pr-review');
     expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('story');
     expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('stories');
+    expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('remediation-interop-capability-registration');
+    expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('remediation-interop-action-request');
+    expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('remediation-interop-action-status');
+    expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('remediation-interop-execution-receipt');
+    expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('remediation-interop-heartbeat');
+    expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('remediation-interop-blocked-reason');
+    expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('remediation-interop-retry-reconcile-state');
+    expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('remediation-interop-store');
     expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('version-policy');
     expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('release-plan');
     expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('managed-surface-manifest');
@@ -120,6 +128,14 @@ describe('runContracts', () => {
         { id: 'test-fix-plan', version: '1.0', path: 'packages/contracts/src/test-fix-plan.schema.json' },
         { id: 'test-autofix', version: '1.0', path: 'packages/contracts/src/test-autofix.schema.json' },
         { id: 'test-autofix-remediation-history', version: '1.0', path: 'packages/contracts/src/test-autofix-remediation-history.schema.json' },
+        { id: 'remediation-interop-capability-registration', version: '1.0', path: 'packages/contracts/src/remediation-interop-capability-registration.schema.json' },
+        { id: 'remediation-interop-action-request', version: '1.0', path: 'packages/contracts/src/remediation-interop-action-request.schema.json' },
+        { id: 'remediation-interop-action-status', version: '1.0', path: 'packages/contracts/src/remediation-interop-action-status.schema.json' },
+        { id: 'remediation-interop-execution-receipt', version: '1.0', path: 'packages/contracts/src/remediation-interop-execution-receipt.schema.json' },
+        { id: 'remediation-interop-heartbeat', version: '1.0', path: 'packages/contracts/src/remediation-interop-heartbeat.schema.json' },
+        { id: 'remediation-interop-blocked-reason', version: '1.0', path: 'packages/contracts/src/remediation-interop-blocked-reason.schema.json' },
+        { id: 'remediation-interop-retry-reconcile-state', version: '1.0', path: 'packages/contracts/src/remediation-interop-retry-reconcile-state.schema.json' },
+        { id: 'remediation-interop-store', version: '1.0', path: 'packages/contracts/src/remediation-interop-store.schema.json' },
         { id: 'version-policy', version: '1.0', path: 'packages/contracts/src/version-policy.schema.json' },
         { id: 'release-plan', version: '1.0', path: 'packages/contracts/src/release-plan.schema.json' },
         { id: 'managed-surface-manifest', version: '1.0', path: 'packages/contracts/src/managed-surface-manifest.schema.json' }

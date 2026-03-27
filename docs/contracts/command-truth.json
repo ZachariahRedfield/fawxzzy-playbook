@@ -304,6 +304,18 @@
       "example": "pnpm playbook init"
     },
     {
+      "name": "interop",
+      "category": "Repository tools",
+      "role": "remediation",
+      "lifecycle": "canonical",
+      "discoverability": "secondary",
+      "onboardingPriority": null,
+      "canonicalSequence": null,
+      "productFacing": true,
+      "machineReadable": true,
+      "example": "pnpm playbook interop inspect --surface all --json"
+    },
+    {
       "name": "knowledge",
       "category": "Repository intelligence",
       "role": "repo-intelligence",
@@ -694,6 +706,7 @@
     "graph",
     "ignore",
     "index",
+    "interop",
     "knowledge",
     "lanes",
     "orchestrate",

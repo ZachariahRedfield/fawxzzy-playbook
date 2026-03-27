@@ -223,6 +223,8 @@ Do not hand-edit entries inside the managed markers.
   - Example: `pnpm playbook remediation-status --json`
 - `rendezvous`: Create/status/release-dry-run artifact rendezvous readiness from canonical remediation artifacts
   - Example: `pnpm playbook rendezvous create --json`
+- `interop`: Register capabilities, emit bounded remediation requests, run mock lifeline adapter cycles, and inspect request/receipt/health state
+  - Example: `pnpm playbook interop inspect --surface all --json`
 - `ignore`: Suggest and safely apply ranked .playbookignore recommendations
   - Example: `pnpm playbook ignore suggest --repo ../target-repo --json`
 - `contracts`: Emit deterministic contract registry for schemas, artifacts, and roadmap status
@@ -320,6 +322,7 @@ Do not hand-edit entries inside the managed markers.
 | `test-autofix` | `pnpm playbook test-autofix --input .playbook/ci-failure.log --json` |
 | `remediation-status` | `pnpm playbook remediation-status --json` |
 | `rendezvous` | `pnpm playbook rendezvous create --json` |
+| `interop` | `pnpm playbook interop inspect --surface all --json` |
 | `ignore` | `pnpm playbook ignore suggest --repo ../target-repo --json` |
 | `contracts` | `pnpm playbook contracts --json` |
 | `release` | `pnpm playbook release plan --json --out .playbook/release-plan.json` |

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/remediation-interop-execution-receipt.schema.json",
+  "title": "Remediation Interop Execution Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "receiptId", "requestId", "remediationId", "action", "status", "createdAt", "workerId", "output"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "kind": { "type": "string", "const": "remediation-interop-execution-receipt" },
+    "receiptId": { "type": "string", "minLength": 1 },
+    "requestId": { "type": "string", "minLength": 1 },
+    "remediationId": { "type": "string", "minLength": 1 },
+    "action": { "$ref": "./remediation-interop-action-request.schema.json#/$defs/actionKind" },
+    "status": { "type": "string", "enum": ["completed", "failed", "blocked", "rejected"] },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "workerId": { "type": "string", "minLength": 1 },
+    "output": { "type": "object" },
+    "blockedReason": { "$ref": "./remediation-interop-blocked-reason.schema.json" }
+  }
+}

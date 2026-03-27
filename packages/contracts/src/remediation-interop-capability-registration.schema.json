@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/remediation-interop-capability-registration.schema.json",
+  "title": "Remediation Interop Capability Registration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "capabilityId", "workerId", "actions", "registeredAt", "idempotencyKey"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "kind": { "type": "string", "const": "remediation-interop-capability-registration" },
+    "capabilityId": { "type": "string", "minLength": 1 },
+    "workerId": { "type": "string", "minLength": 1 },
+    "actions": {
+      "type": "array",
+      "items": { "$ref": "./remediation-interop-action-request.schema.json#/$defs/actionKind" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "registeredAt": { "type": "string", "format": "date-time" },
+    "idempotencyKey": { "type": "string", "minLength": 1 }
+  }
+}

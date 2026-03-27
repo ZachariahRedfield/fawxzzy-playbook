@@ -406,6 +406,20 @@ export const commandMetadata: CommandMetadata[] = [
     machineReadable: true,
   },
   {
+    name: "interop",
+    description:
+      "Register capabilities, emit bounded remediation requests, run mock lifeline adapter cycles, and inspect request/receipt/health state",
+    category: "Repository tools",
+    role: "remediation",
+    lifecycle: "canonical",
+    discoverability: "secondary",
+    onboardingPriority: null,
+    canonicalSequence: null,
+    productFacing: true,
+    exampleArgs: "interop inspect --surface all --json",
+    machineReadable: true,
+  },
+  {
     name: "ignore",
     description:
       "Suggest and safely apply ranked .playbookignore recommendations",

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/remediation-interop-heartbeat.schema.json",
+  "title": "Remediation Interop Heartbeat",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "workerId", "heartbeatAt", "status", "queueDepth"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "kind": { "type": "string", "const": "remediation-interop-heartbeat" },
+    "workerId": { "type": "string", "minLength": 1 },
+    "heartbeatAt": { "type": "string", "format": "date-time" },
+    "status": { "type": "string", "enum": ["healthy", "degraded", "offline"] },
+    "queueDepth": { "type": "integer", "minimum": 0 },
+    "lastReceiptId": { "type": "string", "minLength": 1 }
+  }
+}
