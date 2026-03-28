@@ -137,7 +137,7 @@ describe('verifyReleaseGovernance', () => {
     expect(secondSyncCheck.hasDrift).toBe(false);
     const changelogAfterSecondCheck = fs.readFileSync(changelogPath, 'utf8');
     const releaseHeaderMatchesAfterSecondCheck = changelogAfterSecondCheck.match(/## 1\.2\.4 - 2026-03-27/g) ?? [];
-    expect(releaseHeaderMatchesAfterSecondCheck.length).toBe(1);
+    expect(releaseHeaderMatchesAfterSecondCheck.length).toBe(releaseHeaderMatches.length);
   });
 
   it('passes generated-artifact mode when release-plan file is absent and durable outputs are aligned', () => {
