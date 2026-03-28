@@ -1,0 +1,23 @@
+#!/bin/sh
+set -eu
+
+if [ -f "$(dirname "$0")/_/husky.sh" ]; then
+  . "$(dirname "$0")/_/husky.sh"
+fi
+
+# Avoid unnecessary release sync runs on commits with no staged content.
+if git diff --cached --quiet; then
+  exit 0
+fi
+
+echo "🔄 Running Playbook release sync before commit..."
+pnpm playbook release sync --json --out .playbook/release-plan.json >/dev/null
+
+git add .
+
+if ! pnpm playbook release sync --check --json --out .playbook/release-plan.json >/dev/null; then
+  echo "❌ Release sync is still not clean. Blocking commit."
+  exit 1
+fi
+
+echo "✅ Release sync applied to commit"

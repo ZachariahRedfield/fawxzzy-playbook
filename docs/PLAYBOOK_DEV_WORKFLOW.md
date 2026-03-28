@@ -118,19 +118,18 @@ The GitHub Actions workflow `.github/workflows/release-prep.yml` is the only aut
 
 ## Release Sync Enforcement
 
-Local pre-push enforcement now runs `pnpm playbook release sync` before every push through `.husky/pre-push` and fails closed if release drift remains after auto-commit + re-check.
+Local pre-commit enforcement now runs `pnpm playbook release sync` before commit finalization through `.husky/pre-commit` and fails closed if release drift remains after staged updates + re-check.
 
 Behavior:
 
 - Runs deterministic release sync (`pnpm playbook release sync --json --out .playbook/release-plan.json`).
-- Stages only governed release surfaces (`package.json`, `packages/*/package.json`, `docs/CHANGELOG.md`, `CHANGELOG.md`).
-- Creates an automatic commit when release sync produced changes.
-- Re-runs `pnpm playbook release sync --check` after commit and blocks push on any residual drift.
-- Blocks push when git working tree remains dirty after the re-check.
+- Stages release-sync updates into the in-flight commit (`git add .`) before commit finalization.
+- Re-runs `pnpm playbook release sync --check` and blocks the commit on any residual drift.
+- Skips work when there are no staged changes, avoiding empty-commit loops.
 
 Rule: Release governance must be applied before CI, not discovered by CI.
-Rule: Release governance must fail locally before CI, not after push.
-Pattern: Shift release sync from CI detection -> local pre-push enforcement.
+Rule: Release governance must fail locally before CI, not after commit.
+Pattern: Shift release sync from CI detection -> local pre-commit enforcement.
 Failure Mode: Relying on CI to detect release drift creates infinite failure loops and slows iteration.
 
 Rule: Installable workflow policy is incomplete until the trusted/manual mutation path is installable too.
