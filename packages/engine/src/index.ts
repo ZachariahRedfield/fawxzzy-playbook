@@ -822,6 +822,10 @@ export type { TestFixPlanArtifact, TestFixPlanExclusion, TestFixPlanExclusionRea
 export type { TestTriageArtifact, TestTriageFailureKind, TestTriageFinding, TestTriageFailureModeNote, TestTriageRepairClass, TestTriageRepairPlan } from '@zachariahredfield/playbook-core';
 
 
+
+export { fitnessIntegrationContract, isFitnessActionName, getFitnessActionContract, getFitnessReceiptTypeForAction } from './integrations/fitnessContract.js';
+export type { FitnessIntegrationContract, FitnessActionName, FitnessReceiptType } from './integrations/fitnessContract.js';
+
 export {
   createEmptyInteropRuntime,
   readInteropRuntime,

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "fitness-actions-and-receipts",
+  "governance": {
+    "loop": "signal->plan->action->receipt",
+    "seam": "playbook-lifeline",
+    "bypassAllowed": false
+  },
+  "actions": [
+    {
+      "action": "adjust_upcoming_workout_load",
+      "receipt": "schedule_adjustment_applied",
+      "routing": {
+        "topic": "fitness.actions.training-load",
+        "must_route_through_playbook_plan": true,
+        "no_direct_lifeline_bypass": true
+      },
+      "constraints": ["same_week_only", "max_duration_days_14"]
+    },
+    {
+      "action": "schedule_recovery_block",
+      "receipt": "recovery_guardrail_applied",
+      "routing": {
+        "topic": "fitness.actions.recovery",
+        "must_route_through_playbook_plan": true,
+        "no_direct_lifeline_bypass": true
+      },
+      "constraints": ["same_week_only", "max_duration_days_14"]
+    },
+    {
+      "action": "revise_weekly_goal_plan",
+      "receipt": "goal_plan_amended",
+      "routing": {
+        "topic": "fitness.actions.weekly-plan",
+        "must_route_through_playbook_plan": true,
+        "no_direct_lifeline_bypass": true
+      },
+      "constraints": ["same_week_only", "max_duration_days_14"]
+    }
+  ]
+}
