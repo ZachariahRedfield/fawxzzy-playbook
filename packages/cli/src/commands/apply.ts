@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { execSync } from 'node:child_process';
 import path from 'node:path';
 import * as engine from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
@@ -901,6 +902,40 @@ const runPolicyApplyFlow = (cwd: string, options: ApplyOptions): number => {
 };
 
 
+const shouldRunReleaseSyncBoundary = (cwd: string): boolean => {
+  const versionPolicyPath = path.resolve(cwd, '.playbook', 'version-policy.json');
+  if (fs.existsSync(versionPolicyPath)) {
+    return true;
+  }
+
+  const packageJsonPath = path.resolve(cwd, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    return true;
+  }
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as { name?: unknown };
+    return parsed.name === 'playbook-monorepo';
+  } catch {
+    return false;
+  }
+};
+
+const applyReleaseSyncCommitBoundary = (cwd: string): void => {
+  if (!shouldRunReleaseSyncBoundary(cwd)) {
+    return;
+  }
+
+  execSync('pnpm playbook release sync --json --out .playbook/release-plan.json', { cwd, stdio: 'inherit' });
+  execSync('git add -A', { cwd, stdio: 'inherit' });
+  execSync('git update-index --again', { cwd, stdio: 'inherit' });
+  try {
+    execSync('pnpm playbook release sync --check --json --out .playbook/release-plan.json', { cwd, stdio: 'inherit' });
+  } catch {
+    throw new Error('playbook apply: release sync check failed after apply; repository is not release-clean.');
+  }
+};
+
 const resolveRunId = (cwd: string, requestedRunId: string | undefined): string => {
   if (requestedRunId) {
     return requestedRunId;
@@ -948,10 +983,16 @@ export const runApply = async (cwd: string, options: ApplyOptions): Promise<numb
     ? loadPlanFromFile(cwd, options.fromPlan)
     : (() => {
         const generatedPlan = engine.generatePlanContract(cwd);
-        const failureFacts = deriveVerifyFailureFacts(generatedPlan.verify);
+        const verifyPayload = typeof generatedPlan === 'object' && generatedPlan !== null && 'verify' in generatedPlan
+          ? (generatedPlan as { verify?: unknown }).verify ?? null
+          : null;
+        const tasks = Array.isArray((generatedPlan as { tasks?: unknown[] } | null)?.tasks)
+          ? (generatedPlan as { tasks: PlanTask[] }).tasks
+          : [];
+        const failureFacts = deriveVerifyFailureFacts(verifyPayload);
         return {
-          tasks: generatedPlan.tasks,
-          remediation: buildPlanRemediation({ failureCount: failureFacts.failureCount, stepCount: generatedPlan.tasks.length })
+          tasks,
+          remediation: buildPlanRemediation({ failureCount: failureFacts.failureCount, stepCount: tasks.length })
         };
       })();
   const applyPrecondition = remediationToApplyPrecondition(plan.remediation);
@@ -982,6 +1023,7 @@ export const runApply = async (cwd: string, options: ApplyOptions): Promise<numb
 
     writeCanonicalApplyArtifact(cwd, []);
     attachApplyRunArtifacts(cwd, runId, options.fromPlan);
+    applyReleaseSyncCommitBoundary(cwd);
 
     if (options.format === 'json') {
       console.log(JSON.stringify(payload, null, 2));
@@ -1043,5 +1085,10 @@ export const runApply = async (cwd: string, options: ApplyOptions): Promise<numb
 
   writeCanonicalApplyArtifact(cwd, execution.results);
   attachApplyRunArtifacts(cwd, runId, options.fromPlan);
+
+  if (exitCode === ExitCode.Success) {
+    applyReleaseSyncCommitBoundary(cwd);
+  }
+
   return emitApplyOutput(options, payload, renderTextApply);
 };

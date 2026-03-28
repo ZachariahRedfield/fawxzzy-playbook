@@ -116,6 +116,29 @@ pnpm playbook apply --from-plan .playbook/release-plan.json
 
 The GitHub Actions workflow `.github/workflows/release-prep.yml` is the only automation that should commit the resulting reviewed package-version, linked-workspace-dependency, and managed changelog updates into the single release-prep PR branch. Normal PR CI remains detect/plan/report only and must never auto-apply release mutations.
 
+## Release Sync Enforcement
+
+Local pre-commit enforcement now runs `pnpm playbook release sync` before commit finalization through `.husky/pre-commit` and fails closed if release drift remains after staged updates + re-check.
+
+Behavior:
+
+- Runs deterministic release sync (`pnpm playbook release sync --json --out .playbook/release-plan.json`).
+- Stages release-sync updates into the in-flight commit (`git add -A`) before commit finalization.
+- Refreshes the Git index (`git update-index --again`) so the commit snapshot includes the post-sync mutation set.
+- Re-runs `pnpm playbook release sync --check` and blocks the commit on any residual drift.
+- Skips work when there are no staged changes, avoiding empty-commit loops.
+- For governed changes, prefer `pnpm playbook apply` as the mutation boundary and let Playbook-owned release sync + commit steps finalize the state.
+- Do not rely on direct manual `git commit` for governed mutation flows when `playbook apply` is available.
+- Canonical governed flow: `pnpm playbook apply` -> release sync -> stage -> verify release-clean -> `git commit` -> `git push`.
+
+Rule: Release governance must be applied before CI, not discovered by CI.
+Rule: Release governance must fail locally before CI, not after commit.
+Pattern: Shift release sync from CI detection -> local pre-commit enforcement.
+Pattern: Mutate -> stage -> refresh index -> commit.
+Pattern: apply -> release sync -> stage -> verify clean -> commit -> push.
+Failure Mode: Relying on CI to detect release drift creates infinite failure loops and slows iteration.
+Failure Mode: Without index refresh, Git can commit stale snapshots after hook-time mutations.
+
 Rule: Installable workflow policy is incomplete until the trusted/manual mutation path is installable too.
 Pattern: Seed policy, seed reviewed executor, keep normal CI plan-only.
 Failure Mode: Shipping only the policy file makes release governance look portable while leaving the actual release path repo-specific.
