@@ -111,9 +111,7 @@ JSON output and `.playbook/review-queue.json` preserve full deterministic trigge
 
 Architecture-decision recall is trigger-driven: `docs/architecture/decisions/*.md` must publish explicit `## Review Triggers` lines in canonical format:
 
-```text
-- [trigger_id] when <observable condition> -> <required review action>
-```
+- `- [trigger_id] when <observable condition> -> <required review action>`
 
 Satisfied signals are merged as additive `triggerSource=architecture-decision` evidence entries.
 
