@@ -359,3 +359,22 @@ Use this checklist in PR descriptions:
 - Rule: Upgrade must be scoped to managed artifacts only; repo-owned files are immutable unless explicitly migrated.
 - Pattern: A safe framework upgrade system separates Playbook-managed surfaces from repo-local product truth.
 - Failure Mode: Upgrade flows that cannot distinguish managed from local files overwrite product intent and destroy trust.
+
+## AI proposal-only boundary
+
+When using AI-assisted reasoning in Playbook, keep AI in proposal-only mode and route all state changes through governed deterministic commands.
+
+Canonical pattern:
+
+1. `pnpm playbook ai-context --json`
+2. `pnpm playbook ai-contract --json`
+3. `pnpm playbook ai propose --json --out .playbook/ai-proposal.json`
+4. `pnpm playbook route ...` / `pnpm playbook plan --json`
+5. `pnpm playbook apply --from-plan ...`
+6. `pnpm playbook verify --json`
+
+Rule: AI must remain a proposal-only layer within deterministic systems.
+
+Pattern: AI -> proposal artifact -> route/plan/review -> apply -> verify.
+
+Failure Mode: Allowing AI to mutate state directly collapses auditability and reproducibility.
