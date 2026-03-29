@@ -1,12 +1,4 @@
 <!-- PLAYBOOK:CHANGELOG_RELEASE_NOTES_START -->
-## 0.39.0 - 2026-03-29
-- Recommended bump: minor
-- @fawxzzy/playbook: 0.38.0 -> 0.39.0 (playbook-installable-workspace)
-- @fawxzzy/playbook-cli: 0.38.0 -> 0.39.0 (playbook-installable-workspace)
-- @zachariahredfield/playbook-core: 0.38.0 -> 0.39.0 (playbook-installable-workspace)
-- @zachariahredfield/playbook-engine: 0.38.0 -> 0.39.0 (playbook-installable-workspace)
-- @zachariahredfield/playbook-node: 0.38.0 -> 0.39.0 (playbook-installable-workspace)
-
 ## 0.38.0 - 2026-03-28
 - Recommended bump: minor
 - @fawxzzy/playbook: 0.37.0 -> 0.38.0 (playbook-installable-workspace)

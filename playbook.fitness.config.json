@@ -42,15 +42,9 @@
       "pattern reuse"
     ]
   },
-  "fitnessContractSource": {
-    "sourceRepo": "ZachariahRedfield/fawxzzy-fitness",
-    "sourceRef": "main",
-    "sourcePath": "../fawxzzy-fitness/src/lib/ecosystem/fitness-integration-contract.ts",
-    "syncMode": "mirrored"
-  },
   "documentationUpdates": {
-    "rule": "External app contracts are consumed, not semantically redesigned.",
-    "pattern": "Source contract -> validated mirror -> adapter.",
-    "failureMode": "Local reinterpretation drifts names/types from the source contract and breaks interoperability."
+    "rule": "Pilot deployments of the reasoning engine must operate in advisory mode.",
+    "pattern": "Real repositories provide the feedback loop needed to validate reasoning engines and cross-repo evidence fitness.",
+    "failureMode": "Allowing automated system mutation before governance stability."
   }
 }
