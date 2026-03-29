@@ -49,6 +49,7 @@ Do not hand-edit entries inside the managed markers.
 | `execute` | Execute orchestration lanes through the execution supervisor runtime | canonical | remediation | primary | Later | Current (implemented) | `pnpm playbook execute --json` |
 | `cycle` | Run the hardened execution primitives as one deterministic cycle orchestration pass | canonical | remediation | primary | Later | Current (implemented) | `pnpm playbook cycle --json` |
 | `apply` | Enforce and materialize deterministic plan tasks | canonical | remediation | primary | P10 | Current (implemented) | `pnpm playbook apply --from-plan .playbook/plan.json` |
+| `commit` | Atomically run release sync, stage all changes, and execute git commit | utility | utility | secondary | Later | Current (implemented) | `pnpm playbook commit -m "chore: update"` |
 | `analyze-pr` | Analyze local branch/worktree changes with deterministic PR intelligence | canonical | repo-intelligence | secondary | Later | Current (implemented) | `pnpm playbook analyze-pr --json` |
 | `review-pr` | Run governed read-only PR review by composing analyze-pr, improve, and policy evaluate outputs | canonical | governance | secondary | Later | Current (implemented) | `pnpm playbook review-pr --json` |
 | `doctor` | Diagnose repository health by aggregating verify, risk, docs, and index analyzers | canonical | governance | secondary | Later | Current (implemented) | `pnpm playbook doctor --fix --dry-run` |

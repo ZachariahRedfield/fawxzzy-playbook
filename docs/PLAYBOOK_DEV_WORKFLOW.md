@@ -118,22 +118,22 @@ The GitHub Actions workflow `.github/workflows/release-prep.yml` is the only aut
 
 ## Release Sync Enforcement
 
-Local pre-commit enforcement runs release sync before commit finalization through `.husky/pre-commit`, so release drift is auto-corrected and staged as part of the commit path.
+Release sync now has an atomic commit surface: use `pnpm playbook commit` instead of raw `git commit` for release-governed changes.
 
 Behavior:
 
-- Runs fast drift detection first (`pnpm playbook release sync --check`).
-- If drift is detected, runs `pnpm playbook release sync`.
-- Stages only governed release artifacts into the in-flight commit (`packages/**/package.json`, `docs/CHANGELOG.md`).
-- Skips work when there are no staged changes, avoiding empty-commit loops.
-- Keeps pre-push `release sync --check` as fail-closed fallback if drift somehow remains.
+- `pnpm playbook commit` runs release sync, stages all repo changes, and executes `git commit` with pass-through flags (for example `-m`).
+- `.husky/pre-commit` is warning-only for release drift (no mutation).
+- `.husky/pre-push` remains fail-closed and blocks push when drift still exists.
 
 Rule: Release governance must be applied before CI, not discovered by CI.
+Rule: Release sync must occur before commit snapshot is created.
 Rule: Release sync is part of commit, not a separate step.
+Pattern: Atomic mutation = code + release state committed together.
 Pattern: Mutation -> auto-sync -> commit -> push clean state.
-Pattern: apply -> release sync -> stage -> verify clean -> commit -> push.
 Failure Mode: Relying on CI to detect release drift creates infinite failure loops and slows iteration.
 Failure Mode: Separating release sync from commit creates drift and guarantees CI failure cycles.
+Failure Mode: Mutating release state inside pre-commit leads to inconsistent commit snapshots and persistent CI drift.
 
 Rule: Installable workflow policy is incomplete until the trusted/manual mutation path is installable too.
 Pattern: Seed policy, seed reviewed executor, keep normal CI plan-only.
@@ -156,9 +156,10 @@ Failure Mode: Duplicate managed changelog prepends create permanent false drift.
 
 ## Release Sync Requirement
 
-Release sync now runs automatically during commit when drift exists, and pre-push keeps a fail-closed fallback check.
+Release sync should run through `pnpm playbook commit` for atomic local commits, while pre-push keeps a fail-closed fallback check.
 
-- `.husky/pre-commit` runs `pnpm playbook release sync --check`; on drift it auto-runs `pnpm playbook release sync` and stages governed release files.
+- Use `pnpm playbook commit -m "<message>"` for release-governed changes instead of raw `git commit`.
+- `.husky/pre-commit` runs `pnpm playbook release sync --check` as warning-only and does not mutate.
 - `.husky/pre-push` runs `pnpm playbook release sync --check` and fails closed without mutating repository state.
 - CI parity is intentional: local push blocks and CI both fail on unresolved release drift.
 

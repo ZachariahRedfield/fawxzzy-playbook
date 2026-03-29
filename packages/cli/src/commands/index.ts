@@ -475,6 +475,14 @@ const commandRunners: Record<
       help: parseFlag(commandArgs, "--help") || parseFlag(commandArgs, "-h"),
     });
   },
+  commit: async ({ cwd, commandArgs, format, quiet }) => {
+    const { runCommit } = await import("./commit.js");
+    return runCommit(cwd, commandArgs, {
+      format,
+      quiet,
+      help: parseFlag(commandArgs, "--help") || parseFlag(commandArgs, "-h"),
+    });
+  },
   policy: async ({ cwd, commandArgs, format, quiet }) => {
     const { runPolicy } = await import("./policy.js");
     return runPolicy(cwd, commandArgs, {
@@ -673,6 +681,7 @@ const commandOrder = [
   "execute",
   "cycle",
   "apply",
+  "commit",
   "fix",
   "doctor",
   "status",

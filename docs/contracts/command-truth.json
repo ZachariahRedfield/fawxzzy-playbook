@@ -112,6 +112,18 @@
       "example": "pnpm playbook audit architecture --json"
     },
     {
+      "name": "commit",
+      "category": "Utility",
+      "role": "utility",
+      "lifecycle": "utility",
+      "discoverability": "secondary",
+      "onboardingPriority": null,
+      "canonicalSequence": null,
+      "productFacing": true,
+      "machineReadable": false,
+      "example": "pnpm playbook commit -m \"chore: update\""
+    },
+    {
       "name": "context",
       "category": "Repository tools",
       "role": "bootstrap",
@@ -737,6 +749,7 @@
   ],
   "utilityCommands": [
     "agent",
+    "commit",
     "contracts",
     "demo",
     "diagram",

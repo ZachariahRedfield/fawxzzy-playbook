@@ -173,6 +173,19 @@ export const commandMetadata: CommandMetadata[] = [
     machineReadable: true,
   },
   {
+    name: "commit",
+    description: "Atomically run release sync, stage all changes, and execute git commit",
+    category: "Utility",
+    role: "utility",
+    lifecycle: "utility",
+    discoverability: "secondary",
+    onboardingPriority: null,
+    canonicalSequence: null,
+    productFacing: true,
+    exampleArgs: "commit -m \"chore: update\"",
+    machineReadable: false,
+  },
+  {
     name: "analyze-pr",
     description:
       "Analyze local branch/worktree changes with deterministic PR intelligence",

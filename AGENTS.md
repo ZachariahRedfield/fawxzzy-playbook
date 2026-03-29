@@ -261,6 +261,8 @@ Do not hand-edit entries inside the managed markers.
 
 ### Utility
 
+- `commit`: Atomically run release sync, stage all changes, and execute git commit
+  - Example: `pnpm playbook commit -m "chore: update"`
 - `receipt`: Ingest explicit execution results into receipt, updated-state, and next-queue
   - Example: `pnpm playbook receipt ingest execution-results.json --json`
 - `learn`: Draft deterministic knowledge candidates from local diff and repository intelligence
@@ -305,6 +307,7 @@ Do not hand-edit entries inside the managed markers.
 | `execute` | `pnpm playbook execute --json` |
 | `cycle` | `pnpm playbook cycle --json` |
 | `apply` | `pnpm playbook apply --from-plan .playbook/plan.json` |
+| `commit` | `pnpm playbook commit -m "chore: update"` |
 | `analyze-pr` | `pnpm playbook analyze-pr --json` |
 | `review-pr` | `pnpm playbook review-pr --json` |
 | `doctor` | `pnpm playbook doctor --fix --dry-run` |
