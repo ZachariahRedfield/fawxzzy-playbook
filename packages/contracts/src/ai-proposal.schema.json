@@ -24,7 +24,7 @@
     "scope": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["mode", "boundaries", "allowedInputs", "optionalInputs"],
+      "required": ["mode", "boundaries", "allowedInputs", "optionalInputs", "target"],
       "properties": {
         "mode": { "const": "proposal-only" },
         "boundaries": {
@@ -42,11 +42,12 @@
           "maxItems": 5
         },
         "allowedInputs": { "type": "array", "items": { "type": "string" }, "minItems": 2 },
-        "optionalInputs": { "type": "array", "items": { "type": "string" } }
+        "optionalInputs": { "type": "array", "items": { "type": "string" } },
+        "target": { "enum": ["general", "fitness"] }
       }
     },
     "reasoningSummary": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
-    "recommendedNextGovernedSurface": { "enum": ["route", "plan", "review-pr", "verify"] },
+    "recommendedNextGovernedSurface": { "enum": ["route", "plan", "review-pr", "verify", "interop emit-fitness-plan"] },
     "suggestedArtifactPath": { "type": "string" },
     "blockers": { "type": "array", "items": { "type": "string" } },
     "assumptions": { "type": "array", "items": { "type": "string" } },
@@ -64,6 +65,49 @@
           "available": { "type": "boolean" },
           "used": { "type": "boolean" }
         }
+      }
+    },
+    "fitnessRequestSuggestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonicalActionName",
+        "boundedActionInput",
+        "canonicalExpectedReceiptType",
+        "routingMetadataSummary",
+        "recommendedNextGovernedSurface",
+        "blockers",
+        "assumptions",
+        "confidence"
+      ],
+      "properties": {
+        "canonicalActionName": {
+          "enum": [
+            "adjust_upcoming_workout_load",
+            "schedule_recovery_block",
+            "revise_weekly_goal_plan"
+          ]
+        },
+        "boundedActionInput": { "type": "object" },
+        "canonicalExpectedReceiptType": {
+          "enum": ["schedule_adjustment_applied", "recovery_guardrail_applied", "goal_plan_amended"]
+        },
+        "routingMetadataSummary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["channel", "target", "priority", "maxDeliveryLatencySeconds", "constraints"],
+          "properties": {
+            "channel": { "type": "string" },
+            "target": { "type": "string" },
+            "priority": { "type": "string" },
+            "maxDeliveryLatencySeconds": { "type": "number" },
+            "constraints": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "recommendedNextGovernedSurface": { "const": "interop emit-fitness-plan" },
+        "blockers": { "type": "array", "items": { "type": "string" } },
+        "assumptions": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
       }
     }
   }

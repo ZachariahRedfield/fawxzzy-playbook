@@ -19,6 +19,7 @@ describe('generateAiProposal', () => {
 
     expect(proposal.command).toBe('ai-propose');
     expect(proposal.scope.mode).toBe('proposal-only');
+    expect(proposal.scope.target).toBe('general');
     expect(proposal.scope.boundaries).toEqual([
       'no-direct-apply',
       'no-memory-promotion',
@@ -37,5 +38,18 @@ describe('generateAiProposal', () => {
     expect(proposal.blockers.some((entry) => entry.includes('.playbook/repo-index.json'))).toBe(true);
     expect(proposal.blockers.some((entry) => entry.includes('.playbook/plan.json'))).toBe(true);
     expect(proposal.recommendedNextGovernedSurface).toBe('route');
+  });
+
+  it('emits canonical bounded fitness request suggestion only for fitness target', () => {
+    const repo = createRepo('playbook-engine-ai-proposal-fitness');
+    fs.writeFileSync(path.join(repo, '.playbook', 'repo-index.json'), JSON.stringify({ command: 'index' }));
+
+    const proposal = generateAiProposal(repo, { target: 'fitness' });
+
+    expect(proposal.recommendedNextGovernedSurface).toBe('interop emit-fitness-plan');
+    expect(proposal.fitnessRequestSuggestion).toBeDefined();
+    expect(proposal.fitnessRequestSuggestion?.canonicalActionName).toBe('adjust_upcoming_workout_load');
+    expect(proposal.fitnessRequestSuggestion?.recommendedNextGovernedSurface).toBe('interop emit-fitness-plan');
+    expect(proposal.fitnessRequestSuggestion?.blockers).toEqual([]);
   });
 });

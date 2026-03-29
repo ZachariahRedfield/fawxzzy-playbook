@@ -18,6 +18,7 @@ Subcommands:
 
 Options (ai propose):
   --include <surface>         Optional canonical artifact summary to reference (plan|review|rendezvous|interop)
+  --target <profile>          Proposal target profile (general|fitness)
   --out <path>                Write JSON artifact (for example .playbook/ai-proposal.json)
   --json                      Print machine-readable JSON output
   --help                      Show help`);
@@ -40,6 +41,21 @@ const parseOptionValues = (args: string[], optionName: string): string[] => {
   return values;
 };
 
+const parseTarget = (args: string[]): GenerateAiProposalOptions['target'] => {
+  const requested = parseOptionValues(args, '--target');
+  if (requested.length === 0) {
+    return undefined;
+  }
+
+  const target = requested[requested.length - 1];
+  const allowed = new Set(['general', 'fitness']);
+  if (!allowed.has(target)) {
+    throw new Error(`playbook ai propose: unsupported --target value: ${target}.`);
+  }
+
+  return target as GenerateAiProposalOptions['target'];
+};
+
 const parseInclude = (args: string[]): GenerateAiProposalOptions['include'] => {
   const requested = parseOptionValues(args, '--include');
   if (requested.length === 0) {
@@ -60,8 +76,13 @@ const renderTextSummary = (payload: ReturnType<typeof generateAiProposal>): void
   console.log('');
   console.log(`Proposal ID: ${payload.proposalId}`);
   console.log(`Mode: ${payload.scope.mode}`);
+  console.log(`Target: ${payload.scope.target}`);
   console.log(`Recommended governed surface: ${payload.recommendedNextGovernedSurface}`);
   console.log(`Suggested artifact path: ${payload.suggestedArtifactPath}`);
+  if (payload.fitnessRequestSuggestion) {
+    console.log(`Fitness suggestion action: ${payload.fitnessRequestSuggestion.canonicalActionName}`);
+    console.log(`Fitness suggestion next surface: ${payload.fitnessRequestSuggestion.recommendedNextGovernedSurface}`);
+  }
   console.log(`Confidence: ${payload.confidence}`);
   console.log('');
   console.log('Reasoning summary');
@@ -98,7 +119,8 @@ export const runAi = async (cwd: string, args: string[], options: AiOptions): Pr
 
   try {
     const payload = generateAiProposal(cwd, {
-      include: parseInclude(args)
+      include: parseInclude(args),
+      target: parseTarget(args)
     });
 
     if (options.format === 'json') {

@@ -21,6 +21,11 @@ Optional inputs when explicitly requested:
 - `--include rendezvous` -> `.playbook/rendezvous-manifest.json`
 - `--include interop` -> `.playbook/lifeline-interop-runtime.json`
 
+Target profiles:
+
+- default (`--target general`): repository/governance proposal-only output
+- `--target fitness`: proposal-only bounded Fitness request suggestion validated against canonical Fitness contract mirror
+
 ## Durable machine output
 
 ```bash
@@ -33,6 +38,7 @@ The proposal artifact includes:
 - proposal-only scope + non-mutation boundaries
 - reasoning summary
 - recommended next governed surface
+- optional `fitnessRequestSuggestion` only when `--target fitness` is requested
 - suggested artifact path
 - blockers/assumptions
 - confidence score
@@ -41,5 +47,8 @@ The proposal artifact includes:
 ## Governance rules
 
 - Rule: AI must remain a proposal-only layer within deterministic systems.
+- Rule: AI may interpret canonical external contracts, but may not widen or execute them directly.
+- Pattern: AI context -> proposal artifact -> bounded interop request -> receipt -> updated truth.
 - Pattern: AI -> proposal artifact -> route/plan/review -> apply -> verify.
 - Failure Mode: Allowing AI to mutate state directly collapses auditability and reproducibility.
+- Failure Mode: Letting AI skip from interpretation to execution collapses the request/receipt boundary and makes the Fitness seam untrustworthy.

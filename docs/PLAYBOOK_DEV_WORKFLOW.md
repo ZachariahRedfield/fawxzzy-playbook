@@ -108,6 +108,12 @@ pnpm playbook interop fitness-contract --json
 
 `rendezvous` is read-first in v1: it only creates/updates `.playbook/rendezvous-manifest.json` and never performs release mutation directly.
 
+Fitness-targeted AI proposal boundary clarification:
+
+- `pnpm playbook ai propose --target fitness --json` may emit a proposal-only bounded request suggestion validated against canonical Fitness action/input contracts.
+- AI proposal output must not emit runtime requests directly and must not invoke interop runtime automatically.
+- Operators should route bounded suggestions through `pnpm playbook interop emit-fitness-plan ...` to preserve request/receipt governance seams.
+
 Fitness contract sync boundary clarification:
 
 - Treat the Fitness contract as an external truth dependency consumed by this repository.

@@ -43,6 +43,34 @@ describe('runAi', () => {
     logSpy.mockRestore();
   });
 
+
+  it('emits fitness suggestion only for fitness target', async () => {
+    const repo = createRepo('playbook-cli-ai-propose-fitness');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runAi(repo, ['propose', '--target', 'fitness'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+    expect(payload.recommendedNextGovernedSurface).toBe('interop emit-fitness-plan');
+    const suggestion = payload.fitnessRequestSuggestion as Record<string, unknown> | undefined;
+    expect(suggestion?.canonicalActionName).toBe('adjust_upcoming_workout_load');
+
+    logSpy.mockRestore();
+  });
+
+  it('rejects unknown target values', async () => {
+    const repo = createRepo('playbook-cli-ai-propose-invalid-target');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const exitCode = await runAi(repo, ['propose', '--target', 'invalid'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    expect(String(errorSpy.mock.calls[0]?.[0])).toContain('unsupported --target');
+
+    errorSpy.mockRestore();
+  });
+
   it('rejects unknown include values', async () => {
     const repo = createRepo('playbook-cli-ai-propose-invalid');
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
