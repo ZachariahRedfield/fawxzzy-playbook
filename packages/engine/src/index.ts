@@ -823,8 +823,24 @@ export type { TestTriageArtifact, TestTriageFailureKind, TestTriageFinding, Test
 
 
 
-export { fitnessIntegrationContract, isFitnessActionName, getFitnessActionContract, getFitnessReceiptTypeForAction } from './integrations/fitnessContract.js';
-export type { FitnessIntegrationContract, FitnessActionName, FitnessReceiptType } from './integrations/fitnessContract.js';
+export {
+  fitnessIntegrationContract,
+  isFitnessActionName,
+  getFitnessActionContract,
+  getFitnessReceiptTypeForAction,
+  validateFitnessContractExactShape,
+  loadFitnessContract,
+  materializeFitnessContractArtifact
+} from './integrations/fitnessContract.js';
+export type {
+  FitnessIntegrationContract,
+  FitnessActionName,
+  FitnessReceiptType,
+  FitnessContractSyncMode,
+  FitnessContractSourcePointer,
+  LoadedFitnessContract,
+  MaterializedFitnessContractArtifact
+} from './integrations/fitnessContract.js';
 
 export {
   createEmptyInteropRuntime,
