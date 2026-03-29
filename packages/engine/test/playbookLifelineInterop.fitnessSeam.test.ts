@@ -123,4 +123,69 @@ describe('playbook lifeline interop fitness seam', () => {
 
     expect(() => reconcileInteropRuntime(mismatched)).toThrow(/receipt mismatch/);
   });
+
+  it('rejects registration when canonical routing metadata drifts', () => {
+    const action_kind = 'schedule_recovery_block' as const;
+    const action = getFitnessActionContract(action_kind);
+
+    expect(() => registerInteropCapability(createEmptyInteropRuntime(), {
+      capability_id: 'lifeline-fitness-v1',
+      action_kind,
+      receipt_type: getFitnessReceiptTypeForAction(action_kind),
+      routing: {
+        ...action.routing,
+        target: 'topic-style-target'
+      },
+      version: '1.0.0',
+      runtime_id: 'lifeline-mock-runtime',
+      idempotency_key_prefix: `lifeline:${action_kind}`
+    })).toThrow(/routing mismatch/);
+  });
+
+  it('keeps routing metadata canonical and separate from Fitness constraints', () => {
+    const action_kind = 'adjust_upcoming_workout_load' as const;
+    const action = getFitnessActionContract(action_kind);
+    const runtime = registerInteropCapability(createEmptyInteropRuntime(), {
+      capability_id: 'lifeline-fitness-v1',
+      action_kind,
+      receipt_type: getFitnessReceiptTypeForAction(action_kind),
+      routing: action.routing,
+      version: '1.0.0',
+      runtime_id: 'lifeline-mock-runtime',
+      idempotency_key_prefix: `lifeline:${action_kind}`
+    });
+
+    const { request } = emitBoundedInteropActionRequest({
+      runtime,
+      action_kind,
+      capability_id: 'lifeline-fitness-v1',
+      bounded_action_input: {
+        athlete_id: 'athlete-001',
+        week_id: 'week-2026-W13',
+        workout_id: 'workout-001',
+        load_adjustment_percent: -15,
+        duration_days: 3,
+        reason_code: 'fatigue_spike'
+      },
+      manifest: { remediationId: 'remediation-fit-003', requiredArtifactIds: ['fitness-contract'] },
+      evaluation: {
+        state: 'complete',
+        releaseReady: true,
+        blockers: [],
+        missingArtifactIds: [],
+        conflictingArtifactIds: [],
+        stale: false
+      }
+    });
+
+    expect(Object.keys(request.routing).sort()).toEqual([
+      'channel',
+      'maxDeliveryLatencySeconds',
+      'priority',
+      'target'
+    ]);
+    expect(request.routing).toEqual(action.routing);
+    expect(action.constraints).toEqual(['same_week_only', 'max_duration_days_14']);
+    expect((request.routing as Record<string, unknown>).constraints).toBeUndefined();
+  });
 });
