@@ -197,6 +197,18 @@ Source of truth: shared command metadata in `packages/cli/src/lib/commandMetadat
 - Failure Mode: Parallel docs work without consolidation becomes a merge-management problem, not a productivity gain.
 - Failure Mode: Marking lanes merge-ready before protected-doc integration recreates manual merge hotspots under a deterministic-looking surface.
 
+## Fitness contract inspection surface (`pnpm playbook contracts inspect fitness`)
+
+`pnpm playbook contracts inspect fitness` is a thin read-only operator surface for the consumed Fitness contract sync boundary.
+
+- text mode is brief-thin: source pointer + source hash + canonical payload-name summary.
+- json mode is full-fidelity and includes:
+  - `sourceRepo`, `sourceRef`, `sourcePath`, `syncMode`, `sourceHash`
+  - canonical payload summary (`appIdentity`, `signalNames`, `stateSnapshotTypes`, `boundedActionNames`, `receiptTypes`)
+  - the exact mirrored `payload` object (no local reinterpretation)
+- the command also materializes `.playbook/fitness-contract.json` as the canonical full-detail inspection artifact.
+- no mutation path is introduced through this surface; it remains inspect-only.
+
 ## Artifact workflow governance
 
 Artifact-producing pipelines in this repository follow one sequencing rule: generate candidate state, validate the regenerated candidate, then promote approved outputs into committed locations.

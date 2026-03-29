@@ -93,6 +93,13 @@ For documentation/governance changes, also run:
 ```bash
 pnpm playbook docs audit --ci --json
 ```
+For Fitness contract surface changes, verify the inspect boundary is deterministic and read-only:
+
+```bash
+pnpm playbook contracts inspect fitness --json
+pnpm playbook contracts inspect fitness
+```
+
 
 For remediation workflow updates, run canonical deterministic flow checks:
 

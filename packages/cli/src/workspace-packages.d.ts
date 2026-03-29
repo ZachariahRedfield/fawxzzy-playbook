@@ -139,6 +139,7 @@ declare module "@zachariahredfield/playbook-engine" {
   export const MODULE_CONTEXT_DIR_RELATIVE_PATH: ".playbook/context/modules";
   export const loadAiContract: (...args: any[]) => any;
   export const buildContractRegistry: (...args: any[]) => any;
+  export const materializeFitnessContractArtifact: (...args: any[]) => Promise<any>;
   export type OrchestratorContract = any;
   export type OrchestratorLane = any;
   export const buildOrchestratorContract: (

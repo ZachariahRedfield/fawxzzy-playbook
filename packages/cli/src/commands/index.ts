@@ -441,6 +441,7 @@ const commandRunners: Record<
       format,
       quiet,
       out: parseOptionValue(commandArgs, "--out"),
+      args: commandArgs,
     });
   },
   schema: async ({ cwd, commandArgs, format, quiet }) => {
