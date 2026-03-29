@@ -1,12 +1,16 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   fitnessIntegrationContract,
+  loadFitnessContract,
+  materializeFitnessContractArtifact,
   getFitnessActionContract,
   getFitnessReceiptTypeForAction,
-  isFitnessActionName
+  isFitnessActionName,
+  type FitnessContractSourcePointer
 } from '../src/integrations/fitnessContract.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -135,5 +139,73 @@ describe('fitness integration contract mirror', () => {
         constraints: entry.constraints
       }))
     );
+  });
+
+  it('loads direct mode canonical payload unchanged when source is available', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'fitness-contract-direct-'));
+    const directPath = path.join(tempRoot, 'fitness-source.mjs');
+    fs.writeFileSync(
+      directPath,
+      `export const fitnessIntegrationContract = ${JSON.stringify(fitnessIntegrationContract, null, 2)};\n`,
+      'utf8'
+    );
+
+    const pointer: FitnessContractSourcePointer = {
+      sourceRepo: 'ZachariahRedfield/fawxzzy-fitness',
+      sourceRef: 'direct-test',
+      sourcePath: './fitness-source.mjs',
+      syncMode: 'direct'
+    };
+
+    const loaded = await loadFitnessContract({
+      repoRoot: tempRoot,
+      sourcePointer: pointer
+    });
+
+    expect(loaded.payload).toEqual(fitnessIntegrationContract);
+    expect(loaded.source.syncMode).toBe('direct');
+  });
+
+  it('loads mirrored mode with exact payload shape and deterministic fingerprint artifact', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'fitness-contract-mirror-'));
+    const pointer: FitnessContractSourcePointer = {
+      sourceRepo: 'ZachariahRedfield/fawxzzy-fitness',
+      sourceRef: 'main',
+      sourcePath: '../fawxzzy-fitness/src/lib/ecosystem/fitness-integration-contract.ts',
+      syncMode: 'mirrored'
+    };
+
+    const first = await loadFitnessContract({ repoRoot: tempRoot, sourcePointer: pointer });
+    const second = await loadFitnessContract({ repoRoot: tempRoot, sourcePointer: pointer });
+    expect(first.payload).toEqual(fitnessIntegrationContract);
+    expect(first.fingerprint).toBe(second.fingerprint);
+
+    const artifact = await materializeFitnessContractArtifact({
+      repoRoot: tempRoot,
+      sourcePointer: pointer
+    });
+
+    const artifactPath = path.join(tempRoot, '.playbook', 'fitness-contract.json');
+    const persisted = JSON.parse(fs.readFileSync(artifactPath, 'utf8')) as typeof artifact;
+    expect(persisted).toEqual(artifact);
+    expect(artifact.payload).toEqual(fitnessIntegrationContract);
+  });
+
+  it('fails clearly on drift when expected fingerprint mismatches mirrored payload', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'fitness-contract-drift-'));
+    const pointer: FitnessContractSourcePointer = {
+      sourceRepo: 'ZachariahRedfield/fawxzzy-fitness',
+      sourceRef: 'main',
+      sourcePath: '../fawxzzy-fitness/src/lib/ecosystem/fitness-integration-contract.ts',
+      syncMode: 'mirrored',
+      expectedFingerprint: '0000000000000000000000000000000000000000000000000000000000000000'
+    };
+
+    await expect(
+      loadFitnessContract({
+        repoRoot: tempRoot,
+        sourcePointer: pointer
+      })
+    ).rejects.toThrow(/Fitness contract drift detected/);
   });
 });
