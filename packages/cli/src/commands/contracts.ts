@@ -1,16 +1,36 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { buildContractRegistry } from '@zachariahredfield/playbook-engine';
+import { buildContractRegistry, materializeFitnessContractArtifact } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 
 type ContractsOptions = {
   format: 'text' | 'json';
   quiet: boolean;
   out?: string;
+  args?: string[];
 };
 
 const DEFAULT_OUTPUT_PATH = '.playbook/contracts-registry.json';
+const FITNESS_CONTRACT_ARTIFACT_PATH = '.playbook/fitness-contract.json';
 
+
+type FitnessContractArtifact = {
+  source: {
+    sourceRepo: string;
+    sourceRef: string;
+    sourcePath: string;
+    syncMode: string;
+  };
+  fingerprint: string;
+  payload: {
+    kind: string;
+    schemaVersion: string;
+    signalTypes: string[];
+    stateSnapshotTypes: string[];
+    actions: Array<{ name: string }>;
+    receiptTypes: string[];
+  };
+};
 
 type RegisteredSchema = {
   id: string;
@@ -87,7 +107,100 @@ const printText = (outPath: string): void => {
   console.log('Use --json for machine-readable output.');
 };
 
+const summarizeFitnessContract = (artifact: FitnessContractArtifact): Record<string, unknown> => ({
+  appIdentity: {
+    kind: artifact.payload.kind,
+    schemaVersion: artifact.payload.schemaVersion
+  },
+  signalNames: [...artifact.payload.signalTypes],
+  stateSnapshotTypes: [...artifact.payload.stateSnapshotTypes],
+  boundedActionNames: artifact.payload.actions.map((entry) => entry.name),
+  receiptTypes: [...artifact.payload.receiptTypes]
+});
+
+const printFitnessInspectText = (artifact: FitnessContractArtifact, artifactPath: string): void => {
+  const summary = summarizeFitnessContract(artifact);
+  const appIdentity = summary.appIdentity as Record<string, unknown>;
+  const signalNames = summary.signalNames as string[];
+  const stateSnapshotTypes = summary.stateSnapshotTypes as string[];
+  const boundedActionNames = summary.boundedActionNames as string[];
+  const receiptTypes = summary.receiptTypes as string[];
+
+  console.log('Fitness contract inspect');
+  console.log(`sourceRepo: ${artifact.source.sourceRepo}`);
+  console.log(`sourceRef: ${artifact.source.sourceRef}`);
+  console.log(`sourcePath: ${artifact.source.sourcePath}`);
+  console.log(`syncMode: ${artifact.source.syncMode}`);
+  console.log(`sourceHash: ${artifact.fingerprint}`);
+  console.log(`appIdentity: ${String(appIdentity.kind)}@${String(appIdentity.schemaVersion)}`);
+  console.log(`signalNames: ${signalNames.join(', ')}`);
+  console.log(`stateSnapshotTypes: ${stateSnapshotTypes.join(', ')}`);
+  console.log(`boundedActionNames: ${boundedActionNames.join(', ')}`);
+  console.log(`receiptTypes: ${receiptTypes.join(', ')}`);
+  console.log(`artifact: ${artifactPath}`);
+};
+
+const runContractsInspectFitness = async (cwd: string, options: ContractsOptions): Promise<number> => {
+  const artifact = await materializeFitnessContractArtifact({
+    repoRoot: cwd,
+    artifactPath: FITNESS_CONTRACT_ARTIFACT_PATH
+  });
+
+  const payload = {
+    schemaVersion: '1.0',
+    command: 'contracts inspect fitness',
+    sourceRepo: artifact.source.sourceRepo,
+    sourceRef: artifact.source.sourceRef,
+    sourcePath: artifact.source.sourcePath,
+    syncMode: artifact.source.syncMode,
+    sourceHash: artifact.fingerprint,
+    canonicalPayloadSummary: summarizeFitnessContract(artifact),
+    payload: artifact.payload,
+    artifactPath: FITNESS_CONTRACT_ARTIFACT_PATH
+  };
+
+  if (options.format === 'json') {
+    console.log(JSON.stringify(payload, null, 2));
+    return ExitCode.Success;
+  }
+
+  if (!options.quiet) {
+    printFitnessInspectText(artifact, FITNESS_CONTRACT_ARTIFACT_PATH);
+  }
+
+  return ExitCode.Success;
+};
+
 export const runContracts = async (cwd: string, options: ContractsOptions): Promise<number> => {
+  const subcommand = options.args?.find((arg) => !arg.startsWith('-'));
+  if (subcommand) {
+    if (subcommand === 'inspect') {
+      const inspectTarget = options.args?.find((arg, index, values) => {
+        const inspectIndex = values.indexOf('inspect');
+        return index > inspectIndex && !arg.startsWith('-');
+      });
+      if (inspectTarget === 'fitness') {
+        return runContractsInspectFitness(cwd, options);
+      }
+
+      const message = 'playbook contracts inspect: unsupported target. Use "playbook contracts inspect fitness".';
+      if (options.format === 'json') {
+        console.log(JSON.stringify({ schemaVersion: '1.0', command: 'contracts inspect', error: message }, null, 2));
+      } else {
+        console.error(message);
+      }
+      return ExitCode.Failure;
+    }
+
+    const message = 'playbook contracts: unsupported subcommand. Use "playbook contracts" or "playbook contracts inspect fitness".';
+    if (options.format === 'json') {
+      console.log(JSON.stringify({ schemaVersion: '1.0', command: 'contracts', error: message }, null, 2));
+    } else {
+      console.error(message);
+    }
+    return ExitCode.Failure;
+  }
+
   const payload = {
     ...buildContractRegistry(cwd),
     schemas: {

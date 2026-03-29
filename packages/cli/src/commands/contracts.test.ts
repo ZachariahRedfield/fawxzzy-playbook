@@ -128,4 +128,58 @@ describe('runContracts', () => {
 
     logSpy.mockRestore();
   });
+
+  it('exposes a read-only fitness contract inspect surface with canonical names and hash', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runContracts(process.cwd(), { format: 'json', quiet: false, args: ['inspect', 'fitness'] });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+    expect(payload.command).toBe('contracts inspect fitness');
+    expect(payload.sourceRepo).toBe('ZachariahRedfield/fawxzzy-fitness');
+    expect(payload.sourceHash).toEqual(expect.any(String));
+    expect((payload.sourceHash as string).length).toBeGreaterThan(10);
+    expect(payload.syncMode).toBe('mirrored');
+    expect(payload.sourcePath).toBe('../fawxzzy-fitness/src/lib/ecosystem/fitness-integration-contract.ts');
+    expect(payload.artifactPath).toBe('.playbook/fitness-contract.json');
+
+    const summary = payload.canonicalPayloadSummary as Record<string, unknown>;
+    expect(summary.signalNames).toEqual([
+      'fitness.session.events',
+      'fitness.recovery.events',
+      'fitness.goal.events'
+    ]);
+    expect(summary.stateSnapshotTypes).toEqual([
+      'fitness.session.snapshot',
+      'fitness.recovery.snapshot',
+      'fitness.goal.snapshot'
+    ]);
+    expect(summary.boundedActionNames).toEqual([
+      'adjust_upcoming_workout_load',
+      'schedule_recovery_block',
+      'revise_weekly_goal_plan'
+    ]);
+    expect(summary.receiptTypes).toEqual([
+      'schedule_adjustment_applied',
+      'recovery_guardrail_applied',
+      'goal_plan_amended'
+    ]);
+
+    logSpy.mockRestore();
+  });
+
+  it('returns a deterministic error for unsupported contracts inspect targets', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runContracts(process.cwd(), { format: 'json', quiet: false, args: ['inspect', 'unknown'] });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+    expect(payload.command).toBe('contracts inspect');
+    expect(payload.error).toContain('unsupported target');
+
+    logSpy.mockRestore();
+  });
+
 });

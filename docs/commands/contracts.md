@@ -9,12 +9,14 @@ pnpm playbook contracts
 pnpm playbook contracts --json
 pnpm playbook contracts --out .playbook/contracts-registry.json
 pnpm playbook contracts --json --out .playbook/contracts-registry.json
+pnpm playbook contracts inspect fitness
+pnpm playbook contracts inspect fitness --json
 ```
 
 ## Flags
 
-- `--json`: print machine-readable registry JSON to stdout.
-- `--out <path>`: write registry JSON to a file.
+- `--json`: print machine-readable registry JSON (registry payload or inspect payload) to stdout.
+- `--out <path>`: write registry JSON to a file (registry mode only).
 
 ## Write behavior
 
@@ -32,6 +34,22 @@ Registry output includes:
 - `schemas.commandOutputs` registrations for additive command-output contracts
 
 Use `pnpm playbook schema contracts --json` to validate output shape.
+
+
+## Fitness contract inspect surface
+
+`pnpm playbook contracts inspect fitness` exposes a read-only inspection view of the consumed Fitness contract and sync boundary.
+
+Text output stays brief-thin and includes:
+
+- `sourceRepo`
+- `sourceRef`
+- `sourcePath`
+- `syncMode`
+- `sourceHash`
+- canonical payload summary (`appIdentity`, `signalNames`, `stateSnapshotTypes`, `boundedActionNames`, `receiptTypes`)
+
+JSON output includes the same boundary fields plus the exact canonical payload, and materializes `.playbook/fitness-contract.json` for full-detail artifact inspection.
 
 ## Replay / consolidation contracts
 
