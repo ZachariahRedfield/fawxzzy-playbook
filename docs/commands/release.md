@@ -35,6 +35,7 @@ pnpm playbook apply --from-plan .playbook/release-plan.json
 `pnpm playbook release sync` is the deterministic release-sync guard. It always computes a fresh release plan, checks drift between expected version/changelog updates and current repo state, and then:
 
 - `--check`: proposal-only guard mode; exits non-zero with actionable tasks when drift exists.
+- `--check` auto-resolves drift when the drift is classified as safe auto-fixable release-governance work; blocked drift still fails closed.
 - `--fix`: explicit drift-fix mode that computes the plan and applies it through the existing `apply --from-plan` mutation boundary.
 - default mode: applies the reviewed `.playbook/release-plan.json` through `playbook apply --from-plan`, then re-checks for drift.
 
@@ -66,6 +67,9 @@ Pattern: One trusted finalization path owns implementation writes and release-go
 
 Failure Mode: Generating a valid release plan but not applying it causes deterministic CI failure.
 Failure Mode: Requiring developers to remember a separate release command creates deterministic CI failures from workflow friction, not implementation defects.
+Rule: Release sync check may auto-apply safe release-governance mutations.
+Pattern: Preflight checks reconcile auto-fixable drift before failing.
+Failure Mode: Treating auto-fixable release drift as fatal creates unnecessary manual steps.
 
 ## Apply compatibility
 

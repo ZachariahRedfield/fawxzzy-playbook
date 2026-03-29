@@ -26,6 +26,13 @@ type ReleaseSyncPayload = {
   drift: Array<{ taskId: string; file: string; reason: string; expected: string; actual: string }>;
 };
 
+type ReleaseSyncReconciliation = {
+  status: 'no_drift' | 'auto_fixable_drift' | 'blocked_drift';
+  taskCount: number;
+  plannedVersions: string[];
+  reason: string;
+};
+
 const DEFAULT_OUT = '.playbook/release-plan.json';
 
 const printReleaseHelp = (): void => {
@@ -95,6 +102,7 @@ export const runRelease = async (
       buildReleasePlan: (repoRoot: string, options?: { baseRef?: string }) => ReleasePlanPayload;
       assessReleaseSync: (repoRoot: string, options?: { baseRef?: string; mode?: 'check' | 'apply' }) => ReleaseSyncPayload;
       summarizePlannedReleaseVersions: (plan: ReleasePlanPayload) => string[];
+      classifyReleaseSyncReconciliation: (assessment: ReleaseSyncPayload) => ReleaseSyncReconciliation;
     };
 
     if (subcommand === 'plan') {
@@ -136,6 +144,7 @@ export const runRelease = async (
     fs.mkdirSync(path.dirname(absoluteOutputPath), { recursive: true });
     fs.writeFileSync(absoluteOutputPath, `${JSON.stringify(initial.plan, null, 2)}\n`, 'utf8');
 
+    let autoAppliedInCheckMode = false;
     const shouldApply = !checkOnly || fixMode;
     if (shouldApply && initial.hasDrift && initial.actionableTasks.length > 0) {
       const applyExitCode = await runApply(cwd, {
@@ -159,7 +168,43 @@ export const runRelease = async (
         return ExitCode.Failure;
       }
     }
-    const payload = checkOnly ? initial : typedEngine.assessReleaseSync(cwd, { baseRef, mode: 'check' });
+    if (checkOnly && initial.hasDrift) {
+      const reconciliation = typedEngine.classifyReleaseSyncReconciliation(initial);
+      if (reconciliation.status === 'auto_fixable_drift') {
+        if (!options.quiet && options.format !== 'json') {
+          const plannedVersionLabel = reconciliation.plannedVersions.length > 0
+            ? reconciliation.plannedVersions.join(', ')
+            : initial.plan.summary.recommendedBump;
+          console.log(`Auto-applying release sync (auto-fixable drift). Planned version(s): ${plannedVersionLabel}`);
+        }
+
+        const applyExitCode = await runApply(cwd, {
+          format: 'json',
+          ci: false,
+          quiet: true,
+          fromPlan: outFile
+        });
+        if (applyExitCode !== ExitCode.Success) {
+          if (options.format === 'json') {
+            console.log(JSON.stringify({
+              schemaVersion: '1.0',
+              command: 'release',
+              subcommand: 'sync',
+              error: 'release sync --check auto-apply failed while applying reviewed release tasks',
+              sync: initial
+            }, null, 2));
+          } else {
+            console.error('release sync --check auto-apply failed while applying reviewed release tasks');
+          }
+          return ExitCode.Failure;
+        }
+        autoAppliedInCheckMode = true;
+      }
+    }
+
+    const payload = checkOnly
+      ? (autoAppliedInCheckMode ? typedEngine.assessReleaseSync(cwd, { baseRef, mode: 'check' }) : initial)
+      : typedEngine.assessReleaseSync(cwd, { baseRef, mode: 'check' });
 
     if (options.format === 'json') {
       console.log(JSON.stringify(payload, null, 2));
@@ -182,6 +227,8 @@ export const runRelease = async (
         } else {
           console.log('Drift detected and apply attempted via `playbook apply --from-plan`.');
         }
+      } else if (checkOnly && autoAppliedInCheckMode) {
+        console.log('Check-only mode auto-applied safe release-governance drift.');
       }
     }
 
