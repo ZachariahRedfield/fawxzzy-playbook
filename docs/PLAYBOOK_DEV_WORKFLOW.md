@@ -149,9 +149,12 @@ Failure Mode: Shipping only the policy file makes release governance look portab
 Rule: Release-plan output is generated runtime evidence; commit version/changelog results, not `.playbook/release-plan.json`.
 Pattern: compute release plan -> mirror versions/changelog -> verify.
 Failure Mode: Treating generated release-plan output as committed source of truth introduces drift between local and CI computation contexts.
-Rule: Always run `pnpm playbook release sync` before push on release-governed branches so plan artifacts and repo state cannot drift.
+Rule: Release-governed state should be reconciled inside the canonical mutation boundary, not as a separate human memory task.
+Rule: Prefer one trusted finalization command (`apply`/`commit`) over separate release-memory steps.
 Pattern: Compute -> Apply -> Verify (never Compute -> Verify).
+Pattern: One trusted finalization path owns implementation writes and release-governance writes together.
 Failure Mode: Generating release plans without applying them causes deterministic CI failures and repeated developer friction.
+Failure Mode: Requiring developers to remember a separate release command creates deterministic CI failures from workflow friction, not implementation defects.
 Rule: Release version must be derived from baseRef, not accumulated from prior local bumps.
 Pattern: Compute from base -> apply once -> stable thereafter.
 Failure Mode: Iterative release sync runs compound version increments and create infinite drift against CI.

@@ -48,15 +48,24 @@ Idempotent managed changelog behavior: once a release entry is already at the to
 
 If CI fails with release drift:
 
+1. Run your canonical mutation command (`pnpm playbook apply ...` or `pnpm playbook commit ...`).
+2. Confirm output includes release-governance reconciliation.
+3. Commit/push the resulting bounded mutations.
+
+Standalone fallback (when you need release-governance-only reconciliation):
+
 1. Run `pnpm playbook release sync`
 2. Commit changes
 3. Push
 
 Rule: Release plans must be applied before merge.
+Rule: Release-governed state should be reconciled inside the canonical mutation boundary, not as a separate human memory task.
 
 Pattern: Plan -> Apply -> Commit -> Verify.
+Pattern: One trusted finalization path owns implementation writes and release-governance writes together.
 
 Failure Mode: Generating a valid release plan but not applying it causes deterministic CI failure.
+Failure Mode: Requiring developers to remember a separate release command creates deterministic CI failures from workflow friction, not implementation defects.
 
 ## Apply compatibility
 
