@@ -129,6 +129,7 @@ CLI command:
 - `pnpm playbook interop requests --json`
 - `pnpm playbook interop receipts --json`
 - `pnpm playbook interop health --json`
+- `pnpm playbook interop followups --json` (reads `.playbook/interop-followups.json`, supports `--type` and `--surface` filters, remains read-only/no execution)
 
 Mock runtime command family:
 
