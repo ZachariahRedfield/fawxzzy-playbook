@@ -42,7 +42,9 @@ The JSON artifact now includes these first-class summary fields in addition to t
 - `kind`
 - `status`
 - `summary`
+- `failureLayer`
 - `primaryFailureClass`
+- `automationEligibility`
 - `failures[]`
 - `crossCuttingDiagnosis[]`
 - `recommendedNextChecks[]`
@@ -63,6 +65,12 @@ Each `failures[]` entry normalizes the failure into stable copy-paste-ready fiel
 
 `test-triage` recognizes and normalizes these deterministic classes:
 
+Failure layers:
+
+- `infra_failure`
+- `governance_failure`
+- `product_failure`
+
 - `snapshot_drift`
 - `missing_expected_finding`
 - `contract_drift`
@@ -72,6 +80,20 @@ Each `failures[]` entry normalizes the failure into stable copy-paste-ready fiel
 - `runtime_failure`
 - `recursive_workspace_failure`
 - existing low-risk repair classes such as `stale_assertion`, `fixture_drift`, and `ordering_drift`
+
+Deterministic infra buckets include:
+
+- `registry_timeout_install_failure`
+- `cache_restore_failure`
+- `composite_action_manifest_parse_failure`
+- `tool_bootstrap_failure`
+
+Deterministic governance buckets include:
+
+- `release_governance_preflight_failure`
+- `contracts_snapshot_drift`
+- `docs_audit_contract_failure`
+- `command_governance_enforcement_failure`
 
 Cross-failure grouping collapses related failures into `crossCuttingDiagnosis[]` when the log suggests one partially integrated feature or shared fixture/contract dependency is producing multiple downstream symptoms.
 The contract keeps `failures[]` deterministic, but consumers should treat entries as normalized coverage rather than semantic ranking; use `primaryFailureClass` for rank-like summary decisions instead of array position.
@@ -101,5 +123,8 @@ It also appends the markdown summary to the GitHub Actions step summary when ava
 Rule: Automate diagnosis first, repair second, merge never.
 
 Pattern: Most repeated CI failures cluster into a small set of deterministic repair classes that can be parsed from test output.
+Pattern: Classify first -> summarize clearly -> route the correct next action.
 
 Failure Mode: Teams waste time manually re-deriving the same failure classification logic instead of encoding it as reusable automation.
+Failure Mode: Treating all red CI runs as the same kind of failure causes repeated wrong fixes and wasted cycles.
+Rule: Infra failures, governance failures, and product failures must be classified separately before remediation is attempted.
