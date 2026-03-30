@@ -170,9 +170,12 @@ describe('runInterop', () => {
     const spy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const exitCode = await runInterop(repo, ['followups'], { format: 'json', quiet: false });
     const payload = JSON.parse(String(spy.mock.calls.at(-1)?.[0])) as {
-      payload: { payload: { followups: Array<Record<string, unknown>> } };
+      payload: { followups: Array<Record<string, unknown>> };
     };
-    const followup = payload.payload.payload.followups[0] as {
+    const followups = payload.payload.followups as Array<Record<string, unknown>>;
+    expect(followups.length).toBeGreaterThan(0);
+
+    const followup = followups[0] as {
       action?: unknown;
       confidence?: { score?: unknown };
       provenanceRefs?: unknown;
