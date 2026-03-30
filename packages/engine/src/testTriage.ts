@@ -127,6 +127,15 @@ const classifyFailure = (joinedBlock: string): FailureClassification => {
     };
   }
   if (/::(error|warning)\s+file=.*line=.*col=.*/i.test(joinedBlock)) {
+    if (/contract drift|schema drift|schema mismatch|contract snapshot|cliSchemas|invalid contract|generated .*schema/i.test(joinedBlock)) {
+      return {
+        kind: 'contract_drift',
+        confidence: 0.93,
+        strategy: 'Treat annotation-reported schema/contract drift as governance-first and reconcile the contract/schema surface before product remediation.',
+        docs: 'Update command contract docs, schema snapshots, and related governance docs together when intentional.',
+        likelyCauses: ['GitHub Actions annotation points to schema/contract drift.', 'Contract artifacts changed without aligned schema/snapshot updates.']
+      };
+    }
     return {
       kind: 'runtime_failure',
       confidence: 0.88,

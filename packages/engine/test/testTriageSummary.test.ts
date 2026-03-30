@@ -47,13 +47,14 @@ describe('test triage failure summary', () => {
 
     expect(artifact.failures).toHaveLength(1);
     expect(artifact.failures[0]).toMatchObject({
-      type: 'runtime_failure',
+      type: 'contract_drift',
       file: 'packages/engine/src/schema/cliSchemas.ts',
       line: 2034,
       column: 17,
       message: 'contract drift in generated test-triage schema'
     });
     expect(artifact.summary).toContain('1 normalized failure');
+    expect(artifact.failureLayer).toBe('governance_failure');
     expect(markdown).toContain('# Playbook Failure Summary');
     expect(markdown).toContain('- Failure layer: governance_failure');
     expect(markdown).toContain('## Recommended next checks');

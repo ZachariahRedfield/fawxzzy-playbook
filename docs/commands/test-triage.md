@@ -121,10 +121,13 @@ It also appends the markdown summary to the GitHub Actions step summary when ava
 - It preserves the governance boundary: diagnosis first, repair planning second, and no blind merge-time mutation.
 
 Rule: Automate diagnosis first, repair second, merge never.
+Rule: Schema or contract drift is always classified as `governance_failure`.
 
 Pattern: Most repeated CI failures cluster into a small set of deterministic repair classes that can be parsed from test output.
 Pattern: Classify first -> summarize clearly -> route the correct next action.
+Pattern: Failure classification must reflect system ownership, not symptom surface.
 
 Failure Mode: Teams waste time manually re-deriving the same failure classification logic instead of encoding it as reusable automation.
 Failure Mode: Treating all red CI runs as the same kind of failure causes repeated wrong fixes and wasted cycles.
+Failure Mode: Treating contract drift as runtime failure misroutes remediation to product layer.
 Rule: Infra failures, governance failures, and product failures must be classified separately before remediation is attempted.
