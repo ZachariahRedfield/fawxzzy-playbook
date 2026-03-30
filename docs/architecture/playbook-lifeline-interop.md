@@ -133,6 +133,13 @@ CLI command:
 
 Followup contract note:
 
+Followup outcome matrix (compiled from updated-truth):
+
+| Outcome class (`canonicalOutcomeSummary.outcome`) | Updated-truth artifact | Expected followup surface(s) |
+| --- | --- | --- |
+| `completed` | `.playbook/interop-updated-truth.json` | `.playbook/memory/candidates.json` (`memory-candidate`), `.playbook/plan.json` (`next-plan-hint`), `.playbook/review-queue.json` (`review-cue`); plus `.playbook/stories.json` (`docs-story-followup`) when the completed action is `revise_weekly_goal_plan` |
+| `blocked` or `failed` | `.playbook/interop-updated-truth.json` | `.playbook/memory/candidates.json` (`memory-candidate`), `.playbook/plan.json` (`next-plan-hint`), `.playbook/review-queue.json` (`review-cue`) |
+
 - Deterministic followup rows include additive enrichment fields (`action`, `confidence`, `provenanceRefs`, `source.requestId`, `source.receiptId`) derived from updated-truth evidence.
 - Rule: Followup artifacts must include provenance and confidence when derived from deterministic updated-truth.
 - Pattern: Use partial object matching in tests for forward-compatible artifact evolution.
