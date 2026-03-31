@@ -121,6 +121,18 @@ Failure mode:
 
 If receipt handling stops at runtime reconciliation, the loop can look complete while truth updates still live in human interpretation.
 
+Rule:
+
+Updated truth should resolve into explicit next-step planning hints, not implicit operator memory.
+
+Pattern:
+
+request -> receipt -> updated truth -> next-plan hint.
+
+Failure mode:
+
+The bounded loop claims to derive next action, but planning still depends on manual interpretation of runtime outcomes.
+
 ## Inspect surfaces
 
 CLI command:
@@ -142,8 +154,8 @@ Status key:
 
 | Outcome class (`canonicalOutcomeSummary.outcome`) | Updated-truth artifact | Followup surface(s) by status |
 | --- | --- | --- |
-| `completed` | `.playbook/interop-updated-truth.json` | Implemented (Lane A landed): `.playbook/review-queue.json` (`review-cue`), `.playbook/memory/candidates.json` (`memory-candidate`). Expected (not yet materialized): `.playbook/plan.json` (`next-plan-hint`); plus `.playbook/stories.json` (`docs-story-followup`) when the completed action is `revise_weekly_goal_plan`. |
-| `blocked` or `failed` | `.playbook/interop-updated-truth.json` | Implemented (Lane A landed): `.playbook/review-queue.json` (`review-cue`), `.playbook/memory/candidates.json` (`memory-candidate`). Expected (not yet materialized): `.playbook/plan.json` (`next-plan-hint`). |
+| `completed` | `.playbook/interop-updated-truth.json` | Implemented (Lane A landed): `.playbook/review-queue.json` (`review-cue`), `.playbook/memory/candidates.json` (`memory-candidate`), `.playbook/interop-plan-hints.json` (`next-plan-hint`) for actionable completed bounded-state outcomes. Expected (not yet materialized): `.playbook/stories.json` (`docs-story-followup`) when the completed action is `revise_weekly_goal_plan`. |
+| `blocked` or `failed` | `.playbook/interop-updated-truth.json` | Implemented (Lane A landed): `.playbook/review-queue.json` (`review-cue`), `.playbook/memory/candidates.json` (`memory-candidate`), `.playbook/interop-plan-hints.json` (`next-plan-hint`) when repeated blocked/failed outcomes imply deterministic plan adjustments. |
 
 - Deterministic followup rows include additive enrichment fields (`action`, `confidence`, `provenanceRefs`, `source.requestId`, `source.receiptId`) derived from updated-truth evidence.
 - Rule: Followup artifacts must include provenance and confidence when derived from deterministic updated-truth.
