@@ -135,10 +135,15 @@ Followup contract note:
 
 Followup outcome matrix (compiled from updated-truth):
 
-| Outcome class (`canonicalOutcomeSummary.outcome`) | Updated-truth artifact | Expected followup surface(s) |
+Status key:
+
+- Implemented (Lane A landed): followup surface is materialized today.
+- Expected (not yet materialized): followup surface remains planned but is not materialized yet.
+
+| Outcome class (`canonicalOutcomeSummary.outcome`) | Updated-truth artifact | Followup surface(s) by status |
 | --- | --- | --- |
-| `completed` | `.playbook/interop-updated-truth.json` | `.playbook/memory/candidates.json` (`memory-candidate`), `.playbook/plan.json` (`next-plan-hint`), `.playbook/review-queue.json` (`review-cue`); plus `.playbook/stories.json` (`docs-story-followup`) when the completed action is `revise_weekly_goal_plan` |
-| `blocked` or `failed` | `.playbook/interop-updated-truth.json` | `.playbook/memory/candidates.json` (`memory-candidate`), `.playbook/plan.json` (`next-plan-hint`), `.playbook/review-queue.json` (`review-cue`) |
+| `completed` | `.playbook/interop-updated-truth.json` | Implemented (Lane A landed): `.playbook/review-queue.json` (`review-cue`). Expected (not yet materialized): `.playbook/memory/candidates.json` (`memory-candidate`), `.playbook/plan.json` (`next-plan-hint`); plus `.playbook/stories.json` (`docs-story-followup`) when the completed action is `revise_weekly_goal_plan`. |
+| `blocked` or `failed` | `.playbook/interop-updated-truth.json` | Implemented (Lane A landed): `.playbook/review-queue.json` (`review-cue`). Expected (not yet materialized): `.playbook/memory/candidates.json` (`memory-candidate`), `.playbook/plan.json` (`next-plan-hint`). |
 
 - Deterministic followup rows include additive enrichment fields (`action`, `confidence`, `provenanceRefs`, `source.requestId`, `source.receiptId`) derived from updated-truth evidence.
 - Rule: Followup artifacts must include provenance and confidence when derived from deterministic updated-truth.
