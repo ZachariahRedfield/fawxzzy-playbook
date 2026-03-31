@@ -312,6 +312,58 @@ describe('buildReviewQueue', () => {
     expect(queue.entries.some((entry) => entry.path === 'docs/architecture/decisions/decision-malformed.md')).toBe(false);
   });
 
+  it('routes interop review-cue followups into deterministic evidence-triggered review queue entries', () => {
+    const repoRoot = createTempRepo();
+    writeJson(repoRoot, '.playbook/interop-followups.json', {
+      schemaVersion: '1.0',
+      kind: 'interop-followups-artifact',
+      command: 'interop followups',
+      reviewOnly: true,
+      authority: { mutation: 'read-only', promotion: 'review-required' },
+      sourceArtifact: {
+        path: '.playbook/interop-updated-truth.json',
+        contractSourceHash: 'hash',
+        contractSourceRef: 'main',
+        contractSourcePath: 'fitness/contract.ts'
+      },
+      followups: [
+        {
+          followupId: 'followup-receipt-1-review',
+          source: { receiptId: 'receipt-1', requestId: 'interop-1' },
+          action: 'queue-review-cue',
+          targetSurface: '.playbook/review-queue.json',
+          followupType: 'review-cue',
+          provenanceRefs: ['receipt:receipt-1'],
+          nextActionText: 'Review policy shift.',
+          confidence: { score: 0.82, rationale: 'Evidence' },
+          reviewQueueEntry: {
+            targetKind: 'knowledge',
+            targetId: 'interop-request:interop-1',
+            triggerReasonCode: 'interop-policy-assumption-shift',
+            triggerEvidenceRefs: ['receipt:receipt-1', 'hint:policy-shift'],
+            triggerStrength: 82,
+            recommendedAction: 'revise'
+          }
+        }
+      ]
+    });
+
+    const queue = buildReviewQueue(repoRoot, { generatedAt: '2026-03-24T00:00:00.000Z' });
+    expect(queue.entries).toContainEqual(
+      expect.objectContaining({
+        targetKind: 'knowledge',
+        targetId: 'interop-request:interop-1',
+        sourceSurface: 'interop-followups',
+        triggerType: 'evidence',
+        triggerSource: 'interop-followup',
+        triggerReasonCode: 'interop-policy-assumption-shift',
+        reasonCode: 'interop-followup-review-cue',
+        recommendedAction: 'revise',
+        triggerStrength: 82
+      })
+    );
+  });
+
   it('remains proposal-only with read-only authority', () => {
     const repoRoot = createTempRepo();
     const queue = buildReviewQueue(repoRoot, {
@@ -672,6 +724,106 @@ describe('buildReviewQueue', () => {
     expect(entry?.triggerType).toBe('cadence');
     expect(entry?.reasonCode).toBe('governed-doc-staleness-window');
     expect(entry?.reviewPriority).toBe('low');
+  });
+
+  it('preserves receipt suppression/reopen semantics for interop evidence cues', () => {
+    const repoRoot = createTempRepo();
+    writeJson(repoRoot, '.playbook/interop-followups.json', {
+      schemaVersion: '1.0',
+      kind: 'interop-followups-artifact',
+      command: 'interop followups',
+      reviewOnly: true,
+      authority: { mutation: 'read-only', promotion: 'review-required' },
+      sourceArtifact: {
+        path: '.playbook/interop-updated-truth.json',
+        contractSourceHash: 'hash',
+        contractSourceRef: 'main',
+        contractSourcePath: 'fitness/contract.ts'
+      },
+      followups: [
+        {
+          followupId: 'followup-receipt-2-review',
+          source: { receiptId: 'receipt-2', requestId: 'interop-2' },
+          action: 'queue-review-cue',
+          targetSurface: '.playbook/review-queue.json',
+          followupType: 'review-cue',
+          provenanceRefs: ['receipt:receipt-2'],
+          nextActionText: 'Review blocked outcome.',
+          confidence: { score: 0.82, rationale: 'Evidence' },
+          reviewQueueEntry: {
+            targetKind: 'knowledge',
+            targetId: 'interop-request:interop-2',
+            triggerReasonCode: 'interop-runtime-outcome-repeat',
+            triggerEvidenceRefs: ['receipt:receipt-2'],
+            triggerStrength: 70,
+            recommendedAction: 'revise'
+          }
+        }
+      ]
+    });
+
+    const first = buildReviewQueue(repoRoot, { generatedAt: '2026-03-24T00:00:00.000Z' });
+    const entry = first.entries.find((candidate) => candidate.targetId === 'interop-request:interop-2');
+    expect(entry).toBeDefined();
+
+    writeJson(repoRoot, '.playbook/knowledge-review-receipts.json', {
+      schemaVersion: '1.0',
+      kind: 'playbook-knowledge-review-receipts',
+      generatedAt: '2026-03-24T01:00:00.000Z',
+      receipts: [
+        {
+          receiptId: 'interop-reaffirm-1',
+          queueEntryId: entry?.queueEntryId,
+          targetKind: 'knowledge',
+          targetId: 'interop-request:interop-2',
+          sourceSurface: 'interop-followups',
+          reasonCode: 'interop-followup-review-cue',
+          decision: 'reaffirm',
+          evidenceRefs: ['trigger-strength:70'],
+          decidedAt: '2026-03-24T01:00:00.000Z'
+        }
+      ]
+    });
+
+    const suppressed = buildReviewQueue(repoRoot, { generatedAt: '2026-03-25T00:00:00.000Z' });
+    expect(suppressed.entries.some((candidate) => candidate.targetId === 'interop-request:interop-2')).toBe(false);
+
+    writeJson(repoRoot, '.playbook/interop-followups.json', {
+      schemaVersion: '1.0',
+      kind: 'interop-followups-artifact',
+      command: 'interop followups',
+      reviewOnly: true,
+      authority: { mutation: 'read-only', promotion: 'review-required' },
+      sourceArtifact: {
+        path: '.playbook/interop-updated-truth.json',
+        contractSourceHash: 'hash',
+        contractSourceRef: 'main',
+        contractSourcePath: 'fitness/contract.ts'
+      },
+      followups: [
+        {
+          followupId: 'followup-receipt-2-review',
+          source: { receiptId: 'receipt-2', requestId: 'interop-2' },
+          action: 'queue-review-cue',
+          targetSurface: '.playbook/review-queue.json',
+          followupType: 'review-cue',
+          provenanceRefs: ['receipt:receipt-2'],
+          nextActionText: 'Review blocked outcome.',
+          confidence: { score: 0.9, rationale: 'Evidence' },
+          reviewQueueEntry: {
+            targetKind: 'knowledge',
+            targetId: 'interop-request:interop-2',
+            triggerReasonCode: 'interop-runtime-outcome-repeat',
+            triggerEvidenceRefs: ['receipt:receipt-2'],
+            triggerStrength: 90,
+            recommendedAction: 'revise'
+          }
+        }
+      ]
+    });
+
+    const reopened = buildReviewQueue(repoRoot, { generatedAt: '2026-03-25T00:00:00.000Z' });
+    expect(reopened.entries.some((candidate) => candidate.targetId === 'interop-request:interop-2')).toBe(true);
   });
 
   it('reopens reaffirmed entry when stronger evidence appears', () => {

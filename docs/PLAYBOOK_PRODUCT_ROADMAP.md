@@ -36,8 +36,10 @@ Rule: Roadmap sequencing must preserve CLI-first, offline-capable, private-first
 Failure Mode: Business docs drifting away from runtime truth.
 Recent implementation note: `pnpm playbook interop emit-fitness-plan --from-draft .playbook/interop-request-draft.json` now closes the explicit bounded interop loop by consuming only the canonical draft artifact, re-validating canonical Fitness metadata, and reusing the existing bounded emit runtime path without widening runtime authority.
 Rule: AI proposals may be compiled into bounded request drafts, but may not execute them directly.
-Pattern: AI proposal -> request draft -> explicit interop emit -> receipt -> updated truth.
+Rule: Updated truth should feed existing governed review surfaces before inventing new workflow silos.
+Pattern: AI proposal -> request draft -> explicit interop emit -> receipt -> updated truth -> review cue.
 Failure Mode: Manual proposal-to-request translation recreates hidden session state and weakens auditability.
+Failure Mode: The loop claims to derive next action, but that action remains trapped in a followup artifact no operator workflow actually consumes.
 
 
 ## Architecture doctrine status

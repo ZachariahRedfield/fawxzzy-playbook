@@ -29,6 +29,15 @@ export type InteropFollowupRow = {
     score: number;
     rationale: string;
   };
+  reviewQueueEntry?: {
+    targetKind: 'knowledge' | 'doc';
+    targetId?: string;
+    path?: string;
+    triggerReasonCode: 'interop-policy-assumption-shift' | 'interop-runtime-outcome-repeat' | 'interop-domain-state-change';
+    triggerEvidenceRefs: string[];
+    triggerStrength: number;
+    recommendedAction?: 'reaffirm' | 'revise' | 'supersede';
+  };
 };
 
 export type InteropFollowupsArtifact = {
@@ -48,6 +57,8 @@ export type InteropFollowupsArtifact = {
   };
   followups: InteropFollowupRow[];
 };
+
+type InteropReviewQueueEntry = NonNullable<InteropFollowupRow['reviewQueueEntry']>;
 
 const deterministicStringify = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`;
 const uniqueSorted = (values: string[]): string[] => [...new Set(values)].sort((a, b) => a.localeCompare(b));
@@ -80,6 +91,39 @@ const confidenceFor = (type: InteropFollowupType, outcome: 'completed' | 'blocke
 
 const docsStoryEvidence = (update: InteropUpdatedTruthArtifact['updates'][number]): boolean =>
   update.canonicalOutcomeSummary.outcome === 'completed' && update.action === 'revise_weekly_goal_plan';
+
+const toTriggerStrength = (confidenceScore: number): number => Math.max(0, Math.min(100, Math.round(confidenceScore * 100)));
+
+const deriveReviewReasonCode = (
+  update: InteropUpdatedTruthArtifact['updates'][number]
+): InteropReviewQueueEntry['triggerReasonCode'] => {
+  if (update.canonicalOutcomeSummary.outcome === 'blocked' || update.canonicalOutcomeSummary.outcome === 'failed') {
+    return 'interop-runtime-outcome-repeat';
+  }
+
+  if (
+    update.nextActionHints.some((hint) => hint.toLowerCase().includes('assumption')) ||
+    update.nextActionHints.some((hint) => hint.toLowerCase().includes('policy')) ||
+    update.canonicalOutcomeSummary.detail.toLowerCase().includes('assumption') ||
+    update.canonicalOutcomeSummary.detail.toLowerCase().includes('policy')
+  ) {
+    return 'interop-policy-assumption-shift';
+  }
+
+  return 'interop-domain-state-change';
+};
+
+const deriveReviewRecommendedAction = (
+  reasonCode: InteropReviewQueueEntry['triggerReasonCode']
+): InteropReviewQueueEntry['recommendedAction'] =>
+  reasonCode === 'interop-runtime-outcome-repeat' || reasonCode === 'interop-policy-assumption-shift' ? 'revise' : 'reaffirm';
+
+const deriveReviewTarget = (update: InteropUpdatedTruthArtifact['updates'][number]): Pick<InteropReviewQueueEntry, 'targetKind' | 'path' | 'targetId'> => {
+  if (update.action === 'revise_weekly_goal_plan') {
+    return { targetKind: 'doc', path: 'docs/PLAYBOOK_PRODUCT_ROADMAP.md' };
+  }
+  return { targetKind: 'knowledge', targetId: `interop-request:${update.requestId}` };
+};
 
 const buildFollowupRows = (updatedTruth: InteropUpdatedTruthArtifact): InteropFollowupRow[] => {
   const rows: InteropFollowupRow[] = [];
@@ -115,6 +159,15 @@ const buildFollowupRows = (updatedTruth: InteropUpdatedTruthArtifact): InteropFo
       confidence: confidenceFor('next-plan-hint', outcome)
     });
 
+    const reviewConfidence = confidenceFor('review-cue', outcome);
+    const reviewReasonCode = deriveReviewReasonCode(update);
+    const reviewEvidenceRefs = uniqueSorted([
+      ...sharedProvenance,
+      ...update.nextActionHints.map((hint) => `hint:${hint}`),
+      `outcome:${update.canonicalOutcomeSummary.outcome}`,
+      `action:${update.action}`,
+      `detail:${update.canonicalOutcomeSummary.detail}`
+    ]);
     rows.push({
       followupId: `followup-${update.receiptId}-review`,
       source: { receiptId: update.receiptId, requestId: update.requestId },
@@ -123,7 +176,14 @@ const buildFollowupRows = (updatedTruth: InteropUpdatedTruthArtifact): InteropFo
       followupType: 'review-cue',
       provenanceRefs: sharedProvenance,
       nextActionText: `Attach receipt ${update.receiptId} to review queue evidence so operator decision remains explicit before any downstream action.`,
-      confidence: confidenceFor('review-cue', outcome)
+      confidence: reviewConfidence,
+      reviewQueueEntry: {
+        ...deriveReviewTarget(update),
+        triggerReasonCode: reviewReasonCode,
+        triggerEvidenceRefs: reviewEvidenceRefs,
+        triggerStrength: toTriggerStrength(reviewConfidence.score),
+        recommendedAction: deriveReviewRecommendedAction(reviewReasonCode)
+      }
     });
 
     if (docsStoryEvidence(update)) {

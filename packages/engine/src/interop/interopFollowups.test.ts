@@ -83,6 +83,25 @@ describe('compileInteropFollowups', () => {
         },
         memoryProvenanceRefs: ['.playbook/lifeline-interop-runtime.json', 'request:interop-0002'],
         nextActionHints: ['Continue with bounded next remediation action only through explicit request emission.']
+      },
+      {
+        receiptId: 'receipt-interop-0003',
+        requestId: 'interop-0003',
+        action: 'adjust_upcoming_workout_load',
+        receiptType: 'schedule_adjustment_applied',
+        sourceHash: 'fitness-contract-hash',
+        canonicalOutcomeSummary: {
+          outcome: 'blocked',
+          detail: 'Blocked by policy guard.',
+          completedAt: '2026-03-30T00:00:00.000Z'
+        },
+        boundedStateDelta: {
+          requestState: 'blocked',
+          outputArtifactPath: null,
+          outputSha256: null
+        },
+        memoryProvenanceRefs: ['.playbook/lifeline-interop-runtime.json', 'request:interop-0003'],
+        nextActionHints: ['Review policy assumptions before retrying.']
       }
     ]);
 
@@ -97,6 +116,25 @@ describe('compileInteropFollowups', () => {
     expect(first.followups.authority.mutation).toBe('read-only');
     expect(first.followups.followups.some((entry) => entry.followupType === 'docs-story-followup')).toBe(true);
     expect(first.followups.followups.every((entry) => entry.provenanceRefs.length > 0)).toBe(true);
+    expect(
+      first.followups.followups.find((entry) => entry.followupId === 'followup-receipt-interop-0002-review')?.reviewQueueEntry
+    ).toEqual(
+      expect.objectContaining({
+        targetKind: 'doc',
+        path: 'docs/PLAYBOOK_PRODUCT_ROADMAP.md',
+        triggerReasonCode: 'interop-domain-state-change'
+      })
+    );
+    expect(
+      first.followups.followups.find((entry) => entry.followupId === 'followup-receipt-interop-0003-review')?.reviewQueueEntry
+    ).toEqual(
+      expect.objectContaining({
+        targetKind: 'knowledge',
+        targetId: 'interop-request:interop-0003',
+        triggerReasonCode: 'interop-runtime-outcome-repeat',
+        recommendedAction: 'revise'
+      })
+    );
     expect(firstText).toBe(secondText);
   });
 

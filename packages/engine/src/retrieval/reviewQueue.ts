@@ -24,6 +24,7 @@ const ARCHITECTURE_DECISIONS_DIR = 'docs/architecture/decisions' as const;
 const MEMORY_CANDIDATES_PATH = '.playbook/memory/candidates.json' as const;
 const MEMORY_COMPACTION_REVIEW_PATH = '.playbook/memory/compaction-review.json' as const;
 const MEMORY_LIFECYCLE_CANDIDATES_PATH = '.playbook/memory/lifecycle-candidates.json' as const;
+const INTEROP_FOLLOWUPS_PATH = '.playbook/interop-followups.json' as const;
 
 const TRIGGER_STRENGTH_EVIDENCE_PREFIX = 'trigger-strength:' as const;
 
@@ -197,6 +198,56 @@ const parseLifecycleCandidatesArtifact = (repoRoot: string): Partial<LifecycleCa
   return readJsonFile<Partial<LifecycleCandidatesArtifact>>(candidatesPath);
 };
 
+const parseInteropReviewCueEntries = (repoRoot: string): InteropReviewCueEntry[] => {
+  const followupsPath = path.join(repoRoot, INTEROP_FOLLOWUPS_PATH);
+  if (!fs.existsSync(followupsPath)) {
+    return [];
+  }
+
+  const parsed = readJsonFile<{ followups?: unknown[] }>(followupsPath);
+  const followups = Array.isArray(parsed.followups) ? parsed.followups : [];
+  const reviewCues: InteropReviewCueEntry[] = [];
+
+  for (const rawFollowup of followups) {
+    if (!isRecord(rawFollowup)) continue;
+    if (rawFollowup.followupType !== 'review-cue' || rawFollowup.action !== 'queue-review-cue') continue;
+    if (typeof rawFollowup.followupId !== 'string' || !isRecord(rawFollowup.source) || !isRecord(rawFollowup.reviewQueueEntry)) continue;
+    if (typeof rawFollowup.source.receiptId !== 'string' || typeof rawFollowup.source.requestId !== 'string') continue;
+
+    const queueEntry = rawFollowup.reviewQueueEntry;
+    const isInteropReasonCode = (
+      value: unknown
+    ): value is InteropReviewCueEntry['reviewQueueEntry']['triggerReasonCode'] =>
+      value === 'interop-policy-assumption-shift' || value === 'interop-runtime-outcome-repeat' || value === 'interop-domain-state-change';
+    if (
+      (queueEntry.targetKind !== 'knowledge' && queueEntry.targetKind !== 'doc') ||
+      !isInteropReasonCode(queueEntry.triggerReasonCode) ||
+      !Array.isArray(queueEntry.triggerEvidenceRefs) ||
+      typeof queueEntry.triggerStrength !== 'number'
+    ) {
+      continue;
+    }
+
+    reviewCues.push({
+      followupId: rawFollowup.followupId,
+      source: { receiptId: rawFollowup.source.receiptId, requestId: rawFollowup.source.requestId },
+      reviewQueueEntry: {
+        targetKind: queueEntry.targetKind,
+        ...(typeof queueEntry.targetId === 'string' ? { targetId: queueEntry.targetId } : {}),
+        ...(typeof queueEntry.path === 'string' ? { path: queueEntry.path } : {}),
+        triggerReasonCode: queueEntry.triggerReasonCode,
+        triggerEvidenceRefs: queueEntry.triggerEvidenceRefs.filter((value): value is string => typeof value === 'string' && value.length > 0),
+        triggerStrength: normalizeTriggerStrength(queueEntry.triggerStrength),
+        ...(queueEntry.recommendedAction === 'reaffirm' || queueEntry.recommendedAction === 'revise' || queueEntry.recommendedAction === 'supersede'
+          ? { recommendedAction: queueEntry.recommendedAction }
+          : {})
+      }
+    });
+  }
+
+  return reviewCues.sort((left, right) => left.followupId.localeCompare(right.followupId));
+};
+
 type ArchitectureDecisionTriggerMetadata = {
   triggerId: string;
   condition: string;
@@ -206,6 +257,23 @@ type ArchitectureDecisionTriggerMetadata = {
   evidenceRefs: string[];
   recommendedAction: ReviewRecommendedAction;
   strength?: number;
+};
+
+type InteropReviewCueEntry = {
+  followupId: string;
+  source: {
+    receiptId: string;
+    requestId: string;
+  };
+  reviewQueueEntry: {
+    targetKind: ReviewTargetKind;
+    targetId?: string;
+    path?: string;
+    triggerReasonCode: 'interop-policy-assumption-shift' | 'interop-runtime-outcome-repeat' | 'interop-domain-state-change';
+    triggerEvidenceRefs: string[];
+    triggerStrength: number;
+    recommendedAction?: ReviewRecommendedAction;
+  };
 };
 
 const REVIEW_TRIGGERS_SECTION_PATTERN =
@@ -729,6 +797,31 @@ export const buildReviewQueue = (repoRoot: string, options: BuildReviewQueueOpti
       triggerEvidenceRefs,
       triggerStrength,
       recommendedAction: trigger.recommendedAction,
+      reviewPriority: priorityFromTriggerStrength(triggerStrength),
+      generatedAt
+    }));
+  }
+
+  for (const cue of parseInteropReviewCueEntries(repoRoot)) {
+    const triggerEvidenceRefs = [...cue.reviewQueueEntry.triggerEvidenceRefs, INTEROP_FOLLOWUPS_PATH, `followup:${cue.followupId}`]
+      .filter((value, index, all) => all.indexOf(value) === index)
+      .sort((a, b) => a.localeCompare(b));
+    const triggerStrength = normalizeTriggerStrength(cue.reviewQueueEntry.triggerStrength);
+
+    entries.push(withQueueEntryId({
+      targetKind: cue.reviewQueueEntry.targetKind,
+      cadenceKind: cue.reviewQueueEntry.targetKind === 'doc' ? 'doc' : 'knowledge',
+      ...(cue.reviewQueueEntry.targetId ? { targetId: cue.reviewQueueEntry.targetId } : {}),
+      ...(cue.reviewQueueEntry.path ? { path: cue.reviewQueueEntry.path } : {}),
+      sourceSurface: 'interop-followups',
+      reasonCode: 'interop-followup-review-cue',
+      evidenceRefs: [...triggerEvidenceRefs, toTriggerStrengthEvidence(triggerStrength)].sort((a, b) => a.localeCompare(b)),
+      triggerType: 'evidence',
+      triggerSource: 'interop-followup',
+      triggerReasonCode: cue.reviewQueueEntry.triggerReasonCode,
+      triggerEvidenceRefs,
+      triggerStrength,
+      recommendedAction: cue.reviewQueueEntry.recommendedAction ?? 'revise',
       reviewPriority: priorityFromTriggerStrength(triggerStrength),
       generatedAt
     }));
