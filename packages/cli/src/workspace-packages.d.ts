@@ -126,6 +126,9 @@ declare module "@zachariahredfield/playbook-engine" {
   export const generateRepositoryGraph: (...args: any[]) => any;
   export const buildModuleContextDigests: (...args: any[]) => any;
   export const writeModuleContextDigests: (...args: any[]) => any;
+  export const materializeRuntimeManifestsArtifact: (...args: any[]) => any;
+  export const RUNTIME_MANIFESTS_RELATIVE_PATH: '.playbook/runtime-manifests.json';
+  export type AggregatedRuntimeManifestEntry = any;
   export const generateCompactionCandidateArtifact: (...args: any[]) => any;
   export const extractCompactionCandidates: (...args: any[]) => any[];
   export const bucketCompactionCandidates: (...args: any[]) => any[];

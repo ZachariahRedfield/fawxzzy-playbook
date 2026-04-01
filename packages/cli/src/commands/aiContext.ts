@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { materializeRuntimeManifestsArtifact, RUNTIME_MANIFESTS_RELATIVE_PATH, type AggregatedRuntimeManifestEntry } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 import { listRegisteredCommands } from './index.js';
 
@@ -24,6 +25,10 @@ type AiContextResult = {
     cycleHistory: '.playbook/cycle-history.json';
     improvementCandidates: '.playbook/improvement-candidates.json';
     prReview: '.playbook/pr-review.json';
+  };
+  runtimeManifests: {
+    artifact: '.playbook/runtime-manifests.json';
+    manifests: AggregatedRuntimeManifestEntry[];
   };
   operatingLadder: {
     preferredCommandOrder: [
@@ -65,6 +70,7 @@ type AiContextResult = {
 
 const buildAiContextResult = (cwd: string): AiContextResult => {
   const indexFile = path.join(cwd, '.playbook', 'repo-index.json');
+  const runtimeManifestAggregate = materializeRuntimeManifestsArtifact(cwd);
 
   return {
     schemaVersion: '1.0',
@@ -87,6 +93,10 @@ const buildAiContextResult = (cwd: string): AiContextResult => {
       cycleHistory: '.playbook/cycle-history.json',
       improvementCandidates: '.playbook/improvement-candidates.json',
     prReview: '.playbook/pr-review.json'
+    },
+    runtimeManifests: {
+      artifact: RUNTIME_MANIFESTS_RELATIVE_PATH,
+      manifests: runtimeManifestAggregate.manifests
     },
     operatingLadder: {
       preferredCommandOrder: [
@@ -160,6 +170,10 @@ const printText = (result: AiContextResult): void => {
   console.log(`Cycle history: ${result.controlPlaneArtifacts.cycleHistory}`);
   console.log(`Improvement candidates: ${result.controlPlaneArtifacts.improvementCandidates}`);
   console.log(`PR review: ${result.controlPlaneArtifacts.prReview}`);
+  console.log('');
+  console.log('Runtime Manifests');
+  console.log(`Artifact: ${result.runtimeManifests.artifact}`);
+  console.log(`Entries: ${result.runtimeManifests.manifests.length}`);
   console.log('');
   console.log('AI Operating Ladder');
   console.log(result.operatingLadder.preferredCommandOrder.join(' -> '));

@@ -1948,6 +1948,7 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
       'repo',
       'repositoryIntelligence',
       'controlPlaneArtifacts',
+      'runtimeManifests',
       'operatingLadder',
       'productCommands',
       'guidance'
@@ -1992,6 +1993,56 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
           cycleHistory: { const: '.playbook/cycle-history.json' },
           improvementCandidates: { const: '.playbook/improvement-candidates.json' },
           prReview: { const: '.playbook/pr-review.json' }
+        }
+      },
+      runtimeManifests: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['artifact', 'manifests'],
+        properties: {
+          artifact: { const: '.playbook/runtime-manifests.json' },
+          manifests: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: [
+                'subappPath',
+                'subappId',
+                'app_identity',
+                'runtime_role',
+                'runtime_status',
+                'signal_groups',
+                'state_snapshot_types',
+                'bounded_action_families',
+                'receipt_families',
+                'integration_seams',
+                'provenance'
+              ],
+              properties: {
+                subappPath: { type: 'string' },
+                subappId: { type: 'string' },
+                app_identity: {},
+                runtime_role: {},
+                runtime_status: {},
+                signal_groups: {},
+                state_snapshot_types: {},
+                bounded_action_families: {},
+                receipt_families: {},
+                integration_seams: {},
+                external_truth_contract_ref: {},
+                provenance: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['sourcePath', 'sourceHash'],
+                  properties: {
+                    sourcePath: { type: 'string' },
+                    sourceHash: { type: 'string' }
+                  }
+                }
+              }
+            }
+          }
         }
       },
       operatingLadder: {
