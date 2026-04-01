@@ -124,6 +124,17 @@ const ARCHITECTURE_DECISION_REQUIRED_SECTIONS = [
 const SUBAPP_TRUTH_PACK_BASE_PATHS = ['subapps', 'examples/subapps'] as const;
 const SUBAPP_TRUTH_PACK_REQUIRED_FILES = ['playbook/context.json', 'docs/architecture.md', 'docs/roadmap.md'] as const;
 const SUBAPP_TRUTH_PACK_OPTIONAL_JSON_FILES = ['playbook/app-integration.json'] as const;
+const SUBAPP_INTEGRATED_RUNTIME_MANIFEST_PATH = 'playbook/runtime-manifest.json' as const;
+const SUBAPP_RUNTIME_MANIFEST_REQUIRED_FIELDS = [
+  'app_identity',
+  'runtime_role',
+  'runtime_status',
+  'signal_groups',
+  'state_snapshot_types',
+  'bounded_action_families',
+  'receipt_families',
+  'integration_seams'
+] as const;
 const SUBAPP_CONTEXT_REQUIRED_FIELDS = [
   'repo_id',
   'repo_name',
@@ -212,6 +223,30 @@ const readJsonIfExists = (repoRoot: string, relativePath: string): unknown | nul
   } catch {
     return undefined;
   }
+};
+
+
+const isIntegratedSubapp = (parsedIntegration: unknown): boolean => {
+  if (!parsedIntegration || typeof parsedIntegration !== 'object' || Array.isArray(parsedIntegration)) {
+    return false;
+  }
+
+  const status = (parsedIntegration as Record<string, unknown>).status;
+  return typeof status === 'string' && status.trim().toLowerCase() === 'integrated';
+};
+
+const requiresFitnessContractReference = (parsedIntegration: unknown): boolean => {
+  if (!parsedIntegration || typeof parsedIntegration !== 'object' || Array.isArray(parsedIntegration)) {
+    return false;
+  }
+
+  const externalTruth = (parsedIntegration as Record<string, unknown>).external_truth;
+  if (!externalTruth || typeof externalTruth !== 'object' || Array.isArray(externalTruth)) {
+    return false;
+  }
+
+  const source = (externalTruth as Record<string, unknown>).source;
+  return typeof source === 'string' && source.trim().toLowerCase() === 'fitness-contract';
 };
 
 const listSubappTruthPackRoots = (repoRoot: string): string[] => {
@@ -512,6 +547,9 @@ export const runDocsAudit = (repoRoot: string): DocsAuditResult => {
       }
     }
 
+    const integrationPath = `${subappRoot}/playbook/app-integration.json`;
+    const parsedIntegration = readJsonIfExists(repoRoot, integrationPath);
+
     for (const optionalJsonRelativePath of SUBAPP_TRUTH_PACK_OPTIONAL_JSON_FILES) {
       const optionalJsonPath = `${subappRoot}/${optionalJsonRelativePath}`;
       const parsedJson = readJsonIfExists(repoRoot, optionalJsonPath);
@@ -521,6 +559,58 @@ export const runDocsAudit = (repoRoot: string): DocsAuditResult => {
           level: 'error',
           message: `Subapp truth pack optional artifact must be valid JSON when present: ${optionalJsonRelativePath}.`,
           path: optionalJsonPath
+        });
+      }
+    }
+
+    if (isIntegratedSubapp(parsedIntegration)) {
+      const runtimeManifestPath = `${subappRoot}/${SUBAPP_INTEGRATED_RUNTIME_MANIFEST_PATH}`;
+      const parsedRuntimeManifest = readJsonIfExists(repoRoot, runtimeManifestPath);
+
+      if (parsedRuntimeManifest === null) {
+        findings.push({
+          ruleId: 'docs.repo-truth-pack.runtime-manifest-missing',
+          level: 'error',
+          message: 'Integrated subapp truth pack is missing required runtime manifest: playbook/runtime-manifest.json.',
+          path: runtimeManifestPath,
+          suggestedDestination: 'docs/repo-truth-pack.md'
+        });
+      } else if (parsedRuntimeManifest === undefined) {
+        findings.push({
+          ruleId: 'docs.repo-truth-pack.runtime-manifest-invalid-json',
+          level: 'error',
+          message: 'Integrated subapp runtime manifest must be valid JSON.',
+          path: runtimeManifestPath
+        });
+      } else if (typeof parsedRuntimeManifest === 'object' && !Array.isArray(parsedRuntimeManifest)) {
+        const runtimeManifestRecord = parsedRuntimeManifest as Record<string, unknown>;
+        const missingRuntimeFields = SUBAPP_RUNTIME_MANIFEST_REQUIRED_FIELDS.filter((field) => !(field in runtimeManifestRecord));
+        if (missingRuntimeFields.length > 0) {
+          findings.push({
+            ruleId: 'docs.repo-truth-pack.runtime-manifest-missing-fields',
+            level: 'error',
+            message: `Integrated subapp runtime manifest is missing required fields: ${missingRuntimeFields.join(', ')}.`,
+            path: runtimeManifestPath
+          });
+        }
+
+        if (requiresFitnessContractReference(parsedIntegration)) {
+          const externalContractRef = runtimeManifestRecord.external_truth_contract_ref;
+          if (typeof externalContractRef !== 'string' || externalContractRef.trim().length === 0) {
+            findings.push({
+              ruleId: 'docs.repo-truth-pack.runtime-manifest-fitness-contract-ref-missing',
+              level: 'error',
+              message: 'Fitness-aligned integrated subapps must define runtime_manifest.external_truth_contract_ref pointing to consumed contract or exact mirror.',
+              path: runtimeManifestPath
+            });
+          }
+        }
+      } else {
+        findings.push({
+          ruleId: 'docs.repo-truth-pack.runtime-manifest-invalid-shape',
+          level: 'error',
+          message: 'Integrated subapp runtime manifest must be a JSON object.',
+          path: runtimeManifestPath
         });
       }
     }

@@ -281,6 +281,59 @@ describe('runDocs', () => {
     );
   });
 
+
+  it('reports missing runtime manifest for integrated subapps', async () => {
+    const repo = createFixtureRepo();
+    fs.mkdirSync(path.join(repo, 'subapps', 'proving-ground-app', 'playbook'), { recursive: true });
+    fs.mkdirSync(path.join(repo, 'subapps', 'proving-ground-app', 'docs', 'adr'), { recursive: true });
+    fs.writeFileSync(
+      path.join(repo, 'subapps', 'proving-ground-app', 'playbook', 'context.json'),
+      JSON.stringify(
+        {
+          repo_id: 'proving-ground-app',
+          repo_name: 'Proving Ground App',
+          mission: 'Validate lightweight repository truth pack contracts.',
+          current_phase: 'validation',
+          current_focus: 'Document and enforce truth pack structure.',
+          invariants: ['Truth pack is committed and human-readable.'],
+          dependencies: ['@fawxzzy/playbook'],
+          integration_surfaces: ['webhook:playbook-ingest'],
+          next_milestones: ['Integrate truth-pack ingestion adapter.'],
+          open_questions: ['Should cadence include weekly touchpoints?'],
+          last_verified_timestamp: '2026-03-27T00:00:00Z'
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    fs.writeFileSync(path.join(repo, 'subapps', 'proving-ground-app', 'docs', 'architecture.md'), '# Architecture\n', 'utf8');
+    fs.writeFileSync(path.join(repo, 'subapps', 'proving-ground-app', 'docs', 'roadmap.md'), '# Roadmap\n', 'utf8');
+    fs.writeFileSync(path.join(repo, 'subapps', 'proving-ground-app', 'docs', 'adr', 'README.md'), '# ADR\n', 'utf8');
+    fs.writeFileSync(
+      path.join(repo, 'subapps', 'proving-ground-app', 'playbook', 'app-integration.json'),
+      JSON.stringify({ integration_id: 'playbook-proving-ground', status: 'integrated' }, null, 2),
+      'utf8'
+    );
+
+    const { runDocs } = await import('./docs.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runDocs(repo, ['audit'], { ci: false, format: 'json', quiet: true });
+
+    expect(exitCode).toBe(ExitCode.Failure);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'docs.repo-truth-pack.runtime-manifest-missing',
+          path: 'subapps/proving-ground-app/playbook/runtime-manifest.json',
+          level: 'error'
+        })
+      ])
+    );
+  });
+
   it('emits stable JSON envelope', async () => {
     const repo = createFixtureRepo();
     const { runDocs } = await import('./docs.js');

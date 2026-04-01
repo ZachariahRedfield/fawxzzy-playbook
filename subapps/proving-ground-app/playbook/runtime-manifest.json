@@ -1,0 +1,25 @@
+{
+  "app_identity": {
+    "app_id": "proving-ground-app",
+    "app_name": "Proving Ground App",
+    "repo_path": "subapps/proving-ground-app"
+  },
+  "runtime_role": "integration-proving-ground",
+  "runtime_status": "integrated",
+  "signal_groups": [
+    "repo-truth-pack-signals"
+  ],
+  "state_snapshot_types": [
+    "subapp-truth-pack-context-v1"
+  ],
+  "bounded_action_families": [
+    "repo-truth-pack-ingest"
+  ],
+  "receipt_families": [
+    "repo-truth-pack-ingest-receipts"
+  ],
+  "integration_seams": [
+    "repo-truth-pack-ingest-v1"
+  ],
+  "external_truth_contract_ref": "docs/CONSUMER_INTEGRATION_CONTRACT.md"
+}

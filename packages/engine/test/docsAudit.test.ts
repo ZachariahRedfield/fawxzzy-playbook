@@ -172,6 +172,144 @@ describe('docs audit', () => {
     ).toBeDefined();
   });
 
+
+  it('fails when an integrated subapp is missing runtime-manifest.json', () => {
+    const root = createRepo();
+    write(
+      root,
+      'subapps/proving-ground-app/playbook/context.json',
+      JSON.stringify(
+        {
+          repo_id: 'proving-ground-app',
+          repo_name: 'Proving Ground App',
+          mission: 'Validate lightweight repository truth pack contracts.',
+          current_phase: 'validation',
+          current_focus: 'Document and enforce truth pack structure.',
+          invariants: ['Truth pack is committed and human-readable.'],
+          dependencies: ['@fawxzzy/playbook'],
+          integration_surfaces: ['webhook:playbook-ingest'],
+          next_milestones: ['Integrate truth-pack ingestion adapter.'],
+          open_questions: ['Should cadence include weekly touchpoints?'],
+          last_verified_timestamp: '2026-03-27T00:00:00Z'
+        },
+        null,
+        2
+      )
+    );
+    write(root, 'subapps/proving-ground-app/docs/architecture.md', '# Architecture');
+    write(root, 'subapps/proving-ground-app/docs/roadmap.md', '# Roadmap');
+    write(root, 'subapps/proving-ground-app/docs/adr/README.md', '# ADR');
+    write(
+      root,
+      'subapps/proving-ground-app/playbook/app-integration.json',
+      JSON.stringify({ integration_id: 'playbook-proving-ground', status: 'integrated' }, null, 2)
+    );
+
+    const result = runDocsAudit(root);
+    expect(
+      result.findings.find(
+        (finding) =>
+          finding.ruleId === 'docs.repo-truth-pack.runtime-manifest-missing' &&
+          finding.path === 'subapps/proving-ground-app/playbook/runtime-manifest.json'
+      )
+    ).toBeDefined();
+  });
+
+  it('passes for an integrated subapp with a valid runtime manifest', () => {
+    const root = createRepo();
+    write(
+      root,
+      'subapps/proving-ground-app/playbook/context.json',
+      JSON.stringify(
+        {
+          repo_id: 'proving-ground-app',
+          repo_name: 'Proving Ground App',
+          mission: 'Validate lightweight repository truth pack contracts.',
+          current_phase: 'validation',
+          current_focus: 'Document and enforce truth pack structure.',
+          invariants: ['Truth pack is committed and human-readable.'],
+          dependencies: ['@fawxzzy/playbook'],
+          integration_surfaces: ['webhook:playbook-ingest'],
+          next_milestones: ['Integrate truth-pack ingestion adapter.'],
+          open_questions: ['Should cadence include weekly touchpoints?'],
+          last_verified_timestamp: '2026-03-27T00:00:00Z'
+        },
+        null,
+        2
+      )
+    );
+    write(root, 'subapps/proving-ground-app/docs/architecture.md', '# Architecture');
+    write(root, 'subapps/proving-ground-app/docs/roadmap.md', '# Roadmap');
+    write(root, 'subapps/proving-ground-app/docs/adr/README.md', '# ADR');
+    write(
+      root,
+      'subapps/proving-ground-app/playbook/app-integration.json',
+      JSON.stringify(
+        { integration_id: 'playbook-proving-ground', status: 'integrated', external_truth: { source: 'fitness-contract' } },
+        null,
+        2
+      )
+    );
+    write(
+      root,
+      'subapps/proving-ground-app/playbook/runtime-manifest.json',
+      JSON.stringify(
+        {
+          app_identity: { app_id: 'proving-ground-app' },
+          runtime_role: 'integration-proving-ground',
+          runtime_status: 'integrated',
+          signal_groups: ['repo-truth-pack-signals'],
+          state_snapshot_types: ['subapp-truth-pack-context-v1'],
+          bounded_action_families: ['repo-truth-pack-ingest'],
+          receipt_families: ['repo-truth-pack-ingest-receipts'],
+          integration_seams: ['repo-truth-pack-ingest-v1'],
+          external_truth_contract_ref: 'contracts/fitness-contract.json'
+        },
+        null,
+        2
+      )
+    );
+
+    const result = runDocsAudit(root);
+    expect(result.findings.find((finding) => finding.ruleId.startsWith('docs.repo-truth-pack.runtime-manifest'))).toBeUndefined();
+  });
+
+  it('does not require runtime-manifest.json for non-integrated subapps', () => {
+    const root = createRepo();
+    write(
+      root,
+      'subapps/proving-ground-app/playbook/context.json',
+      JSON.stringify(
+        {
+          repo_id: 'proving-ground-app',
+          repo_name: 'Proving Ground App',
+          mission: 'Validate lightweight repository truth pack contracts.',
+          current_phase: 'validation',
+          current_focus: 'Document and enforce truth pack structure.',
+          invariants: ['Truth pack is committed and human-readable.'],
+          dependencies: ['@fawxzzy/playbook'],
+          integration_surfaces: ['webhook:playbook-ingest'],
+          next_milestones: ['Integrate truth-pack ingestion adapter.'],
+          open_questions: ['Should cadence include weekly touchpoints?'],
+          last_verified_timestamp: '2026-03-27T00:00:00Z'
+        },
+        null,
+        2
+      )
+    );
+    write(root, 'subapps/proving-ground-app/docs/architecture.md', '# Architecture');
+    write(root, 'subapps/proving-ground-app/docs/roadmap.md', '# Roadmap');
+    write(root, 'subapps/proving-ground-app/docs/adr/README.md', '# ADR');
+    write(
+      root,
+      'subapps/proving-ground-app/playbook/app-integration.json',
+      JSON.stringify({ integration_id: 'playbook-proving-ground', status: 'draft' }, null, 2)
+    );
+
+    const result = runDocsAudit(root);
+    expect(result.findings.find((finding) => finding.ruleId === 'docs.repo-truth-pack.runtime-manifest-missing')).toBeUndefined();
+  });
+
   it('accepts generalized archive naming and archive README', () => {
     const root = createRepo();
     write(root, 'docs/archive/PLAYBOOK_IMPROVEMENTS_2026.md', '# archived');

@@ -18,6 +18,7 @@ Each subapp should commit a minimal truth pack rooted at the subapp directory.
   docs/roadmap.md
   docs/adr/
   playbook/app-integration.json   # required when integrated
+  playbook/runtime-manifest.json  # required when integrated
 ```
 
 ## `playbook/context.json` required fields
@@ -50,6 +51,36 @@ Validation includes:
 - required files and `docs/adr/` directory presence
 - required context fields in `playbook/context.json`
 - JSON validity for optional `playbook/app-integration.json` when present
+- required `playbook/runtime-manifest.json` for integrated subapps
+- required runtime manifest fields:
+  - `app_identity`
+  - `runtime_role`
+  - `runtime_status`
+  - `signal_groups`
+  - `state_snapshot_types`
+  - `bounded_action_families`
+  - `receipt_families`
+  - `integration_seams`
+- Fitness-aligned integrated subapps must set `external_truth_contract_ref` in `playbook/runtime-manifest.json`
+- non-integrated subapps remain unaffected by runtime manifest requirements
+
+
+## `playbook/runtime-manifest.json` (integrated subapps)
+Integrated subapps must commit one runtime manifest that acts as deterministic repo-local runtime truth for:
+- signal groups
+- state snapshot types
+- bounded action families
+- receipt families
+- integration seams
+
+Rule:
+- Integrated apps must expose one committed runtime manifest as repo-local truth.
+
+Pattern:
+- Repo Truth Pack -> runtime manifest -> bounded integration seam.
+
+Failure Mode:
+- Apps expose signals/actions/receipts implicitly across code and docs, so Playbook cannot ingest runtime truth deterministically.
 
 ## External truth contract boundary (Fitness)
 
@@ -60,6 +91,8 @@ Boundary rules:
 - This repository **consumes** the Fitness contract; it does not redefine or fork the contract.
 - Playbook adapter surfaces (for example `pnpm playbook interop fitness-contract`) must be
   derived from the Fitness contract boundary and stay schema-compatible with the upstream contract.
+- Fitness-aligned `playbook/runtime-manifest.json` files must reference that consumed boundary via
+  `external_truth_contract_ref` and must not duplicate/reinterpret Fitness action or receipt semantics.
 - If direct contract import is unavailable in a given environment, local mirror artifacts must be
   exact mirrors of the external contract (field names, types, and semantics), not interpretation layers.
 

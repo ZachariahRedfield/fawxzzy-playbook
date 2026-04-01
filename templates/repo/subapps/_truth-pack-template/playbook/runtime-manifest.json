@@ -1,0 +1,26 @@
+{
+  "app_identity": {
+    "app_id": "<subapp-id>",
+    "app_name": "<Subapp Name>",
+    "repo_path": "subapps/<subapp-id>"
+  },
+  "runtime_role": "<runtime role>",
+  "runtime_status": "integrated",
+  "signal_groups": [
+    "<signal group id>"
+  ],
+  "state_snapshot_types": [
+    "<snapshot type id>"
+  ],
+  "bounded_action_families": [
+    "<action family id>"
+  ],
+  "receipt_families": [
+    "<receipt family id>"
+  ],
+  "integration_seams": [
+    "<integration seam id>"
+  ],
+  "external_truth_contract_ref": "<external-contract-uri-or-mirror-path-when-applicable>",
+  "notes": "For Fitness-aligned integrations, reference the consumed Fitness contract boundary and do not restate action/receipt semantics here."
+}
