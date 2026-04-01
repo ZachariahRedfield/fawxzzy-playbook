@@ -103,6 +103,24 @@ describe('docs audit', () => {
       'subapps/proving-ground-app/playbook/app-integration.json',
       JSON.stringify({ integration_id: 'playbook-proving-ground', status: 'integrated' }, null, 2)
     );
+    write(
+      root,
+      'subapps/proving-ground-app/playbook/runtime-manifest.json',
+      JSON.stringify(
+        {
+          app_identity: { app_id: 'proving-ground-app' },
+          runtime_role: 'integration-proving-ground',
+          runtime_status: 'integrated',
+          signal_groups: ['repo-truth-pack-signals'],
+          state_snapshot_types: ['subapp-truth-pack-context-v1'],
+          bounded_action_families: ['repo-truth-pack-ingest'],
+          receipt_families: ['repo-truth-pack-ingest-receipts'],
+          integration_seams: ['repo-truth-pack-ingest-v1']
+        },
+        null,
+        2
+      )
+    );
 
     const result = runDocsAudit(root);
     expect(result.findings.find((finding) => finding.ruleId.startsWith('docs.repo-truth-pack.'))).toBeUndefined();
