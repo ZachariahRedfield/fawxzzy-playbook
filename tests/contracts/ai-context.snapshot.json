@@ -26,6 +26,11 @@
     "improvementCandidates": ".playbook/improvement-candidates.json",
     "prReview": ".playbook/pr-review.json"
   },
+  "runtimeManifests": {
+    "artifact": ".playbook/runtime-manifests.json",
+    "manifestsCount": 0,
+    "manifests": []
+  },
   "operatingLadder": {
     "preferredCommandOrder": [
       "ai-context",
