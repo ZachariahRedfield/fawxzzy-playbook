@@ -75,12 +75,13 @@ Integrated subapps must commit one runtime manifest that acts as deterministic r
 
 Rule:
 - Integrated apps must expose one committed runtime manifest as repo-local truth.
+- Integrated apps must expose runtime truth in committed manifests that Playbook actually consumes.
 
 Pattern:
-- Repo Truth Pack -> runtime manifest -> bounded integration seam.
+- Repo Truth Pack -> runtime manifest -> consumed control-plane context.
 
 Failure Mode:
-- Apps expose signals/actions/receipts implicitly across code and docs, so Playbook cannot ingest runtime truth deterministically.
+- A runtime manifest that is only validated, never consumed, becomes governance theater instead of a real seam.
 
 ## External truth contract boundary (Fitness)
 
