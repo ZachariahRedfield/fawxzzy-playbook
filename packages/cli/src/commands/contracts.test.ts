@@ -122,7 +122,8 @@ describe('runContracts', () => {
         { id: 'test-autofix-remediation-history', version: '1.0', path: 'packages/contracts/src/test-autofix-remediation-history.schema.json' },
         { id: 'version-policy', version: '1.0', path: 'packages/contracts/src/version-policy.schema.json' },
         { id: 'release-plan', version: '1.0', path: 'packages/contracts/src/release-plan.schema.json' },
-        { id: 'managed-surface-manifest', version: '1.0', path: 'packages/contracts/src/managed-surface-manifest.schema.json' }
+        { id: 'managed-surface-manifest', version: '1.0', path: 'packages/contracts/src/managed-surface-manifest.schema.json' },
+        { id: 'change-scope', version: '1.0', path: 'packages/contracts/src/change-scope.schema.json' }
       ]
     });
 
