@@ -41,6 +41,7 @@ type CsiaFrameworkArtifact = {
 };
 
 const DEFAULT_CSIA_SOURCE = path.join('docs', 'examples', 'csia-framework.mappings.json');
+const CSIA_SCHEMA_SOURCE = path.join('packages', 'contracts', 'src', 'csia-framework.schema.json');
 const SUPPORTED_PRIMITIVES: CsiaPrimitive[] = ['compute', 'simulate', 'interpret', 'adapt'];
 
 const readOptionValue = (args: string[], flag: string): string | undefined => {
@@ -124,6 +125,35 @@ const summarizeDominantPrimitives = (regimes: CsiaRegime[]): Record<CsiaPrimitiv
   return summary;
 };
 
+const buildDimensionFlags = (regime: CsiaRegime): Record<CsiaPrimitive, { present: boolean; role: 'dominant' | 'secondary' | 'absent' }> => {
+  const regimePrimitives = collectRegimePrimitives(regime);
+  return {
+    compute: {
+      present: regimePrimitives.has('compute'),
+      role: regime.dominantPrimitive === 'compute' ? 'dominant' : regime.secondaryPrimitives.includes('compute') ? 'secondary' : 'absent'
+    },
+    simulate: {
+      present: regimePrimitives.has('simulate'),
+      role: regime.dominantPrimitive === 'simulate' ? 'dominant' : regime.secondaryPrimitives.includes('simulate') ? 'secondary' : 'absent'
+    },
+    interpret: {
+      present: regimePrimitives.has('interpret'),
+      role: regime.dominantPrimitive === 'interpret' ? 'dominant' : regime.secondaryPrimitives.includes('interpret') ? 'secondary' : 'absent'
+    },
+    adapt: {
+      present: regimePrimitives.has('adapt'),
+      role: regime.dominantPrimitive === 'adapt' ? 'dominant' : regime.secondaryPrimitives.includes('adapt') ? 'secondary' : 'absent'
+    }
+  };
+};
+
+const buildAssociatedExamples = (regime: CsiaRegime): string[] => {
+  if (!regime.notes) {
+    return [];
+  }
+  return [regime.notes.trim()].filter(Boolean);
+};
+
 const selectLinkedFailureModes = (failureModes: CsiaFailureMode[], filteredRegimes: CsiaRegime[]): CsiaFailureMode[] => {
   const selectedPrimitives = new Set<CsiaPrimitive>();
   for (const regime of filteredRegimes) {
@@ -141,12 +171,34 @@ export const runPatternsCsia = (cwd: string, commandArgs: string[], options: Pat
   const filteredRegimes = filterRegimes(artifact, commandArgs);
   const failureModes = selectLinkedFailureModes(artifact.failureModes, filteredRegimes);
   const dominantPrimitiveSummary = summarizeDominantPrimitives(filteredRegimes);
+  const mappings = filteredRegimes.map((regime) => ({
+    mapping_id: regime.id,
+    dominant_dimension: regime.dominantPrimitive,
+    secondary_dimensions: regime.secondaryPrimitives,
+    dimensions: buildDimensionFlags(regime),
+    associated_examples: buildAssociatedExamples(regime)
+  }));
 
   const payload = {
     schemaVersion: '1.0',
     command: 'patterns',
     action: 'csia',
+    mode: 'read-only',
+    proposal_only: true,
+    overlay: {
+      kind: 'csia-overlay',
+      description: 'Machine-readable CSIA mapping overlay for inspection only.'
+    },
     source_path: sourcePathForOutput,
+    sources: {
+      schema: CSIA_SCHEMA_SOURCE,
+      mappings: sourcePathForOutput
+    },
+    provenance: [
+      { type: 'schema', path: CSIA_SCHEMA_SOURCE },
+      { type: 'mappings', path: sourcePathForOutput }
+    ],
+    mappings,
     primitives: artifact.primitives,
     bridges: artifact.bridges,
     regimes: filteredRegimes,
@@ -155,7 +207,7 @@ export const runPatternsCsia = (cwd: string, commandArgs: string[], options: Pat
     framework_relationship: {
       minimum_cognitive_core: 'frozen reasoning kernel',
       cognitive_dynamics_framework_v0_1: 'doctrine-level interpretation and recalibration model',
-      csia: 'machine-readable analysis overlay'
+      csia: 'machine-readable analysis overlay only'
     },
     next_action: 'Use filters (--regime, --primitive) to inspect CSIA slices without mutating runtime truth.'
   };

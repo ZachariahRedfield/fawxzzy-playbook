@@ -143,6 +143,28 @@ List patterns with portability score `> 0.85` (portable doctrine candidates).
 
 Compare shared patterns between two repository ids in the cross-repo artifact and report strength/attractor/fitness deltas.
 
+### `patterns csia [--from <path>] [--regime <id>] [--primitive compute|simulate|interpret|adapt]`
+
+Read-only machine-readable CSIA overlay surface for framework mappings.
+
+JSON output includes:
+
+- `mappings[].mapping_id`
+- dimension coverage and role across `compute/simulate/interpret/adapt`
+- `associated_examples`
+- source/provenance references for schema and mapping inputs
+
+Governance guarantees:
+
+- no mutation path
+- proposal-only interpretation surface
+- no model-surface expansion
+
+Architecture positioning:
+
+- Rule: Minimum Cognitive Core remains frozen; overlays may interpret, but not redefine, the kernel.
+- Pattern: Frozen core -> doctrine interpretation -> machine-readable overlay.
+- Failure Mode: Letting overlays expand the core model surface turns interpretation tooling into architecture drift.
 
 
 ## Pattern candidate extraction overview
@@ -224,6 +246,7 @@ pnpm playbook patterns cross-repo --json
 pnpm playbook patterns portability
 pnpm playbook patterns generalized --json
 pnpm playbook patterns repo-delta repo-a repo-b --json
+pnpm playbook patterns csia --json
 pnpm playbook patterns promote --id <pattern-id> --decision approve --json
 ```
 

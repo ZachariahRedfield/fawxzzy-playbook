@@ -15,7 +15,12 @@ describe('patterns csia', () => {
     expect(exitCode).toBe(ExitCode.Success);
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(payload.action).toBe('csia');
+    expect(payload.mode).toBe('read-only');
+    expect(payload.proposal_only).toBe(true);
     expect(payload.source_path).toBe(path.join('docs', 'examples', 'csia-framework.mappings.json'));
+    expect(payload.sources.schema).toBe(path.join('packages', 'contracts', 'src', 'csia-framework.schema.json'));
+    expect(payload.mappings[0]).toHaveProperty('mapping_id');
+    expect(payload.mappings[0]).toHaveProperty('dimensions');
     expect(payload.dominant_primitive_summary).toEqual({ compute: 0, simulate: 1, interpret: 1, adapt: 1 });
 
     logSpy.mockRestore();
@@ -30,6 +35,8 @@ describe('patterns csia', () => {
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(payload.regimes).toHaveLength(1);
     expect(payload.regimes[0].id).toBe('feature-release-gating');
+    expect(payload.mappings).toHaveLength(1);
+    expect(payload.mappings[0].mapping_id).toBe('feature-release-gating');
 
     logSpy.mockRestore();
   });
@@ -104,6 +111,8 @@ describe('patterns csia', () => {
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(payload.failureModes).toHaveLength(1);
     expect(payload.failureModes[0].id).toBe('compute-risk');
+    expect(payload.mappings[0].dimensions.compute.role).toBe('dominant');
+    expect(payload.mappings[0].associated_examples).toEqual([]);
 
     logSpy.mockRestore();
   });
