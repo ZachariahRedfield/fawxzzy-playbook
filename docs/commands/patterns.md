@@ -215,6 +215,7 @@ Governance rule:
 - Rule: Convergence may raise review priority, but must not bypass promotion gates.
 - Pattern: Query-first CLI design keeps the command surface understandable and reduces governance risk.
 - Pattern: Signal -> Compression -> Convergence -> Weighted Review -> Explicit Promotion.
+- Pattern: `query pattern-review` surfaces compact advisory convergence fields (`cluster`, `convergenceConfidence`, `suggestedPriority`, `weightedScore`, `rationale`) without mutating promotion/lifecycle state.
 - Failure Mode: Adding write semantics too early causes unclear ownership boundaries between curated and derived artifacts.
 - Failure Mode: Pattern convergence exists in doctrine and engine artifacts, but operators cannot inspect or review it directly.
 - Failure Mode: Treating convergence as automatic truth causes silent authority creep in promotion workflows.

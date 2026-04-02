@@ -69,6 +69,8 @@ These are architecture targets, not claims of current automatic behavior.
 
 Current operator path note: doctrine -> convergence artifact -> patterns convergence review; explicit promotion remains a separate governed boundary.
 
+Review queue weighting note: convergence suggestions are additive, proposal-only metadata attached to review candidates (cluster id, convergence confidence, suggested priority, weighted score, rationale, provenance). Canonical confidence and lifecycle state remain unchanged until explicit promotion.
+
 ## Engineering example: singleton docs / shared mutable resource / single-writer boundary
 
 Consider repository documentation where many tools can read, but only one governed command path writes canonical doctrine files.
