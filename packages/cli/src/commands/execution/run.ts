@@ -2,11 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import {
-  assignWorkersToLanes,
   type WorksetPlanArtifact,
   buildFleetAdoptionWorkQueue,
   buildFleetCodexExecutionPlan,
-  type ExecutionResult
+  type ExecutionResult,
+  WORKER_LAUNCH_PLAN_RELATIVE_PATH,
+  type WorkerLaunchPlanArtifact
 } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../../lib/cliContract.js';
 import { emitCommandFailure, printCommandHelp } from '../../lib/commandSurface.js';
@@ -26,7 +27,7 @@ type ExecuteOptions = {
 type LaneRuntimeState = 'blocked' | 'ready' | 'running' | 'completed' | 'failed';
 
 type ExecutionModule = {
-  startExecution?: (worksetPlan: WorksetPlanArtifact, repoRoot?: string) => Promise<{ runId: string }>;
+  startExecution?: (worksetPlan: WorksetPlanArtifact, launchPlan: WorkerLaunchPlanArtifact, repoRoot?: string) => Promise<{ runId: string }>;
   updateLaneState?: (laneId: string, state: LaneRuntimeState, repoRoot?: string) => Promise<void>;
   recordWorkerResult?: (laneId: string, workerId: string, result: { status: 'completed' | 'failed'; retries?: number; summary?: string }, repoRoot?: string) => Promise<void>;
   finalizeExecution?: (runId: string, repoRoot?: string) => Promise<void>;
@@ -34,20 +35,8 @@ type ExecutionModule = {
 
 type LaneStateLike = {
   lane_id: string;
-  task_ids: string[];
-  dependency_level: 'low' | 'medium' | 'high';
-  worker_ready: boolean;
-  readiness_status?: 'ready' | 'blocked';
-  blocking_reasons?: string[];
-  conflict_surface_paths?: string[];
-  shared_artifact_risk?: 'low' | 'medium' | 'high';
-  assignment_confidence?: number;
-  protected_doc_consolidation?: {
-    has_protected_doc_work: boolean;
-    stage: 'not_applicable' | 'pending' | 'blocked' | 'plan_ready' | 'applied';
-    summary: string;
-    next_command: string | null;
-  };
+  launchEligible: boolean;
+  blockers: string[];
 };
 
 type WorkerAdapterEnvelope = {
@@ -158,6 +147,71 @@ const buildAdapterEnvelope = (prompt: ReturnType<typeof buildFleetCodexExecution
   documentation_updates: [...prompt.documentation_updates]
 });
 
+const normalizeLaunchArtifactInput = (value: WorkerLaunchPlanArtifact): WorkerLaunchPlanArtifact | undefined => {
+  if (value && typeof value === 'object' && value.kind === 'worker-launch-plan' && Array.isArray(value.lanes)) {
+    return value;
+  }
+  return undefined;
+};
+
+const validateLaunchPlan = (
+  worksetPlan: WorksetPlanArtifact,
+  launchPlan: WorkerLaunchPlanArtifact | undefined
+): { ok: true; launchPlan: WorkerLaunchPlanArtifact; eligibleLanes: LaneStateLike[] } | { ok: false; summary: string; findingId: string; message: string; nextActions: string[] } => {
+  if (!launchPlan) {
+    return {
+      ok: false,
+      summary: `Execution failed: missing prerequisite artifact ${WORKER_LAUNCH_PLAN_RELATIVE_PATH}.`,
+      findingId: 'execute.worker-launch-plan.missing',
+      message: `Missing required artifact: ${WORKER_LAUNCH_PLAN_RELATIVE_PATH}. Managed execution requires explicit launch authorization.`,
+      nextActions: ['Run `playbook workers assign` to derive deterministic worker launch authorization before execute.']
+    };
+  }
+
+  const plannedLaneIds = [...worksetPlan.lanes].map((lane) => lane.lane_id).sort((a, b) => a.localeCompare(b));
+  const authorizedLaneIds = [...launchPlan.lanes].map((lane) => lane.lane_id).sort((a, b) => a.localeCompare(b));
+  if (plannedLaneIds.length !== authorizedLaneIds.length || plannedLaneIds.some((laneId, index) => laneId !== authorizedLaneIds[index])) {
+    return {
+      ok: false,
+      summary: `Execution failed: stale launch authorization in ${WORKER_LAUNCH_PLAN_RELATIVE_PATH}.`,
+      findingId: 'execute.worker-launch-plan.stale',
+      message: `Launch authorization lanes do not match ${WORKSET_PLAN_PATH}; regenerate worker launch authorization.`,
+      nextActions: ['Re-run `playbook workers assign` after orchestration updates to refresh .playbook/worker-launch-plan.json before execute.']
+    };
+  }
+
+  const blockedLanes: Array<{ lane_id: string; blockers: string[] }> = launchPlan.lanes
+    .filter((lane: WorkerLaunchPlanArtifact['lanes'][number]) => !lane.launchEligible)
+    .map((lane: WorkerLaunchPlanArtifact['lanes'][number]) => ({ lane_id: lane.lane_id, blockers: [...lane.blockers].sort((a, b) => a.localeCompare(b)) }))
+    .sort((left: { lane_id: string }, right: { lane_id: string }) => left.lane_id.localeCompare(right.lane_id));
+  if (blockedLanes.length > 0) {
+    const blockedSummary = blockedLanes.map((lane) => `${lane.lane_id}: ${lane.blockers.join('; ') || 'blocked'}`).join(' | ');
+    return {
+      ok: false,
+      summary: 'Execution blocked by deterministic worker launch authorization.',
+      findingId: 'execute.worker-launch-plan.blocked',
+      message: `Blocked lanes in ${WORKER_LAUNCH_PLAN_RELATIVE_PATH}: ${blockedSummary}`,
+      nextActions: ['Resolve listed launch blockers (capability, protected-doc consolidation, dependency state, verify/policy blockers) and regenerate launch authorization via `playbook workers assign`.']
+    };
+  }
+
+  const eligibleLanes = launchPlan.lanes
+    .map((lane: WorkerLaunchPlanArtifact['lanes'][number]) => ({ lane_id: lane.lane_id, launchEligible: lane.launchEligible, blockers: [...lane.blockers] }))
+    .filter((lane: LaneStateLike) => lane.launchEligible)
+    .sort((left: LaneStateLike, right: LaneStateLike) => left.lane_id.localeCompare(right.lane_id));
+  if (eligibleLanes.length === 0) {
+    return {
+      ok: false,
+      summary: 'Execution blocked: no launch-authorized lanes were found.',
+      findingId: 'execute.worker-launch-plan.no-eligible-lanes',
+      message: `No lanes in ${WORKER_LAUNCH_PLAN_RELATIVE_PATH} are launchEligible=true.`,
+      nextActions: ['Run `playbook workers assign` after unblocking lane readiness and governance gates.']
+    };
+  }
+
+  return { ok: true, launchPlan, eligibleLanes };
+};
+
 const runWorkerBridge = async (cwd: string, options: ExecuteOptions, tracker: ReturnType<typeof createCommandQualityTracker>): Promise<number> => {
   const workerAdapter = options.workerAdapter;
   if (!workerAdapter) {
@@ -260,66 +314,34 @@ export const runExecution = async (cwd: string, options: ExecuteOptions): Promis
       return exitCode;
     }
 
+    const rawLaunchPlan = readJsonArtifact<WorkerLaunchPlanArtifact>(cwd, WORKER_LAUNCH_PLAN_RELATIVE_PATH);
+    const launchPlan = rawLaunchPlan ? normalizeLaunchArtifactInput(rawLaunchPlan) : undefined;
+    const launchPlanValidation = validateLaunchPlan(worksetPlan, launchPlan);
+    if (!launchPlanValidation.ok) {
+      const exitCode = emitCommandFailure('execute', options, launchPlanValidation);
+      tracker.finish({
+        inputsSummary: launchPlanValidation.findingId,
+        artifactsRead: [WORKSET_PLAN_PATH, WORKER_LAUNCH_PLAN_RELATIVE_PATH],
+        successStatus: 'failure',
+        warningsCount: 1
+      });
+      return exitCode;
+    }
+
     const engineModule = (await import('@zachariahredfield/playbook-engine')) as unknown as ExecutionModule;
     if (!engineModule.startExecution || !engineModule.updateLaneState || !engineModule.recordWorkerResult || !engineModule.finalizeExecution) {
       throw new Error('playbook execute: execution supervisor exports are unavailable on this build.');
     }
 
-    const run = await engineModule.startExecution(worksetPlan, cwd);
+    const run = await engineModule.startExecution(worksetPlan, launchPlanValidation.launchPlan, cwd);
     const laneStateArtifact = path.join(cwd, EXECUTION_STATE_PATH);
     if (!fs.existsSync(laneStateArtifact)) {
       throw new Error('playbook execute: execution state artifact initialization failed.');
     }
 
-    const laneInputs: LaneStateLike[] = worksetPlan.lanes.map((lane: LaneStateLike) => ({ ...lane }));
-    const workerAssignments = assignWorkersToLanes(
-      {
-        schemaVersion: '1.0',
-        kind: 'lane-state',
-        generatedAt: new Date(0).toISOString(),
-        proposalOnly: true,
-        workset_plan_path: WORKSET_PLAN_PATH,
-        lanes: laneInputs.map((lane) => ({
-          lane_id: lane.lane_id,
-          task_ids: [...lane.task_ids].sort((a, b) => a.localeCompare(b)),
-          status: lane.worker_ready ? 'ready' : 'blocked',
-          readiness_status: lane.readiness_status ?? (lane.worker_ready ? 'ready' : 'blocked'),
-          dependency_level: lane.dependency_level,
-          dependencies_satisfied: lane.worker_ready,
-          blocked_reasons: lane.worker_ready ? [] : ['worker prerequisites are not satisfied'],
-          blocking_reasons: [...(lane.blocking_reasons ?? [])],
-          conflict_surface_paths: [...(lane.conflict_surface_paths ?? [])],
-          shared_artifact_risk: lane.shared_artifact_risk ?? 'low',
-          assignment_confidence: lane.assignment_confidence ?? 0.5,
-          verification_summary: { status: lane.worker_ready ? 'pending' : 'blocked', required_checks: [], optional_checks: [], notes: [] },
-          merge_ready: false,
-          worker_ready: lane.worker_ready,
-          protected_doc_consolidation: lane.protected_doc_consolidation ?? { has_protected_doc_work: false, stage: 'not_applicable', summary: 'no protected-doc work', next_command: null }
-        })),
-        blocked_lanes: laneInputs.filter((lane) => !lane.worker_ready).map((lane) => lane.lane_id).sort((a, b) => a.localeCompare(b)),
-        ready_lanes: laneInputs.filter((lane) => lane.worker_ready).map((lane) => lane.lane_id).sort((a, b) => a.localeCompare(b)),
-        running_lanes: [],
-        completed_lanes: [],
-        merge_ready_lanes: [],
-        dependency_status: { total_edges: worksetPlan.dependency_edges.length, satisfied_edges: 0, unsatisfied_edges: worksetPlan.dependency_edges.length },
-        merge_readiness: { merge_ready_lanes: [], not_merge_ready_lanes: [] },
-        verification_status: { status: 'pending', lanes_pending_verification: [], lanes_blocked_from_verification: [] },
-        warnings: []
-      },
-      worksetPlan
-    );
-
-    const orderedAssignments = [...workerAssignments.lanes].sort((left, right) => left.lane_id.localeCompare(right.lane_id));
-
-    for (const lane of orderedAssignments) {
-      if (lane.status !== 'assigned') {
-        await engineModule.updateLaneState(lane.lane_id, 'failed', cwd);
-        await engineModule.recordWorkerResult(lane.lane_id, `worker-${lane.lane_id}`, { status: 'failed', retries: 1, summary: 'lane was not assignment-ready' }, cwd);
-        continue;
-      }
-
+    for (const lane of launchPlanValidation.eligibleLanes) {
       await engineModule.updateLaneState(lane.lane_id, 'running', cwd);
-      await engineModule.recordWorkerResult(lane.lane_id, `worker-${lane.lane_id}`, { status: 'completed', retries: 0, summary: 'deterministic execution success' }, cwd);
+      await engineModule.recordWorkerResult(lane.lane_id, `worker-${lane.lane_id}`, { status: 'completed', retries: 0, summary: 'deterministic execution success (launch-authorized)' }, cwd);
     }
 
     await engineModule.finalizeExecution(run.runId, cwd);
@@ -346,7 +368,7 @@ export const runExecution = async (cwd: string, options: ExecuteOptions): Promis
       const exitCode = status === 'SUCCESS' ? ExitCode.Success : ExitCode.Failure;
       tracker.finish({
         inputsSummary: `lanes=${worksetPlan.lanes.length}`,
-        artifactsRead: [WORKSET_PLAN_PATH],
+        artifactsRead: [WORKSET_PLAN_PATH, WORKER_LAUNCH_PLAN_RELATIVE_PATH],
         artifactsWritten: [EXECUTION_STATE_PATH],
         downstreamArtifactsProduced: [EXECUTION_STATE_PATH],
         successStatus: exitCode === ExitCode.Success ? 'success' : 'partial'
@@ -361,7 +383,7 @@ export const runExecution = async (cwd: string, options: ExecuteOptions): Promis
     const exitCode = status === 'SUCCESS' ? ExitCode.Success : ExitCode.Failure;
     tracker.finish({
       inputsSummary: `lanes=${worksetPlan.lanes.length}`,
-      artifactsRead: [WORKSET_PLAN_PATH],
+      artifactsRead: [WORKSET_PLAN_PATH, WORKER_LAUNCH_PLAN_RELATIVE_PATH],
       artifactsWritten: [EXECUTION_STATE_PATH],
       downstreamArtifactsProduced: [EXECUTION_STATE_PATH],
       successStatus: exitCode === ExitCode.Success ? 'success' : 'partial'
@@ -370,7 +392,7 @@ export const runExecution = async (cwd: string, options: ExecuteOptions): Promis
   } catch (error) {
     tracker.finish({
       inputsSummary: options.workerAdapter ? 'bridge runtime failure' : 'execution runtime failure',
-      artifactsRead: options.workerAdapter ? [] : [WORKSET_PLAN_PATH],
+      artifactsRead: options.workerAdapter ? [] : [WORKSET_PLAN_PATH, WORKER_LAUNCH_PLAN_RELATIVE_PATH],
       artifactsWritten: [EXECUTION_STATE_PATH],
       successStatus: 'failure',
       warningsCount: 1

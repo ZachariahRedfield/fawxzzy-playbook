@@ -307,7 +307,10 @@ For orchestration surfaces (`orchestrate`, `lanes`, `workers`), operator prompts
 - `.playbook` artifacts retain full machine state, dependencies, and protected-doc fragment metadata
 - protected singleton narrative docs are fragment-only surfaces during parallel worker execution
 - compact text surfaces should report only pending/blocking summary plus next command while `.playbook` artifacts retain raw consolidation detail
-- Current `workers` / `execute` / `receipt` seams intentionally stop at deterministic planning, execution receipts, and updated truth; launch authorization (including managed subagent/hook runtime gates) remains the next explicit hardening seam.
+- Managed execution is now fail-closed on explicit launch authorization: `execute` (and `cycle` paths that run `execute`) require `.playbook/worker-launch-plan.json` and only launch lanes with `launchEligible: true`.
+- Rule: Managed execution may begin only from explicit launch authorization, never from worker intent alone.
+- Pattern: `assign -> launch-plan -> execute -> receipt -> submit -> consolidate`.
+- Failure Mode: If execute bypasses launch authorization, managed subagents can skip the same governance gates already enforced for humans.
 
 ## Learn draft (`pnpm playbook learn draft`)
 

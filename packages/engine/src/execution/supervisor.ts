@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { WorksetPlanArtifact } from '../orchestration/worksetPlan.js';
+import type { WorkerLaunchPlanArtifact } from '../orchestration/workerLaunchPlan.js';
 import { readJsonArtifact, writeJsonArtifact } from '../artifacts/artifactIO.js';
 import {
   normalizeOutcomeTelemetryArtifact,
@@ -225,9 +226,14 @@ const emitLaneOutcomeScore = (repoRoot: string, laneId: string, signalValues: { 
   fs.writeFileSync(telemetryPath, `${JSON.stringify(merged, null, 2)}\n`, 'utf8');
 };
 
-export async function startExecution(worksetPlan: WorksetPlanArtifact, repoRoot = process.cwd()): Promise<ExecutionRun> {
+export async function startExecution(
+  worksetPlan: WorksetPlanArtifact,
+  launchPlan: WorkerLaunchPlanArtifact,
+  repoRoot = process.cwd()
+): Promise<ExecutionRun> {
   const runId = nextRunId(repoRoot);
   const startedAt = deterministicIso(runId);
+  const launchByLaneId = new Map(launchPlan.lanes.map((lane) => [lane.lane_id, lane]));
 
   const lanes = Object.fromEntries(
     [...worksetPlan.lanes]
@@ -236,7 +242,7 @@ export async function startExecution(worksetPlan: WorksetPlanArtifact, repoRoot 
         lane.lane_id,
         {
           lane_id: lane.lane_id,
-          state: lane.worker_ready ? ('ready' as LaneRuntimeState) : ('blocked' as LaneRuntimeState),
+          state: launchByLaneId.get(lane.lane_id)?.launchEligible ? ('ready' as LaneRuntimeState) : ('blocked' as LaneRuntimeState),
           protected_doc_consolidation: lane.protected_doc_consolidation
         }
       ])
