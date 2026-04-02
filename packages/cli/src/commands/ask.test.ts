@@ -75,16 +75,15 @@ describe('runAsk', () => {
         sources: []
       },
       scope: {
-        module: undefined,
         diffContext: {
-          enabled: false,
-          baseRef: undefined
+          enabled: false
         }
       },
       context: {
         architecture: 'modular-monolith',
         framework: 'nextjs',
         modules: ['users', 'workouts'],
+        riskAwareContext: null,
         sources: [
           { type: 'repo-index', path: '.playbook/repo-index.json' },
           { type: 'repo-graph', path: '.playbook/repo-graph.json' },

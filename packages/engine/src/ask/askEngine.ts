@@ -4,6 +4,7 @@ import { queryRepositoryIndex } from '../query/repoQuery.js';
 import type { RepositoryModule } from '../indexer/repoIndexer.js';
 import { buildModuleAskContext, resolveIndexedModuleContext, type IndexedModuleContext } from '../query/moduleIntelligence.js';
 import { readModuleDigest, type ModuleDigest } from '../context/moduleDigests.js';
+import { buildRiskAwareContextSummary, shapeRiskAwareModuleContext, type RiskAwareModuleContext } from '../context/riskAwareContext.js';
 import { resolveDiffAskContext, type DiffAskContext } from './diffContext.js';
 import { readRuntimeMemoryEnvelope, type RuntimeMemoryEnvelope } from '../intelligence/runtimeMemory.js';
 import {
@@ -42,6 +43,7 @@ export type AskEngineResult = {
     modules: string[];
     module?: IndexedModuleContext;
     moduleDigest?: ModuleDigest & {
+      riskAwareShaping?: RiskAwareModuleContext;
       module: {
         name: string;
         path: string;
@@ -49,6 +51,7 @@ export type AskEngineResult = {
       };
     };
     diff?: DiffAskContext;
+    riskAwareContext?: ReturnType<typeof buildRiskAwareContextSummary>;
   };
 };
 
@@ -290,6 +293,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
   const userQuestion = extractUserQuestion(question);
   const normalizedQuestion = normalizeQuestion(userQuestion);
   const context = gatherContext(projectRoot);
+  const riskAwareContext = buildRiskAwareContextSummary(projectRoot);
   if (options?.module && options.diffContext) {
     throw new Error('playbook ask: --module and --diff-context cannot be used together. Choose one deterministic scope.');
   }
@@ -337,7 +341,8 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         framework: context.framework,
         modules: context.modules,
         module: moduleContext,
-        diff: diffContext
+        diff: diffContext,
+        riskAwareContext
       }
     };
   }
@@ -360,7 +365,8 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         architecture: context.architecture,
         framework: context.framework,
         modules: context.modules,
-        diff: diffContext
+        diff: diffContext,
+        riskAwareContext
       }
     };
   }
@@ -382,7 +388,8 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         architecture: context.architecture,
         framework: context.framework,
         modules: context.modules,
-        diff: diffContext
+        diff: diffContext,
+        riskAwareContext
       }
     };
   }
@@ -413,7 +420,8 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         architecture: context.architecture,
         framework: context.framework,
         modules: context.modules,
-        diff: diffContext
+        diff: diffContext,
+        riskAwareContext
       }
     };
   }
@@ -424,6 +432,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
     if (moduleDigest) {
       const neighborhood = parseNeighborhoodFromSummary(moduleDigest.summary);
       const enrichedDigest: ModuleDigest & {
+        riskAwareShaping?: RiskAwareModuleContext;
         module: {
           name: string;
           path: string;
@@ -431,6 +440,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         };
       } = {
         ...moduleDigest,
+        riskAwareShaping: shapeRiskAwareModuleContext(moduleDigest),
         module: {
           name: moduleDigest.id,
           path: moduleContext.module.path,
@@ -444,6 +454,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         `Direct dependents: ${moduleDigest.dependents.direct.length > 0 ? moduleDigest.dependents.direct.join(', ') : 'none'}`,
         `Transitive dependents: ${moduleDigest.dependents.transitive.length > 0 ? moduleDigest.dependents.transitive.join(', ') : 'none'}`,
         `Risk: ${moduleDigest.risk.level} (${moduleDigest.risk.score.toFixed(2)})`,
+        `Risk-aware context depth: ${shapeRiskAwareModuleContext(moduleDigest).contextDepth} (${shapeRiskAwareModuleContext(moduleDigest).shapedRiskTier})`,
         `Graph neighborhood kinds: out[${neighborhood?.outgoingKinds.join(', ') || 'none'}], in[${neighborhood?.incomingKinds.join(', ') || 'none'}]`
       ].join('; ');
 
@@ -463,7 +474,8 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
           modules: context.modules,
           module: moduleContext,
           moduleDigest: enrichedDigest,
-          diff: diffContext
+          diff: diffContext,
+        riskAwareContext
         }
       };
     }
@@ -485,7 +497,8 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         framework: context.framework,
         modules: context.modules,
         module: moduleContext,
-        diff: diffContext
+        diff: diffContext,
+        riskAwareContext
       }
     };
   }
@@ -525,7 +538,8 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         framework: context.framework,
         modules: context.modules,
         module: moduleContext,
-        diff: diffContext
+        diff: diffContext,
+        riskAwareContext
       }
     };
   }
@@ -545,7 +559,8 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         framework: context.framework,
         modules: context.modules,
         module: moduleContext,
-        diff: diffContext
+        diff: diffContext,
+        riskAwareContext
       }
     };
   }
@@ -564,7 +579,8 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
         architecture: context.architecture,
         framework: context.framework,
         modules: context.modules,
-        module: moduleContext
+        module: moduleContext,
+        riskAwareContext
       }
     };
   }

@@ -107,6 +107,9 @@ Module digest context-transfer governance:
 - Rule: Compact architecture context should come from deterministic module digests, not repeated broad scans.
 - Pattern: `index/graph -> module digest -> context transfer`.
 - Failure Mode: Without module digests, context surfaces either bloat or repeatedly re-derive the same architecture state expensively.
+- Rule: Risk-aware context shaping must reflect canonical repository intelligence, not ad hoc heuristics.
+- Pattern: digest -> risk tier -> shaped context.
+- Failure Mode: Uniform context payloads either waste tokens on low-risk modules or starve high-risk modules of the detail needed for safe reasoning.
 
 For remediation workflow updates, run canonical deterministic flow checks:
 

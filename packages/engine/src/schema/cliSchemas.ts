@@ -82,6 +82,98 @@ const knowledgeRecordSchema: JsonSchema = {
   }
 };
 
+
+const riskAwareContextSchema: JsonSchema = {
+  anyOf: [
+    { type: 'null' },
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'artifact',
+        'shapedAtDeterministic',
+        'modulesConsidered',
+        'highRiskModules',
+        'lowRiskModules',
+        'defaultDepthByTier',
+        'provenanceRefs',
+        'modules'
+      ],
+      properties: {
+        artifact: { const: '.playbook/module-digests.json' },
+        shapedAtDeterministic: { const: true },
+        modulesConsidered: { type: 'integer' },
+        highRiskModules: { type: 'integer' },
+        lowRiskModules: { type: 'integer' },
+        defaultDepthByTier: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['high', 'low'],
+          properties: {
+            high: { const: 'rich' },
+            low: { const: 'concise' }
+          }
+        },
+        provenanceRefs: { type: 'array', items: { type: 'string' } },
+        modules: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['module', 'shapedRiskTier', 'contextDepth', 'rationale', 'provenanceRefs', 'context'],
+            properties: {
+              module: { type: 'string' },
+              shapedRiskTier: { enum: ['high', 'low'] },
+              contextDepth: { enum: ['rich', 'concise'] },
+              rationale: { type: 'string' },
+              provenanceRefs: { type: 'array', items: { type: 'string' } },
+              context: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['summary', 'dependencies', 'dependents', 'risk'],
+                properties: {
+                  summary: { type: 'string' },
+                  dependencies: { type: 'array', items: { type: 'string' } },
+                  dependents: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['direct', 'transitive'],
+                    properties: {
+                      direct: { type: 'array', items: { type: 'string' } },
+                      transitive: { type: 'array', items: { type: 'string' } }
+                    }
+                  },
+                  risk: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['level', 'score', 'signals'],
+                    properties: {
+                      level: { enum: ['low', 'medium', 'high'] },
+                      score: { type: 'number' },
+                      signals: { type: 'array', items: { type: 'string' } }
+                    }
+                  },
+                  ownership: { type: 'object', additionalProperties: true },
+                  keyReferences: { type: 'object', additionalProperties: true },
+                  runtime: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['manifestsCount', 'manifestIds'],
+                    properties: {
+                      manifestsCount: { type: 'integer' },
+                      manifestIds: { type: 'array', items: { type: 'string' } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+};
+
 const knowledgeSummarySchema: JsonSchema = {
   type: 'object',
   additionalProperties: false,
@@ -413,7 +505,7 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
     title: 'PlaybookContextOutput',
     type: 'object',
     additionalProperties: false,
-    required: ['schemaVersion', 'command', 'architecture', 'workflow', 'repositoryIntelligence', 'controlPlaneArtifacts', 'runtimeManifests', 'cli'],
+    required: ['schemaVersion', 'command', 'architecture', 'workflow', 'repositoryIntelligence', 'controlPlaneArtifacts', 'runtimeManifests', 'cli', 'riskAwareContext'],
     properties: {
       schemaVersion: { type: 'string' },
       command: { const: 'context' },
@@ -476,7 +568,8 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
             minItems: 1
           }
         }
-      }
+      },
+      riskAwareContext: riskAwareContextSchema
     }
   },
 
@@ -2010,6 +2103,7 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
       'runtimeManifests',
       'operatingLadder',
       'productCommands',
+      'riskAwareContext',
       'guidance'
     ],
     properties: {
@@ -2105,6 +2199,7 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
           }
         }
       },
+      riskAwareContext: riskAwareContextSchema,
       guidance: {
         type: 'object',
         additionalProperties: false,

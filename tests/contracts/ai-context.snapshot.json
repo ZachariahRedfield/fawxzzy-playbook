@@ -102,6 +102,51 @@
       "example": "playbook query modules --json"
     }
   ],
+  "riskAwareContext": {
+    "artifact": ".playbook/module-digests.json",
+    "shapedAtDeterministic": true,
+    "modulesConsidered": 1,
+    "highRiskModules": 0,
+    "lowRiskModules": 1,
+    "defaultDepthByTier": {
+      "high": "rich",
+      "low": "concise"
+    },
+    "provenanceRefs": [
+      ".playbook/module-digests.json",
+      ".playbook/repo-graph.json",
+      ".playbook/repo-index.json"
+    ],
+    "modules": [
+      {
+        "module": "features",
+        "shapedRiskTier": "low",
+        "contextDepth": "concise",
+        "rationale": "Lower risk profile keeps module context concise for token-efficient reasoning.",
+        "provenanceRefs": [
+          ".playbook/module-digests.json",
+          ".playbook/repo-graph.json",
+          ".playbook/repo-index.json"
+        ],
+        "context": {
+          "summary": "Module features encapsulates bounded repository behavior with graph neighborhood out[governed_by], in[contains].",
+          "dependencies": [],
+          "dependents": {
+            "direct": [],
+            "transitive": []
+          },
+          "risk": {
+            "level": "low",
+            "score": 0,
+            "signals": [
+              "Low fan-in and limited transitive impact",
+              "warning: Verify failure signal unavailable; no .playbook/verify-report.json, .playbook/verify.json, .playbook/findings.json, or .playbook/plan.json verify payload found."
+            ]
+          }
+        }
+      }
+    ]
+  },
   "guidance": {
     "preferPlaybookCommands": true,
     "authorityRule": "Playbook command outputs are authoritative over ad-hoc repository inference when command coverage exists.",

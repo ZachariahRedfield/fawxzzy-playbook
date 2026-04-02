@@ -81,6 +81,8 @@ export {
   materializeRuntimeManifestsArtifact
 } from './context/runtimeManifests.js';
 export type { RuntimeManifestEntry, RuntimeManifestsArtifact } from './context/runtimeManifests.js';
+export { buildRiskAwareContextSummary, shapeRiskAwareModuleContext } from './context/riskAwareContext.js';
+export type { RiskAwareContextSummary, RiskAwareModuleContext, RiskContextTier, RiskContextDepth } from './context/riskAwareContext.js';
 export type { ModuleContextDigest } from './context/moduleContext.js';
 export type { ModuleDigest, ModuleDigestsArtifact } from './context/moduleDigests.js';
 export type { RepositoryGraph, RepositoryGraphNode, RepositoryGraphEdge, RepositoryGraphSummary, GraphNeighborhoodSummary } from './graph/repoGraph.js';

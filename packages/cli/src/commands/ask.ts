@@ -75,6 +75,7 @@ type AskContextSnapshot = AskResult['context'];
 
 const REPO_INDEX_PATH = '.playbook/repo-index.json' as const;
 const AI_CONTRACT_PATH = '.playbook/ai-contract.json' as const;
+const MODULE_DIGESTS_PATH = '.playbook/module-digests.json' as const;
 
 const toUniqueSortedStrings = (values: unknown): string[] => {
   if (!Array.isArray(values)) {
@@ -141,6 +142,10 @@ const buildContextSources = (context: AskContextSnapshot, repoContextSources: st
       type: 'ai-contract',
       path: repoContextSources.includes(AI_CONTRACT_PATH) ? AI_CONTRACT_PATH : 'generated-ai-contract-fallback'
     });
+  }
+
+  if (repoContextSources.includes(MODULE_DIGESTS_PATH)) {
+    sources.push({ type: 'module-digest', path: MODULE_DIGESTS_PATH });
   }
 
   if (typeof moduleName === 'string' && moduleName.length > 0) {

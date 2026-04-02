@@ -108,6 +108,7 @@ describe('ask --repo-context', () => {
   it('loads trusted context sources into JSON output metadata', async () => {
     const repo = createRepo('playbook-cli-ask-repo-context-json');
     writeRepoIndex(repo);
+    writeModuleDigest(repo, 'workouts');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
     const exitCode = await runAsk(repo, ['what', 'modules', 'exist?'], {
@@ -122,7 +123,7 @@ describe('ask --repo-context', () => {
     expect(payload.mode).toBe('concise');
     expect(payload.repoContext).toEqual({
       enabled: true,
-      sources: ['.playbook/repo-index.json', 'generated-ai-contract-fallback']
+      sources: ['.playbook/repo-index.json', 'generated-ai-contract-fallback', '.playbook/module-digests.json']
     });
     expect(payload.scope).toEqual({
       module: undefined,

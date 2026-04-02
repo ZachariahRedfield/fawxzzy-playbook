@@ -1,5 +1,5 @@
 import { ExitCode } from '../lib/cliContract.js';
-import { MODULE_DIGESTS_RELATIVE_PATH, readConsumedRuntimeManifestsArtifact, readModuleDigestsArtifact, RUNTIME_MANIFESTS_RELATIVE_PATH } from '@zachariahredfield/playbook-engine';
+import { MODULE_DIGESTS_RELATIVE_PATH, buildRiskAwareContextSummary, readConsumedRuntimeManifestsArtifact, readModuleDigestsArtifact, RUNTIME_MANIFESTS_RELATIVE_PATH } from '@zachariahredfield/playbook-engine';
 import { listRegisteredCommands } from './index.js';
 
 type ContextResult = {
@@ -31,11 +31,13 @@ type ContextResult = {
   cli: {
     commands: string[];
   };
+  riskAwareContext: ReturnType<typeof buildRiskAwareContextSummary>;
 };
 
 const buildContextResult = (cwd: string): ContextResult => {
   const runtimeManifestArtifact = readConsumedRuntimeManifestsArtifact(cwd);
   const moduleDigests = readModuleDigestsArtifact(cwd);
+  const riskAwareContext = buildRiskAwareContextSummary(cwd);
 
   return {
     schemaVersion: '1.0',
@@ -65,7 +67,8 @@ const buildContextResult = (cwd: string): ContextResult => {
     },
     cli: {
       commands: listRegisteredCommands().map((entry) => entry.name)
-    }
+    },
+    riskAwareContext
   };
 };
 
@@ -97,6 +100,14 @@ const printText = (result: ContextResult): void => {
   console.log('Runtime Manifests');
   console.log(`Artifact: ${result.runtimeManifests.artifact}`);
   console.log(`Manifests: ${result.runtimeManifests.manifestsCount}`);
+  console.log('');
+  console.log('Risk-aware Context Shaping');
+  console.log(`Available: ${result.riskAwareContext ? 'yes' : 'no'}`);
+  if (result.riskAwareContext) {
+    console.log(`High-risk modules: ${result.riskAwareContext.highRiskModules}`);
+    console.log(`Low-risk modules: ${result.riskAwareContext.lowRiskModules}`);
+    console.log(`Depth mapping: high=${result.riskAwareContext.defaultDepthByTier.high}, low=${result.riskAwareContext.defaultDepthByTier.low}`);
+  }
   console.log('');
   console.log('CLI Commands');
   for (const command of result.cli.commands) {

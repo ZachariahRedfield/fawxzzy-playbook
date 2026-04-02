@@ -71,6 +71,9 @@ describe('runAiContext', () => {
       'direct-file-inspection-if-needed'
     ]);
 
+    const riskAwareContext = payload.riskAwareContext as Record<string, unknown> | null;
+    expect(riskAwareContext).toBeNull();
+
     const guidance = payload.guidance as Record<string, unknown>;
     expect(guidance.preferPlaybookCommands).toBe(true);
     const memoryCommandFamily = guidance.memoryCommandFamily as Record<string, unknown>;
