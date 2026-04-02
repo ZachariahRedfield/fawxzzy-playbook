@@ -127,6 +127,7 @@ describe('startExecution', () => {
     const resumedRun = await startExecution(worksetPlanFixture(), launchPlanFixture(), repo);
     const resumedState = readOrchestrationExecutionRun(repo, resumedRun.runId);
     expect(resumedRun.runId).toBe(firstRun.runId);
+    expect(resumedRun.lanes['lane-1']?.state).toBe('completed');
     expect(resumedState.lanes['lane-1']?.status).toBe('completed');
     expect(resumedState.lanes['lane-2']?.status).toBe('blocked');
     expect(resumedState.metadata.reconcile_revision).toBeGreaterThan(firstState.metadata.reconcile_revision);

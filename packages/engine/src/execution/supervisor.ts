@@ -314,7 +314,16 @@ export async function startExecution(
         lane.lane_id,
         {
           lane_id: lane.lane_id,
-          state: launchByLaneId.get(lane.lane_id)?.launchEligible ? ('ready' as LaneRuntimeState) : ('blocked' as LaneRuntimeState),
+          state:
+            runState.lanes[lane.lane_id]?.status === 'completed'
+              ? ('completed' as LaneRuntimeState)
+              : runState.lanes[lane.lane_id]?.status === 'failed'
+                ? ('failed' as LaneRuntimeState)
+                : runState.lanes[lane.lane_id]?.status === 'running'
+                  ? ('running' as LaneRuntimeState)
+                  : launchByLaneId.get(lane.lane_id)?.launchEligible
+                    ? ('ready' as LaneRuntimeState)
+                    : ('blocked' as LaneRuntimeState),
           protected_doc_consolidation: lane.protected_doc_consolidation
         }
       ])
