@@ -87,6 +87,57 @@ const writeWorksetPlan = (repo: string): void => {
   writeJson(repo, '.playbook/workset-plan.json', workset);
 };
 
+const writeLaunchPlan = (
+  repo: string,
+  options?: {
+    blockedLaneIds?: string[];
+    lanes?: Array<{ lane_id: string; launchEligible: boolean; blockers: string[] }>;
+  }
+): void => {
+  const blocked = new Set(options?.blockedLaneIds ?? []);
+  const lanes =
+    options?.lanes ??
+    [
+      { lane_id: 'lane-1', launchEligible: !blocked.has('lane-1'), blockers: blocked.has('lane-1') ? ['capability:missing-required-worker-capability'] : [] },
+      { lane_id: 'lane-2', launchEligible: !blocked.has('lane-2'), blockers: blocked.has('lane-2') ? ['lane:dependency blocked'] : [] }
+    ];
+  writeJson(repo, '.playbook/worker-launch-plan.json', {
+    schemaVersion: '1.0',
+    kind: 'worker-launch-plan',
+    proposalOnly: true,
+    generatedAt: '1970-01-01T00:00:00.000Z',
+    sourceArtifacts: {
+      worksetPlanPath: '.playbook/workset-plan.json',
+      laneStatePath: '.playbook/lane-state.json',
+      workerAssignmentsPath: '.playbook/worker-assignments.json',
+      verifyPath: '.playbook/verify-report.json',
+      policyEvaluationPath: '.playbook/policy-evaluation.json'
+    },
+    summary: {
+      launchEligibleLanes: lanes.filter((lane) => lane.launchEligible).map((lane) => lane.lane_id),
+      blockedLanes: lanes.filter((lane) => !lane.launchEligible),
+      failClosedReasons: []
+    },
+    lanes: lanes.map((lane) => ({
+      lane_id: lane.lane_id,
+      worker_id: lane.launchEligible ? `worker-${lane.lane_id}` : null,
+      worker_type: lane.launchEligible ? 'general' : null,
+      launchEligible: lane.launchEligible,
+      blockers: lane.blockers,
+      requiredCapabilities: [],
+      allowedWriteSurfaces: [],
+      protectedSingletonImpact: {
+        hasProtectedSingletonWork: false,
+        targets: [],
+        consolidationStage: 'not_applicable',
+        unresolved: false
+      },
+      requiredReceipts: [],
+      releaseReadyPreconditions: []
+    }))
+  });
+};
+
 const writeAdoptionRepo = (repo: string): void => {
   fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
 };
@@ -128,6 +179,7 @@ describe('runExecution', () => {
   it('runs deterministic supervisor flow and writes execution-state', async () => {
     const repo = createRepo('playbook-cli-execute');
     writeWorksetPlan(repo);
+    writeLaunchPlan(repo);
 
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const code = await runExecution(repo, { format: 'json', quiet: false });
@@ -139,6 +191,53 @@ describe('runExecution', () => {
     expect(payload.command).toBe('execute');
     expect(payload.execution_status).toBe('SUCCESS');
     expect(payload.lanes.every((lane) => lane.state === 'completed')).toBe(true);
+
+    logSpy.mockRestore();
+  });
+
+  it('fails clearly when worker launch authorization artifact is missing', async () => {
+    const repo = createRepo('playbook-cli-execute-missing-launch-plan');
+    writeWorksetPlan(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const code = await runExecution(repo, { format: 'json', quiet: false });
+
+    expect(code).toBe(ExitCode.Failure);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.findings[0].id).toBe('execute.worker-launch-plan.missing');
+
+    logSpy.mockRestore();
+  });
+
+  it('fails closed when launch authorization includes blocked lanes', async () => {
+    const repo = createRepo('playbook-cli-execute-blocked-launch-plan');
+    writeWorksetPlan(repo);
+    writeLaunchPlan(repo, { blockedLaneIds: ['lane-2'] });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const code = await runExecution(repo, { format: 'json', quiet: false });
+
+    expect(code).toBe(ExitCode.Failure);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.findings[0].id).toBe('execute.worker-launch-plan.blocked');
+    expect(payload.findings[0].message).toContain('lane-2');
+    expect(payload.findings[0].message).toContain('lane:dependency blocked');
+    expect(fs.existsSync(path.join(repo, '.playbook', 'execution-state.json'))).toBe(false);
+
+    logSpy.mockRestore();
+  });
+
+  it('fails clearly when launch authorization is stale relative to workset lanes', async () => {
+    const repo = createRepo('playbook-cli-execute-stale-launch-plan');
+    writeWorksetPlan(repo);
+    writeLaunchPlan(repo, { lanes: [{ lane_id: 'lane-1', launchEligible: true, blockers: [] }] });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const code = await runExecution(repo, { format: 'json', quiet: false });
+
+    expect(code).toBe(ExitCode.Failure);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.findings[0].id).toBe('execute.worker-launch-plan.stale');
 
     logSpy.mockRestore();
   });
