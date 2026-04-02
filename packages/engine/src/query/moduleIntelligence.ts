@@ -4,6 +4,7 @@ import type { RepositoryIndex, RepositoryModule } from '../indexer/repoIndexer.j
 import { queryRisk } from './risk.js';
 import { resolveRepositoryTarget } from '../intelligence/targetResolver.js';
 import { readModuleDigest } from '../context/moduleDigests.js';
+import { shapeRiskAwareModuleContext, type RiskAwareModuleContext } from '../context/riskAwareContext.js';
 
 const INDEX_RELATIVE_PATH = '.playbook/repo-index.json' as const;
 
@@ -24,6 +25,7 @@ export type ModuleImpact = {
     score: number;
     signals: string[];
   };
+  shaping?: RiskAwareModuleContext;
 };
 
 export type IndexedModuleContext = {
@@ -155,7 +157,8 @@ export const resolveIndexedModuleContext = (
             level: risk.riskLevel,
             score: risk.riskScore,
             signals: [...risk.reasons]
-          }
+          },
+      shaping: digest ? shapeRiskAwareModuleContext(digest) : undefined
     }
   };
 };
@@ -171,6 +174,7 @@ export const buildModuleAskContext = (moduleContext: IndexedModuleContext): stri
     `Dependencies: ${dependencies}`,
     `Direct dependents: ${directDependents}`,
     `Transitive dependents: ${transitiveDependents}`,
-    `Module risk level: ${moduleContext.impact.risk.level} (${moduleContext.impact.risk.score.toFixed(2)})`
+    `Module risk level: ${moduleContext.impact.risk.level} (${moduleContext.impact.risk.score.toFixed(2)})`,
+    `Risk-aware context depth: ${moduleContext.impact.shaping?.contextDepth ?? 'concise'} (${moduleContext.impact.shaping?.shapedRiskTier ?? 'low'})`
   ].join('\n');
 };

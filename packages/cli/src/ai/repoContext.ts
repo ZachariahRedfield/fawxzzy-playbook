@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { loadAiContract } from '@zachariahredfield/playbook-engine';
+import { buildRiskAwareContextSummary, loadAiContract } from '@zachariahredfield/playbook-engine';
 
 const REPO_INDEX_PATH = '.playbook/repo-index.json' as const;
 const AI_CONTRACT_PATH = '.playbook/ai-contract.json' as const;
+const MODULE_DIGESTS_PATH = '.playbook/module-digests.json' as const;
 
 type AskRepoContextOptions = {
   cwd: string;
@@ -95,6 +96,25 @@ const renderAiContractSummary = (contract: AskAiContract): string[] => [
   `AI contract rule: prefer Playbook commands over ad-hoc inspection = ${contract.rules.preferPlaybookCommandsOverAdHocInspection ? 'true' : 'false'}`
 ];
 
+
+const renderRiskAwareSummary = (projectRoot: string): { lines: string[]; source?: string } => {
+  const shaped = buildRiskAwareContextSummary(projectRoot);
+  if (!shaped) {
+    return {
+      lines: ['Risk-aware context shaping: unavailable (run `playbook index` to materialize .playbook/module-digests.json).']
+    };
+  }
+
+  return {
+    source: MODULE_DIGESTS_PATH,
+    lines: [
+      `Risk-aware context shaping: high-risk=${shaped.highRiskModules}, low-risk=${shaped.lowRiskModules}`,
+      `Risk-aware depth map: high=${shaped.defaultDepthByTier.high}, low=${shaped.defaultDepthByTier.low}`,
+      `Risk-aware provenance: ${shaped.provenanceRefs.join(', ')}`
+    ]
+  };
+};
+
 const renderRepoIndexSummary = (repoIndex: RepoIndexPayload): string[] => {
   const modules = toModuleSummary(repoIndex.modules);
   const rules = ensureStringArray(repoIndex.rules);
@@ -122,18 +142,20 @@ export const loadAskRepoContext = (options: AskRepoContextOptions): AskRepoConte
 
   const repoIndex = loadRepoIndex(options.cwd);
   const contract = loadAiContract(options.cwd);
+  const riskAware = renderRiskAwareSummary(options.cwd);
 
   const promptContext = [
     'Trusted repository context:',
     ...renderRepoIndexSummary(repoIndex),
     ...renderAiContractSummary(contract.contract),
+    ...riskAware.lines,
     `AI contract source: ${contract.source === 'file' ? AI_CONTRACT_PATH : 'generated fallback (run `playbook ai-contract --json` to inspect/commit explicit contract)'}`,
     'End trusted repository context.'
   ].join('\n');
 
   return {
     enabled: true,
-    sources: [REPO_INDEX_PATH, contract.source === 'file' ? AI_CONTRACT_PATH : 'generated-ai-contract-fallback'],
+    sources: [REPO_INDEX_PATH, contract.source === 'file' ? AI_CONTRACT_PATH : 'generated-ai-contract-fallback', ...(riskAware.source ? [riskAware.source] : [])],
     promptContext
   };
 };

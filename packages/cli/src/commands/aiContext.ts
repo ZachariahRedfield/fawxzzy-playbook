@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { MODULE_DIGESTS_RELATIVE_PATH, readConsumedRuntimeManifestsArtifact, readModuleDigestsArtifact, RUNTIME_MANIFESTS_RELATIVE_PATH } from '@zachariahredfield/playbook-engine';
+import { MODULE_DIGESTS_RELATIVE_PATH, buildRiskAwareContextSummary, readConsumedRuntimeManifestsArtifact, readModuleDigestsArtifact, RUNTIME_MANIFESTS_RELATIVE_PATH } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 import { listRegisteredCommands } from './index.js';
 
@@ -58,6 +58,7 @@ type AiContextResult = {
     name: string;
     example: string;
   }>;
+  riskAwareContext: ReturnType<typeof buildRiskAwareContextSummary>;
   guidance: {
     preferPlaybookCommands: true;
     authorityRule: string;
@@ -76,6 +77,7 @@ const buildAiContextResult = (cwd: string): AiContextResult => {
   const indexFile = path.join(cwd, '.playbook', 'repo-index.json');
   const runtimeManifestArtifact = readConsumedRuntimeManifestsArtifact(cwd);
   const moduleDigests = readModuleDigestsArtifact(cwd);
+  const riskAwareContext = buildRiskAwareContextSummary(cwd);
 
   return {
     schemaVersion: '1.0',
@@ -143,6 +145,7 @@ const buildAiContextResult = (cwd: string): AiContextResult => {
 
         return { name: entry.name, example };
       }),
+    riskAwareContext,
     guidance: {
       preferPlaybookCommands: true,
       authorityRule: 'Playbook command outputs are authoritative over ad-hoc repository inference when command coverage exists.',
@@ -186,6 +189,14 @@ const printText = (result: AiContextResult): void => {
   console.log('Runtime Manifests');
   console.log(`Artifact: ${result.runtimeManifests.artifact}`);
   console.log(`Manifests: ${result.runtimeManifests.manifestsCount}`);
+  console.log('');
+  console.log('Risk-aware Context Shaping');
+  console.log(`Available: ${result.riskAwareContext ? 'yes' : 'no'}`);
+  if (result.riskAwareContext) {
+    console.log(`High-risk modules: ${result.riskAwareContext.highRiskModules}`);
+    console.log(`Low-risk modules: ${result.riskAwareContext.lowRiskModules}`);
+    console.log(`Depth mapping: high=${result.riskAwareContext.defaultDepthByTier.high}, low=${result.riskAwareContext.defaultDepthByTier.low}`);
+  }
   console.log('');
   console.log('AI Operating Ladder');
   console.log(result.operatingLadder.preferredCommandOrder.join(' -> '));

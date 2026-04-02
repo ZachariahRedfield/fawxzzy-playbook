@@ -7,6 +7,7 @@ import type { RepositoryModule } from '../indexer/repoIndexer.js';
 import { getRuleMetadata } from './ruleRegistry.js';
 import { resolveRepositoryTarget, type ResolvedTarget } from '../intelligence/targetResolver.js';
 import { readModuleDigest } from '../context/moduleDigests.js';
+import { shapeRiskAwareModuleContext, type RiskAwareModuleContext } from '../context/riskAwareContext.js';
 import { readRuntimeMemoryEnvelope, type RuntimeMemoryEnvelope } from '../intelligence/runtimeMemory.js';
 import {
   expandMemoryProvenance,
@@ -74,6 +75,7 @@ export type RuleExplanation = ExplainMemoryFields & {
   fix: string[];
   reason: string;
   graphNeighborhood?: GraphNeighborhoodSummary;
+  riskAwareShaping?: RiskAwareModuleContext;
 };
 
 export type ModuleExplanation = ExplainMemoryFields & {
@@ -1047,7 +1049,8 @@ export const explainTarget = (projectRoot: string, target: string, options?: Exp
       responsibilities: inferModuleResponsibilities(moduleName),
       dependencies: digest?.dependencies.direct ?? [],
       architecture: context.architecture,
-      graphNeighborhood: readGraphNeighborhood(projectRoot, `module:${moduleName}`)
+      graphNeighborhood: readGraphNeighborhood(projectRoot, `module:${moduleName}`),
+      riskAwareShaping: digest ? shapeRiskAwareModuleContext(digest) : undefined
     }, { target: moduleName });
   }
 

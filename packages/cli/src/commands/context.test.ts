@@ -57,6 +57,9 @@ describe('runContext', () => {
     expect(runtimeManifests.manifestsCount).toBe(0);
     expect(runtimeManifests.manifests).toEqual([]);
 
+    const riskAwareContext = payload.riskAwareContext as Record<string, unknown> | null;
+    expect(riskAwareContext).toBeNull();
+
     const cli = payload.cli as Record<string, unknown>;
     expect(Array.isArray(cli.commands)).toBe(true);
     expect(cli.commands).toContain('context');
@@ -105,6 +108,59 @@ describe('runContext', () => {
     const manifests = runtimeManifests.manifests as Array<Record<string, unknown>>;
     expect(manifests[0]?.external_truth_contract_ref).toBe('docs/CONSUMER_INTEGRATION_CONTRACT.md');
     expect(manifests[0]?.bounded_action_families).toEqual(['repo-truth-pack-ingest']);
+
+    logSpy.mockRestore();
+  });
+
+
+  it('shapes high-risk modules with richer context depth than low-risk modules', async () => {
+    const repo = createRepo();
+    fs.mkdirSync(path.join(repo, '.playbook'), { recursive: true });
+    fs.writeFileSync(
+      path.join(repo, '.playbook', 'module-digests.json'),
+      `${JSON.stringify({
+        schemaVersion: '1.0',
+        kind: 'playbook-module-digests',
+        modules: [
+          {
+            id: 'core',
+            summary: 'core summary',
+            dependencies: { direct: ['util', 'api', 'db', 'auth'], directCount: 4 },
+            dependents: { direct: ['web'], transitive: ['web', 'mobile'], directCount: 1, transitiveCount: 2 },
+            ownership: { area: 'platform', owners: ['team-core'], status: 'configured', source: '.playbook/module-owners.json' },
+            risk: { level: 'high', score: 0.9, signals: ['hub', 'verify failures', 'transitive impact'] },
+            keyReferences: { docs: ['docs/core.md'], contracts: ['docs/contracts/repository-graph-contract.md'], commands: [] },
+            digest: { hash: 'h1', algorithm: 'sha256' },
+            provenance: { indexArtifact: '.playbook/repo-index.json', graphArtifact: '.playbook/repo-graph.json', ownershipArtifact: '.playbook/module-owners.json' }
+          },
+          {
+            id: 'docs',
+            summary: 'docs summary',
+            dependencies: { direct: ['lint', 'mdx', 'spell'], directCount: 3 },
+            dependents: { direct: ['site', 'preview', 'search', 'tooling'], transitive: ['site', 'preview', 'search', 'tooling'], directCount: 4, transitiveCount: 4 },
+            ownership: { area: 'docs', owners: ['team-docs'], status: 'configured', source: '.playbook/module-owners.json' },
+            risk: { level: 'low', score: 0.1, signals: ['low fan-in', 'stable'] },
+            keyReferences: { docs: ['docs/docs.md'], contracts: ['docs/contracts/repository-graph-contract.md'], commands: [] },
+            digest: { hash: 'h2', algorithm: 'sha256' },
+            provenance: { indexArtifact: '.playbook/repo-index.json', graphArtifact: '.playbook/repo-graph.json', ownershipArtifact: '.playbook/module-owners.json' }
+          }
+        ]
+      }, null, 2)}
+`,
+      'utf8'
+    );
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const exitCode = await runContext(repo, { format: 'json', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as Record<string, unknown>;
+    const shaped = payload.riskAwareContext as Record<string, unknown>;
+    expect(shaped.highRiskModules).toBe(1);
+    expect(shaped.lowRiskModules).toBe(1);
+    const modules = shaped.modules as Array<Record<string, unknown>>;
+    expect(modules.find((entry) => entry.module === 'core')?.contextDepth).toBe('rich');
+    expect(modules.find((entry) => entry.module === 'docs')?.contextDepth).toBe('concise');
 
     logSpy.mockRestore();
   });
