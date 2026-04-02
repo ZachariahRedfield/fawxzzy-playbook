@@ -32,15 +32,15 @@ const writeLaunchPlan = (repo: string): void => {
             launchEligible: true,
             blockers: [],
             requiredCapabilities: [],
-            allowedWriteSurfaces: ['docs/commands/workers.md'],
+            allowedWriteSurfaces: ['.playbook/orchestrator/workers/lane-1/'],
             declaredChangeScope: {
               scopeId: 'scope-1',
-              allowedWriteSurfaces: ['docs/commands/workers.md'],
+              allowedWriteSurfaces: ['.playbook/orchestrator/workers/lane-1/'],
               patchSizeBudget: { maxFiles: 1, maxHunks: 2, maxAddedLines: 10, maxRemovedLines: 10 },
               enforced: true
             },
             protectedSingletonImpact: { hasProtectedSingletonWork: true, targets: ['docs/commands/workers.md'], consolidationStage: 'applied', unresolved: false },
-            requiredReceipts: [],
+            requiredReceipts: ['.playbook/worker-assignments.json'],
             releaseReadyPreconditions: []
           }
         ]
@@ -59,7 +59,7 @@ describe('validateWorkerSubmitAgainstScope', () => {
     const result = validateWorkerSubmitAgainstScope(repo, {
       lane_id: 'lane-1',
       fragment_refs: [{ target_path: 'docs/commands/workers.md', fragment_path: '.playbook/orchestrator/workers/lane-1/worker-fragment.json' }],
-      artifact_refs: []
+      artifact_refs: [{ path: '.playbook/worker-assignments.json', kind: 'artifact' }]
     });
     expect(result.errors).toEqual([]);
   });
@@ -74,4 +74,3 @@ describe('validateWorkerSubmitAgainstScope', () => {
     expect(result.errors).toContain('scope:out-of-scope-targets:README.md');
   });
 });
-

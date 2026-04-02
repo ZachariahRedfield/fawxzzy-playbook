@@ -28,7 +28,7 @@ const readLaunchPlan = (cwd: string): WorkerLaunchPlanArtifact | null => {
 };
 
 const collectTouchedMutationTargets = (input: WorkerSubmitInput): string[] => {
-  const fragmentTargets = (input.fragment_refs ?? []).map((entry) => normalizePath(entry.target_path));
+  const fragmentTargets = (input.fragment_refs ?? []).map((entry) => normalizePath(entry.fragment_path));
   const artifactTargets = (input.artifact_refs ?? []).map((entry) => normalizePath(entry.path));
   return [...new Set([...fragmentTargets, ...artifactTargets])].sort((left, right) => left.localeCompare(right));
 };
@@ -49,7 +49,7 @@ export const validateWorkerSubmitAgainstScope = (cwd: string, input: WorkerSubmi
     return { allowedWriteSurfaces, errors: [`scope:no-allowed-write-surfaces:${input.lane_id}`] };
   }
 
-  const touchedTargets = collectTouchedMutationTargets(input);
+  const touchedTargets = collectTouchedMutationTargets(input).filter((target) => !lane.requiredReceipts.includes(target));
   const outOfScopeTargets = touchedTargets.filter(
     (target) => !allowedWriteSurfaces.some((surface) => isPathWithinSurface(target, normalizePath(surface)))
   );
@@ -62,4 +62,3 @@ export const validateWorkerSubmitAgainstScope = (cwd: string, input: WorkerSubmi
 
   return { allowedWriteSurfaces: [...allowedWriteSurfaces].sort((left, right) => left.localeCompare(right)), errors };
 };
-
