@@ -351,6 +351,7 @@ Human output for `status proof` now compresses parallel-work integration into on
 3. blocker summary
 4. next action
 5. compact counts for `pending`, `blocked`, `plan_ready`, `guard_conflicted`, and `merge_ready`
+6. compact mutation-scope drift summary (`present`, `missing`, `violated`, `clean`, `budget`, `violated_files`)
 
 The text brief intentionally omits the prior proof `why` narrative and artifact reference list so the operator view stays shorter than raw lane-state details.
 
@@ -360,8 +361,19 @@ The brief reads from existing governed artifacts only:
 - `.playbook/worker-results.json`
 - `.playbook/docs-consolidation-plan.json`
 - `.playbook/policy-apply-result.json`
+- `.playbook/execution-outcome-input.json` (when present for declared-vs-actual mutation scope evidence)
 
 It does **not** create a new state store. Full detail stays in JSON output and the underlying `.playbook/*` artifacts.
+
+`parallel_work.scope` (additive JSON fields) now reports:
+
+- `present`: prompt outcomes with explicit `mutation_scope`
+- `missing`: prompt outcomes without `mutation_scope`
+- `violated`: prompts where actual mutated files were out-of-scope or exceeded budget
+- `clean`: prompts with explicit scope and no violation
+- `violated_files[]`: unique out-of-scope files
+- `budget_status`: `within_budget` | `over_budget` | `unknown`
+- `blockers[]` in the compact summary is normalized (trimmed, empty/whitespace-only entries removed, deterministic ordering preserved)
 
 Rule:
 

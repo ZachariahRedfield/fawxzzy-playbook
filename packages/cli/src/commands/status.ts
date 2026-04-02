@@ -693,6 +693,16 @@ export const runStatus = async (cwd: string, options: StatusOptions): Promise<nu
               `merge_ready=${proofResult.parallel_work.counts.merge_ready}`
             ]
           }, {
+            label: 'Scope',
+            items: [
+              `present=${proofResult.parallel_work.scope.present}`,
+              `missing=${proofResult.parallel_work.scope.missing}`,
+              `violated=${proofResult.parallel_work.scope.violated}`,
+              `clean=${proofResult.parallel_work.scope.clean}`,
+              `budget=${proofResult.parallel_work.scope.budget_status}`,
+              `violated_files=${proofResult.parallel_work.scope.violated_files.join(',') || 'none'}`
+            ]
+          }, {
             label: 'Failure ownership',
             items: [
               `primary=${proofResult.primaryFailureDomain ?? 'none'}`,
