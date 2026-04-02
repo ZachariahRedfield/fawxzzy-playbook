@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { finalizeExecution, recordWorkerResult, startExecution, updateLaneState, type WorksetPlanArtifact } from '../src/index.js';
+import type { WorkerLaunchPlanArtifact } from '../src/orchestration/workerLaunchPlan.js';
 
 const createRepo = (): string => fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-exec-supervisor-'));
 
@@ -47,10 +48,48 @@ const worksetPlanFixture = (): WorksetPlanArtifact => ({
   warnings: []
 });
 
+const launchPlanFixture = (): WorkerLaunchPlanArtifact => ({
+  schemaVersion: '1.0',
+  kind: 'worker-launch-plan',
+  proposalOnly: true,
+  generatedAt: new Date(0).toISOString(),
+  sourceArtifacts: {
+    worksetPlanPath: '.playbook/workset-plan.json',
+    laneStatePath: '.playbook/lane-state.json',
+    workerAssignmentsPath: '.playbook/worker-assignments.json',
+    verifyPath: '.playbook/verify-report.json',
+    policyEvaluationPath: '.playbook/policy-evaluation.json'
+  },
+  summary: {
+    launchEligibleLanes: ['lane-1'],
+    blockedLanes: [],
+    failClosedReasons: []
+  },
+  lanes: [
+    {
+      lane_id: 'lane-1',
+      worker_id: 'worker-1',
+      worker_type: 'general',
+      launchEligible: true,
+      blockers: [],
+      requiredCapabilities: [],
+      allowedWriteSurfaces: ['docs/README.md'],
+      protectedSingletonImpact: {
+        hasProtectedSingletonWork: false,
+        targets: [],
+        consolidationStage: 'not_applicable',
+        unresolved: false
+      },
+      requiredReceipts: [],
+      releaseReadyPreconditions: []
+    }
+  ]
+});
+
 describe('execution supervisor', () => {
   it('writes deterministic execution-state and telemetry records', async () => {
     const repo = createRepo();
-    const run = await startExecution(worksetPlanFixture(), repo);
+    const run = await startExecution(worksetPlanFixture(), launchPlanFixture(), repo);
 
     await updateLaneState('lane-1', 'running', repo);
     await recordWorkerResult('lane-1', 'worker-1', { status: 'completed', retries: 0 }, repo);
