@@ -124,6 +124,7 @@ const normalizeSummaryStrings = (values: readonly string[]): string[] =>
     .filter((value) => value.length > 0);
 
 const uniqueSorted = (values: readonly string[]): string[] => [...new Set(values)].sort((left, right) => left.localeCompare(right));
+const normalizedUniqueSorted = (values: readonly string[]): string[] => uniqueSorted(normalizeSummaryStrings(values));
 
 const laneIsPending = (lane: LaneStateEntry): boolean => lane.status === 'ready' || lane.status === 'running' || lane.status === 'completed';
 
@@ -155,8 +156,8 @@ export const readProofParallelWorkSummary = (repoRoot: string): ProofParallelWor
     ...((workerResults?.results ?? []).filter((result: WorkerResultEntry) => result.completion_status === 'in_progress').map((result) => result.lane_id))
   ]).filter((laneId) => !blockedLanes.includes(laneId) && !mergeReadyLanes.includes(laneId));
 
-  const skippedBlocked = uniqueSorted((guardedApply?.skipped_blocked ?? []).map((entry) => entry.proposal_id));
-  const failedExecution = uniqueSorted((guardedApply?.failed_execution ?? []).map((entry) => entry.proposal_id));
+  const skippedBlocked = normalizedUniqueSorted((guardedApply?.skipped_blocked ?? []).map((entry) => entry.proposal_id));
+  const failedExecution = normalizedUniqueSorted((guardedApply?.failed_execution ?? []).map((entry) => entry.proposal_id));
   const guardConflicted = uniqueSorted([...skippedBlocked, ...failedExecution]);
 
   const counts = {
@@ -168,7 +169,7 @@ export const readProofParallelWorkSummary = (repoRoot: string): ProofParallelWor
   };
 
   const docsTargetDocs = uniqueSorted((docsPlan?.tasks ?? []).map((task) => task.file).filter((value): value is string => typeof value === 'string'));
-  const docsExcludedTargets = uniqueSorted((docsPlan?.excluded ?? []).map((entry) => entry.target_doc));
+  const docsExcludedTargets = normalizedUniqueSorted((docsPlan?.excluded ?? []).map((entry) => entry.target_doc));
   const promptOutcomes = executionOutcomeInput?.prompt_outcomes ?? [];
   const scopeEntries = promptOutcomes.map((prompt) => prompt.mutation_scope);
   const scopePresent = scopeEntries.filter((scope): scope is ScopeEvidence => Boolean(scope)).length;

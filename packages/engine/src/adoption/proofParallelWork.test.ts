@@ -85,5 +85,7 @@ describe('readProofParallelWorkSummary scope drift', () => {
       'docs exclusion: docs/PLAYBOOK_PRODUCT_ROADMAP.md',
       'guard conflict: proposal-9'
     ]);
+    expect(summary.blockers).not.toContain('docs exclusion:');
+    expect(summary.blockers).not.toContain('guard conflict:');
   });
 });
