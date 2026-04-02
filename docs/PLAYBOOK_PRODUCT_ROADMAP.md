@@ -35,6 +35,10 @@ Pattern: Product Story Follows Architecture.
 Rule: Roadmap sequencing must preserve CLI-first, offline-capable, private-first operation.
 Failure Mode: Business docs drifting away from runtime truth.
 Recent implementation note: `pnpm playbook interop emit-fitness-plan --from-draft .playbook/interop-request-draft.json` now closes the explicit bounded interop loop by consuming only the canonical draft artifact, re-validating canonical Fitness metadata, and reusing the existing bounded emit runtime path without widening runtime authority.
+Recent implementation note: deterministic change-scope bundles are now emitted at `.playbook/change-scope.json` from plan/analyze-pr/workers launch-plan/ai propose so mutation-scope declarations (`allowedFiles`, `patchSizeBudget`, `boundaryChecks`) can be carried as explicit governed artifacts without widening mutation authority in this slice.
+Rule: Governed work must declare mutation scope explicitly before execution.
+Pattern: understand -> bound scope -> propose/apply within declared boundaries.
+Failure Mode: Without explicit change-scope bundles, safe systems still drift because mutation boundaries live only in human interpretation.
 Rule: AI proposals may be compiled into bounded request drafts, but may not execute them directly.
 Rule: Updated truth should feed existing governed review surfaces before inventing new workflow silos.
 Pattern: AI proposal -> request draft -> explicit interop emit -> receipt -> updated truth -> review cue.

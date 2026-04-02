@@ -147,6 +147,13 @@ declare module "@zachariahredfield/playbook-engine" {
   export const REPOSITORY_GRAPH_RELATIVE_PATH: ".playbook/repo-graph.json";
   export const MODULE_CONTEXT_DIR_RELATIVE_PATH: ".playbook/context/modules";
   export const loadAiContract: (...args: any[]) => any;
+  export const CHANGE_SCOPE_SCHEMA_VERSION: any;
+  export const CHANGE_SCOPE_RELATIVE_PATH: '.playbook/change-scope.json';
+  export const buildChangeScopeBundleFromPlan: (...args: any[]) => any;
+  export const buildChangeScopeBundleFromAnalyzePr: (...args: any[]) => any;
+  export const buildChangeScopeBundleFromWorkerLaunchPlan: (...args: any[]) => any;
+  export const buildChangeScopeBundleFromAiProposal: (...args: any[]) => any;
+  export const writeChangeScopeArtifact: (...args: any[]) => any;
   export const generateAiProposal: (...args: any[]) => any;
   export type GenerateAiProposalOptions = any;
   export const assessReleaseSync: (...args: any[]) => any;

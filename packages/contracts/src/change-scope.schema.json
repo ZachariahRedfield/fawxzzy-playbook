@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/change-scope.schema.json",
+  "title": "Playbook Change Scope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "generatedAt", "bundles"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "kind": { "const": "change-scope" },
+    "generatedAt": { "type": "string" },
+    "bundles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scopeId",
+          "source",
+          "mutationScope",
+          "expectedTests",
+          "docsSurfaces",
+          "rulesTouched",
+          "riskLevel",
+          "rationale",
+          "provenanceRefs"
+        ],
+        "properties": {
+          "scopeId": { "type": "string" },
+          "source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["command", "artifactPath"],
+            "properties": {
+              "command": { "type": "string" },
+              "artifactPath": { "type": "string" }
+            }
+          },
+          "mutationScope": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["allowedFiles", "patchSizeBudget", "boundaryChecks"],
+            "properties": {
+              "allowedFiles": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "patchSizeBudget": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["maxFiles", "maxHunks", "maxAddedLines", "maxRemovedLines"],
+                "properties": {
+                  "maxFiles": { "type": "integer", "minimum": 0 },
+                  "maxHunks": { "type": "integer", "minimum": 0 },
+                  "maxAddedLines": { "type": "integer", "minimum": 0 },
+                  "maxRemovedLines": { "type": "integer", "minimum": 0 }
+                }
+              },
+              "boundaryChecks": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "expectedTests": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "docsSurfaces": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "rulesTouched": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "riskLevel": {
+            "enum": ["low", "medium", "high"]
+          },
+          "rationale": { "type": "string" },
+          "provenanceRefs": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

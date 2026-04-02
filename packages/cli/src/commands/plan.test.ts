@@ -12,8 +12,10 @@ const createExecutionRun = vi.fn();
 const appendExecutionStep = vi.fn();
 const executionRunPath = vi.fn();
 const attachSessionRunState = vi.fn();
+const buildChangeScopeBundleFromPlan = vi.fn();
+const writeChangeScopeArtifact = vi.fn();
 
-vi.mock('@zachariahredfield/playbook-engine', () => ({ generatePlanContract, routeTask, getLatestMutableRun, createExecutionIntent, createExecutionRun, appendExecutionStep, executionRunPath, attachSessionRunState }));
+vi.mock('@zachariahredfield/playbook-engine', () => ({ generatePlanContract, routeTask, getLatestMutableRun, createExecutionIntent, createExecutionRun, appendExecutionStep, executionRunPath, attachSessionRunState, buildChangeScopeBundleFromPlan, writeChangeScopeArtifact }));
 
 describe('runPlan', () => {
   beforeEach(() => {
@@ -25,9 +27,12 @@ describe('runPlan', () => {
     appendExecutionStep.mockReset();
     executionRunPath.mockReset();
     attachSessionRunState.mockReset();
+    buildChangeScopeBundleFromPlan.mockReset();
+    writeChangeScopeArtifact.mockReset();
     getLatestMutableRun.mockReturnValue({ id: 'run-test' });
     appendExecutionStep.mockReturnValue({ id: 'run-test' });
     executionRunPath.mockReturnValue('.playbook/runs/run-test.json');
+    buildChangeScopeBundleFromPlan.mockReturnValue({ scopeId: 'scope-1' });
     routeTask.mockReturnValue({
       route: 'deterministic_local',
       why: 'ok',

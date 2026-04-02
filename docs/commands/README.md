@@ -178,6 +178,10 @@ Failure Mode - Manual Workflow Drift.
 
 Failure Mode - Helper Script Becomes Shadow Product Surface.
 
+- Change-scope note: `plan`, `analyze-pr`, `workers launch-plan`, and `ai propose` now emit deterministic `.playbook/change-scope.json` bundles with explicit mutation-scope declarations (`allowedFiles`, `patchSizeBudget`, `boundaryChecks`) for downstream governed consumption.
+- Rule: Governed work must declare mutation scope explicitly before execution.
+- Pattern: understand -> bound scope -> propose/apply within declared boundaries.
+- Failure Mode: Without explicit change-scope bundles, safe systems still drift because mutation boundaries live only in human interpretation.
 - Rule: AI must remain a proposal-only layer within deterministic systems.
 - Pattern: AI -> proposal artifact -> route/plan/review -> apply -> verify.
 - Failure Mode: Allowing AI to mutate state directly collapses auditability and reproducibility.

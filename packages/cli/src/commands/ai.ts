@@ -1,4 +1,4 @@
-import { generateAiProposal, type GenerateAiProposalOptions } from '@zachariahredfield/playbook-engine';
+import { buildChangeScopeBundleFromAiProposal, generateAiProposal, writeChangeScopeArtifact, type GenerateAiProposalOptions } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 import { emitJsonOutput } from '../lib/jsonArtifact.js';
 
@@ -122,6 +122,8 @@ export const runAi = async (cwd: string, args: string[], options: AiOptions): Pr
       include: parseInclude(args),
       target: parseTarget(args)
     });
+    const changeScopeBundle = buildChangeScopeBundleFromAiProposal(payload);
+    writeChangeScopeArtifact(cwd, changeScopeBundle);
 
     if (options.format === 'json') {
       emitJsonOutput({

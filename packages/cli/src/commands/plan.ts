@@ -110,6 +110,8 @@ export const runPlan = async (
     };
 
     writeJsonArtifactAbsolute(path.join(cwd, PLAN_ARTIFACT_RELATIVE_PATH), payload, 'plan', { envelope: false });
+    const changeScopeBundle = engine.buildChangeScopeBundleFromPlan(payload);
+    engine.writeChangeScopeArtifact(cwd, changeScopeBundle);
 
     emitJsonOutput({ cwd, command: 'plan', payload, outFile: options.outFile });
     return ExitCode.Success;

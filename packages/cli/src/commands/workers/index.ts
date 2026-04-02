@@ -3,6 +3,7 @@ import path from 'node:path';
 import {
   assignWorkersToLanes,
   buildAssignedPrompt,
+  buildChangeScopeBundleFromWorkerLaunchPlan,
   buildWorkerLaunchPlan,
   deriveLaneState,
   mergeWorkerResult,
@@ -11,6 +12,7 @@ import {
   recordWorkerAssignment,
   safeRecordRepositoryEvent,
   validateWorkerResultInput,
+  writeChangeScopeArtifact,
   writeWorkerLaunchPlanArtifact,
   writeWorkerResultsArtifact,
   WORKER_LAUNCH_PLAN_RELATIVE_PATH,
@@ -196,6 +198,8 @@ const runLaunchPlan = async (cwd: string, options: WorkersOptions, worksetPlan: 
     workerAssignmentsPath: WORKER_ASSIGNMENTS_PATH
   });
   writeWorkerLaunchPlanArtifact(cwd, launchPlan);
+  const changeScopeBundle = buildChangeScopeBundleFromWorkerLaunchPlan(launchPlan);
+  writeChangeScopeArtifact(cwd, changeScopeBundle);
 
   if (options.format === 'json') {
     console.log(JSON.stringify({

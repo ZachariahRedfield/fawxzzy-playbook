@@ -379,6 +379,11 @@
         "id": "managed-surface-manifest",
         "version": "1.0",
         "path": "packages/contracts/src/managed-surface-manifest.schema.json"
+      },
+      {
+        "id": "change-scope",
+        "version": "1.0",
+        "path": "packages/contracts/src/change-scope.schema.json"
       }
     ]
   }

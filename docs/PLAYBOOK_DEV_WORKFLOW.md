@@ -114,6 +114,14 @@ pnpm playbook interop fitness-contract --json
 
 `rendezvous` is read-first in v1: it only creates/updates `.playbook/rendezvous-manifest.json` and never performs release mutation directly.
 
+
+Change-scope governance seam:
+
+- `pnpm playbook plan --json`, `pnpm playbook analyze-pr --json`, `pnpm playbook workers launch-plan --json`, and `pnpm playbook ai propose --json` now emit `.playbook/change-scope.json` as a deterministic read-first bundle artifact.
+- Rule: Governed work must declare mutation scope explicitly before execution.
+- Pattern: understand -> bound scope -> propose/apply within declared boundaries.
+- Failure Mode: Without explicit change-scope bundles, safe systems still drift because mutation boundaries live only in human interpretation.
+
 Fitness-targeted AI proposal boundary clarification:
 
 - `pnpm playbook ai propose --target fitness --json` may emit a proposal-only bounded request suggestion validated against canonical Fitness action/input contracts.

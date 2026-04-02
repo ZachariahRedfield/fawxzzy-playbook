@@ -258,6 +258,17 @@ export type {
 } from './retrieval/reviewReceipts.js';
 export type { MemoryCandidateKind, MemoryReplayResult, MemoryReplayCandidate, MemoryReplayCandidateProvenance, MemoryReplaySalienceFactors, MemoryReplayIndex, MemoryReplayEventReference } from './schema/memoryReplay.js';
 export type { LearnDraftResult, KnowledgeCandidate, KnowledgeCandidateEvidencePointer, KnowledgeCandidateDedupe } from './schema/knowledgeCandidate.js';
+export {
+  CHANGE_SCOPE_SCHEMA_VERSION,
+  CHANGE_SCOPE_RELATIVE_PATH,
+  buildChangeScopeBundleFromPlan,
+  buildChangeScopeBundleFromAnalyzePr,
+  buildChangeScopeBundleFromWorkerLaunchPlan,
+  buildChangeScopeBundleFromAiProposal,
+  writeChangeScopeArtifact
+} from './changeScope.js';
+export type { ChangeScopeArtifact, ChangeScopeBundle, MutationScopeDeclaration, PatchSizeBudget } from './changeScope.js';
+
 export { analyzePullRequest } from './pr/analyzePr.js';
 export type { AnalyzePullRequestResult } from './pr/analyzePr.js';
 export { formatAnalyzePrOutput, formatAnalyzePrText, formatAnalyzePrJson, formatAnalyzePrGithubComment, formatAnalyzePrGithubReview } from './formatters/analyzePrFormatter.js';

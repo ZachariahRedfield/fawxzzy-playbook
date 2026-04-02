@@ -1,4 +1,4 @@
-import { analyzePullRequest, formatAnalyzePrOutput } from '@zachariahredfield/playbook-engine';
+import { analyzePullRequest, buildChangeScopeBundleFromAnalyzePr, formatAnalyzePrOutput, writeChangeScopeArtifact } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 
 type AnalyzePrOptions = {
@@ -62,6 +62,8 @@ export const runAnalyzePr = async (cwd: string, commandArgs: string[], options: 
 
   try {
     const payload = analyzePullRequest(cwd, { baseRef: options.baseRef });
+    const changeScopeBundle = buildChangeScopeBundleFromAnalyzePr(payload);
+    writeChangeScopeArtifact(cwd, changeScopeBundle);
 
     if (options.quiet && options.format === 'text') {
       return ExitCode.Success;
