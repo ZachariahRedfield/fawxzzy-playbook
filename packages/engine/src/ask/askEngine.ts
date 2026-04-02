@@ -41,7 +41,13 @@ export type AskEngineResult = {
     framework: string;
     modules: string[];
     module?: IndexedModuleContext;
-    moduleDigest?: ModuleDigest;
+    moduleDigest?: ModuleDigest & {
+      module: {
+        name: string;
+        path: string;
+        type: 'module';
+      };
+    };
     diff?: DiffAskContext;
   };
 };
@@ -83,6 +89,20 @@ const toModuleNames = (modules: string[] | RepositoryModule[]): string[] => {
 };
 
 const ASK_USER_QUESTION_PREFIX = 'User question:';
+
+const parseNeighborhoodFromSummary = (summary: string): { outgoingKinds: string[]; incomingKinds: string[] } | null => {
+  const match = summary.match(/out\[([^\]]*)\], in\[([^\]]*)\]/i);
+  if (!match) return null;
+  const parseList = (value: string | undefined): string[] =>
+    (value ?? '')
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0 && entry !== 'none');
+  return {
+    outgoingKinds: parseList(match[1]),
+    incomingKinds: parseList(match[2])
+  };
+};
 
 const extractUserQuestion = (question: string): string => {
   const markerIndex = question.lastIndexOf(ASK_USER_QUESTION_PREFIX);
@@ -402,12 +422,29 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
     const moduleDigest = readModuleDigest(projectRoot, moduleContext.module.name);
 
     if (moduleDigest) {
+      const neighborhood = parseNeighborhoodFromSummary(moduleDigest.summary);
+      const enrichedDigest: ModuleDigest & {
+        module: {
+          name: string;
+          path: string;
+          type: 'module';
+        };
+      } = {
+        ...moduleDigest,
+        module: {
+          name: moduleDigest.id,
+          path: moduleContext.module.path,
+          type: 'module'
+        }
+      };
       const digestSummary = [
         `Module scope: ${moduleDigest.id}`,
+        `Module path: ${moduleContext.module.path}`,
         `Dependencies: ${moduleDigest.dependencies.direct.length > 0 ? moduleDigest.dependencies.direct.join(', ') : 'none'}`,
         `Direct dependents: ${moduleDigest.dependents.direct.length > 0 ? moduleDigest.dependents.direct.join(', ') : 'none'}`,
+        `Transitive dependents: ${moduleDigest.dependents.transitive.length > 0 ? moduleDigest.dependents.transitive.join(', ') : 'none'}`,
         `Risk: ${moduleDigest.risk.level} (${moduleDigest.risk.score.toFixed(2)})`,
-        moduleDigest.summary
+        `Graph neighborhood kinds: out[${neighborhood?.outgoingKinds.join(', ') || 'none'}], in[${neighborhood?.incomingKinds.join(', ') || 'none'}]`
       ].join('; ');
 
       return {
@@ -417,7 +454,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
           'Derived from deterministic module digests in .playbook/module-digests.json plus graph/index intelligence artifacts.',
         answerability: {
           state: 'answered-from-trusted-artifact',
-          artifact: '.playbook/module-digests.json'
+          artifact: `.playbook/context/modules/${moduleDigest.id.replace(/[\\/]/g, '__')}.json`
         },
         context: {
         ...memoryContext,
@@ -425,7 +462,7 @@ export const answerRepositoryQuestion = (projectRoot: string, question: string, 
           framework: context.framework,
           modules: context.modules,
           module: moduleContext,
-          moduleDigest,
+          moduleDigest: enrichedDigest,
           diff: diffContext
         }
       };
