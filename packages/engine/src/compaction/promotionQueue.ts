@@ -17,6 +17,11 @@ export type ConvergencePrioritySuggestion = {
     convergenceMemberCount: number;
     clusterMatch: boolean;
   };
+  provenance: {
+    convergenceArtifact: typeof PATTERN_CONVERGENCE_RELATIVE_PATH;
+    matchStrategy: 'member-id-first-then-metadata-token-overlap';
+    consideredClusters: number;
+  };
   rationale: string;
   matchedClusterId: string | null;
 };
@@ -142,12 +147,46 @@ const buildWhyItExists = (patternId: string, recurrenceCount: number): string =>
 const buildReusableMeaning = (patternId: string): string =>
   `Reusable engineering meaning: ${patternId} captures a recurring remediation and governance signal that can guide future deterministic analysis.`;
 
+const normalizeForMatch = (value: string): string =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+const toCandidateId = (patternId: string): string => `candidate-${normalizeForMatch(patternId)}`;
+
+const tokenize = (value: string): string[] =>
+  normalizeForMatch(value)
+    .split('-')
+    .filter((token) => token.length > 2);
+
 const findBestConvergenceCluster = (patternId: string, clusters: PatternConvergenceCluster[]): PatternConvergenceCluster | null => {
-  const normalizedId = patternId.toLowerCase();
-  return clusters.find((cluster) => {
-    const clusterText = `${cluster.clusterId} ${cluster.intent} ${cluster.constraint_class} ${cluster.resolution_strategy}`.toLowerCase();
-    return normalizedId.split('_').some((token) => token.length > 2 && clusterText.includes(token));
-  }) ?? null;
+  const normalizedPatternId = normalizeForMatch(patternId);
+  const expectedCandidateId = toCandidateId(patternId);
+  const patternTokens = tokenize(patternId);
+
+  return [...clusters]
+    .map((cluster) => {
+      const exactMemberMatch = cluster.members.some((member) => {
+        const normalizedMemberId = normalizeForMatch(member.id);
+        return (
+          normalizedMemberId === normalizedPatternId ||
+          normalizedMemberId === normalizeForMatch(expectedCandidateId) ||
+          normalizedMemberId.endsWith(`-${normalizedPatternId}`)
+        );
+      });
+
+      const clusterText = `${cluster.clusterId} ${cluster.intent} ${cluster.constraint_class} ${cluster.resolution_strategy}`.toLowerCase();
+      const tokenOverlapScore = patternTokens.filter((token) => clusterText.includes(token)).length;
+
+      return {
+        cluster,
+        rank: exactMemberMatch ? 10_000 + tokenOverlapScore : tokenOverlapScore
+      };
+    })
+    .sort((left, right) => right.rank - left.rank || left.cluster.clusterId.localeCompare(right.cluster.clusterId))[0]
+    ?.cluster ?? null;
 };
 
 const buildConvergencePrioritySuggestion = (patternId: string, promotionScore: number, clusters: PatternConvergenceCluster[]): ConvergencePrioritySuggestion => {
@@ -167,6 +206,11 @@ const buildConvergencePrioritySuggestion = (patternId: string, promotionScore: n
       convergenceConfidence: Number(convergenceConfidence.toFixed(4)),
       convergenceMemberCount,
       clusterMatch: Boolean(matchedCluster)
+    },
+    provenance: {
+      convergenceArtifact: PATTERN_CONVERGENCE_RELATIVE_PATH,
+      matchStrategy: 'member-id-first-then-metadata-token-overlap',
+      consideredClusters: clusters.length
     },
     rationale: matchedCluster
       ? `Proposal-only weighting: convergence cluster ${matchedCluster.clusterId} contributes advisory priority signal without changing promotion confidence or lifecycle state.`

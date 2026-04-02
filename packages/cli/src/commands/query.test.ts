@@ -105,6 +105,25 @@ const writePatternReviewQueue = (repo: string): void => {
             canonicalClarity: 0.9,
             falsePositiveRisk: 0.1,
             promotionScore: 0.83,
+            convergencePrioritySuggestion: {
+              proposalOnly: true,
+              suggestedPriority: 'high',
+              convergenceConfidence: 0.95,
+              weightedScore: 0.854,
+              weightingFactors: {
+                basePromotionScore: 0.83,
+                convergenceConfidence: 0.95,
+                convergenceMemberCount: 2,
+                clusterMatch: true
+              },
+              provenance: {
+                convergenceArtifact: '.playbook/pattern-convergence.json',
+                matchStrategy: 'member-id-first-then-metadata-token-overlap',
+                consideredClusters: 1
+              },
+              rationale: 'Proposal-only weighting rationale',
+              matchedClusterId: 'cluster:deterministic-governance-mutation-boundary-read-only-artifact-synthesis'
+            },
             attractorScoreBreakdown: {
               recurrence_score: 0.6,
               cross_domain_score: 1,
@@ -951,6 +970,22 @@ describe('command registry', () => {
     const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(payload.kind).toBe('playbook-pattern-review-queue');
     expect(payload.candidates).toHaveLength(1);
+
+    logSpy.mockRestore();
+  });
+
+  it('prints compact convergence advisory fields in pattern-review text output', async () => {
+    const repo = createRepo('playbook-cli-query-pattern-review-text');
+    writePatternReviewQueue(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['pattern-review'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const flattened = logSpy.mock.calls.map((call) => String(call[0]));
+    expect(flattened.some((line) => line.includes('weighted=0.854'))).toBe(true);
+    expect(flattened.some((line) => line.includes('priority=high'))).toBe(true);
+    expect(flattened.some((line) => line.includes('cluster=cluster:deterministic-governance-mutation-boundary-read-only-artifact-synthesis'))).toBe(true);
 
     logSpy.mockRestore();
   });

@@ -573,7 +573,11 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
           console.log('none');
         } else {
           for (const candidate of payload.candidates) {
-            console.log(`${candidate.id} score=${candidate.promotionScore} confidence=${candidate.confidence}`);
+            const convergence = candidate.convergencePrioritySuggestion;
+            const cluster = convergence.matchedClusterId ?? 'none';
+            console.log(
+              `${candidate.id} score=${candidate.promotionScore} confidence=${candidate.confidence} weighted=${convergence.weightedScore} priority=${convergence.suggestedPriority} cluster=${cluster}`
+            );
           }
         }
       }

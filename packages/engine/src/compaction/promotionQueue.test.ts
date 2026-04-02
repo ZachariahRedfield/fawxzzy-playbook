@@ -87,6 +87,8 @@ describe('buildPatternReviewQueue convergence weighting', () => {
     expect(topCandidate.convergencePrioritySuggestion.suggestedPriority).toBe('high');
     expect(topCandidate.convergencePrioritySuggestion.weightedScore).toBeGreaterThanOrEqual(topCandidate.promotionScore);
     expect(topCandidate.convergencePrioritySuggestion.rationale).toContain('without changing promotion confidence or lifecycle state');
+    expect(topCandidate.convergencePrioritySuggestion.provenance.convergenceArtifact).toBe('.playbook/pattern-convergence.json');
+    expect(topCandidate.convergencePrioritySuggestion.provenance.matchStrategy).toBe('member-id-first-then-metadata-token-overlap');
     expect(topCandidate.confidence).toBeGreaterThan(0);
   });
 
