@@ -8,6 +8,9 @@
   },
   "repositoryIntelligence": {
     "artifact": ".playbook/repo-index.json",
+    "moduleDigestsArtifact": ".playbook/module-digests.json",
+    "moduleDigestsAvailable": true,
+    "moduleDigestCount": 1,
     "available": true,
     "commands": [
       "index",
