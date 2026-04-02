@@ -110,17 +110,20 @@ describe('runStatus', () => {
       blockers: [],
       next_action: 'No parallel-work integration action is required.',
       counts: { pending: 0, blocked: 0, plan_ready: 0, guard_conflicted: 0, merge_ready: 0 },
+      scope: { present: 0, missing: 0, violated: 0, clean: 0, violated_files: [], budget_status: 'unknown' },
       artifacts: {
         lane_state: { available: false, path: '.playbook/lane-state.json' },
         worker_results: { available: false, path: '.playbook/worker-results.json' },
         docs_consolidation_plan: { available: false, path: '.playbook/docs-consolidation-plan.json' },
-        guarded_apply: { available: false, path: '.playbook/policy-apply-result.json' }
+        guarded_apply: { available: false, path: '.playbook/policy-apply-result.json' },
+        execution_outcome_input: { available: false, path: '.playbook/execution-outcome-input.json' }
       },
       details: {
         lane_state: { available: false, blocked_lanes: [], merge_ready_lanes: [], pending_lanes: [], plan_ready_lanes: [] },
         worker_results: { available: false, in_progress_lanes: [], blocked_lanes: [], completed_lanes: [] },
         docs_consolidation_plan: { available: false, executable_targets: 0, excluded_targets: 0, target_docs: [], excluded_targets_by_doc: [] },
-        guarded_apply: { available: false, executed: 0, skipped_requires_review: 0, skipped_blocked: [], failed_execution: [] }
+        guarded_apply: { available: false, executed: 0, skipped_requires_review: 0, skipped_blocked: [], failed_execution: [] },
+        scope: { over_budget_prompts: 0, prompts_with_scope: 0, prompts_missing_scope: 0 }
       }
     });
     buildRepoAdoptionReadiness.mockReturnValue({
@@ -753,17 +756,20 @@ describe('runStatus', () => {
       blockers: ['docs exclusion: docs/CHANGELOG.md'],
       next_action: 'Run `pnpm playbook apply --from-plan .playbook/docs-consolidation-plan.json`.',
       counts: { pending: 0, blocked: 0, plan_ready: 1, guard_conflicted: 0, merge_ready: 1 },
+      scope: { present: 2, missing: 0, violated: 1, clean: 1, violated_files: ['docs/README.md'], budget_status: 'over_budget' },
       artifacts: {
         lane_state: { available: true, path: '.playbook/lane-state.json' },
         worker_results: { available: true, path: '.playbook/worker-results.json' },
         docs_consolidation_plan: { available: true, path: '.playbook/docs-consolidation-plan.json' },
-        guarded_apply: { available: true, path: '.playbook/policy-apply-result.json' }
+        guarded_apply: { available: true, path: '.playbook/policy-apply-result.json' },
+        execution_outcome_input: { available: true, path: '.playbook/execution-outcome-input.json' }
       },
       details: {
         lane_state: { available: true, blocked_lanes: [], merge_ready_lanes: ['lane-2'], pending_lanes: [], plan_ready_lanes: ['lane-1'] },
         worker_results: { available: true, in_progress_lanes: [], blocked_lanes: [], completed_lanes: ['lane-1'] },
         docs_consolidation_plan: { available: true, executable_targets: 1, excluded_targets: 1, target_docs: ['docs/CHANGELOG.md'], excluded_targets_by_doc: ['docs/CHANGELOG.md'] },
-        guarded_apply: { available: true, executed: 1, skipped_requires_review: 0, skipped_blocked: [], failed_execution: [] }
+        guarded_apply: { available: true, executed: 1, skipped_requires_review: 0, skipped_blocked: [], failed_execution: [] },
+        scope: { over_budget_prompts: 1, prompts_with_scope: 2, prompts_missing_scope: 0 }
       }
     });
 
@@ -783,7 +789,8 @@ describe('runStatus', () => {
       parallel_work: {
         decision: 'parallel_plan_ready',
         status: 'docs consolidation ready to apply',
-        counts: { pending: 0, blocked: 0, plan_ready: 1, guard_conflicted: 0, merge_ready: 1 }
+        counts: { pending: 0, blocked: 0, plan_ready: 1, guard_conflicted: 0, merge_ready: 1 },
+        scope: { present: 2, missing: 0, violated: 1, clean: 1, violated_files: ['docs/README.md'], budget_status: 'over_budget' }
       },
       failureDomains: [],
       primaryFailureDomain: null,
@@ -855,17 +862,20 @@ describe('runStatus', () => {
       blockers: ['blocked lane: lane-b', 'guard conflict: proposal-9'],
       next_action: 'Inspect .playbook/policy-apply-result.json blocked/failed entries, resolve guard conflicts, then rerun `pnpm playbook apply --json`.',
       counts: { pending: 1, blocked: 1, plan_ready: 1, guard_conflicted: 1, merge_ready: 1 },
+      scope: { present: 2, missing: 0, violated: 0, clean: 2, violated_files: [], budget_status: 'within_budget' },
       artifacts: {
         lane_state: { available: true, path: '.playbook/lane-state.json' },
         worker_results: { available: true, path: '.playbook/worker-results.json' },
         docs_consolidation_plan: { available: true, path: '.playbook/docs-consolidation-plan.json' },
-        guarded_apply: { available: true, path: '.playbook/policy-apply-result.json' }
+        guarded_apply: { available: true, path: '.playbook/policy-apply-result.json' },
+        execution_outcome_input: { available: true, path: '.playbook/execution-outcome-input.json' }
       },
       details: {
         lane_state: { available: true, blocked_lanes: ['lane-b'], merge_ready_lanes: ['lane-c'], pending_lanes: ['lane-a'], plan_ready_lanes: ['lane-a'] },
         worker_results: { available: true, in_progress_lanes: ['lane-a'], blocked_lanes: [], completed_lanes: ['lane-c'] },
         docs_consolidation_plan: { available: true, executable_targets: 1, excluded_targets: 0, target_docs: ['docs/CHANGELOG.md'], excluded_targets_by_doc: [] },
-        guarded_apply: { available: true, executed: 1, skipped_requires_review: 0, skipped_blocked: ['proposal-9'], failed_execution: [] }
+        guarded_apply: { available: true, executed: 1, skipped_requires_review: 0, skipped_blocked: ['proposal-9'], failed_execution: [] },
+        scope: { over_budget_prompts: 0, prompts_with_scope: 2, prompts_missing_scope: 0 }
       }
     });
     classifyProofFailureDomains.mockReturnValue({
@@ -886,6 +896,10 @@ describe('runStatus', () => {
     expect(output).toContain('Blockers: sync_drift: guard conflict: proposal-9');
     expect(output).toContain('Next action: Inspect .playbook/policy-apply-result.json blocked/failed entries, resolve guard conflicts, then rerun `pnpm playbook apply --json`.');
     expect(output).toContain('Failure ownership');
+    expect(output).toContain('Scope');
+    expect(output).toContain('- present=2');
+    expect(output).toContain('- violated=0');
+    expect(output).toContain('- budget=within_budget');
     expect(output).toContain('- primary=sync_drift');
     expect(output).toContain('- pending=1');
     expect(output).toContain('- blocked=1');
