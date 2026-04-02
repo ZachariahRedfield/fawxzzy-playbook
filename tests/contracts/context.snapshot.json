@@ -9,6 +9,9 @@
   ],
   "repositoryIntelligence": {
     "artifact": ".playbook/repo-index.json",
+    "moduleDigestsArtifact": ".playbook/module-digests.json",
+    "moduleDigestsAvailable": false,
+    "moduleDigestCount": 0,
     "commands": [
       "index",
       "query",

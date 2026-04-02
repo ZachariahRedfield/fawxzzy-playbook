@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { RepositoryIndex, RepositoryModule } from '../indexer/repoIndexer.js';
 import { queryRisk } from './risk.js';
 import { resolveRepositoryTarget } from '../intelligence/targetResolver.js';
-import { readModuleContextDigest } from '../context/moduleContext.js';
+import { readModuleDigest } from '../context/moduleDigests.js';
 
 const INDEX_RELATIVE_PATH = '.playbook/repo-index.json' as const;
 
@@ -131,7 +131,7 @@ export const resolveIndexedModuleContext = (
   const directDependents = [...(reverseGraph.get(targetModule.name) ?? [])].sort((a, b) => a.localeCompare(b));
   const dependents = computeTransitiveDependents(targetModule.name, reverseGraph);
   const risk = queryRisk(projectRoot, targetModule.name);
-  const digest = readModuleContextDigest(projectRoot, targetModule.name);
+  const digest = readModuleDigest(projectRoot, targetModule.name);
 
   return {
     module: {
@@ -140,11 +140,11 @@ export const resolveIndexedModuleContext = (
       type: 'module'
     },
     impact: {
-      dependents: digest?.dependents ?? dependents,
-      directDependents: digest?.directDependents ?? directDependents,
-      dependencies: digest?.dependencies ?? [...targetModule.dependencies].sort((a, b) => a.localeCompare(b)),
-      docs: digest?.docs ?? [],
-      rules: digest?.rules ?? [],
+      dependents: digest?.dependents.transitive ?? dependents,
+      directDependents: digest?.dependents.direct ?? directDependents,
+      dependencies: digest?.dependencies.direct ?? [...targetModule.dependencies].sort((a, b) => a.localeCompare(b)),
+      docs: digest?.keyReferences.docs ?? [],
+      rules: [],
       risk: digest
         ? {
             level: digest.risk.level,

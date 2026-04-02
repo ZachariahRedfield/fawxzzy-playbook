@@ -49,6 +49,7 @@ describe('runIndex', () => {
       ok: true,
       indexFile: '.playbook/repo-index.json',
       graphFile: '.playbook/repo-graph.json',
+      moduleDigestFile: '.playbook/module-digests.json',
       systemMapFile: '.playbook/system-map.json',
       contextDir: '.playbook/context/modules',
       framework: 'node',
@@ -60,16 +61,20 @@ describe('runIndex', () => {
     const graphFile = path.join(repo, '.playbook', 'repo-graph.json');
     const contextFile = path.join(repo, '.playbook', 'context', 'modules', 'features.json');
     const systemMapFile = path.join(repo, '.playbook', 'system-map.json');
+    const moduleDigestFile = path.join(repo, '.playbook', 'module-digests.json');
     expect(fs.existsSync(indexFile)).toBe(true);
     expect(fs.existsSync(graphFile)).toBe(true);
+    expect(fs.existsSync(moduleDigestFile)).toBe(true);
     expect(fs.existsSync(systemMapFile)).toBe(true);
     expect(fs.existsSync(contextFile)).toBe(true);
 
     const indexPayload = JSON.parse(fs.readFileSync(indexFile, 'utf8'));
     const graphPayload = JSON.parse(fs.readFileSync(graphFile, 'utf8'));
+    const moduleDigestPayload = JSON.parse(fs.readFileSync(moduleDigestFile, 'utf8'));
     expect(indexPayload.schemaVersion).toBe('1.0');
     expect(indexPayload.modules).toEqual([{ name: 'features', dependencies: [] }]);
     expect(graphPayload.kind).toBe('playbook-repo-graph');
+    expect(moduleDigestPayload.kind).toBe('playbook-module-digests');
     expect(graphPayload.stats.nodeCount).toBeGreaterThan(0);
 
     logSpy.mockRestore();

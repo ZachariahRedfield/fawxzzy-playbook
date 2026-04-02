@@ -218,12 +218,13 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
     title: 'PlaybookIndexOutput',
     type: 'object',
     additionalProperties: false,
-    required: ['command', 'ok', 'indexFile', 'graphFile', 'systemMapFile', 'contextDir', 'framework', 'architecture', 'modules'],
+    required: ['command', 'ok', 'indexFile', 'graphFile', 'moduleDigestFile', 'systemMapFile', 'contextDir', 'framework', 'architecture', 'modules'],
     properties: {
       command: { const: 'index' },
       ok: { const: true },
       indexFile: { const: '.playbook/repo-index.json' },
       graphFile: { const: '.playbook/repo-graph.json' },
+      moduleDigestFile: { const: '.playbook/module-digests.json' },
       systemMapFile: { const: '.playbook/system-map.json' },
       contextDir: { const: '.playbook/context/modules' },
       framework: { type: 'string' },
@@ -426,9 +427,12 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
       repositoryIntelligence: {
         type: 'object',
         additionalProperties: false,
-        required: ['artifact', 'commands'],
+        required: ['artifact', 'moduleDigestsArtifact', 'moduleDigestsAvailable', 'moduleDigestCount', 'commands'],
         properties: {
           artifact: { const: '.playbook/repo-index.json' },
+          moduleDigestsArtifact: { const: '.playbook/module-digests.json' },
+          moduleDigestsAvailable: { type: 'boolean' },
+          moduleDigestCount: { type: 'integer' },
           commands: {
             type: 'array',
             items: { type: 'string' },
@@ -2024,9 +2028,12 @@ const cliSchemas: Record<CliSchemaCommand, JsonSchema> = {
       repositoryIntelligence: {
         type: 'object',
         additionalProperties: false,
-        required: ['artifact', 'available', 'commands'],
+        required: ['artifact', 'moduleDigestsArtifact', 'moduleDigestsAvailable', 'moduleDigestCount', 'available', 'commands'],
         properties: {
           artifact: { const: '.playbook/repo-index.json' },
+          moduleDigestsArtifact: { const: '.playbook/module-digests.json' },
+          moduleDigestsAvailable: { type: 'boolean' },
+          moduleDigestCount: { type: 'integer' },
           available: { type: 'boolean' },
           commands: {
             type: 'array',

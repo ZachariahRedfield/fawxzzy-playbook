@@ -9,26 +9,27 @@ const createRepo = (name: string): string => fs.mkdtempSync(path.join(os.tmpdir(
 
 
 const writeModuleDigest = (repo: string, moduleName: string): void => {
-  const digestPath = path.join(repo, '.playbook', 'context', 'modules', `${moduleName}.json`);
+  const digestPath = path.join(repo, '.playbook', 'module-digests.json');
   fs.mkdirSync(path.dirname(digestPath), { recursive: true });
   fs.writeFileSync(
     digestPath,
     JSON.stringify(
       {
         schemaVersion: '1.0',
-        kind: 'playbook-module-context-digest',
-        generatedAt: '2026-01-01T00:00:00.000Z',
-        module: { name: moduleName, path: `src/${moduleName}`, type: 'module' },
-        files: { count: 1, representative: [`src/features/${moduleName}/index.ts`] },
-        dependencies: [],
-        directDependents: [],
-        dependents: [],
-        rules: ['requireNotesOnChanges'],
-        docs: [],
-        tests: [],
-        risk: { level: 'low', score: 0, signals: ['Low fan-in and limited transitive impact'] },
-        graphNeighborhood: { nodeId: `module:${moduleName}`, outgoingKinds: ['governed_by'], incomingKinds: ['contains'] },
-        provenance: { indexArtifact: '.playbook/repo-index.json', graphArtifact: '.playbook/repo-graph.json' }
+        kind: 'playbook-module-digests',
+        modules: [
+          {
+            id: moduleName,
+            summary: `Module ${moduleName} encapsulates bounded repository behavior with graph neighborhood out[governed_by], in[contains].`,
+            dependencies: { direct: [], directCount: 0 },
+            dependents: { direct: [], transitive: [], directCount: 0, transitiveCount: 0 },
+            ownership: { area: 'unassigned', owners: [], status: 'no-metadata-configured', source: 'generated-default' },
+            risk: { level: 'low', score: 0, signals: ['Low fan-in and limited transitive impact'] },
+            keyReferences: { docs: [], contracts: ['docs/contracts/repository-graph-contract.md'], commands: [] },
+            digest: { hash: 'abc', algorithm: 'sha256' },
+            provenance: { indexArtifact: '.playbook/repo-index.json', graphArtifact: '.playbook/repo-graph.json', ownershipArtifact: 'generated-default' }
+          }
+        ]
       },
       null,
       2
@@ -98,7 +99,7 @@ describe('ask --repo-context', () => {
     expect(payload.repoContext.enabled).toBe(true);
     expect(payload.context.module.module.name).toBe('workouts');
     expect(payload.context.sources).toContainEqual({ type: 'module', name: 'workouts' });
-    expect(payload.context.sources).toContainEqual({ type: 'module-digest', path: '.playbook/context/modules/workouts.json' });
+    expect(payload.context.sources).toContainEqual({ type: 'module-digest', path: '.playbook/module-digests.json' });
     expect(payload.context.sources).toContainEqual({ type: 'ai-contract', path: 'generated-ai-contract-fallback' });
 
     logSpy.mockRestore();

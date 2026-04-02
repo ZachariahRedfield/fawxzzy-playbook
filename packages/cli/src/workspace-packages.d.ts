@@ -130,6 +130,11 @@ declare module "@zachariahredfield/playbook-engine" {
   export const knowledgeStale: (...args: any[]) => any;
   export const generateRepositoryIndex: (...args: any[]) => any;
   export const generateRepositoryGraph: (...args: any[]) => any;
+  export const buildModuleDigestsArtifact: (...args: any[]) => any;
+  export const writeModuleDigestsArtifact: (...args: any[]) => any;
+  export const readModuleDigestsArtifact: (...args: any[]) => any;
+  export const readModuleDigest: (...args: any[]) => any;
+  export const MODULE_DIGESTS_RELATIVE_PATH: ".playbook/module-digests.json";
   export const buildModuleContextDigests: (...args: any[]) => any;
   export const RUNTIME_MANIFESTS_RELATIVE_PATH: ".playbook/runtime-manifests.json";
   export const readConsumedRuntimeManifestsArtifact: (...args: any[]) => any;

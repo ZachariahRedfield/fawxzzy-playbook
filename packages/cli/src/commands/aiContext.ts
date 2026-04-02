@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { readConsumedRuntimeManifestsArtifact, RUNTIME_MANIFESTS_RELATIVE_PATH } from '@zachariahredfield/playbook-engine';
+import { MODULE_DIGESTS_RELATIVE_PATH, readConsumedRuntimeManifestsArtifact, readModuleDigestsArtifact, RUNTIME_MANIFESTS_RELATIVE_PATH } from '@zachariahredfield/playbook-engine';
 import { ExitCode } from '../lib/cliContract.js';
 import { listRegisteredCommands } from './index.js';
 
@@ -14,6 +14,9 @@ type AiContextResult = {
   };
   repositoryIntelligence: {
     artifact: '.playbook/repo-index.json';
+    moduleDigestsArtifact: '.playbook/module-digests.json';
+    moduleDigestsAvailable: boolean;
+    moduleDigestCount: number;
     available: boolean;
     commands: string[];
   };
@@ -72,6 +75,7 @@ type AiContextResult = {
 const buildAiContextResult = (cwd: string): AiContextResult => {
   const indexFile = path.join(cwd, '.playbook', 'repo-index.json');
   const runtimeManifestArtifact = readConsumedRuntimeManifestsArtifact(cwd);
+  const moduleDigests = readModuleDigestsArtifact(cwd);
 
   return {
     schemaVersion: '1.0',
@@ -83,6 +87,9 @@ const buildAiContextResult = (cwd: string): AiContextResult => {
     },
     repositoryIntelligence: {
       artifact: '.playbook/repo-index.json',
+      moduleDigestsArtifact: MODULE_DIGESTS_RELATIVE_PATH,
+      moduleDigestsAvailable: moduleDigests !== null,
+      moduleDigestCount: moduleDigests?.modules.length ?? 0,
       available: fs.existsSync(indexFile),
       commands: ['index', 'query', 'deps', 'ask', 'explain']
     },
@@ -162,6 +169,9 @@ const printText = (result: AiContextResult): void => {
   console.log('Repository Intelligence');
   console.log(`Artifact: ${result.repositoryIntelligence.artifact}`);
   console.log(`Available: ${result.repositoryIntelligence.available ? 'yes' : 'no'}`);
+  console.log(`Module digests artifact: ${result.repositoryIntelligence.moduleDigestsArtifact}`);
+  console.log(`Module digests available: ${result.repositoryIntelligence.moduleDigestsAvailable ? 'yes' : 'no'}`);
+  console.log(`Module digest count: ${result.repositoryIntelligence.moduleDigestCount}`);
   console.log(`Commands: ${result.repositoryIntelligence.commands.join(', ')}`);
   console.log('');
   console.log('Control Plane Artifacts');

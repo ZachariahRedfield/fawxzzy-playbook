@@ -6,7 +6,7 @@ import { queryRepositoryIndex } from '../query/repoQuery.js';
 import type { RepositoryModule } from '../indexer/repoIndexer.js';
 import { getRuleMetadata } from './ruleRegistry.js';
 import { resolveRepositoryTarget, type ResolvedTarget } from '../intelligence/targetResolver.js';
-import { readModuleContextDigest } from '../context/moduleContext.js';
+import { readModuleDigest } from '../context/moduleDigests.js';
 import { readRuntimeMemoryEnvelope, type RuntimeMemoryEnvelope } from '../intelligence/runtimeMemory.js';
 import {
   expandMemoryProvenance,
@@ -1039,13 +1039,13 @@ export const explainTarget = (projectRoot: string, target: string, options?: Exp
 
   if (resolvedTarget.kind === 'module') {
     const moduleName = resolvedTarget.selector;
-    const digest = readModuleContextDigest(projectRoot, moduleName);
+    const digest = readModuleDigest(projectRoot, moduleName);
     return withMemory(projectRoot, options?.withMemory, {
       type: 'module',
       resolvedTarget,
       name: moduleName,
       responsibilities: inferModuleResponsibilities(moduleName),
-      dependencies: digest?.dependencies ?? [],
+      dependencies: digest?.dependencies.direct ?? [],
       architecture: context.architecture,
       graphNeighborhood: readGraphNeighborhood(projectRoot, `module:${moduleName}`)
     }, { target: moduleName });

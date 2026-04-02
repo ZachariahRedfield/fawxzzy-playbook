@@ -148,10 +148,10 @@ const buildContextSources = (context: AskContextSnapshot, repoContextSources: st
   }
 
   if (context.moduleDigest && typeof context.moduleDigest === 'object') {
-    const digestModule = (context.moduleDigest as { module?: { name?: unknown } }).module;
-    const digestName = digestModule && typeof digestModule.name === 'string' ? digestModule.name : moduleName;
-    if (typeof digestName === 'string' && digestName.length > 0) {
-      sources.push({ type: 'module-digest', path: `.playbook/context/modules/${digestName.replace(/[\/]/g, '__')}.json` });
+    const digestName = (context.moduleDigest as { id?: unknown }).id;
+    const moduleDigestName = typeof digestName === 'string' ? digestName : moduleName;
+    if (typeof moduleDigestName === 'string' && moduleDigestName.length > 0) {
+      sources.push({ type: 'module-digest', path: '.playbook/module-digests.json' });
     }
   }
 

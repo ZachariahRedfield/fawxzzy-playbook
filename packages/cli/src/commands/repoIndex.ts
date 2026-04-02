@@ -1,11 +1,14 @@
 import {
+  buildModuleDigestsArtifact,
   buildModuleContextDigests,
   generateCompactionCandidateArtifact,
   generateRepositoryGraph,
   generateRepositoryIndex,
+  MODULE_DIGESTS_RELATIVE_PATH,
   MODULE_CONTEXT_DIR_RELATIVE_PATH,
   REPOSITORY_GRAPH_RELATIVE_PATH,
   SYSTEM_MAP_RELATIVE_PATH,
+  writeModuleDigestsArtifact,
   writeModuleContextDigests,
   writeSystemMapArtifact
 } from '@zachariahredfield/playbook-engine';
@@ -25,6 +28,7 @@ type IndexResult = {
   ok: true;
   indexFile: '.playbook/repo-index.json';
   graphFile: '.playbook/repo-graph.json';
+  moduleDigestFile: '.playbook/module-digests.json';
   systemMapFile: '.playbook/system-map.json';
   contextDir: '.playbook/context/modules';
   framework: string;
@@ -45,6 +49,8 @@ const writeRepositoryIndex = (cwd: string): { indexPath: string; result: IndexRe
   writeJsonArtifactAbsolute(graphPath, graph as Record<string, unknown>, 'index', { envelope: false });
   const moduleDigests = buildModuleContextDigests(cwd, index, graph);
   writeModuleContextDigests(cwd, moduleDigests);
+  const compactModuleDigests = buildModuleDigestsArtifact(cwd, index, graph);
+  writeModuleDigestsArtifact(cwd, compactModuleDigests);
   generateCompactionCandidateArtifact({ repoRoot: cwd, index, graph });
 
   const architectureRegistryPath = path.join(cwd, ARCHITECTURE_REGISTRY_RELATIVE_PATH);
@@ -59,6 +65,7 @@ const writeRepositoryIndex = (cwd: string): { indexPath: string; result: IndexRe
       ok: true,
       indexFile: INDEX_RELATIVE_PATH,
       graphFile: REPOSITORY_GRAPH_RELATIVE_PATH,
+      moduleDigestFile: MODULE_DIGESTS_RELATIVE_PATH,
       systemMapFile: SYSTEM_MAP_RELATIVE_PATH,
       contextDir: MODULE_CONTEXT_DIR_RELATIVE_PATH,
       framework: index.framework,
@@ -81,6 +88,7 @@ export const runIndex = async (cwd: string, options: IndexOptions): Promise<numb
     console.log('───────────────────────');
     console.log(`Index file: ${result.indexFile}`);
     console.log(`Graph file: ${result.graphFile}`);
+    console.log(`Module digests: ${result.moduleDigestFile}`);
     console.log(`System map file: ${result.systemMapFile}`);
     console.log(`Context digests: ${result.contextDir}`);
     console.log(`Framework: ${result.framework}`);

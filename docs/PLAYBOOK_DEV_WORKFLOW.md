@@ -100,6 +100,14 @@ Subapp truth-pack runtime manifest governance:
 - Pattern: Repo Truth Pack -> runtime manifest -> consumed control-plane context.
 - Failure Mode: A runtime manifest that is only validated, never consumed, becomes governance theater instead of a real seam.
 
+Module digest context-transfer governance:
+
+- `pnpm playbook index --json` emits deterministic `.playbook/module-digests.json` from existing repository intelligence artifacts (`.playbook/repo-index.json`, `.playbook/repo-graph.json`, and optional `.playbook/module-owners.json`).
+- `pnpm playbook context --json` and `pnpm playbook ai-context --json` consume module digest availability/count additively as bounded bootstrap context.
+- Rule: Compact architecture context should come from deterministic module digests, not repeated broad scans.
+- Pattern: `index/graph -> module digest -> context transfer`.
+- Failure Mode: Without module digests, context surfaces either bloat or repeatedly re-derive the same architecture state expensively.
+
 For remediation workflow updates, run canonical deterministic flow checks:
 
 ```bash

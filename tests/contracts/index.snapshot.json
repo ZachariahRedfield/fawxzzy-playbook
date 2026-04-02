@@ -3,6 +3,7 @@
   "ok": true,
   "indexFile": ".playbook/repo-index.json",
   "graphFile": ".playbook/repo-graph.json",
+  "moduleDigestFile": ".playbook/module-digests.json",
   "systemMapFile": ".playbook/system-map.json",
   "contextDir": ".playbook/context/modules",
   "framework": "node",

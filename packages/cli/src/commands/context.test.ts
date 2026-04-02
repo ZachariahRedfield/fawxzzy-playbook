@@ -38,6 +38,9 @@ describe('runContext', () => {
 
     const repositoryIntelligence = payload.repositoryIntelligence as Record<string, unknown>;
     expect(repositoryIntelligence.artifact).toBe('.playbook/repo-index.json');
+    expect(repositoryIntelligence.moduleDigestsArtifact).toBe('.playbook/module-digests.json');
+    expect(repositoryIntelligence.moduleDigestsAvailable).toBe(false);
+    expect(repositoryIntelligence.moduleDigestCount).toBe(0);
     expect(repositoryIntelligence.commands).toEqual(['index', 'query', 'ask', 'explain']);
 
     const controlPlaneArtifacts = payload.controlPlaneArtifacts as Record<string, unknown>;

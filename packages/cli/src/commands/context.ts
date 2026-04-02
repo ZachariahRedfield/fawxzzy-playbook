@@ -1,5 +1,5 @@
 import { ExitCode } from '../lib/cliContract.js';
-import { RUNTIME_MANIFESTS_RELATIVE_PATH, readConsumedRuntimeManifestsArtifact } from '@zachariahredfield/playbook-engine';
+import { MODULE_DIGESTS_RELATIVE_PATH, readConsumedRuntimeManifestsArtifact, readModuleDigestsArtifact, RUNTIME_MANIFESTS_RELATIVE_PATH } from '@zachariahredfield/playbook-engine';
 import { listRegisteredCommands } from './index.js';
 
 type ContextResult = {
@@ -9,6 +9,9 @@ type ContextResult = {
   workflow: ['verify', 'plan', 'apply'];
   repositoryIntelligence: {
     artifact: '.playbook/repo-index.json';
+    moduleDigestsArtifact: '.playbook/module-digests.json';
+    moduleDigestsAvailable: boolean;
+    moduleDigestCount: number;
     commands: string[];
   };
   controlPlaneArtifacts: {
@@ -32,6 +35,7 @@ type ContextResult = {
 
 const buildContextResult = (cwd: string): ContextResult => {
   const runtimeManifestArtifact = readConsumedRuntimeManifestsArtifact(cwd);
+  const moduleDigests = readModuleDigestsArtifact(cwd);
 
   return {
     schemaVersion: '1.0',
@@ -40,6 +44,9 @@ const buildContextResult = (cwd: string): ContextResult => {
     workflow: ['verify', 'plan', 'apply'],
     repositoryIntelligence: {
       artifact: '.playbook/repo-index.json',
+      moduleDigestsArtifact: MODULE_DIGESTS_RELATIVE_PATH,
+      moduleDigestsAvailable: moduleDigests !== null,
+      moduleDigestCount: moduleDigests?.modules.length ?? 0,
       commands: ['index', 'query', 'ask', 'explain']
     },
     controlPlaneArtifacts: {
@@ -73,6 +80,9 @@ const printText = (result: ContextResult): void => {
   console.log('');
   console.log('Repository Intelligence');
   console.log(`Artifact: ${result.repositoryIntelligence.artifact}`);
+  console.log(`Module digests artifact: ${result.repositoryIntelligence.moduleDigestsArtifact}`);
+  console.log(`Module digests available: ${result.repositoryIntelligence.moduleDigestsAvailable ? 'yes' : 'no'}`);
+  console.log(`Module digest count: ${result.repositoryIntelligence.moduleDigestCount}`);
   console.log(`Commands: ${result.repositoryIntelligence.commands.join(', ')}`);
   console.log('');
   console.log('Control Plane Artifacts');

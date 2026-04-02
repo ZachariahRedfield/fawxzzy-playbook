@@ -38,6 +38,11 @@ describe('runAiContext', () => {
     expect(repoMeta.architecture).toBe('modular-monolith');
     expect(repoMeta.localCliPreferred).toBe(true);
 
+    const repositoryIntelligence = payload.repositoryIntelligence as Record<string, unknown>;
+    expect(repositoryIntelligence.moduleDigestsArtifact).toBe('.playbook/module-digests.json');
+    expect(repositoryIntelligence.moduleDigestsAvailable).toBe(false);
+    expect(repositoryIntelligence.moduleDigestCount).toBe(0);
+
     const controlPlaneArtifacts = payload.controlPlaneArtifacts as Record<string, unknown>;
     expect(controlPlaneArtifacts.policyEvaluation).toBe('.playbook/policy-evaluation.json');
     expect(controlPlaneArtifacts.policyApplyResult).toBe('.playbook/policy-apply-result.json');

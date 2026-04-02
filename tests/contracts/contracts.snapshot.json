@@ -58,6 +58,10 @@
         "producer": "session"
       },
       {
+        "path": ".playbook/module-digests.json",
+        "producer": "index"
+      },
+      {
         "path": ".playbook/repo-graph.json",
         "producer": "index"
       },
