@@ -17,6 +17,7 @@ import { loadFleet, persistExecutionControlLoop } from './receiptIngest.js';
 const WORKSET_PLAN_PATH = '.playbook/workset-plan.json';
 const EXECUTION_STATE_PATH = '.playbook/execution-state.json';
 const ORCHESTRATION_RUNS_DIR = '.playbook/execution-runs';
+const EXECUTION_MERGE_GUARDS_PATH = '.playbook/execution-merge-guards.json';
 
 type ExecuteOptions = {
   format: 'text' | 'json';
@@ -36,6 +37,16 @@ type ExecutionModule = {
   updateLaneState?: (laneId: string, state: LaneRuntimeState, repoRoot?: string) => Promise<void>;
   recordWorkerResult?: (laneId: string, workerId: string, result: { status: 'completed' | 'failed'; retries?: number; summary?: string }, repoRoot?: string) => Promise<void>;
   finalizeExecution?: (runId: string, repoRoot?: string) => Promise<void>;
+  evaluateExecutionMergeGuardForRun?: (repoRoot: string, runId: string) => {
+    run_id: string;
+    mergeEligible: boolean;
+    blockingReasons: string[];
+    unresolvedReceipts: string[];
+    protectedDocUnresolved: string[];
+    failedOrBlockedLaneRefs: string[];
+    pendingFollowups: string[];
+    staleOrConflictedState: boolean;
+  } | undefined;
 };
 
 type LaneStateLike = {
@@ -295,7 +306,7 @@ export const runExecution = async (cwd: string, options: ExecuteOptions): Promis
       usage: 'playbook execute [options]',
       description: 'Execute orchestration lanes through the deterministic execution supervisor runtime or bridge deterministic adoption prompts into canonical receipt/update ingestion.',
       options: ['--json                     Alias for --format=json', '--format <text|json>       Output format', '--quiet                    Suppress success output in text mode', '--worker-adapter <command> Execute deterministic adoption prompts through an external adapter and write canonical outcome artifacts', '--help                     Show help'],
-      artifacts: [EXECUTION_STATE_PATH, ORCHESTRATION_RUNS_DIR, '.playbook/execution-outcome-input.json', '.playbook/execution-updated-state.json']
+      artifacts: [EXECUTION_STATE_PATH, ORCHESTRATION_RUNS_DIR, EXECUTION_MERGE_GUARDS_PATH, '.playbook/execution-outcome-input.json', '.playbook/execution-updated-state.json']
     });
     return ExitCode.Success;
   }
@@ -356,6 +367,7 @@ export const runExecution = async (cwd: string, options: ExecuteOptions): Promis
 
     await engineModule.finalizeExecution(run.runId, cwd);
 
+    const mergeGuard = engineModule.evaluateExecutionMergeGuardForRun ? engineModule.evaluateExecutionMergeGuardForRun(cwd, run.runId) : undefined;
     const executionState = readJsonArtifact<{ status: string; lanes: Record<string, { lane_id: string; state: string }> }>(cwd, EXECUTION_STATE_PATH);
     const lanes = Object.values(executionState?.lanes ?? {}).sort((left, right) => left.lane_id.localeCompare(right.lane_id));
     const status = executionState?.status === 'completed' ? 'SUCCESS' : executionState?.status === 'running' ? 'RUNNING' : 'FAILED';
@@ -371,7 +383,9 @@ export const runExecution = async (cwd: string, options: ExecuteOptions): Promis
             orchestration_runs_path: ORCHESTRATION_RUNS_DIR,
             resumed_lane_ids: resumedLaneIds,
             lanes,
-            execution_status: status
+            execution_status: status,
+            execution_merge_guards_path: EXECUTION_MERGE_GUARDS_PATH,
+            merge_guard: mergeGuard
           },
           null,
           2
@@ -381,8 +395,8 @@ export const runExecution = async (cwd: string, options: ExecuteOptions): Promis
       tracker.finish({
         inputsSummary: `lanes=${worksetPlan.lanes.length}`,
         artifactsRead: [WORKSET_PLAN_PATH, WORKER_LAUNCH_PLAN_RELATIVE_PATH],
-        artifactsWritten: [EXECUTION_STATE_PATH, ORCHESTRATION_RUNS_DIR],
-        downstreamArtifactsProduced: [EXECUTION_STATE_PATH, ORCHESTRATION_RUNS_DIR],
+        artifactsWritten: [EXECUTION_STATE_PATH, ORCHESTRATION_RUNS_DIR, EXECUTION_MERGE_GUARDS_PATH],
+        downstreamArtifactsProduced: [EXECUTION_STATE_PATH, ORCHESTRATION_RUNS_DIR, EXECUTION_MERGE_GUARDS_PATH],
         successStatus: exitCode === ExitCode.Success ? 'success' : 'partial'
       });
       return exitCode;

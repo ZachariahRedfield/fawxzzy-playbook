@@ -188,11 +188,14 @@ describe('runExecution', () => {
     expect(fs.existsSync(path.join(repo, '.playbook', 'execution-state.json'))).toBe(true);
     expect(fs.existsSync(path.join(repo, '.playbook', 'execution-runs'))).toBe(true);
 
-    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as { command: string; execution_status: string; lanes: Array<{ state: string }>; orchestration_runs_path: string };
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0])) as { command: string; execution_status: string; lanes: Array<{ state: string }>; orchestration_runs_path: string; execution_merge_guards_path: string; merge_guard: { mergeEligible: boolean } };
     expect(payload.command).toBe('execute');
     expect(payload.execution_status).toBe('SUCCESS');
     expect(payload.lanes.every((lane) => lane.state === 'completed')).toBe(true);
     expect(payload.orchestration_runs_path).toBe('.playbook/execution-runs');
+    expect(payload.execution_merge_guards_path).toBe('.playbook/execution-merge-guards.json');
+    expect(payload.merge_guard.mergeEligible).toBe(true);
+    expect(fs.existsSync(path.join(repo, '.playbook', 'execution-merge-guards.json'))).toBe(true);
 
     logSpy.mockRestore();
   });

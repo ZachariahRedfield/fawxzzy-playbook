@@ -239,3 +239,6 @@ export { PlanGenerator } from './planGenerator.js';
 export { FixExecutor, HandlerResolver } from './fixExecutor.js';
 export { defaultFixHandlers } from './defaultFixHandlers.js';
 export type { PlanTask, RuleFailure, Rule, FixHandler } from './types.js';
+
+export { evaluateExecutionMergeGuards, evaluateExecutionMergeGuardForRun, readExecutionMergeGuards, EXECUTION_MERGE_GUARDS_RELATIVE_PATH } from './mergeGuards.js';
+export type { ExecutionMergeGuardsArtifact } from './mergeGuards.js';

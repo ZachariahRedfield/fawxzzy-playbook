@@ -10,6 +10,7 @@ export const PLAYBOOK_SCHEMA_PATHS = {
   workerFragment: 'packages/contracts/src/worker-fragment.schema.json',
   workerResults: 'packages/contracts/src/worker-results.schema.json',
   workerLaunchPlan: 'packages/contracts/src/worker-launch-plan.schema.json',
+  executionMergeGuards: 'packages/contracts/src/execution-merge-guards.schema.json',
   taskExecutionProfile: 'packages/contracts/src/task-execution-profile.schema.json',
   learningState: 'packages/contracts/src/learning-state.schema.json',
   repositoryEvents: 'packages/contracts/src/repository-events.schema.json',

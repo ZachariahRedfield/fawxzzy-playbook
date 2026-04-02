@@ -16,6 +16,8 @@ export * from './sessions/index.js';
 
 export { runRuleExecution, generateExecutionPlan, generatePlanContract, applyExecutionPlan, parsePlanArtifact, selectPlanTasks, RuleRunner, PlanGenerator, FixExecutor } from './execution/index.js';
 export { renderLanePrompt, writeLanePrompts, buildLanePromptFilename } from './execution/lanePrompts.js';
+export { evaluateExecutionMergeGuards, evaluateExecutionMergeGuardForRun, readExecutionMergeGuards, EXECUTION_MERGE_GUARDS_RELATIVE_PATH } from './execution/mergeGuards.js';
+export type { ExecutionMergeGuardsArtifact } from './execution/mergeGuards.js';
 export type { LanePromptSpec, RenderLanePromptInput, WriteLanePromptsInput } from './execution/lanePrompts.js';
 
 export { generateRepositoryHealth } from './doctor/index.js';

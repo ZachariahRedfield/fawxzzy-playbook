@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/execution-merge-guards.schema.json",
+  "title": "Execution Merge Guards Artifact",
+  "description": "Deterministic read-only merge eligibility evaluation for managed execution runs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "generatedAt", "sourceArtifacts", "runs"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "kind": { "type": "string", "const": "execution-merge-guards" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "sourceArtifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workerLaunchPlanPath", "executionRunsDir"],
+      "properties": {
+        "workerLaunchPlanPath": { "type": "string", "minLength": 1 },
+        "executionRunsDir": { "type": "string", "minLength": 1 }
+      }
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "run_id",
+          "mergeEligible",
+          "blockingReasons",
+          "unresolvedReceipts",
+          "protectedDocUnresolved",
+          "failedOrBlockedLaneRefs",
+          "pendingFollowups",
+          "staleOrConflictedState"
+        ],
+        "properties": {
+          "run_id": { "type": "string", "minLength": 1 },
+          "mergeEligible": { "type": "boolean" },
+          "blockingReasons": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+          "unresolvedReceipts": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+          "protectedDocUnresolved": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+          "failedOrBlockedLaneRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+          "pendingFollowups": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+          "staleOrConflictedState": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

@@ -2635,8 +2635,13 @@ Playbook now treats remediation/agent execution as first-class state, persisted 
 
 Execution state is persisted under `.playbook/execution-runs/<run-id>.json` and is queryable through `playbook query runs` and `playbook query run --id <run-id>`.
 
+Execution merge readiness is now evaluated as a deterministic read-only artifact at `.playbook/execution-merge-guards.json` before managed runs can be treated as releasable.
+
+- Rule: Managed execution is not releasable until explicit merge guards pass.
 - Rule: Managed execution is not restart-safe until orchestration run-state is explicit and durable.
+- Pattern: launch-plan -> execute -> run-state -> merge-guard -> release-ready.
 - Pattern: launch-plan -> execute -> per-lane receipt/state -> reconcile/resume.
+- Failure Mode: Launch authorization without merge guards lets partially completed or governance-blocked execution look releasable.
 - Failure Mode: If execution state lives only in process memory, restarts or partial failures break the same trust boundaries that launch authorization was meant to enforce.
 
 ## Phase 8 progress update (lane compilation safety slice)

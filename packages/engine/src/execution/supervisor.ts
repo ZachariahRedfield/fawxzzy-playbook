@@ -22,6 +22,7 @@ import {
   type OrchestrationLaneStatus,
   writeOrchestrationExecutionRun
 } from './orchestrationRunState.js';
+import { evaluateExecutionMergeGuards } from './mergeGuards.js';
 
 const EXECUTION_STATE_PATH = '.playbook/execution-state.json';
 const PROCESS_TELEMETRY_PATH = '.playbook/process-telemetry.json';
@@ -337,6 +338,7 @@ export async function startExecution(
     lanes,
     workers: {}
   });
+  evaluateExecutionMergeGuards(repoRoot);
 
   return {
     runId,
@@ -387,6 +389,8 @@ export async function updateLaneState(laneId: string, state: LaneRuntimeState, r
   } catch {
     // no-op: backwards compatibility for runtimes without orchestration run-state artifacts
   }
+
+  evaluateExecutionMergeGuards(repoRoot);
 }
 
 export async function recordWorkerResult(laneId: string, workerId: string, result: WorkerResult, repoRoot = process.cwd()): Promise<void> {
@@ -471,6 +475,8 @@ export async function recordWorkerResult(laneId: string, workerId: string, resul
   } catch {
     // no-op: backwards compatibility for runtimes without orchestration run-state artifacts
   }
+
+  evaluateExecutionMergeGuards(repoRoot);
 }
 
 export async function finalizeExecution(runId: string, repoRoot = process.cwd()): Promise<void> {
@@ -493,4 +499,6 @@ export async function finalizeExecution(runId: string, repoRoot = process.cwd())
   } catch {
     // no-op: backwards compatibility for runtimes without orchestration run-state artifacts
   }
+
+  evaluateExecutionMergeGuards(repoRoot);
 }
