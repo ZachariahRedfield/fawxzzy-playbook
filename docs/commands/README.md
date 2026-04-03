@@ -135,7 +135,7 @@ Do not hand-edit entries inside the managed markers.
 - Governance and support: [`docs`](docs.md), [`audit`](audit.md), [`rules`](rules.md), [`doctor`](doctor.md), [`schema`](schema.md), [`contracts`](contracts.md), [`release`](release.md), [`ignore`](ignore.md), [`diagram`](diagram.md), [`route`](route.md), [`memory`](memory.md), [`patterns`](patterns.md), [`story`](story.md), [`promote`](promote.md), [`observer`](observer.md), [`receipt`](receipt.md), [`learn`](learn.md), [`fix`](fix.md), [`upgrade`](upgrade.md), [`status`](status.md), [`analyze`](analyze.md)
 - Pattern convergence note: `pnpm playbook patterns convergence --json` is the canonical read-only inspection surface for `.playbook/pattern-convergence.json`, with additive filters (`--intent`, `--constraint`, `--resolution`, `--min-confidence`) and compact text output for operator review.
 - CSIA overlay note: `pnpm playbook patterns csia --json` is the canonical read-only machine-readable overlay for CSIA mappings; it must not mutate doctrine or expand the Minimum Cognitive Core.
-- `status proof` is the canonical external-consumer bootstrap proof surface for proving runtime + CLI + docs/artifact + execution/governance readiness in one read-only flow. It now also reads existing parallel-work artifacts (`lane-state`, `worker-results`, `docs-consolidation-plan`, and guarded-apply outcomes) to emit one compact operator brief while keeping required automation truth in the canonical `proof` payload and deterministic additive detail in JSON, including failure-domain ownership fields (`failureDomains`, `primaryFailureDomain`, `domainBlockers`, `domainNextActions`) mapped to canonical domains (`contract_validation`, `runtime_execution`, `ci_bootstrap`, `sync_drift`, `governance_planning`).
+- `status proof` is the canonical external-consumer bootstrap proof surface for proving runtime + CLI + docs/artifact + execution/governance readiness in one read-only flow. It now also reads existing parallel-work artifacts (`lane-state`, `worker-results`, `docs-consolidation-plan`, and guarded-apply outcomes) to emit one compact operator brief while keeping required automation truth in the canonical `proof` payload and deterministic additive detail in JSON, including failure-domain ownership fields (`failureDomains`, `primaryFailureDomain`, `domainBlockers`, `domainNextActions`) mapped to canonical domains (`contract_validation`, `runtime_execution`, `ci_bootstrap`, `sync_drift`, `governance_planning`) plus additive continuity/evidence summary fields under `continuity`.
 
 ### Implemented control-plane command docs
 
@@ -605,6 +605,7 @@ Use the following intent model when deciding whether command outputs stay local,
 - `session` memory + cleanup flows
   - Default intent: **local repo-scoped workflow continuity artifacts** (`.playbook/session.json`, pinned findings/plan/run refs) plus optional cleanup reports under `.playbook/`.
   - Recommended continuity commands: `pnpm playbook session show`, `pnpm playbook session pin <artifact>`, `pnpm playbook session resume`, `pnpm playbook session clear`.
+  - `session show` now includes compact continuity/evidence operator signals (active refs, pinned evidence refs, latest run/receipt lineage, stale/missing continuity markers) and additive JSON fields under `continuity`.
   - Commit guidance: keep local unless intentionally preserving an audit example or contract fixture.
 - `diagram` and docs-facing flows
   - Default intent: **committed docs/contracts** when repositories choose generated architecture/docs outputs as source-controlled documentation surfaces.
@@ -735,6 +736,8 @@ Use query surfaces to inspect state:
 
 - `pnpm playbook query runs`
 - `pnpm playbook query run --id <run-id>`
+
+`query runs` now emits additive continuity evidence in JSON (`continuity.session`, `continuity.lineage`, `continuity.staleSignals`) and keeps text output brief with a one-line continuity summary.
 
 `pnpm playbook patterns cross-repo --json` now emits a read-only governed comparison artifact at `.playbook/cross-repo-patterns.json` with deterministic `source_repos`, pairwise `comparisons`, and evidence-backed `candidate_patterns`.
 

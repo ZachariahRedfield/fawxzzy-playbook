@@ -26,7 +26,9 @@ import {
   type FleetUpdatedAdoptionState,
   type RepoAdoptionReadiness,
   buildMemoryPressureStatusArtifact,
-  loadConfig
+  loadConfig,
+  listOrchestrationExecutionRuns,
+  readSession
 } from '@zachariahredfield/playbook-engine';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -142,7 +144,21 @@ type StatusProofResult = {
   primaryFailureDomain: FailureDomainSummary['primaryFailureDomain'];
   domainBlockers: FailureDomainSummary['domainBlockers'];
   domainNextActions: FailureDomainSummary['domainNextActions'];
+  continuity: {
+    active_session_ref: string | null;
+    pinned_evidence_refs: string[];
+    latest_run_id: string | null;
+    latest_receipt_refs: string[];
+    stale_or_missing_state: string[];
+  };
   interpretation: InterpretationLayer;
+};
+
+type SessionLike = {
+  selectedRunId: string | null;
+  lastUpdatedTime: string;
+  pinnedArtifacts: Array<{ artifact: string }>;
+  evidenceEnvelope: { artifacts: Array<{ present: boolean }> };
 };
 
 type ObserverRegistry = {
@@ -491,10 +507,58 @@ const bootstrapCliResolutionCommands = (): BootstrapCliResolutionCommand[] => {
   return current ? [current, ...defaultBootstrapCliResolutionCommands()] : defaultBootstrapCliResolutionCommands();
 };
 
+const toTimeMs = (value: string | null | undefined): number => {
+  if (!value) return 0;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const readContinuitySummary = (cwd: string): StatusProofResult['continuity'] => {
+  const session = readSession(cwd) as SessionLike | null;
+  const runs = listOrchestrationExecutionRuns(cwd);
+  const latestRun = [...runs].sort((left, right) => {
+    const timeDelta = toTimeMs(right.updated_at) - toTimeMs(left.updated_at);
+    return timeDelta !== 0 ? timeDelta : right.run_id.localeCompare(left.run_id);
+  })[0];
+  const latestReceiptRefs = latestRun
+    ? Array.from(new Set((Object.values(latestRun.lanes) as Array<{ receipt_refs: string[] }>).flatMap((lane) => lane.receipt_refs))).sort((left, right) => left.localeCompare(right))
+    : [];
+
+  const staleOrMissingState: string[] = [];
+  if (!session) {
+    staleOrMissingState.push('session_missing');
+  } else {
+    if (session.selectedRunId && !runs.some((run: { run_id: string }) => run.run_id === session.selectedRunId)) {
+      staleOrMissingState.push('selected_run_missing');
+    }
+    if (session.selectedRunId && latestRun && latestRun.run_id !== session.selectedRunId) {
+      staleOrMissingState.push('selected_run_not_latest');
+    }
+    if (latestRun && toTimeMs(latestRun.updated_at) > toTimeMs(session.lastUpdatedTime)) {
+      staleOrMissingState.push('session_older_than_latest_run');
+    }
+    if (session.evidenceEnvelope.artifacts.some((artifact: { present: boolean }) => !artifact.present)) {
+      staleOrMissingState.push('session_evidence_missing_artifacts');
+    }
+  }
+  if (latestRun && latestReceiptRefs.length === 0) {
+    staleOrMissingState.push('latest_run_missing_receipts');
+  }
+
+  return {
+    active_session_ref: session ? '.playbook/session.json' : null,
+    pinned_evidence_refs: session ? session.pinnedArtifacts.map((entry: { artifact: string }) => entry.artifact).sort((left, right) => left.localeCompare(right)) : [],
+    latest_run_id: latestRun?.run_id ?? null,
+    latest_receipt_refs: latestReceiptRefs,
+    stale_or_missing_state: staleOrMissingState
+  };
+};
+
 const toProofStatusResult = (cwd: string): { result: StatusProofResult; exitCode: ExitCode } => {
   const proof = runBootstrapProof(cwd, { cliResolutionCommands: bootstrapCliResolutionCommands() });
   const parallelWork = readProofParallelWorkSummary(cwd);
   const failureDomainSummary = classifyProofFailureDomains(proof, parallelWork);
+  const continuity = readContinuitySummary(cwd);
   return {
     result: {
       schemaVersion: '1.0',
@@ -506,6 +570,7 @@ const toProofStatusResult = (cwd: string): { result: StatusProofResult; exitCode
       primaryFailureDomain: failureDomainSummary.primaryFailureDomain,
       domainBlockers: failureDomainSummary.domainBlockers,
       domainNextActions: failureDomainSummary.domainNextActions,
+      continuity,
       interpretation: buildProofInterpretation(proof)
     },
     exitCode: proof.ok ? ExitCode.Success : ExitCode.Failure
@@ -707,6 +772,15 @@ export const runStatus = async (cwd: string, options: StatusOptions): Promise<nu
             items: [
               `primary=${proofResult.primaryFailureDomain ?? 'none'}`,
               `domains=${proofResult.failureDomains.join(',') || 'none'}`
+            ]
+          }, {
+            label: 'Continuity',
+            items: [
+              `session=${proofResult.continuity.active_session_ref ?? 'none'}`,
+              `pinned_refs=${proofResult.continuity.pinned_evidence_refs.length}`,
+              `latest_run=${proofResult.continuity.latest_run_id ?? 'none'}`,
+              `latest_receipts=${proofResult.continuity.latest_receipt_refs.length}`,
+              `stale=${proofResult.continuity.stale_or_missing_state.join(',') || 'none'}`
             ]
           }]
         }));

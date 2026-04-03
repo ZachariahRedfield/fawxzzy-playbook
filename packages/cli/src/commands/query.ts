@@ -12,6 +12,7 @@ import {
   queryPromotedPatterns,
   listOrchestrationExecutionRuns,
   readOrchestrationExecutionRun,
+  readSession,
   SUPPORTED_QUERY_FIELDS,
   type DependenciesQueryResult,
   type ImpactQueryResult,
@@ -45,6 +46,117 @@ type QueryResult = {
   knowledgeHits?: Array<Record<string, unknown>>;
   recentRelevantEvents?: Array<Record<string, unknown>>;
   memoryKnowledge?: Array<Record<string, unknown>>;
+};
+
+type ContinuitySnapshot = {
+  session: {
+    active: boolean;
+    sessionId: string | null;
+    selectedRunId: string | null;
+    activeSessionRefs: string[];
+    pinnedEvidenceRefs: string[];
+    missingSessionRefs: string[];
+  };
+  lineage: {
+    latestRunId: string | null;
+    latestRunUpdatedAt: string | null;
+    latestReceiptRefs: string[];
+  };
+  staleSignals: string[];
+};
+
+type SessionLike = {
+  sessionId: string;
+  selectedRunId: string | null;
+  lastUpdatedTime: string;
+  pinnedArtifacts: Array<{ artifact: string }>;
+  evidenceEnvelope: { artifacts: Array<{ path: string; present: boolean }> };
+};
+
+const toTimeMs = (value: string | null | undefined): number => {
+  if (!value) return 0;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const buildContinuitySnapshot = (
+  cwd: string,
+  runs: ReturnType<typeof listOrchestrationExecutionRuns>
+): ContinuitySnapshot => {
+  const session = readSession(cwd) as SessionLike | null;
+  const latestRun = [...runs].sort((left, right) => {
+    const timeDelta = toTimeMs(right.updated_at) - toTimeMs(left.updated_at);
+    return timeDelta !== 0 ? timeDelta : right.run_id.localeCompare(left.run_id);
+  })[0];
+
+  const latestReceiptRefs = latestRun
+    ? Array.from(new Set((Object.values(latestRun.lanes) as Array<{ receipt_refs: string[] }>).flatMap((lane) => lane.receipt_refs)))
+        .filter((entry) => entry.trim().length > 0)
+        .sort((left, right) => left.localeCompare(right))
+    : [];
+
+  if (!session) {
+    return {
+      session: {
+        active: false,
+        sessionId: null,
+        selectedRunId: null,
+        activeSessionRefs: [],
+        pinnedEvidenceRefs: [],
+        missingSessionRefs: ['.playbook/session.json']
+      },
+      lineage: {
+        latestRunId: latestRun?.run_id ?? null,
+        latestRunUpdatedAt: latestRun?.updated_at ?? null,
+        latestReceiptRefs
+      },
+      staleSignals: ['session_missing']
+    };
+  }
+
+  const activeSessionRefs = session.evidenceEnvelope.artifacts
+    .filter((entry) => entry.present)
+    .map((entry) => entry.path)
+    .sort((left, right) => left.localeCompare(right));
+  const missingSessionRefs = session.evidenceEnvelope.artifacts
+    .filter((entry) => !entry.present)
+    .map((entry) => entry.path)
+    .sort((left, right) => left.localeCompare(right));
+  const pinnedEvidenceRefs = session.pinnedArtifacts.map((entry: { artifact: string }) => entry.artifact).sort((left, right) => left.localeCompare(right));
+
+  const staleSignals: string[] = [];
+  if (session.selectedRunId && !runs.some((run: { run_id: string }) => run.run_id === session.selectedRunId)) {
+    staleSignals.push('selected_run_missing');
+  }
+  if (session.selectedRunId && latestRun && latestRun.run_id !== session.selectedRunId) {
+    staleSignals.push('selected_run_not_latest');
+  }
+  if (latestRun && toTimeMs(latestRun.updated_at) > toTimeMs(session.lastUpdatedTime)) {
+    staleSignals.push('session_older_than_latest_run');
+  }
+  if (missingSessionRefs.length > 0) {
+    staleSignals.push('session_evidence_missing_artifacts');
+  }
+  if (latestRun && latestReceiptRefs.length === 0) {
+    staleSignals.push('latest_run_missing_receipts');
+  }
+
+  return {
+    session: {
+      active: true,
+      sessionId: session.sessionId,
+      selectedRunId: session.selectedRunId,
+      activeSessionRefs,
+      pinnedEvidenceRefs,
+      missingSessionRefs
+    },
+    lineage: {
+      latestRunId: latestRun?.run_id ?? null,
+      latestRunUpdatedAt: latestRun?.updated_at ?? null,
+      latestReceiptRefs
+    },
+    staleSignals
+  };
 };
 
 type ArchitectureRoleInferenceView = {
@@ -645,7 +757,9 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
 
   if (fieldArg === 'runs') {
     try {
-      const payload = { schemaVersion: '1.0', command: 'query', type: 'runs', runs: listOrchestrationExecutionRuns(cwd) };
+      const runs = listOrchestrationExecutionRuns(cwd);
+      const continuity = buildContinuitySnapshot(cwd, runs);
+      const payload = { schemaVersion: '1.0', command: 'query', type: 'runs', runs, continuity };
       if (options.format === 'json') {
         emitJsonOutput({ cwd, command: 'query', payload, outFile: options.outFile });
         return ExitCode.Success;
@@ -662,6 +776,12 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
             console.log(`${run.run_id} ${run.status} lanes=${laneCount} eligible=${run.eligible_lanes.length}`);
           }
         }
+        console.log(
+          `session=${continuity.session.sessionId ?? 'none'} pinned=${continuity.session.pinnedEvidenceRefs.length} active_refs=${continuity.session.activeSessionRefs.length} missing_refs=${continuity.session.missingSessionRefs.length}`
+        );
+        console.log(
+          `lineage latest_run=${continuity.lineage.latestRunId ?? 'none'} latest_receipts=${continuity.lineage.latestReceiptRefs.length} stale=${continuity.staleSignals.length > 0 ? 'yes' : 'no'}`
+        );
       }
 
       return ExitCode.Success;

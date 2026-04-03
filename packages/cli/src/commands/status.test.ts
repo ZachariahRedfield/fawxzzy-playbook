@@ -796,6 +796,7 @@ describe('runStatus', () => {
       primaryFailureDomain: null,
       domainBlockers: [],
       domainNextActions: [],
+      continuity: expect.any(Object),
       interpretation: {
         pattern: 'interpretation-layer',
         progressive_disclosure: {
@@ -818,6 +819,11 @@ describe('runStatus', () => {
     );
     expect(payload.proof.summary.what_next).toBe('Run `pnpm playbook init`.');
     expect(payload.parallel_work.next_action).toBe('Run `pnpm playbook apply --from-plan .playbook/docs-consolidation-plan.json`.');
+    expect(payload.continuity).toMatchObject({
+      pinned_evidence_refs: expect.any(Array),
+      latest_receipt_refs: expect.any(Array),
+      stale_or_missing_state: expect.any(Array)
+    });
 
     logSpy.mockRestore();
   });
@@ -896,6 +902,7 @@ describe('runStatus', () => {
     expect(output).toContain('Blockers: sync_drift: guard conflict: proposal-9');
     expect(output).toContain('Next action: Inspect .playbook/policy-apply-result.json blocked/failed entries, resolve guard conflicts, then rerun `pnpm playbook apply --json`.');
     expect(output).toContain('Failure ownership');
+    expect(output).toContain('Continuity');
     expect(output).toContain('Scope');
     expect(output).toContain('- present=2');
     expect(output).toContain('- violated=0');

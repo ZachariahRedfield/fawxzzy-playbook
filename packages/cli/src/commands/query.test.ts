@@ -223,6 +223,78 @@ const writeVerifyReport = (repo: string): void => {
   );
 };
 
+const writeExecutionRunsFixture = (repo: string): void => {
+  const runsDir = path.join(repo, '.playbook', 'execution-runs');
+  fs.mkdirSync(runsDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(runsDir, 'pb-exec-0001.json'),
+    JSON.stringify(
+      {
+        schemaVersion: '1.0',
+        kind: 'orchestration-execution-run-state',
+        run_id: 'pb-exec-0001',
+        source_launch_plan_fingerprint: 'abc123',
+        eligible_lanes: ['lane-1'],
+        status: 'completed',
+        lanes: {
+          'lane-1': {
+            lane_id: 'lane-1',
+            status: 'completed',
+            blocker_refs: [],
+            receipt_refs: ['execution-state:pb-exec-0001:lane:lane-1:worker:worker-lane-1'],
+            worker_id: 'worker-lane-1',
+            started_at: '2026-01-01T00:00:00.000Z',
+            completed_at: '2026-01-01T00:01:00.000Z',
+            updated_at: '2026-01-01T00:01:00.000Z'
+          }
+        },
+        metadata: { runtime: 'execution-supervisor', resumed_from_interrupted_run: false, reconcile_revision: 1 },
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:01:00.000Z',
+        completed_at: '2026-01-01T00:01:00.000Z'
+      },
+      null,
+      2
+    )
+  );
+};
+
+const writeSessionFixture = (repo: string): void => {
+  const sessionPath = path.join(repo, '.playbook', 'session.json');
+  fs.mkdirSync(path.dirname(sessionPath), { recursive: true });
+  fs.writeFileSync(
+    sessionPath,
+    JSON.stringify(
+      {
+        version: 1,
+        sessionId: 'session-test',
+        repoRoot: repo,
+        activeGoal: 'inspect continuity',
+        selectedRunId: 'pb-exec-0001',
+        pinnedArtifacts: [{ artifact: '.playbook/policy-apply-result.json', kind: 'artifact', pinnedAt: '2026-01-01T00:00:00.000Z' }],
+        currentStep: 'resume',
+        unresolvedQuestions: [],
+        constraints: [],
+        evidenceEnvelope: {
+          version: 1,
+          session_id: 'session-test',
+          selected_run_id: 'pb-exec-0001',
+          cycle_id: null,
+          generated_from_last_updated_time: '2026-01-01T00:02:00.000Z',
+          artifacts: [{ path: '.playbook/session.json', kind: 'session', present: true }],
+          proposal_ids: [],
+          policy_decisions: [],
+          execution_result: null,
+          lineage: []
+        },
+        lastUpdatedTime: '2026-01-01T00:02:00.000Z'
+      },
+      null,
+      2
+    )
+  );
+};
+
 describe('runQuery', () => {
   it('prints text output for list fields', async () => {
     const repo = createRepo('playbook-cli-query-text');
@@ -274,6 +346,37 @@ describe('runQuery', () => {
         { name: 'workouts', dependencies: ['auth'] },
         { name: 'analytics', dependencies: ['workouts'] }
       ]
+    });
+
+    logSpy.mockRestore();
+  });
+
+  it('adds continuity summary to query runs output', async () => {
+    const repo = createRepo('playbook-cli-query-runs');
+    writeExecutionRunsFixture(repo);
+    writeSessionFixture(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['runs'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.type).toBe('runs');
+    expect(payload.continuity).toEqual({
+      session: {
+        active: true,
+        sessionId: 'session-test',
+        selectedRunId: 'pb-exec-0001',
+        activeSessionRefs: ['.playbook/session.json'],
+        pinnedEvidenceRefs: ['.playbook/policy-apply-result.json'],
+        missingSessionRefs: []
+      },
+      lineage: {
+        latestRunId: 'pb-exec-0001',
+        latestRunUpdatedAt: '2026-01-01T00:01:00.000Z',
+        latestReceiptRefs: ['execution-state:pb-exec-0001:lane:lane-1:worker:worker-lane-1']
+      },
+      staleSignals: []
     });
 
     logSpy.mockRestore();

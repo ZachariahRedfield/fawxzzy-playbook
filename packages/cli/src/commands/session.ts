@@ -5,6 +5,7 @@ import {
   cleanupSessionSnapshots,
   formatMergeReportMarkdown,
   importChatTextSnapshot,
+  listOrchestrationExecutionRuns,
   pinSessionArtifact,
   readSession,
   resumeSession,
@@ -12,7 +13,7 @@ import {
   validateSessionSnapshot
 } from '@zachariahredfield/playbook-engine';
 import { resolveSessionMergeInputs } from './sessionMergeInputs.js';
-import { emitResult, ExitCode } from '../lib/cliContract.js';
+import { buildResult, emitResult, ExitCode } from '../lib/cliContract.js';
 
 type SessionConflict = ReturnType<typeof mergeSessionSnapshots>['conflicts'][number];
 
@@ -46,6 +47,22 @@ type SessionOptions = {
   quiet: boolean;
 };
 
+type SessionLike = {
+  sessionId: string;
+  currentStep: string;
+  activeGoal: string;
+  selectedRunId: string | null;
+  lastUpdatedTime: string;
+  pinnedArtifacts: Array<{ artifact: string }>;
+  evidenceEnvelope: { artifacts: Array<{ path: string; present: boolean }> };
+};
+
+const toTimeMs = (value: string | null | undefined): number => {
+  if (!value) return 0;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
 export const runSession = async (cwd: string, args: string[], options: SessionOptions): Promise<number> => {
   const subcommand = args[0];
   const rest = args.slice(1);
@@ -65,7 +82,7 @@ export const runSession = async (cwd: string, args: string[], options: SessionOp
   }
 
   if (subcommand === 'show') {
-    const session = readSession(cwd);
+    const session = readSession(cwd) as SessionLike | null;
 
     if (!session) {
       emitResult({
@@ -81,9 +98,36 @@ export const runSession = async (cwd: string, args: string[], options: SessionOp
       return ExitCode.Success;
     }
 
-    emitResult({
-      format: options.format,
-      quiet: options.quiet,
+    const runs = listOrchestrationExecutionRuns(cwd);
+    const latestRun = [...runs].sort((left, right) => {
+      const timeDelta = toTimeMs(right.updated_at) - toTimeMs(left.updated_at);
+      return timeDelta !== 0 ? timeDelta : right.run_id.localeCompare(left.run_id);
+    })[0];
+    const latestReceiptRefs = latestRun
+      ? Array.from(new Set((Object.values(latestRun.lanes) as Array<{ receipt_refs: string[] }>).flatMap((lane) => lane.receipt_refs))).sort((left, right) => left.localeCompare(right))
+      : [];
+    const missingEvidenceRefs = session.evidenceEnvelope.artifacts
+      .filter((entry: { present: boolean }) => !entry.present)
+      .map((entry: { path: string }) => entry.path)
+      .sort((left, right) => left.localeCompare(right));
+    const staleSignals: string[] = [];
+    if (session.selectedRunId && !runs.some((run: { run_id: string }) => run.run_id === session.selectedRunId)) {
+      staleSignals.push('selected_run_missing');
+    }
+    if (session.selectedRunId && latestRun && latestRun.run_id !== session.selectedRunId) {
+      staleSignals.push('selected_run_not_latest');
+    }
+    if (latestRun && toTimeMs(latestRun.updated_at) > toTimeMs(session.lastUpdatedTime)) {
+      staleSignals.push('session_older_than_latest_run');
+    }
+    if (missingEvidenceRefs.length > 0) {
+      staleSignals.push('session_evidence_missing_artifacts');
+    }
+    if (latestRun && latestReceiptRefs.length === 0) {
+      staleSignals.push('latest_run_missing_receipts');
+    }
+
+    const baseResult = buildResult({
       command: 'session.show',
       ok: true,
       exitCode: ExitCode.Success,
@@ -91,9 +135,33 @@ export const runSession = async (cwd: string, args: string[], options: SessionOp
       findings: [
         { id: 'session.show.goal', level: 'info', message: `goal=${session.activeGoal}` },
         { id: 'session.show.run', level: 'info', message: `selectedRunId=${session.selectedRunId ?? 'none'}` },
-        { id: 'session.show.artifacts', level: 'info', message: `pinnedArtifacts=${session.pinnedArtifacts.length}` }
+        { id: 'session.show.artifacts', level: 'info', message: `pinnedArtifacts=${session.pinnedArtifacts.length}` },
+        { id: 'session.show.refs', level: 'info', message: `activeSessionRefs=${session.evidenceEnvelope.artifacts.filter((entry) => entry.present).length}` },
+        { id: 'session.show.lineage', level: 'info', message: `latestRun=${latestRun?.run_id ?? 'none'} latestReceipts=${latestReceiptRefs.length}` },
+        { id: 'session.show.continuity', level: staleSignals.length > 0 ? 'warning' : 'info', message: `staleSignals=${staleSignals.join(',') || 'none'}` }
       ],
       nextActions: []
+    });
+
+    if (options.format === 'json') {
+      console.log(JSON.stringify({
+        ...baseResult,
+        continuity: {
+          active_session_refs: session.evidenceEnvelope.artifacts.filter((entry: { present: boolean }) => entry.present).map((entry: { path: string }) => entry.path),
+          pinned_evidence_refs: session.pinnedArtifacts.map((entry: { artifact: string }) => entry.artifact),
+          latest_run_id: latestRun?.run_id ?? null,
+          latest_receipt_refs: latestReceiptRefs,
+          missing_session_refs: missingEvidenceRefs,
+          stale_or_missing_state: staleSignals
+        }
+      }, null, 2));
+      return ExitCode.Success;
+    }
+
+    emitResult({
+      format: 'text',
+      quiet: options.quiet,
+      ...baseResult
     });
     return ExitCode.Success;
   }
