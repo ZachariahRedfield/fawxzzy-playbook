@@ -46,7 +46,15 @@ export type { FleetUpdatedAdoptionState, ReconciledRepoState, ReconciliationStat
 export { deriveNextAdoptionQueueFromUpdatedState } from './adoption/updatedStateQueue.js';
 
 export { generateRepositoryIndex } from './indexer/repoIndexer.js';
-export type { RepositoryIndex, RepositoryModule, RepositoryDependencyEdge, RepositoryWorkspaceNode, RepositoryTestCoverage, RepositoryConfigEntry } from './indexer/repoIndexer.js';
+export type {
+  RepositoryIndex,
+  RepositoryModule,
+  RepositoryDependencyEdge,
+  RepositoryWorkspaceNode,
+  RepositoryTestCoverage,
+  RepositoryConfigEntry,
+  RepositoryArchitectureRoleInference
+} from './indexer/repoIndexer.js';
 export {
   parsePlaybookIgnore,
   parsePlaybookIgnoreContent,

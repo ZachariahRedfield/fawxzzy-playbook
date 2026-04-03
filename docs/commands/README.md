@@ -710,6 +710,13 @@ Suggested remediation IDs:
 
 Rule: Module impact and module-scoped ask rely on Playbook-managed index artifacts, not ad-hoc rescans.
 
+### Architecture role inference visibility
+
+`pnpm playbook query architecture` now exposes indexed architecture role inference using existing read surfaces:
+
+- Text output remains compact with a single `Inferred roles:` summary line.
+- JSON output is additive via `architectureRoleInference` (no mutation/policy behavior changes).
+
 ## Deterministic Artifact Layer
 
 Rule

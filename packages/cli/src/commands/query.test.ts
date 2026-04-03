@@ -29,7 +29,31 @@ const writeRepoIndex = (repo: string): void => {
         tests: [{ module: 'auth', tests_present: true, coverage_estimate: 'unknown' }],
         configs: [{ name: 'tsconfig', path: 'tsconfig.json', present: true }],
         database: 'supabase',
-        rules: ['requireNotesOnChanges']
+        rules: ['requireNotesOnChanges'],
+        architectureRoleInference: {
+          classificationMode: 'observation-only',
+          classifierVersion: 'role-heuristic-v1',
+          policyEnforcement: 'none',
+          dependencyMatrix: {
+            interface: ['foundation', 'adapter'],
+            orchestration: ['interface', 'foundation', 'adapter'],
+            foundation: ['foundation'],
+            adapter: ['interface', 'foundation']
+          },
+          nodes: [
+            { workspace: '@playbook/cli', inferredRole: 'interface', evidence: ['workspace-role:cli'] },
+            { workspace: '@playbook/engine', inferredRole: 'orchestration', evidence: ['workspace-role:engine'] }
+          ],
+          dependencyObservations: [
+            {
+              from: '@playbook/engine',
+              to: '@playbook/cli',
+              fromRole: 'orchestration',
+              toRole: 'interface',
+              status: 'allowed'
+            }
+          ]
+        }
       },
       null,
       2
@@ -251,6 +275,63 @@ describe('runQuery', () => {
         { name: 'analytics', dependencies: ['workouts'] }
       ]
     });
+
+    logSpy.mockRestore();
+  });
+
+  it('adds architecture role inference to architecture query JSON output', async () => {
+    const repo = createRepo('playbook-cli-query-architecture-json');
+    writeRepoIndex(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['architecture'], { format: 'json', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.field).toBe('architecture');
+    expect(payload.result).toBe('modular-monolith');
+    expect(payload.architectureRoleInference).toEqual({
+      classificationMode: 'observation-only',
+      classifierVersion: 'role-heuristic-v1',
+      policyEnforcement: 'none',
+      dependencyMatrix: {
+        interface: ['foundation', 'adapter'],
+        orchestration: ['interface', 'foundation', 'adapter'],
+        foundation: ['foundation'],
+        adapter: ['interface', 'foundation']
+      },
+      nodes: [
+        { workspace: '@playbook/cli', inferredRole: 'interface', evidence: ['workspace-role:cli'] },
+        { workspace: '@playbook/engine', inferredRole: 'orchestration', evidence: ['workspace-role:engine'] }
+      ],
+      dependencyObservations: [
+        {
+          from: '@playbook/engine',
+          to: '@playbook/cli',
+          fromRole: 'orchestration',
+          toRole: 'interface',
+          status: 'allowed'
+        }
+      ]
+    });
+
+    logSpy.mockRestore();
+  });
+
+  it('prints compact inferred roles in architecture query text output', async () => {
+    const repo = createRepo('playbook-cli-query-architecture-text');
+    writeRepoIndex(repo);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    const exitCode = await runQuery(repo, ['architecture'], { format: 'text', quiet: false });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    expect(logSpy.mock.calls.map((call) => String(call[0]))).toEqual([
+      'Architecture',
+      '───────',
+      'modular-monolith',
+      'Inferred roles: @playbook/cli=interface, @playbook/engine=orchestration'
+    ]);
 
     logSpy.mockRestore();
   });

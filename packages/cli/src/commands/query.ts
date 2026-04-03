@@ -38,6 +38,7 @@ type QueryResult = {
   command: 'query';
   field: RepositoryQueryField;
   result: string | string[] | RepositoryModule[] | Array<Record<string, unknown>>;
+  architectureRoleInference?: ArchitectureRoleInferenceView;
   graphNeighborhood?: GraphNeighborhoodSummary;
   memorySummary?: string;
   memorySources?: Array<Record<string, unknown>>;
@@ -46,9 +47,20 @@ type QueryResult = {
   memoryKnowledge?: Array<Record<string, unknown>>;
 };
 
+type ArchitectureRoleInferenceView = {
+  nodes: Array<{
+    workspace: string;
+    inferredRole: string;
+  }>;
+};
+
 const firstPositionalArg = (args: string[]): string | undefined => args.find((arg) => !arg.startsWith('-'));
 
-const printText = (field: RepositoryQueryField, result: string | string[] | RepositoryModule[] | Array<Record<string, unknown>>): void => {
+const printText = (
+  field: RepositoryQueryField,
+  result: string | string[] | RepositoryModule[] | Array<Record<string, unknown>>,
+  architectureRoleInference?: ArchitectureRoleInferenceView
+): void => {
   const heading = field.charAt(0).toUpperCase() + field.slice(1);
   console.log(heading);
   console.log('───────');
@@ -81,6 +93,11 @@ const printText = (field: RepositoryQueryField, result: string | string[] | Repo
   }
 
   console.log(result);
+
+  if (field === 'architecture' && architectureRoleInference && architectureRoleInference.nodes.length > 0) {
+    const summary = architectureRoleInference.nodes.map((node) => `${node.workspace}=${node.inferredRole}`).join(', ');
+    console.log(`Inferred roles: ${summary}`);
+  }
 };
 
 const printDependenciesText = (payload: DependenciesQueryResult): void => {
@@ -761,6 +778,7 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
       command: 'query',
       field: query.field,
       result: query.result,
+      architectureRoleInference: query.architectureRoleInference,
       graphNeighborhood: query.graphNeighborhood,
       memorySummary: query.memorySummary,
       memorySources: query.memorySources as Array<Record<string, unknown>> | undefined,
@@ -775,7 +793,7 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     }
 
     if (!options.quiet) {
-      printText(result.field, result.result);
+      printText(result.field, result.result, result.architectureRoleInference);
     }
 
     return ExitCode.Success;

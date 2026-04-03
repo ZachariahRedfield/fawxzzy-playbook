@@ -6,7 +6,8 @@ import type {
   RepositoryDependencyEdge,
   RepositoryWorkspaceNode,
   RepositoryTestCoverage,
-  RepositoryConfigEntry
+  RepositoryConfigEntry,
+  RepositoryArchitectureRoleInference
 } from '../indexer/repoIndexer.js';
 import { readRepositoryGraph, summarizeGraphNeighborhood, type GraphNeighborhoodSummary } from '../graph/repoGraph.js';
 import { readJsonArtifact } from '../artifacts/artifactIO.js';
@@ -37,6 +38,7 @@ export type RepositoryQueryField = (typeof SUPPORTED_QUERY_FIELDS)[number];
 export type RepositoryQueryResult = {
   field: RepositoryQueryField;
   result: string | string[] | RepositoryModule[] | RepositoryDependencyEdge[] | RepositoryWorkspaceNode[] | RepositoryTestCoverage[] | RepositoryConfigEntry[];
+  architectureRoleInference?: RepositoryArchitectureRoleInference;
   graphNeighborhood?: GraphNeighborhoodSummary;
   memorySummary?: RuntimeMemoryEnvelope['memorySummary'];
   memorySources?: RuntimeMemoryEnvelope['memorySources'];
@@ -196,6 +198,7 @@ export const queryRepositoryIndex = (projectRoot: string, field: string, options
   };
 
   if (resolvedField === 'architecture') {
+    queryResult.architectureRoleInference = index.architectureRoleInference;
     queryResult.graphNeighborhood = readGraphNeighborhood(projectRoot, 'repository:root');
   }
 
