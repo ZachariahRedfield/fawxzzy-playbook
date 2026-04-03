@@ -27,6 +27,10 @@ Roadmap and planning docs may describe sequencing intent, but they are not comma
 - Rule: Declared mutation scope must be enforced before apply succeeds.
 - Pattern: Declare scope -> enforce scope -> mutate -> receipt.
 - Failure Mode: Scope bundles that are not enforced become advisory paperwork instead of real safety boundaries.
+- `.playbook/session.json` (including `evidenceEnvelope`) is a canonical runtime truth artifact for continuity + provenance across `verify/plan/apply/policy/receipt` seams; downstream control-plane and memory interpretations should consume this deterministic envelope rather than infer lineage from ad-hoc file deltas.
+- Rule: Runtime decisions that claim approval or execution lineage must resolve to explicit session/evidence/receipt references.
+- Pattern: session continuity -> evidence lineage -> approval decision -> receipt/update.
+- Failure Mode: If approvals or outcomes are detached from the session/evidence envelope, trust state becomes narrative-only and non-replayable.
 - `pnpm playbook test-triage --input .playbook/ci-failure.log` is the canonical CI/test failure summarization surface: it preserves raw logs while emitting deterministic `.playbook/test-triage.json` / `.playbook/failure-summary.md` artifacts and a copy-paste-ready markdown brief for GitHub step summaries.
 - `pnpm playbook rendezvous create|status|release --dry-run` is the canonical read-first artifact rendezvous seam for remediation pause/resume/release decisions: text mode stays brief (decision, status, missing artifacts, blockers, next action) while full detail remains in JSON plus `.playbook/rendezvous-manifest.json`.
 - `pnpm playbook interop fitness-contract` is the canonical read-only inspect seam for the consumed Fitness contract boundary: text mode stays brief-thin (source pointer + canonical names/types), while full detail remains in JSON plus `.playbook/fitness-contract.json`.

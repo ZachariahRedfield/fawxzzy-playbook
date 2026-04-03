@@ -764,8 +764,8 @@ Near-term dependency chain:
 
 1. `PB-V07-ARCH-INTELLIGENCE-GRAPH-001`
 2. `PB-V09-ARCHITECTURE-ROLE-INFERENCE-001`
-3. `PB-V09-SESSION-EVIDENCE-001`
-4. `PB-V09-CONTROL-PLANE-001`
+3. `PB-V09-SESSION-EVIDENCE-001` (implemented canonical runtime truth surface; hardening continues)
+4. `PB-V09-CONTROL-PLANE-001` (depends on Session + Evidence runtime truth)
 5. `PB-V09-PR-REVIEW-LOOP-001`
 6. `PB-V09-LONGITUDINAL-STATE-001`
 7. `PB-V09-KNOWLEDGE-QUERY-INSPECTION-001`
@@ -872,13 +872,14 @@ Pattern: Same runtime, different operational surfaces.
 - **Already exists today**
   - deterministic command artifacts (`.playbook/repo-index.json`, findings/plan outputs, and verify/apply execution outputs) provide the substrate that a session envelope must compose.
   - repo-scoped workflow continuity now persists in `.playbook/session.json` and supports deterministic `session show/pin/resume/clear` semantics with stale-artifact warnings.
+  - `PB-V09-SESSION-EVIDENCE-001` is an active runtime truth layer, not roadmap-only labeling: the session/evidence envelope seam is the canonical continuity + provenance boundary for downstream policy/control-plane and longitudinal-memory flows.
 - **Partially defined**
   - evidence-linked findings/plans and trust-boundary language exist, while broader actor/ref/approval/promotion-candidate lineage contracts still need deeper unification across layers.
 - **Future work**
-  - standardize the Session envelope and Evidence provenance model described in `docs/architecture/PLAYBOOK_SESSION_EVIDENCE_ARCHITECTURE.md`.
+  - continue hardening and schema alignment of the Session envelope and Evidence provenance model described in `docs/architecture/PLAYBOOK_SESSION_EVIDENCE_ARCHITECTURE.md`.
   - require deterministic evidence references for policy decisions, promotion candidates, and future automation synthesis inputs.
 - **Execution window**
-  - outside the current near-term execution window except for existing remediation/evidence hardening already in progress.
+  - inside the current runtime truth boundary as implemented architecture, with additional hardening slices continuing in active and later windows.
 
 Rule - Workflow continuity must be stored in repo-scoped session state, not implied from transient conversation history.
 Pattern - Resumeable systems externalize working memory into inspectable artifacts.
@@ -1595,8 +1596,8 @@ Use a layered phase model so each phase compounds directly on the previous one:
     - Recent implementation note: replay candidates now materialize at `.playbook/memory/replay-candidates.json` (compat-written to `.playbook/memory/candidates.json`) with explicit `candidateOnly`, `authority`, salience, and event provenance fields derived from memory index + append-only event evidence rather than opaque raw logs.
     - Recent implementation note: consolidation now emits `.playbook/memory/consolidation-candidates.json`, preserving replay and event provenance end-to-end, surfacing salience for review, and marking every promotion path as explicit `reviewRequired` with no auto-promotion behavior.
     - Recent implementation note: compaction review now emits `.playbook/memory/compaction-review.json`, making deterministic `discard` / `attach` / `merge` / `new_candidate` bucket decisions explicit with canonical reason codes, replay/consolidation/promotion provenance, and unchanged read-only / review-required authority.
-12. **Phase 12 â€” Session + Evidence Layer**  
-    Session envelope and evidence provenance contracts that bind actor context, command lineage, approvals, and deterministic artifact references.
+12. **Phase 12 â€” Session + Evidence Layer** (implemented; runtime truth hardening continues)  
+    Session envelope and evidence provenance contracts bind actor context, command lineage, approvals, and deterministic artifact references as a canonical runtime truth surface.
 13. **Phase 13 â€” Control Plane / Agent Runtime v1**  
     First-class policy/approval/mutation-boundary architecture that gates privileged execution and keeps agents above (not inside) the deterministic substrate.
 14. **Phase 14 â€” Review + Execution Orchestration**  

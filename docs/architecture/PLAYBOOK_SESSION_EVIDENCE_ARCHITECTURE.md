@@ -97,6 +97,21 @@ The current deterministic implementation is intentionally narrow and additive:
 
 This provides the next contract slice for governed execution provenance while preserving existing command/runtime behavior.
 
+## Compact runtime truth note (current canonical seam)
+
+Session + Evidence is now a canonical runtime truth seam, not only a future dependency label.
+
+- **Session continuity**
+  - `.playbook/session.json` is the continuity anchor for bounded run context (`session show/pin/resume/clear`) so workflow state is recoverable without relying on chat/operator memory.
+- **Evidence lineage**
+  - the session `evidenceEnvelope` links runtime decisions back to deterministic artifact references and preserves ordered lineage (`session -> proposal_generation -> policy_evaluation -> execution_result`).
+- **Approval/receipt linkage**
+  - policy decisions and approval context are bound to the same envelope lineage, and execution/result receipts remain explicit artifacts referenced from the envelope rather than inferred from mutable repo state.
+- **Deterministic invalidation / staleness**
+  - envelope references remain explicit about presence/staleness and must fail closed for trust-sensitive downstream decisions when required evidence is missing, stale, or contradictory.
+
+Rule: Session continuity, evidence lineage, and approval/receipt linkage must be inspectable from deterministic artifacts, not reconstructed from narrative.
+
 ## Dependency chain (long-term architecture)
 
 Recommended dependency chain:
