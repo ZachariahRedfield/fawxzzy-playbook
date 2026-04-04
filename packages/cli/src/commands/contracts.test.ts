@@ -52,6 +52,7 @@ describe('runContracts', () => {
     expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('version-policy');
     expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('release-plan');
     expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('managed-surface-manifest');
+    expect((schemas.commandOutputs as Array<{ id: string }>).map((entry) => entry.id)).toContain('control-plane');
   });
 
   it('keeps schema registration identifiers and paths stable', async () => {
@@ -123,7 +124,8 @@ describe('runContracts', () => {
         { id: 'version-policy', version: '1.0', path: 'packages/contracts/src/version-policy.schema.json' },
         { id: 'release-plan', version: '1.0', path: 'packages/contracts/src/release-plan.schema.json' },
         { id: 'managed-surface-manifest', version: '1.0', path: 'packages/contracts/src/managed-surface-manifest.schema.json' },
-        { id: 'change-scope', version: '1.0', path: 'packages/contracts/src/change-scope.schema.json' }
+        { id: 'change-scope', version: '1.0', path: 'packages/contracts/src/change-scope.schema.json' },
+        { id: 'control-plane', version: '1.0', path: 'packages/contracts/src/control-plane.schema.json' }
       ]
     });
 

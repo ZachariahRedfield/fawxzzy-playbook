@@ -855,3 +855,6 @@ Authority remains unchanged: this artifact does not grant new mutation behavior.
 - Rule: Any intentional CLI contract surface change must ship with regenerated committed snapshots.
 - Pattern: New artifact surfaces are not complete until contract snapshot drift is reconciled and reviewed.
 - Failure Mode: Passing build + failing contracts:check usually means schema/contract evolution was intentional but snapshot artifacts were not updated.
+- Rule: New read-only control-plane artifacts may extend contract registries, but must not silently change report-vs-enforce CLI exit semantics.
+- Pattern: Serialize operator-facing proof/control-plane output first, then apply exit-policy decisions at the final boundary.
+- Failure Mode: Early fail-closed branching in shared status/agent helpers can erase expected JSON/text payloads and make report mode behave like enforce mode.

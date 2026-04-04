@@ -30,8 +30,9 @@ const defaultBootstrapCliResolutionCommands = vi.fn();
 const classifyProofFailureDomains = vi.fn();
 const listOrchestrationExecutionRuns = vi.fn();
 const readSession = vi.fn();
+const writeControlPlaneState = vi.fn();
 
-vi.mock('@zachariahredfield/playbook-engine', () => ({ buildRepoAdoptionReadiness, buildFleetAdoptionReadinessSummary, buildFleetAdoptionWorkQueue, buildFleetCodexExecutionPlan, buildFleetExecutionReceipt, buildFleetUpdatedAdoptionState, deriveNextAdoptionQueueFromUpdatedState, buildMemoryPressureStatusArtifact, loadConfig, runBootstrapProof, readProofParallelWorkSummary, defaultBootstrapCliResolutionCommands, classifyProofFailureDomains, listOrchestrationExecutionRuns, readSession }));
+vi.mock('@zachariahredfield/playbook-engine', () => ({ buildRepoAdoptionReadiness, buildFleetAdoptionReadinessSummary, buildFleetAdoptionWorkQueue, buildFleetCodexExecutionPlan, buildFleetExecutionReceipt, buildFleetUpdatedAdoptionState, deriveNextAdoptionQueueFromUpdatedState, buildMemoryPressureStatusArtifact, loadConfig, runBootstrapProof, readProofParallelWorkSummary, defaultBootstrapCliResolutionCommands, classifyProofFailureDomains, listOrchestrationExecutionRuns, readSession, writeControlPlaneState }));
 
 const makeAnalyzeReport = (overrides?: Partial<AnalyzeReport>): AnalyzeReport => ({
   repoPath: '/tmp/repo',
@@ -74,9 +75,14 @@ describe('runStatus', () => {
     classifyProofFailureDomains.mockReset();
     listOrchestrationExecutionRuns.mockReset();
     readSession.mockReset();
+    writeControlPlaneState.mockReset();
     defaultBootstrapCliResolutionCommands.mockReturnValue([]);
     listOrchestrationExecutionRuns.mockReturnValue([]);
     readSession.mockReturnValue(null);
+    writeControlPlaneState.mockReturnValue({
+      schemaVersion: '1.0',
+      kind: 'playbook-control-plane-state'
+    });
     classifyProofFailureDomains.mockReturnValue({
       failureDomains: [],
       primaryFailureDomain: null,
@@ -1160,6 +1166,51 @@ describe('runStatus', () => {
     expect(reportPayload.mode).toBe('proof');
     expect(enforcePayload.mode).toBe('proof');
     expect(enforcePayload).toEqual(reportPayload);
+
+    logSpy.mockRestore();
+  });
+
+  it('preserves proof payload serialization in report mode when control-plane projection fails', async () => {
+    const { runStatus } = await import('./status.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    runBootstrapProof.mockReturnValue({
+      schemaVersion: '1.0',
+      kind: 'playbook-bootstrap-proof',
+      repo_root: '/tmp/proof-repo',
+      command: 'status',
+      mode: 'proof',
+      ok: false,
+      current_state: 'execution_state_blocked',
+      highest_priority_next_action: 'Run verify',
+      summary: {
+        current_state: 'Proof blocked.',
+        why: 'Execution-state checks failed.',
+        what_next: 'Run verify'
+      },
+      diagnostics: {
+        failing_stage: 'execution-state',
+        failing_category: 'verify',
+        checks: []
+      }
+    });
+    writeControlPlaneState.mockImplementation(() => {
+      throw new Error('projection unavailable');
+    });
+
+    const exitCode = await runStatus('/tmp/proof-repo', {
+      ci: false,
+      format: 'json',
+      quiet: false,
+      scope: 'proof',
+      proofPolicy: 'report'
+    });
+
+    expect(exitCode).toBe(ExitCode.Success);
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.mode).toBe('proof');
+    expect(payload.proof.current_state).toBe('execution_state_blocked');
+    expect(payload.control_plane).toBeNull();
 
     logSpy.mockRestore();
   });

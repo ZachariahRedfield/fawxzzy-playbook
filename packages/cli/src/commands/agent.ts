@@ -64,6 +64,14 @@ const resolvePositionalRunId = (args: string[]): string | null => {
   return positional.length > 1 ? positional[1] ?? null : null;
 };
 
+const safeControlPlaneState = (cwd: string): ReturnType<typeof writeControlPlaneState> | null => {
+  try {
+    return writeControlPlaneState(cwd);
+  } catch {
+    return null;
+  }
+};
+
 export const runAgent = async (cwd: string, args: string[], options: AgentOptions): Promise<number> => {
   const subcommand = args.find((arg) => !arg.startsWith('-'));
 
@@ -131,7 +139,7 @@ export const runAgent = async (cwd: string, args: string[], options: AgentOption
           repoRoot: cwd,
           fromPlanPath: fromPlan
         }),
-        control_plane: writeControlPlaneState(cwd)
+        control_plane: safeControlPlaneState(cwd)
       };
 
       if (options.format === 'json') {

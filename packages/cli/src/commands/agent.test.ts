@@ -7,6 +7,7 @@ const listRuntimeTasks = vi.fn();
 const listRuntimeLogRecords = vi.fn();
 const readRuntimeControlPlaneStatus = vi.fn();
 const runAgentPlanDryRun = vi.fn();
+const writeControlPlaneState = vi.fn();
 
 vi.mock('@zachariahredfield/playbook-engine', () => ({
   listRuntimeRuns,
@@ -14,10 +15,13 @@ vi.mock('@zachariahredfield/playbook-engine', () => ({
   listRuntimeTasks,
   listRuntimeLogRecords,
   readRuntimeControlPlaneStatus,
-  runAgentPlanDryRun
+  runAgentPlanDryRun,
+  writeControlPlaneState
 }));
 
 describe('runAgent', () => {
+  writeControlPlaneState.mockReturnValue({ kind: 'playbook-control-plane-state' });
+
   it('supports runs subcommand and emits json output', async () => {
     const { runAgent } = await import('./agent.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
@@ -225,6 +229,56 @@ describe('runAgent', () => {
     expect(payload.dryRun).toBe(true);
     expect(payload.approvalRequiredSummary).toEqual({ taskCount: 1, taskIds: ['rt-2'] });
     expect(payload.deniedTaskSummary).toEqual({ taskCount: 1, taskIds: ['rt-3'] });
+
+    logSpy.mockRestore();
+  });
+
+  it('keeps dry-run payload behavior when control-plane projection fails', async () => {
+    const { runAgent } = await import('./agent.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    writeControlPlaneState.mockImplementation(() => {
+      throw new Error('control-plane unavailable');
+    });
+    runAgentPlanDryRun.mockReturnValue({
+      runMetadata: {
+        runId: 'run-2',
+        agentId: 'playbook-agent',
+        repoId: 'playbook',
+        objective: 'plan-backed-agent-dry-run',
+        mode: 'dry-run',
+        createdAt: 456
+      },
+      compiledTaskCount: 1,
+      readyBlockedSummary: { readyCount: 1, blockedCount: 0, completedCount: 0 },
+      approvalRequiredSummary: { taskCount: 0, taskIds: [] },
+      deniedTaskSummary: { taskCount: 0, taskIds: [] },
+      schedulingPreview: {
+        runId: 'run-2',
+        deterministicNextTaskOrder: ['rt-1'],
+        nextTaskId: 'rt-1',
+        ready: [],
+        blocked: [],
+        completed: [],
+        blockedReasonSummary: {
+          'approval-required': 0,
+          'dependency-pending': 0,
+          'retry-budget-exhausted': 0
+        }
+      },
+      provenance: {
+        sourcePlanArtifactPath: '.playbook/plan.json',
+        sourcePlanArtifactId: 'plan_456'
+      }
+    });
+
+    const exitCode = await runAgent('/repo', ['run', '--from-plan', '.playbook/plan.json', '--dry-run'], { format: 'json', quiet: false });
+    expect(exitCode).toBe(ExitCode.Success);
+
+    const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(payload.command).toBe('agent-run');
+    expect(payload.dryRun).toBe(true);
+    expect(payload.control_plane).toBeNull();
 
     logSpy.mockRestore();
   });

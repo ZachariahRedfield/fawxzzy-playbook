@@ -80,6 +80,14 @@ const toTimeMs = (value: string | null | undefined): number => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const safeControlPlaneState = (cwd: string): ReturnType<typeof writeControlPlaneState> | null => {
+  try {
+    return writeControlPlaneState(cwd);
+  } catch {
+    return null;
+  }
+};
+
 const buildContinuitySnapshot = (
   cwd: string,
   runs: ReturnType<typeof listOrchestrationExecutionRuns>
@@ -760,7 +768,7 @@ export const runQuery = async (cwd: string, commandArgs: string[], options: Quer
     try {
       const runs = listOrchestrationExecutionRuns(cwd);
       const continuity = buildContinuitySnapshot(cwd, runs);
-      const payload = { schemaVersion: '1.0', command: 'query', type: 'runs', runs, continuity, control_plane: writeControlPlaneState(cwd) };
+      const payload = { schemaVersion: '1.0', command: 'query', type: 'runs', runs, continuity, control_plane: safeControlPlaneState(cwd) };
       if (options.format === 'json') {
         emitJsonOutput({ cwd, command: 'query', payload, outFile: options.outFile });
         return ExitCode.Success;
