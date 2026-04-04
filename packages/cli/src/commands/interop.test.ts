@@ -76,7 +76,7 @@ describe('runInterop', () => {
           action: 'queue-next-plan-hint',
           targetSurface: '.playbook/plan.json',
           followupType: 'next-plan-hint',
-          provenanceRefs: ['.playbook/interop-updated-truth.json'],
+          provenanceRefs: ['.playbook/interop-updated-truth.json', 'knowledge:kp-001'],
           nextActionText: 'Use request request-1 outcome as a bounded next-plan hint.',
           confidence: { score: 0.87, rationale: 'deterministic' }
         },
@@ -109,6 +109,15 @@ describe('runInterop', () => {
         authority: string;
         proposalOnly: boolean;
         summary: { total: number; returned: number };
+        automationSynthesis: { suggestionCount: number };
+        automationSynthesisSuggestions: Array<{
+          suggestionId: string;
+          templateType: string;
+          sourcePromotedKnowledgeRefs: string[];
+          confidence: number | null;
+          rationale: string | null;
+          nextAction: string;
+        }>;
         followups: Array<{
           followupId: string;
           followupType: string;
@@ -130,6 +139,17 @@ describe('runInterop', () => {
     expect(payload.payload.authority).toBe('read-only');
     expect(payload.payload.proposalOnly).toBe(true);
     expect(payload.payload.summary).toEqual({ total: 2, returned: 1 });
+    expect(payload.payload.automationSynthesis).toEqual({ suggestionCount: 1 });
+    expect(payload.payload.automationSynthesisSuggestions).toEqual([
+      {
+        suggestionId: 'followup-1',
+        templateType: 'plan-hint-template',
+        sourcePromotedKnowledgeRefs: ['knowledge:kp-001'],
+        confidence: 0.87,
+        rationale: 'deterministic',
+        nextAction: 'Use request request-1 outcome as a bounded next-plan hint.'
+      }
+    ]);
     expect(payload.payload.followups).toMatchObject([
       {
         followupId: 'followup-1',
@@ -170,10 +190,17 @@ describe('runInterop', () => {
     const spy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const exitCode = await runInterop(repo, ['followups'], { format: 'json', quiet: false });
     const payload = JSON.parse(String(spy.mock.calls.at(-1)?.[0])) as {
-      payload: { followups: Array<Record<string, unknown>> };
+      payload: {
+        automationSynthesis: { suggestionCount: number };
+        automationSynthesisSuggestions: Array<Record<string, unknown>>;
+        followups: Array<Record<string, unknown>>;
+      };
     };
     const followups = payload.payload.followups as Array<Record<string, unknown>>;
+    const suggestions = payload.payload.automationSynthesisSuggestions as Array<Record<string, unknown>>;
     expect(followups.length).toBeGreaterThan(0);
+    expect(payload.payload.automationSynthesis.suggestionCount).toBe(1);
+    expect(suggestions[0]?.templateType).toBe('knowledge-memory-candidate');
 
     const followup = followups[0] as {
       action?: unknown;
@@ -213,6 +240,7 @@ describe('runInterop', () => {
     expect(spy.mock.calls.map((call) => String(call[0]))).toEqual([
       'Status: 1 interop followup(s) queued.',
       'Affected targets: .playbook/plan.json',
+      'Automation synthesis: 1 suggestion(s) (plan-hint-template)',
       'Next action: Use request request-1 outcome as a bounded next-plan hint.'
     ]);
   });

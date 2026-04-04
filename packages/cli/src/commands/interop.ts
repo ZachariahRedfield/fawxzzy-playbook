@@ -17,6 +17,8 @@ type InteropFollowupRow = {
   targetSurface: InteropFollowupTargetSurface;
   followupType: InteropFollowupType;
   nextActionText: string;
+  provenanceRefs?: string[];
+  confidence?: { score?: number; rationale?: string };
 };
 type InteropFollowupsArtifact = {
   schemaVersion: string;
@@ -24,6 +26,42 @@ type InteropFollowupsArtifact = {
   command: 'interop followups';
   followups: InteropFollowupRow[];
 };
+
+type AutomationSynthesisSuggestion = {
+  suggestionId: string;
+  templateType: string;
+  sourcePromotedKnowledgeRefs: string[];
+  confidence: number | null;
+  rationale: string | null;
+  nextAction: string;
+};
+
+const toAutomationTemplateType = (followupType: InteropFollowupType): string => {
+  if (followupType === 'memory-candidate') return 'knowledge-memory-candidate';
+  if (followupType === 'next-plan-hint') return 'plan-hint-template';
+  if (followupType === 'review-cue') return 'review-cue-template';
+  return 'docs-story-followup-template';
+};
+
+const extractPromotedKnowledgeRefs = (refs: string[] | undefined): string[] =>
+  [...new Set((refs ?? []).filter((ref) => ref.includes('knowledge:') || ref.includes('promoted') || ref.includes('.playbook/memory/knowledge/')))].sort((left, right) =>
+    left.localeCompare(right)
+  );
+
+const toAutomationSynthesisSuggestions = (followups: InteropFollowupRow[]): AutomationSynthesisSuggestion[] =>
+  followups
+    .map((followup) => {
+      const templateType = toAutomationTemplateType(followup.followupType);
+      return {
+        suggestionId: followup.followupId,
+        templateType,
+        sourcePromotedKnowledgeRefs: extractPromotedKnowledgeRefs(followup.provenanceRefs),
+        confidence: typeof followup.confidence?.score === 'number' ? followup.confidence.score : null,
+        rationale: typeof followup.confidence?.rationale === 'string' && followup.confidence.rationale.length > 0 ? followup.confidence.rationale : null,
+        nextAction: followup.nextActionText
+      };
+    })
+    .sort((left, right) => left.suggestionId.localeCompare(right.suggestionId));
 
 
 type FitnessActionContract = {
@@ -245,6 +283,7 @@ export const runInterop = async (cwd: string, commandArgs: string[], options: In
         }
         return true;
       });
+      const automationSynthesisSuggestions = toAutomationSynthesisSuggestions(followups);
       const payload = {
         schemaVersion: '1.0',
         command: 'interop-followups',
@@ -260,6 +299,10 @@ export const runInterop = async (cwd: string, commandArgs: string[], options: In
           total: fullFollowupsArtifact.followups.length,
           returned: followups.length
         },
+        automationSynthesis: {
+          suggestionCount: automationSynthesisSuggestions.length
+        },
+        automationSynthesisSuggestions,
         followups,
         full_followups_artifact: fullFollowupsArtifact
       };
@@ -274,8 +317,13 @@ export const runInterop = async (cwd: string, commandArgs: string[], options: In
           const affectedTargets = [...new Set(followups.map((followup: InteropFollowupRow) => followup.targetSurface))]
             .slice(0, 3)
             .join(', ');
+          const firstSuggestion = automationSynthesisSuggestions[0];
           console.log(`Status: ${followups.length} interop followup(s) queued.`);
           console.log(`Affected targets: ${affectedTargets}`);
+          console.log(
+            `Automation synthesis: ${automationSynthesisSuggestions.length} suggestion(s)` +
+              (firstSuggestion ? ` (${firstSuggestion.templateType})` : '')
+          );
           console.log(`Next action: ${followups[0]?.nextActionText ?? 'review followup payload details.'}`);
         }
       }
