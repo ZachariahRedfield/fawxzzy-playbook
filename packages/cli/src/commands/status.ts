@@ -578,10 +578,12 @@ const toProofStatusResult = (cwd: string): StatusProofResult => {
 };
 
 const resolveProofExitCode = (result: StatusProofResult, proofPolicy: ProofPolicy): ExitCode => {
-  if (proofPolicy === 'enforce') {
-    return result.proof.ok ? ExitCode.Success : ExitCode.Failure;
+  switch (proofPolicy) {
+    case 'enforce':
+      return result.proof.ok ? ExitCode.Success : ExitCode.Failure;
+    case 'report':
+      return ExitCode.Success;
   }
-  return ExitCode.Success;
 };
 
 const resolveProofPolicy = (options: StatusOptions): ProofPolicy => options.proofPolicy ?? 'report';
