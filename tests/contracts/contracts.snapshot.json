@@ -407,6 +407,11 @@
         "id": "multi-repo-control-plane-read-interface",
         "version": "1.0",
         "path": "packages/contracts/src/multi-repo-control-plane-read-interface.schema.json"
+      },
+      {
+        "id": "workspace-governance",
+        "version": "1.0",
+        "path": "packages/contracts/src/workspace-governance.schema.json"
       }
     ]
   }
