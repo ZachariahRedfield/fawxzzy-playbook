@@ -577,6 +577,7 @@ const toProofStatusResult = (cwd: string): StatusProofResult => {
   };
 };
 
+// Exit behavior is policy-only: payload serialization remains invariant.
 const resolveProofExitCode = (result: StatusProofResult, proofPolicy: ProofPolicy): ExitCode => {
   switch (proofPolicy) {
     case 'enforce':
@@ -586,6 +587,7 @@ const resolveProofExitCode = (result: StatusProofResult, proofPolicy: ProofPolic
   }
 };
 
+// Local/operator status defaults to report-mode unless explicitly gated.
 const resolveProofPolicy = (options: StatusOptions): ProofPolicy => options.proofPolicy ?? 'report';
 
 const toUpdatedStateStatusResult = (cwd: string): { result: StatusUpdatedStateResult; exitCode: ExitCode } => {
