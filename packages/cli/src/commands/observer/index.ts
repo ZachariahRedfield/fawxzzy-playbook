@@ -34,6 +34,7 @@ import {
   readControlPlaneState,
   readLongitudinalState,
   buildMultiRepoReadInterfaceEnvelope,
+  buildWorkspaceGovernanceArtifact,
   type MultiRepoReadInterfaceSlice,
 } from "@zachariahredfield/playbook-engine";
 import { ExitCode } from "../../lib/cliContract.js";
@@ -1836,6 +1837,42 @@ const buildMultiRepoReadSliceResponse = (
     });
   }
 
+
+  if (slice === "workspace-tenant-governance") {
+    const workspaceGovernance = buildWorkspaceGovernanceArtifact({
+      workspace_id: "workspace:observer",
+      tenant_id: "tenant:observer",
+      member_repo_ids: repoScope.map((entry) => entry.repo_id),
+      inherited_policy_refs: [
+        "policy:tenant/defaults",
+        "policy:workspace/baseline",
+      ],
+      overridden_policy_refs: repoScope.map((entry) => `policy:repo/${entry.repo_id}/local-overrides`),
+      per_repo_provenance_sources: repoScope.map((entry) => ({
+        repo_id: entry.repo_id,
+        sources: [
+          ".playbook/session.json",
+          ".playbook/policy-evaluation.json",
+          ".playbook/policy-apply-result.json",
+        ],
+      })),
+    });
+
+    return buildMultiRepoReadInterfaceEnvelope({
+      slice,
+      repoScope,
+      provenance: [
+        ".playbook/workspace-governance.json",
+        ".playbook/session.json",
+        ".playbook/policy-evaluation.json",
+        ".playbook/policy-apply-result.json",
+      ],
+      payload: {
+        workspace_governance: workspaceGovernance,
+      },
+    });
+  }
+
   if (slice === "longitudinal-state-summary") {
     return buildMultiRepoReadInterfaceEnvelope({
       slice,
@@ -1939,7 +1976,8 @@ const observerServerResponse = (
       requestedSlice === "readiness-proof" ||
       requestedSlice === "run-state-inspection" ||
       requestedSlice === "longitudinal-state-summary" ||
-      requestedSlice === "cross-repo-pattern-comparison"
+      requestedSlice === "cross-repo-pattern-comparison" ||
+      requestedSlice === "workspace-tenant-governance"
         ? requestedSlice
         : "readiness-proof";
     return {

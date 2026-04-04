@@ -2,7 +2,8 @@ export type MultiRepoReadInterfaceSlice =
   | 'readiness-proof'
   | 'run-state-inspection'
   | 'longitudinal-state-summary'
-  | 'cross-repo-pattern-comparison';
+  | 'cross-repo-pattern-comparison'
+  | 'workspace-tenant-governance';
 
 export type MultiRepoReadInterfaceRepoScope = {
   repo_id: string;

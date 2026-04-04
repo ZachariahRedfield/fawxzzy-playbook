@@ -753,8 +753,11 @@ The first governed multi-repo control-plane interface slice is exposed through e
 - `GET /api/control-plane/interfaces/read?slice=run-state-inspection`
 - `GET /api/control-plane/interfaces/read?slice=longitudinal-state-summary`
 - `GET /api/control-plane/interfaces/read?slice=cross-repo-pattern-comparison`
+- `GET /api/control-plane/interfaces/read?slice=workspace-tenant-governance`
 
 The response is a deterministic read-only envelope (`playbook-multi-repo-control-plane-read-interface`) that preserves explicit per-repo policy/provenance boundaries and introduces no mutation authority.
+
+The workspace/tenant governance slice returns a deterministic `workspace_governance` payload and aligns with `.playbook/workspace-governance.json` contract semantics (workspace id, tenant id, member repos, inherited vs overridden policy refs, accountability boundary metadata, provenance boundary metadata).
 
 ### Deterministic test hotspot discovery
 

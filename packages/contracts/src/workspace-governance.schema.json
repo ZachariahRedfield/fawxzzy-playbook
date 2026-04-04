@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/workspace-governance.schema.json",
+  "title": "Playbook Workspace Governance Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "read_only",
+    "deterministic",
+    "workspace_id",
+    "tenant_id",
+    "member_repo_ids",
+    "policy_refs",
+    "accountability_boundary",
+    "provenance_boundary"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "kind": { "const": "playbook-workspace-governance" },
+    "read_only": { "const": true },
+    "deterministic": { "const": true },
+    "workspace_id": { "type": "string", "minLength": 1 },
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "member_repo_ids": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "policy_refs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inherited", "overridden"],
+      "properties": {
+        "inherited": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "overridden": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "accountability_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule", "per_repo"],
+      "properties": {
+        "rule": { "const": "workspace-coordinates-repos-without-erasing-repo-accountability" },
+        "per_repo": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["repo_id", "policy_boundary", "accountability"],
+            "properties": {
+              "repo_id": { "type": "string", "minLength": 1 },
+              "policy_boundary": { "const": "per-repo" },
+              "accountability": { "const": "explicit" }
+            }
+          }
+        }
+      }
+    },
+    "provenance_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule", "per_repo"],
+      "properties": {
+        "rule": { "const": "repo-scoped-truth-to-governed-interface-to-workspace-policy-view" },
+        "per_repo": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["repo_id", "boundary", "sources"],
+            "properties": {
+              "repo_id": { "type": "string", "minLength": 1 },
+              "boundary": { "const": "per-repo" },
+              "sources": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1 },
+                "uniqueItems": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "hosted_self_hosted_parity_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["semantic_parity", "mutation_authority"],
+      "properties": {
+        "semantic_parity": { "const": "required" },
+        "mutation_authority": { "const": "none" }
+      }
+    }
+  }
+}
