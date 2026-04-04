@@ -71,6 +71,10 @@ export type StoryRecord = {
   last_updated_state_at?: string | null;
   reconciled_at?: string | null;
   provenance?: StoryPromotionProvenance;
+  backlog_priority_score?: number;
+  backlog_order?: number;
+  backlog_unmet_dependencies?: string[];
+  backlog_score_explanation?: string[];
 };
 
 export type StoriesArtifact = {
@@ -109,7 +113,90 @@ const CONFIDENCE_RANK: Record<StoryConfidence, number> = {
   low: 2
 };
 
+const PRIORITY_SCORE: Record<StoryPriority, number> = {
+  urgent: 400,
+  high: 300,
+  medium: 200,
+  low: 100
+};
+
+const SEVERITY_SCORE: Record<StorySeverity, number> = {
+  critical: 40,
+  high: 30,
+  medium: 20,
+  low: 10
+};
+
+const CONFIDENCE_SCORE: Record<StoryConfidence, number> = {
+  high: 9,
+  medium: 6,
+  low: 3
+};
+
+const STATUS_SCORE: Record<StoryStatus, number> = {
+  ready: 20,
+  in_progress: 15,
+  proposed: 8,
+  blocked: 0,
+  done: -20,
+  archived: -30
+};
+
+const TYPE_SCORE: Record<StoryType, number> = {
+  bug: 5,
+  governance: 4,
+  feature: 3,
+  maintenance: 2,
+  research: 1
+};
+
+const TERMINAL_DEPENDENCY_STATUSES: ReadonlySet<StoryStatus> = new Set(['done', 'archived']);
+
+const buildDependencyIndex = (stories: StoryRecord[]): ReadonlyMap<string, StoryRecord> =>
+  new Map(stories.map((story) => [story.id, story] as const));
+
+const deriveUnmetDependencies = (story: StoryRecord, dependencyIndex: ReadonlyMap<string, StoryRecord>): string[] =>
+  unique(story.dependencies)
+    .filter((dependencyId) => {
+      const dependency = dependencyIndex.get(dependencyId);
+      return !dependency || !TERMINAL_DEPENDENCY_STATUSES.has(dependency.status);
+    })
+    .sort((left, right) => left.localeCompare(right));
+
+const deriveStoryPriorityScore = (story: StoryRecord, unmetDependencies: readonly string[]): { score: number; explanation: string[] } => {
+  const score = PRIORITY_SCORE[story.priority]
+    + SEVERITY_SCORE[story.severity]
+    + CONFIDENCE_SCORE[story.confidence]
+    + STATUS_SCORE[story.status]
+    + TYPE_SCORE[story.type]
+    - (unmetDependencies.length * 50);
+  const explanation = [
+    `priority:${story.priority}=${PRIORITY_SCORE[story.priority]}`,
+    `severity:${story.severity}=${SEVERITY_SCORE[story.severity]}`,
+    `confidence:${story.confidence}=${CONFIDENCE_SCORE[story.confidence]}`,
+    `status:${story.status}=${STATUS_SCORE[story.status]}`,
+    `type:${story.type}=${TYPE_SCORE[story.type]}`,
+    `unmet_dependencies:${unmetDependencies.length}=-${unmetDependencies.length * 50}`
+  ];
+  return { score, explanation };
+};
+
 const compareStories = (left: StoryRecord, right: StoryRecord): number => {
+  const leftBlocked = (left.backlog_unmet_dependencies?.length ?? 0) > 0;
+  const rightBlocked = (right.backlog_unmet_dependencies?.length ?? 0) > 0;
+  if (leftBlocked !== rightBlocked) {
+    return leftBlocked ? 1 : -1;
+  }
+  const leftScore = left.backlog_priority_score ?? Number.NEGATIVE_INFINITY;
+  const rightScore = right.backlog_priority_score ?? Number.NEGATIVE_INFINITY;
+  if (leftScore !== rightScore) {
+    return rightScore - leftScore;
+  }
+  const leftUnmet = left.backlog_unmet_dependencies?.length ?? 0;
+  const rightUnmet = right.backlog_unmet_dependencies?.length ?? 0;
+  if (leftUnmet !== rightUnmet) {
+    return leftUnmet - rightUnmet;
+  }
   const priorityDelta = PRIORITY_RANK[left.priority] - PRIORITY_RANK[right.priority];
   if (priorityDelta !== 0) return priorityDelta;
   const severityDelta = SEVERITY_RANK[left.severity] - SEVERITY_RANK[right.severity];
@@ -119,7 +206,25 @@ const compareStories = (left: StoryRecord, right: StoryRecord): number => {
   return left.id.localeCompare(right.id);
 };
 
-export const sortStoriesForBacklog = (stories: StoryRecord[]): StoryRecord[] => [...stories].sort(compareStories);
+export const sortStoriesForBacklog = (stories: StoryRecord[]): StoryRecord[] => {
+  const dependencyIndex = buildDependencyIndex(stories);
+  const decoratedStories = stories.map((story) => {
+    const unmetDependencies = deriveUnmetDependencies(story, dependencyIndex);
+    const scoring = deriveStoryPriorityScore(story, unmetDependencies);
+    return {
+      ...story,
+      backlog_priority_score: scoring.score,
+      backlog_unmet_dependencies: unmetDependencies,
+      backlog_score_explanation: scoring.explanation
+    };
+  });
+  return decoratedStories
+    .sort(compareStories)
+    .map((story, index) => ({
+      ...story,
+      backlog_order: index + 1
+    }));
+};
 
 export const summarizeStoriesBacklog = (artifact: StoriesArtifact): StoryBacklogSummary => {
   const countsByStatus = STORY_STATUSES.reduce((acc, status) => ({ ...acc, [status]: 0 }), {} as Record<StoryStatus, number>);
@@ -241,6 +346,11 @@ export const createDefaultStoriesArtifact = (repoName: string): StoriesArtifact 
   stories: []
 });
 
+const normalizeStoriesBacklog = (artifact: StoriesArtifact): StoriesArtifact => ({
+  ...artifact,
+  stories: sortStoriesForBacklog(artifact.stories)
+});
+
 export const validateStoryRecord = (story: unknown, expectedRepo?: string): string[] => {
   const errors: string[] = [];
   if (!story || typeof story !== 'object' || Array.isArray(story)) {
@@ -275,6 +385,10 @@ export const validateStoryRecord = (story: unknown, expectedRepo?: string): stri
   if (!(record.last_receipt_at === undefined || record.last_receipt_at === null || typeof record.last_receipt_at === 'string')) errors.push('story.last_receipt_at must be a string or null when provided');
   if (!(record.last_updated_state_at === undefined || record.last_updated_state_at === null || typeof record.last_updated_state_at === 'string')) errors.push('story.last_updated_state_at must be a string or null when provided');
   if (!(record.reconciled_at === undefined || record.reconciled_at === null || typeof record.reconciled_at === 'string')) errors.push('story.reconciled_at must be a string or null when provided');
+  if (!(record.backlog_priority_score === undefined || Number.isFinite(record.backlog_priority_score))) errors.push('story.backlog_priority_score must be a finite number when provided');
+  if (!(record.backlog_order === undefined || (typeof record.backlog_order === 'number' && Number.isInteger(record.backlog_order) && record.backlog_order > 0))) errors.push('story.backlog_order must be a positive integer when provided');
+  if (!(record.backlog_unmet_dependencies === undefined || (Array.isArray(record.backlog_unmet_dependencies) && asStringArray(record.backlog_unmet_dependencies).length === record.backlog_unmet_dependencies.length))) errors.push('story.backlog_unmet_dependencies must be an array of strings when provided');
+  if (!(record.backlog_score_explanation === undefined || (Array.isArray(record.backlog_score_explanation) && asStringArray(record.backlog_score_explanation).length === record.backlog_score_explanation.length))) errors.push('story.backlog_score_explanation must be an array of strings when provided');
   if (!(record.provenance === undefined || (typeof record.provenance === 'object' && record.provenance !== null && !Array.isArray(record.provenance)))) {
     errors.push('story.provenance must be an object when provided');
   } else if (record.provenance && typeof record.provenance === 'object' && !Array.isArray(record.provenance)) {
@@ -326,7 +440,7 @@ export const readStoriesArtifact = (repoRoot: string): StoriesArtifact => {
   const parsed = JSON.parse(fs.readFileSync(artifactPath, 'utf8')) as unknown;
   const errors = validateStoriesArtifact(parsed);
   if (errors.length > 0) throw new Error(`Invalid stories artifact: ${errors.join('; ')}`);
-  return parsed as StoriesArtifact;
+  return normalizeStoriesBacklog(parsed as StoriesArtifact);
 };
 
 export const createStoryRecord = (repoName: string, input: CreateStoryInput): StoryRecord => ({
@@ -355,21 +469,23 @@ export const createStoryRecord = (repoName: string, input: CreateStoryInput): St
 
 export const upsertStory = (artifact: StoriesArtifact, story: StoryRecord): StoriesArtifact => {
   const without = artifact.stories.filter((entry) => entry.id !== story.id);
-  return {
+  return normalizeStoriesBacklog({
     ...artifact,
-    stories: [...without, story].sort((left, right) => left.id.localeCompare(right.id))
-  };
+    stories: [...without, story]
+  });
 };
 
-export const updateStoryStatus = (artifact: StoriesArtifact, storyId: string, status: StoryStatus): StoriesArtifact => ({
-  ...artifact,
-  stories: artifact.stories.map((story) => story.id === storyId ? { ...story, status } : story)
-});
+export const updateStoryStatus = (artifact: StoriesArtifact, storyId: string, status: StoryStatus): StoriesArtifact =>
+  normalizeStoriesBacklog({
+    ...artifact,
+    stories: artifact.stories.map((story) => story.id === storyId ? { ...story, status } : story)
+  });
 
-const updateStoryRecord = (artifact: StoriesArtifact, storyId: string, update: (story: StoryRecord) => StoryRecord): StoriesArtifact => ({
-  ...artifact,
-  stories: artifact.stories.map((story) => story.id === storyId ? update(story) : story)
-});
+const updateStoryRecord = (artifact: StoriesArtifact, storyId: string, update: (story: StoryRecord) => StoryRecord): StoriesArtifact =>
+  normalizeStoriesBacklog({
+    ...artifact,
+    stories: artifact.stories.map((story) => story.id === storyId ? update(story) : story)
+  });
 
 export const linkStoryToPlan = (artifact: StoriesArtifact, storyId: string, planRef: string, plannedAt: string): StoriesArtifact => {
   const transition = deriveStoryTransitionPreview(artifact, storyId, 'planned');

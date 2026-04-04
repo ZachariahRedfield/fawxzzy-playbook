@@ -910,8 +910,8 @@ describe("observer server", () => {
     expect(backlogJson.backlog.artifact_path).toBe(".playbook/stories.json");
     expect(backlogJson.backlog.stories.map((story) => story.id)).toEqual([
       "story-ready",
-      "story-blocked",
       "story-pattern-adoption",
+      "story-blocked",
     ]);
 
     const storyDetailResponse = await fetch(

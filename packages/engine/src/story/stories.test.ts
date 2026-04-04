@@ -12,6 +12,7 @@ import {
   linkStoryToPlan,
   readStoriesArtifact,
   reconcileStoryExecution,
+  sortStoriesForBacklog,
   transitionStoryFromEvent,
   validateStoriesArtifact,
   type StoryRecord,
@@ -102,7 +103,19 @@ describe('story helpers', () => {
     fs.writeFileSync(artifactPath, `${JSON.stringify({ schemaVersion: '1.0', repo: 'repo', stories: [baseStory] }, null, 2)}\n`, 'utf8');
 
     expect(validateStoriesArtifact({ schemaVersion: '1.0', repo: 'repo', stories: [baseStory] })).toEqual([]);
-    expect(readStoriesArtifact(repoRoot).stories[0]).toEqual(baseStory);
+    const persistedStory = readStoriesArtifact(repoRoot).stories[0];
+    expect(persistedStory).toEqual(expect.objectContaining(baseStory));
+    expect(persistedStory?.backlog_order).toBe(1);
+    expect(persistedStory?.backlog_priority_score).toBe(353);
+    expect(persistedStory?.backlog_unmet_dependencies).toEqual([]);
+    expect(persistedStory?.backlog_score_explanation).toEqual([
+      'priority:high=300',
+      'severity:medium=20',
+      'confidence:high=9',
+      'status:ready=20',
+      'type:governance=4',
+      'unmet_dependencies:0=-0'
+    ]);
 
     const withProvenance = createStoryRecord('repo', {
       ...baseStory,
@@ -114,5 +127,27 @@ describe('story helpers', () => {
     });
     expect(withProvenance.provenance?.sourceRefs[0]?.entryId).toBe('story-1');
     fs.rmSync(repoRoot, { recursive: true, force: true });
+  });
+
+  it('assigns deterministic priority scoring and stable tie-break ordering from explicit story fields', () => {
+    const stories: StoryRecord[] = [
+      { ...baseStory, id: 'story-b', title: 'B', priority: 'high', severity: 'high', confidence: 'high', dependencies: [] },
+      { ...baseStory, id: 'story-a', title: 'A', priority: 'high', severity: 'high', confidence: 'high', dependencies: [] }
+    ];
+    const first = sortStoriesForBacklog(stories);
+    const second = sortStoriesForBacklog(stories);
+    expect(first.map((story) => story.id)).toEqual(['story-a', 'story-b']);
+    expect(second).toEqual(first);
+    expect(first[0]?.backlog_priority_score).toBeTypeOf('number');
+    expect(first[0]?.backlog_score_explanation?.length).toBeGreaterThan(0);
+    expect(first[0]?.backlog_order).toBe(1);
+  });
+
+  it('keeps dependency-blocked stories behind ready stories deterministically', () => {
+    const ready: StoryRecord = { ...baseStory, id: 'ready-1', priority: 'medium', severity: 'medium', confidence: 'medium', status: 'ready', dependencies: [] };
+    const blocked: StoryRecord = { ...baseStory, id: 'blocked-1', priority: 'urgent', severity: 'critical', confidence: 'high', status: 'ready', dependencies: ['missing-story'] };
+    const ordered = sortStoriesForBacklog([blocked, ready]);
+    expect(ordered.map((story) => story.id)).toEqual(['ready-1', 'blocked-1']);
+    expect(ordered[1]?.backlog_unmet_dependencies).toEqual(['missing-story']);
   });
 });

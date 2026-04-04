@@ -220,7 +220,7 @@ describe("runRoute", () => {
     fs.rmSync(repo, { recursive: true, force: true });
   });
 
-  it("routes from a story id and preserves story linkage in plan metadata", async () => {
+  it("routes from a story id with legacy/partial story shape and preserves story linkage in plan metadata", async () => {
     const { runRoute } = await import("./route.js");
     const repo = fs.mkdtempSync(
       path.join(os.tmpdir(), "playbook-route-story-"),
@@ -349,6 +349,7 @@ describe("runRoute", () => {
     );
     expect(payload.executionPlan.story_reference.id).toBe("story-1");
     expect(payload.story_transition.next_status).toBe("in_progress");
+    expect(payload.story_transition.promotion).toBeTruthy();
     expect(payload.pattern_context.patterns[0].pattern_id).toBe("pattern.docs");
     expect(buildExecutionPlan).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -144,7 +144,10 @@ Current phase goals:
 
 Pattern: Product direction should be expressed as small, shippable stories rather than large, vague initiatives.
 Rule: Systems are adopted as documentation contracts before becoming enforced tooling.
+Rule: Backlog ordering must be explainable from explicit story state, not operator memory.
+Pattern: Detection -> Story -> Ordered Backlog -> Plan -> Execution -> Receipt.
 Failure Mode: Introducing workflow tooling before teams have consistent conceptual usage leads to abandonment.
+Failure Mode: A backlog without deterministic priority and dependency ordering becomes a second manual planning system.
 
 
 ## Platform phase kickoff: structural graph vs temporal memory boundaries

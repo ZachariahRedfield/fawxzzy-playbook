@@ -38,6 +38,10 @@
     "dependencies": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "execution_lane": { "type": ["string", "null"] },
     "suggested_route": { "type": ["string", "null"] },
+    "backlog_priority_score": { "type": "number" },
+    "backlog_order": { "type": "integer", "minimum": 1 },
+    "backlog_unmet_dependencies": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "backlog_score_explanation": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "provenance": {
       "type": "object",
       "additionalProperties": false,

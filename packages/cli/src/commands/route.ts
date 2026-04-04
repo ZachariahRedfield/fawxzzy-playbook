@@ -122,18 +122,45 @@ const tryReadJsonArtifact = <T>(
   return JSON.parse(fs.readFileSync(absolutePath, "utf8")) as T;
 };
 
+const normalizeStoryForTransition = (story: StoryRecord): StoryRecord => ({
+  ...story,
+  evidence: story.evidence ?? [],
+  acceptance_criteria: story.acceptance_criteria ?? [],
+  dependencies: story.dependencies ?? [],
+  last_plan_ref: story.last_plan_ref ?? null,
+  last_receipt_ref: story.last_receipt_ref ?? null,
+  last_updated_state_ref: story.last_updated_state_ref ?? null,
+  reconciliation_status: story.reconciliation_status ?? null,
+  planned_at: story.planned_at ?? null,
+  last_receipt_at: story.last_receipt_at ?? null,
+  last_updated_state_at: story.last_updated_state_at ?? null,
+  reconciled_at: story.reconciled_at ?? null,
+});
+
+const normalizeStoriesArtifactForTransition = (
+  artifact: StoriesArtifact,
+): StoriesArtifact => ({
+  ...artifact,
+  stories: artifact.stories.map((story) => normalizeStoryForTransition(story)),
+});
+
 const promoteStoryTransition = (
   cwd: string,
   current: StoriesArtifact,
   storyId: string,
 ): StoryTransitionOutput => {
-  const transition = deriveStoryTransitionPreview(current, storyId, "planned");
+  const normalizedCurrent = normalizeStoriesArtifactForTransition(current);
+  const transition = deriveStoryTransitionPreview(
+    normalizedCurrent,
+    storyId,
+    "planned",
+  );
   if (!transition) {
     return null;
   }
   const generatedAt = new Date().toISOString();
   const nextArtifact = linkStoryToPlan(
-    current,
+    normalizedCurrent,
     storyId,
     EXECUTION_PLAN_PATH,
     generatedAt,
