@@ -999,15 +999,15 @@ Failure Mode: When roadmap docs lag implemented governed surfaces, operator unde
 #### 10. Automation Synthesis (Governed Knowledge Consumption)
 
 - **Already exists today**
-  - directional architecture/vision language establishes that synthesis remains future-scoped and governance-gated.
-- **Partially defined**
-  - future synthesis sequencing exists, but first-class governed input eligibility and provenance-linked context packaging contracts were previously implicit across multiple docs.
-  - suggestion-only vs mutation-capable synthesis boundary needed explicit contract framing for first implementation slices.
+  - canonical architecture slice now defined in `docs/architecture/PLAYBOOK_AUTOMATION_SYNTHESIS_GOVERNED_KNOWLEDGE_CONSUMPTION.md`.
+  - slice explicitly defines allowed vs forbidden synthesis inputs, suggestion-only authority, provenance-linked output requirements, and rollback/deactivation accountability envelopes.
+- **Current contract boundaries**
+  - synthesis consumes only promoted, inspectable, provenance-linked knowledge and approved template contracts.
+  - candidate knowledge, opaque chat memory, provenance-free inference, and stale/superseded knowledge (without explicit audited override) are disallowed as direct synthesis inputs.
+  - this phase is suggestion-only: no autonomous mutation, execution, or deployment authority is granted.
 - **Future work**
-  - formalize the canonical architecture in `docs/architecture/PLAYBOOK_AUTOMATION_SYNTHESIS_GOVERNED_KNOWLEDGE_CONSUMPTION.md`.
-  - require synthesis to consume only promoted, inspectable, provenance-linked knowledge artifacts and template contracts once `docs/architecture/PLAYBOOK_KNOWLEDGE_QUERY_SURFACES.md` (Phase 15) is in place.
-  - require stale/superseded exclusion rules, explicit override policy, and lineage-attached generation outputs before any operationalization path.
-  - Phase 16 thin slice: ship suggestion-generation contracts with policy/provenance/rollback-accountability envelopes, while deferring autonomous mutation/deployment behavior to later phases.
+  - wire enforcement checks so all synthesis packaging contracts fail closed when required provenance or rollback-accountability metadata is missing.
+  - keep any operationalization path dependency-ordered behind existing policy/approval and `verify -> plan -> apply` governance seams.
 - **Execution window**
   - dependency-ordered after Knowledge Query / Inspection Surfaces and before broader orchestration/interface expansion; remains outside the current near-term execution window unless explicitly promoted in roadmap status.
 

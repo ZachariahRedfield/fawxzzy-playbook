@@ -2,206 +2,142 @@
 
 ## Purpose
 
-This document defines Automation Synthesis as a downstream architecture slice that may only consume governed, inspectable, provenance-linked knowledge.
+This document is the canonical architecture slice for governed Automation Synthesis knowledge consumption.
 
-Automation Synthesis is a future controlled expansion layered on top of deterministic repository intelligence, session/evidence contracts, control-plane policy, PR review-loop evidence, longitudinal knowledge promotion, and knowledge query/inspection surfaces.
+It defines strict contract boundaries for:
 
-This architecture is directional and contract-oriented. It does **not** permit broad autonomous execution, opaque memory-driven synthesis, or policy bypass.
+- allowed vs forbidden synthesis inputs
+- suggestion-only authority in the initial slice
+- provenance-linked output packaging
+- rollback/deactivation accountability envelopes
+
+Automation Synthesis is downstream of deterministic runtime, governed memory promotion, and read-only knowledge inspection surfaces. This slice is intentionally bounded and does **not** authorize autonomous repository mutation or deployment behavior.
 
 ## Docs summary labels
 
 - Pattern: Governed Knowledge Before Automation
-- Pattern: Inspectable Knowledge as Synthesis Input
-- Pattern: Provenance-Linked Automation Generation
-- Rule: Automation Synthesis may only consume governed/promoted knowledge
-- Rule: Candidate knowledge is not automation-grade input
-- Rule: Verification remains the trust boundary
-- Rule: Repo-local knowledge stays local unless intentionally promoted
-- Failure Mode: Automation synthesized from raw chat memory
-- Failure Mode: Candidate knowledge operationalized before review
-- Failure Mode: Provenance-free automation generation
-- Failure Mode: Cross-repo leakage through synthesis context
-- Failure Mode: Automation consumes stale or superseded knowledge
+- Pattern: Suggestion-Only Synthesis Boundary
+- Pattern: Provenance-Linked Suggestion Packaging
+- Rule: Automation Synthesis may only consume promoted, inspectable, provenance-linked knowledge
+- Rule: Candidate knowledge is not synthesis-eligible input
+- Rule: Suggestion outputs are non-authoritative until downstream governed approval
+- Rule: Rollback/deactivation accountability metadata is mandatory even for suggestion-only outputs
+- Failure Mode: Synthesis built from opaque memory
+- Failure Mode: Candidate knowledge treated as doctrine
+- Failure Mode: Provenance-free synthesis packages
+- Failure Mode: Output consumption without rollback accountability metadata
 
-## Core rule
+## Canonical boundary
 
-Automation Synthesis may only consume governed, inspectable, provenance-linked knowledge inputs.
+Automation Synthesis in this slice is **suggestion-generation only**.
 
-Rule: **Phase 15 consumes promoted, inspectable, provenance-linked knowledge only.**
+Allowed in this slice:
 
-Phase 15 contract boundary: the first implementation slice is **suggestion synthesis only**.
+- deterministic generation of reviewable suggestions/packages
+- explicit policy-linked packaging for review workflows
+- read-only inspection and context synthesis over allowed inputs
 
-- allowed: deterministic generation of candidate suggestions/packages for human review
-- disallowed: autonomous repository mutation, autonomous execution, autonomous deployment, or hidden background mutation loops
+Forbidden in this slice:
 
-Automation Synthesis must not rely on:
+- autonomous repository mutation
+- autonomous execution/deployment
+- hidden background mutation loops
+- bypass of existing `verify -> plan -> apply` repository mutation governance
 
-- raw chat history
-- opaque prompt memory
-- unreviewed candidate knowledge
-- undocumented ad-hoc repository inference
+Rule: Automation Synthesis may produce proposal artifacts, not execution authority.
 
-## Concise input examples (Phase 15)
+## Allowed vs forbidden synthesis inputs
 
-Allowed inputs (review-safe and synthesis-safe):
+### Allowed synthesis inputs
 
-- promoted knowledge records with auditable provenance (`knowledgeId`, `eventId`, source path, fingerprint)
-- approved templates/patterns that declare required knowledge classes and policy metadata
-- deterministic query/inspection outputs from `docs/architecture/PLAYBOOK_KNOWLEDGE_QUERY_SURFACES.md`
+Automation synthesis context may include only policy-allowed, inspectable, provenance-linked inputs:
 
-Forbidden inputs (not synthesis-safe):
+1. promoted governance knowledge artifacts (active/reviewed state)
+2. approved reusable patterns and doctrine artifacts
+3. deterministic repository intelligence artifacts (index/query/explain/ask contracts)
+4. policy-approved templates that declare required input classes
+5. session/evidence references where lineage is preserved and referenced knowledge is promotion-reviewed
+
+All allowed inputs must carry lineage fields sufficient for replay/audit (for example: knowledge identifiers, source artifact references, fingerprints, and freshness or lifecycle state).
+
+### Forbidden synthesis inputs
+
+The following are forbidden as direct synthesis inputs:
 
 - raw chat transcripts or opaque prompt-memory fragments
 - unreviewed candidate knowledge artifacts
-- provenance-free inferred rules or stale/superseded knowledge without an explicit audited override
+- provenance-free inferred rules
+- stale/superseded knowledge without explicit, audited override
+- repo-local sensitive artifacts outside declared policy scope
 
-## Allowed synthesis input classes
+Hard disallow: raw evidence and candidate artifacts cannot be treated as automation-grade synthesis input in this slice.
 
-Automation synthesis context may include only policy-allowed, inspectable inputs such as:
+## Suggestion-only contract surface
 
-1. promoted governance knowledge
-2. approved reusable patterns
-3. approved rule/doctrine/invariant artifacts
-4. validated repository intelligence artifacts
-5. approved trigger taxonomy
-6. policy-approved templates
-7. session/evidence references where provenance is preserved and the referenced knowledge is promoted/reviewed
-8. inspectable repo-local longitudinal knowledge that remains within policy boundaries and review status requirements
+Synthesis outputs are advisory proposal artifacts and must remain non-authoritative.
 
-All inputs must preserve source lineage (artifact IDs, command lineage, session references, promotion/review status, and freshness state).
+Required output posture:
 
-## Disallowed or restricted synthesis inputs
+- suggestions are review-facing and policy-gated for any downstream operational path
+- no output from this slice is directly executable by default
+- mutation/execution authority remains in existing governed command seams
 
-Disallowed by default:
+Rule: suggestion-generation does not widen runtime mutation authority.
 
-- raw conversation transcripts as direct execution context
-- candidate knowledge awaiting review
-- stale/superseded knowledge without explicit override
-- evidence-free inferred rules
-- repo-local sensitive knowledge for upstream/global synthesis unless explicitly approved
+## Provenance-linked output contract
 
-Hard disallow for Phase 15:
+Every synthesis output package must include a provenance envelope.
 
-- raw evidence artifacts as direct automation-grade synthesis input
-- unreviewed candidate knowledge artifacts as direct automation-grade synthesis input
-- autonomous mutation plans generated without explicit human review and existing `verify -> plan -> apply` gates
+Minimum required envelope fields:
 
-Restricted use rule:
+- synthesis run identifier
+- template/pattern family identifier
+- cited knowledge/evidence references used to generate the suggestion
+- source artifact paths or stable artifact identifiers
+- promotion/review state and freshness metadata for consumed knowledge
 
-- Any override path (for example stale-knowledge exception handling) must be explicit, policy-approved, and audit-linked to a deterministic approval record.
+Rule: outputs lacking complete provenance metadata fail closed for downstream governed consumption.
 
-## Downstream governed synthesis pipeline
+## Rollback accountability envelope
 
-Canonical future synthesis flow (target state):
+Even suggestion-only outputs must carry rollback/deactivation accountability metadata so downstream operators can evaluate reversibility before any operationalization.
 
-1. **Trigger ingestion**
-2. **Governed knowledge lookup**
-3. **Template/pattern family selection**
-4. **Bounded context package generation**
-5. **Candidate suggestion generation**
-6. **Sandbox verification**
-7. **Policy/approval gate**
-8. **Controlled deployment/orchestration**
-9. **Runtime monitoring / rollback**
-10. **Outcome evidence back into longitudinal memory**
+Required accountability metadata:
 
-Trust boundary rules for this flow:
+- declared rollback/deactivation path reference
+- expected blast-radius summary class
+- monitoring signals expected to indicate bad outcomes
+- actor/policy decision linkage fields for later approvals or denials
 
-- Generated automations are untrusted until sandbox verification succeeds.
-- Verification remains the trust boundary.
-- Ambiguous or incomplete verification fails closed.
-- Synthesis cannot bypass `verify -> plan -> apply` for repository mutations.
-- Deployment/orchestration remains adapter-bounded and policy-controlled.
+Rule: rollback/deactivation accountability is a required contract boundary, not optional guidance.
 
-Phase 15 thin-slice execution rule:
-
-- implement up to bounded candidate suggestion generation and policy-ready packaging only
-- defer autonomous deployment/orchestration behavior to later phases
-
-## Role of knowledge query and inspection surfaces
-
-Automation synthesis is downstream of inspection surfaces and must only consume inspectable knowledge.
-
-Required constraints:
-
-- provenance must be traceable before operationalization
-- candidate vs promoted knowledge must remain distinguishable
-- humans must be able to inspect which knowledge informed generated automation
-- synthesis context packages must expose evidence and knowledge lineage for audit/replay
-
-Inspection surfaces are read-runtime preconditions; they do not imply automatic execution authority.
-
-## Relationship to existing architecture layers
+## Pipeline placement
 
 Automation Synthesis consumes upstream governed layers in this order:
 
-- **Session + Evidence** provides the raw traceable substrate.
-- **Control Plane** governs access, mutation, deployment, and export rules.
-- **PR Review Loop** provides recurring review-derived evidence and prevention targets.
-- **Repo Longitudinal State + Knowledge Promotion** governs durable learning.
-- **Knowledge Query / Inspection Surfaces** make governed knowledge readable.
-- **Automation Synthesis** consumes these governed artifacts downstream.
+1. deterministic runtime + session/evidence
+2. control-plane policy and approvals
+3. review-loop and longitudinal promoted knowledge
+4. knowledge query/inspection surfaces
+5. automation synthesis (suggestion-only in this slice)
 
-Recommended dependency ladder:
+Dependency ladder:
 
-`deterministic runtime -> session/evidence -> control plane -> PR review loop -> repo longitudinal state / knowledge promotion -> knowledge query / inspection surfaces -> automation synthesis consuming governed/promoted knowledge -> later broader orchestration / interface expansion`
-
-## Template/pattern system expectations
-
-Template and pattern-family contracts for synthesis should enforce:
-
-- template selection binds to approved pattern families
-- templates declare required input knowledge classes
-- templates require policy metadata, rollback metadata, and evidence references
-- generated outputs attach knowledge/evidence lineage used during synthesis
-
-Template contracts should fail closed when required knowledge classes are missing, stale, unapproved, or non-inspectable.
-
-## Policy gates, provenance, rollback, and accountability hooks
-
-All synthesis outputs must be policy-gated and traceable before any operational usage path.
-
-Required gate/hook contracts:
-
-- **Policy gate metadata**: actor, authority source, requested action class, and explicit allow/deny decision record.
-- **Knowledge provenance envelope**: knowledge IDs, source artifact paths, promotion status, fingerprints, and freshness timestamps.
-- **Suggestion accountability envelope**: synthesis run ID, template/pattern family ID, and reviewer-facing rationale.
-- **Rollback/deactivation hooks**: required rollback path metadata must be attached even for suggestion-only outputs.
-- **Audit replayability**: outputs must retain enough lineage to replay why a suggestion existed and who approved/denied downstream use.
-
-Rule: no synthesis output may be treated as execution-authoritative without policy decision records and provenance completeness.
-Rule: rollback/deactivation metadata is required contract surface, not an optional operational add-on.
-
-## Locality and privacy boundaries
-
-Automation synthesis inherits Playbook privacy and locality rules:
-
-- repo-local knowledge remains local by default
-- reusable promoted patterns may be intentionally shared/promoted upstream
-- no hidden telemetry
-- no automatic upstream sync
-- synthesis for one repository must not implicitly leak repo-local knowledge into cross-repo automation generation
-
-Cross-repo synthesis requires explicit governance paths over sanitized, intentionally promoted reusable patterns.
+`deterministic runtime -> session/evidence -> control plane -> review loop -> repo longitudinal promoted knowledge -> knowledge query/inspection -> automation synthesis (suggestion-only)`
 
 ## Guardrails and non-goals
 
 - Do not reposition Playbook as a general autonomous coding agent.
-- Do not permit synthesis from unreviewed or opaque memory.
-- Do not bypass Control Plane, approvals, or verification.
-- Do not imply cloud-first dependency or hidden data export.
-- Do not collapse candidate and promoted knowledge into one undifferentiated memory surface.
+- Do not permit opaque-memory synthesis as doctrine-level input.
+- Do not collapse candidate and promoted knowledge classes.
+- Do not bypass policy, review, provenance, or rollback accountability envelopes.
 
 ## Cross-links
 
-- `docs/AUTOMATION_SYNTHESIS_VISION.md`
 - `docs/PLAYBOOK_PRODUCT_ROADMAP.md`
-- `docs/roadmap/IMPROVEMENTS_BACKLOG.md`
-- `docs/CONSUMER_INTEGRATION_CONTRACT.md`
+- `docs/commands/README.md`
 - `docs/architecture/PLAYBOOK_SESSION_EVIDENCE_ARCHITECTURE.md`
 - `docs/architecture/PLAYBOOK_CONTROL_PLANE_ARCHITECTURE.md`
-- `docs/architecture/PLAYBOOK_PR_REVIEW_LOOP_ARCHITECTURE.md`
 - `docs/architecture/PLAYBOOK_REPO_LONGITUDINAL_STATE_AND_KNOWLEDGE_PROMOTION.md`
 - `docs/architecture/PLAYBOOK_KNOWLEDGE_QUERY_SURFACES.md`
 - `docs/architecture/PLAYBOOK_OUTCOME_FEEDBACK_AND_AUTOMATION_RUNTIME_LEARNING.md`
-- `docs/architecture/PLAYBOOK_GOVERNED_CROSS_REPO_PATTERN_PROMOTION_AND_TRANSFER.md`
