@@ -13,6 +13,8 @@
     "generatedAt",
     "artifactPath",
     "inputs",
+    "validationSummary",
+    "rejectedSuggestions",
     "suggestions"
   ],
   "properties": {
@@ -45,6 +47,59 @@
               "evidence-free-inferred-rules"
             ]
           }
+        }
+      }
+    },
+    "validationSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["failClosed", "acceptedSuggestions", "rejectedSuggestions", "failureCodes"],
+      "properties": {
+        "failClosed": { "type": "boolean", "const": true },
+        "acceptedSuggestions": { "type": "integer", "minimum": 0 },
+        "rejectedSuggestions": { "type": "integer", "minimum": 0 },
+        "failureCodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "candidate-knowledge-input",
+              "stale-without-audited-override",
+              "superseded-or-retired-knowledge",
+              "missing-provenance",
+              "missing-confidence-or-rationale",
+              "missing-rollback-accountability"
+            ]
+          }
+        }
+      }
+    },
+    "rejectedSuggestions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["suggestionId", "knowledgeId", "sourcePath", "lifecycleState", "reasonCode", "reason"],
+        "properties": {
+          "suggestionId": { "type": "string", "minLength": 1 },
+          "knowledgeId": { "type": "string", "minLength": 1 },
+          "sourcePath": { "type": "string", "minLength": 1 },
+          "lifecycleState": {
+            "type": "string",
+            "enum": ["active", "stale", "superseded", "retired", "candidate", "provenance-unverified"]
+          },
+          "reasonCode": {
+            "type": "string",
+            "enum": [
+              "candidate-knowledge-input",
+              "stale-without-audited-override",
+              "superseded-or-retired-knowledge",
+              "missing-provenance",
+              "missing-confidence-or-rationale",
+              "missing-rollback-accountability"
+            ]
+          },
+          "reason": { "type": "string", "minLength": 1 }
         }
       }
     },

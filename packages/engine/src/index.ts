@@ -260,6 +260,7 @@ export {
   AUTOMATION_SUGGESTIONS_SCHEMA_VERSION,
   AUTOMATION_SUGGESTIONS_RELATIVE_PATH,
   buildAutomationSuggestionsArtifact,
+  validateAutomationSuggestion,
   writeAutomationSuggestionsArtifact
 } from './knowledge/automationSuggestions.js';
 export type {

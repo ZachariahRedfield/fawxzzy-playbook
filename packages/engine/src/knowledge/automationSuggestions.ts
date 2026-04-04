@@ -22,6 +22,14 @@ const EXCLUDED_SOURCES = [
 type ExcludedSource = (typeof EXCLUDED_SOURCES)[number];
 
 type PromotedKnowledgeEntry = MemoryKnowledgeEntry & { _knowledgeGeneratedAt: string; _sourcePath: string };
+type KnowledgeLifecycleState = 'active' | 'stale' | 'superseded' | 'retired' | 'candidate' | 'provenance-unverified';
+type ValidationFailureCode =
+  | 'candidate-knowledge-input'
+  | 'stale-without-audited-override'
+  | 'superseded-or-retired-knowledge'
+  | 'missing-provenance'
+  | 'missing-confidence-or-rationale'
+  | 'missing-rollback-accountability';
 
 export type AutomationSuggestion = {
   suggestionId: string;
@@ -65,6 +73,20 @@ export type AutomationSuggestionsArtifact = {
     approvedPolicyPackRefs: string[];
     excludedSources: ExcludedSource[];
   };
+  validationSummary: {
+    failClosed: true;
+    acceptedSuggestions: number;
+    rejectedSuggestions: number;
+    failureCodes: ValidationFailureCode[];
+  };
+  rejectedSuggestions: Array<{
+    suggestionId: string;
+    knowledgeId: string;
+    sourcePath: string;
+    lifecycleState: KnowledgeLifecycleState;
+    reasonCode: ValidationFailureCode;
+    reason: string;
+  }>;
   suggestions: AutomationSuggestion[];
 };
 
@@ -89,6 +111,18 @@ const asIsoOrEpoch = (value: unknown): string => {
 const sanitizePolicyPackRefs = (refs: string[]): string[] =>
   [...new Set(refs.filter((entry) => isNonEmptyString(entry) && entry.startsWith('.playbook/')))].sort((left, right) => left.localeCompare(right));
 
+const hasAuditedStaleOverride = (entry: MemoryKnowledgeEntry): boolean => {
+  const override = (entry as MemoryKnowledgeEntry & {
+    automationSynthesisOverride?: { allowStale?: unknown; auditedBy?: unknown; auditRef?: unknown };
+  }).automationSynthesisOverride;
+  return Boolean(
+    override &&
+    override.allowStale === true &&
+    isNonEmptyString(override.auditedBy) &&
+    isNonEmptyString(override.auditRef)
+  );
+};
+
 const parsePromotedKnowledge = (repoRoot: string): PromotedKnowledgeEntry[] => {
   const collected: PromotedKnowledgeEntry[] = [];
 
@@ -106,12 +140,6 @@ const parsePromotedKnowledge = (repoRoot: string): PromotedKnowledgeEntry[] => {
         continue;
       }
       const entry = candidate as MemoryKnowledgeEntry;
-      if (entry.status !== 'active') {
-        continue;
-      }
-      if (!Array.isArray(entry.provenance) || entry.provenance.length === 0) {
-        continue;
-      }
       collected.push({
         ...entry,
         promotedAt: asIsoOrEpoch(entry.promotedAt),
@@ -157,6 +185,57 @@ const toSuggestionId = (entry: MemoryKnowledgeEntry, suggestedPattern: string): 
   return `suggestion.${entry.knowledgeId}.${digest}`;
 };
 
+export const validateAutomationSuggestion = (
+  suggestion: AutomationSuggestion,
+  entry: PromotedKnowledgeEntry,
+  stale: boolean
+):
+  | null
+  | { lifecycleState: KnowledgeLifecycleState; reasonCode: ValidationFailureCode; reason: string } => {
+  const hasValidProvenance = suggestion.provenanceRefs.length > 0;
+  const hasNarrativeCompleteness = isNonEmptyString(suggestion.rationale) && Number.isFinite(suggestion.confidence);
+  const hasRollbackMetadata = isNonEmptyString(suggestion.rollbackAccountability.owner) &&
+    isNonEmptyString(suggestion.rollbackAccountability.rollbackPlan) &&
+    suggestion.rollbackAccountability.accountabilityRefs.length > 0;
+
+  if (!hasValidProvenance) {
+    return {
+      lifecycleState: 'provenance-unverified',
+      reasonCode: 'missing-provenance',
+      reason: 'Suggestion rejected because required promoted provenance references are incomplete.'
+    };
+  }
+  if (entry.status === 'superseded' || entry.status === 'retired' || entry.supersededBy.length > 0) {
+    return {
+      lifecycleState: entry.status === 'retired' ? 'retired' : 'superseded',
+      reasonCode: 'superseded-or-retired-knowledge',
+      reason: 'Suggestion rejected because knowledge is superseded/retired and not eligible for automation synthesis.'
+    };
+  }
+  if (stale && !hasAuditedStaleOverride(entry)) {
+    return {
+      lifecycleState: 'stale',
+      reasonCode: 'stale-without-audited-override',
+      reason: 'Suggestion rejected because promoted knowledge is stale without an audited override.'
+    };
+  }
+  if (!hasNarrativeCompleteness) {
+    return {
+      lifecycleState: 'active',
+      reasonCode: 'missing-confidence-or-rationale',
+      reason: 'Suggestion rejected because confidence/rationale metadata is incomplete.'
+    };
+  }
+  if (!hasRollbackMetadata) {
+    return {
+      lifecycleState: 'active',
+      reasonCode: 'missing-rollback-accountability',
+      reason: 'Suggestion rejected because rollback/deactivation accountability metadata is missing.'
+    };
+  }
+  return null;
+};
+
 export const buildAutomationSuggestionsArtifact = (
   repoRoot: string,
   options: BuildAutomationSuggestionsOptions = {}
@@ -166,6 +245,23 @@ export const buildAutomationSuggestionsArtifact = (
   const approvedPolicyPackRefs = sanitizePolicyPackRefs(options.approvedPolicyPackRefs ?? []);
   const generatedAtMs = Date.parse(generatedAtIso);
   const promotedKnowledge = parsePromotedKnowledge(repoRoot);
+  const rejectedSuggestions: AutomationSuggestionsArtifact['rejectedSuggestions'] = [];
+
+  const candidateKnowledgePath = path.join(repoRoot, '.playbook/memory/candidates.json');
+  if (fs.existsSync(candidateKnowledgePath)) {
+    const candidates = readJson<{ candidates?: Array<{ candidateId?: string }> }>(candidateKnowledgePath);
+    for (const candidate of Array.isArray(candidates.candidates) ? candidates.candidates : []) {
+      if (!isNonEmptyString(candidate.candidateId)) continue;
+      rejectedSuggestions.push({
+        suggestionId: `candidate:${candidate.candidateId}`,
+        knowledgeId: candidate.candidateId,
+        sourcePath: '.playbook/memory/candidates.json',
+        lifecycleState: 'candidate',
+        reasonCode: 'candidate-knowledge-input',
+        reason: 'Candidate knowledge is not promoted doctrine and is rejected for automation synthesis packaging.'
+      });
+    }
+  }
 
   const suggestions: AutomationSuggestion[] = promotedKnowledge.map((entry) => {
     const ageDays = toAgeDays(generatedAtMs, entry.promotedAt);
@@ -190,8 +286,9 @@ export const buildAutomationSuggestionsArtifact = (
         return left.fingerprint.localeCompare(right.fingerprint);
       });
 
-    return {
-      suggestionId: toSuggestionId(entry, suggestedAutomationPattern),
+    const suggestionId = toSuggestionId(entry, suggestedAutomationPattern);
+    const suggestion: AutomationSuggestion = {
+      suggestionId,
       sourceKnowledgeRefs: [`knowledge:${entry.knowledgeId}`, `artifact:${entry._sourcePath}`],
       suggestedAutomationPattern,
       rationale: `Promoted knowledge ${entry.knowledgeId} (${entry.kind}) remains inspectable and provenance-linked, so emit a proposal-only automation template for governed human review.`,
@@ -215,8 +312,29 @@ export const buildAutomationSuggestionsArtifact = (
         stale
       },
       ...(approvedPolicyPackRefs.length > 0 ? { policyPackRefs: approvedPolicyPackRefs } : {})
-    } satisfies AutomationSuggestion;
-  }).sort((left, right) => left.suggestionId.localeCompare(right.suggestionId));
+    };
+
+    const validationFailure = validateAutomationSuggestion(suggestion, entry, stale);
+    if (validationFailure) {
+      rejectedSuggestions.push({
+        suggestionId,
+        knowledgeId: entry.knowledgeId,
+        sourcePath: entry._sourcePath,
+        lifecycleState: validationFailure.lifecycleState,
+        reasonCode: validationFailure.reasonCode,
+        reason: validationFailure.reason
+      });
+      return null;
+    }
+    return suggestion;
+  }).filter((entry): entry is AutomationSuggestion => entry !== null).sort((left, right) => left.suggestionId.localeCompare(right.suggestionId));
+
+  rejectedSuggestions.sort((left, right) => {
+    const reasonOrder = left.reasonCode.localeCompare(right.reasonCode);
+    if (reasonOrder !== 0) return reasonOrder;
+    return left.suggestionId.localeCompare(right.suggestionId);
+  });
+  const failureCodes = [...new Set(rejectedSuggestions.map((entry) => entry.reasonCode))].sort((a, b) => a.localeCompare(b));
 
   return {
     schemaVersion: AUTOMATION_SUGGESTIONS_SCHEMA_VERSION,
@@ -230,6 +348,13 @@ export const buildAutomationSuggestionsArtifact = (
       approvedPolicyPackRefs,
       excludedSources: [...EXCLUDED_SOURCES]
     },
+    validationSummary: {
+      failClosed: true,
+      acceptedSuggestions: suggestions.length,
+      rejectedSuggestions: rejectedSuggestions.length,
+      failureCodes
+    },
+    rejectedSuggestions,
     suggestions
   };
 };

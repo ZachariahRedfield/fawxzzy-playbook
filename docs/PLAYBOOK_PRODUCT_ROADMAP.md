@@ -1005,8 +1005,13 @@ Failure Mode: When roadmap docs lag implemented governed surfaces, operator unde
   - synthesis consumes only promoted, inspectable, provenance-linked knowledge and approved template contracts.
   - candidate knowledge, opaque chat memory, provenance-free inference, and stale/superseded knowledge (without explicit audited override) are disallowed as direct synthesis inputs.
   - this phase is suggestion-only: no autonomous mutation, execution, or deployment authority is granted.
+- **Recent implementation note**
+  - automation suggestion packaging now emits deterministic fail-closed validation summaries and explicit rejected rows, and accepts suggestions only when provenance-linked promoted refs, freshness/lifecycle metadata, confidence/rationale, and rollback/deactivation accountability fields are complete.
+- **Current fail-closed rules**
+  - Rule: Automation Synthesis must fail closed when provenance, freshness/lifecycle, confidence/rationale, or rollback accountability is incomplete.
+  - Pattern: promoted knowledge -> validated suggestion package -> explicit downstream review.
+  - Failure Mode: suggestion-only surfaces become unsafe when packaging accepts missing provenance or rollback metadata.
 - **Future work**
-  - wire enforcement checks so all synthesis packaging contracts fail closed when required provenance or rollback-accountability metadata is missing.
   - keep any operationalization path dependency-ordered behind existing policy/approval and `verify -> plan -> apply` governance seams.
 - **Execution window**
   - dependency-ordered after Knowledge Query / Inspection Surfaces and before broader orchestration/interface expansion; remains outside the current near-term execution window unless explicitly promoted in roadmap status.

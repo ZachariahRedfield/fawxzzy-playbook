@@ -22,10 +22,13 @@ Automation Synthesis is downstream of deterministic runtime, governed memory pro
 - Rule: Candidate knowledge is not synthesis-eligible input
 - Rule: Suggestion outputs are non-authoritative until downstream governed approval
 - Rule: Rollback/deactivation accountability metadata is mandatory even for suggestion-only outputs
+- Rule: Automation Synthesis packaging must fail closed when provenance, freshness/lifecycle, confidence/rationale, or rollback accountability metadata is incomplete
+- Pattern: promoted knowledge -> validated suggestion package -> explicit downstream review
 - Failure Mode: Synthesis built from opaque memory
 - Failure Mode: Candidate knowledge treated as doctrine
 - Failure Mode: Provenance-free synthesis packages
 - Failure Mode: Output consumption without rollback accountability metadata
+- Failure Mode: Suggestion-only surfaces become unsafe when packaging accepts incomplete provenance or rollback metadata
 
 ## Canonical boundary
 
@@ -97,6 +100,8 @@ Minimum required envelope fields:
 - promotion/review state and freshness metadata for consumed knowledge
 
 Rule: outputs lacking complete provenance metadata fail closed for downstream governed consumption.
+
+Runtime/read path note: synthesis packaging should surface deterministic `validationSummary` and explicit rejected rows so operators can inspect fail-closed reasons without hidden interpretation.
 
 ## Rollback accountability envelope
 
