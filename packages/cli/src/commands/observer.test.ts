@@ -1560,6 +1560,68 @@ describe("observer server", () => {
     );
   });
 
+  it("serves read-first multi-repo interface envelopes with explicit policy and provenance boundaries", async () => {
+    const cwd = makeTempDir();
+    const repoA = path.join(cwd, "repo-a");
+    const repoB = path.join(cwd, "repo-b");
+    fs.mkdirSync(path.join(repoA, ".playbook"), { recursive: true });
+    fs.mkdirSync(path.join(repoB, ".playbook"), { recursive: true });
+
+    writeArtifact(repoA, ".playbook/session.json", { schemaVersion: "1.0", kind: "session", id: "session-a" });
+    writeArtifact(repoB, ".playbook/session.json", { schemaVersion: "1.0", kind: "session", id: "session-b" });
+
+    expect(
+      await runObserver(cwd, ["repo", "add", repoA, "--id", "repo-a"], {
+        format: "json",
+        quiet: false,
+      }),
+    ).toBe(ExitCode.Success);
+    expect(
+      await runObserver(cwd, ["repo", "add", repoB, "--id", "repo-b"], {
+        format: "json",
+        quiet: false,
+      }),
+    ).toBe(ExitCode.Success);
+
+    const server = createObserverServer(cwd);
+    await new Promise<void>((resolve) =>
+      server.listen(0, "127.0.0.1", () => resolve()),
+    );
+    const address = server.address();
+    expect(address).toBeTypeOf("object");
+    const port = typeof address === "object" && address ? address.port : 0;
+
+    const readInterface = await fetch(
+      `http://127.0.0.1:${port}/api/control-plane/interfaces/read?slice=run-state-inspection`,
+    );
+    expect(readInterface.status).toBe(200);
+    const payload = (await readInterface.json()) as {
+      kind: string;
+      interface: {
+        request: { mode: string; slice: string; target_repo_ids: string[] };
+        response: {
+          policy_boundary: { mutation_authority: string; hidden_cross_repo_orchestration: boolean };
+          repo_scope: Array<{ repo_id: string; policy_boundary: string; provenance_boundary: string }>;
+          provenance: string[];
+        };
+      };
+    };
+    expect(payload.kind).toBe("observer-multi-repo-control-plane-read-interface");
+    expect(payload.interface.request.mode).toBe("read-only");
+    expect(payload.interface.request.slice).toBe("run-state-inspection");
+    expect(payload.interface.request.target_repo_ids).toEqual(["repo-a", "repo-b"]);
+    expect(payload.interface.response.policy_boundary.mutation_authority).toBe("none");
+    expect(payload.interface.response.policy_boundary.hidden_cross_repo_orchestration).toBe(false);
+    expect(payload.interface.response.repo_scope.map((entry) => entry.repo_id)).toEqual(["repo-a", "repo-b"]);
+    expect(payload.interface.response.repo_scope.every((entry) => entry.policy_boundary === "per-repo")).toBe(true);
+    expect(payload.interface.response.repo_scope.every((entry) => entry.provenance_boundary === "per-repo")).toBe(true);
+    expect(payload.interface.response.provenance).toContain(".playbook/control-plane.json");
+
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+  });
+
   it("serves UI shell, supports repo add/remove mutations, and still rejects unsupported methods", async () => {
     const cwd = makeTempDir();
     const server = createObserverServer(cwd);

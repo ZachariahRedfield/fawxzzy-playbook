@@ -31,6 +31,10 @@ import {
   type StoryRecord,
   buildStoryPatternContext,
   type StoryPatternContext,
+  readControlPlaneState,
+  readLongitudinalState,
+  buildMultiRepoReadInterfaceEnvelope,
+  type MultiRepoReadInterfaceSlice,
 } from "@zachariahredfield/playbook-engine";
 import { ExitCode } from "../../lib/cliContract.js";
 import {
@@ -1784,6 +1788,90 @@ const observerDashboardJs = (): string => {
   return source;
 };
 
+const buildMultiRepoReadSliceResponse = (
+  observerRoot: string,
+  registry: ObserverRepoRegistry,
+  slice: MultiRepoReadInterfaceSlice,
+): Record<string, unknown> => {
+  const repoScope = registry.repos.map((repo) => ({
+    repo_id: repo.id,
+    repo_root: repo.root,
+  }));
+
+  if (slice === "readiness-proof") {
+    const readinessArtifacts = computeReadinessArtifacts(observerRoot, registry);
+    return buildMultiRepoReadInterfaceEnvelope({
+      slice,
+      repoScope,
+      provenance: [
+        ".playbook/session.json",
+        ".playbook/policy-evaluation.json",
+        ".playbook/policy-apply-result.json",
+        ".playbook/execution-receipt.json",
+      ],
+      payload: {
+        fleet: readinessArtifacts.fleet,
+        queue: readinessArtifacts.queue,
+        execution_plan: readinessArtifacts.executionPlan,
+        receipt: readinessArtifacts.receipt,
+      },
+    });
+  }
+
+  if (slice === "run-state-inspection") {
+    return buildMultiRepoReadInterfaceEnvelope({
+      slice,
+      repoScope,
+      provenance: [
+        ".playbook/control-plane.json",
+        ".playbook/execution-runs/*.json",
+        ".playbook/evidence-envelope.json",
+      ],
+      payload: {
+        run_state: registry.repos.map((repo) => ({
+          repo_id: repo.id,
+          control_plane: readControlPlaneState(repo.root),
+        })),
+      },
+    });
+  }
+
+  if (slice === "longitudinal-state-summary") {
+    return buildMultiRepoReadInterfaceEnvelope({
+      slice,
+      repoScope,
+      provenance: [
+        ".playbook/longitudinal-state.json",
+        ".playbook/test-autofix-history.json",
+        ".playbook/remediation-status.json",
+      ],
+      payload: {
+        longitudinal_state: registry.repos.map((repo) => ({
+          repo_id: repo.id,
+          state: readLongitudinalState(repo.root),
+        })),
+      },
+    });
+  }
+
+  const patterns = buildCrossRepoArtifact(observerRoot, registry);
+  return buildMultiRepoReadInterfaceEnvelope({
+    slice: "cross-repo-pattern-comparison",
+    repoScope,
+    provenance: [
+      ".playbook/cross-repo-patterns.json",
+      ".playbook/pattern-proposals.json",
+      ".playbook/pattern-candidates.json",
+    ],
+    payload: {
+      source_repos: patterns.source_repos,
+      comparisons: patterns.comparisons,
+      candidate_patterns: patterns.candidate_patterns,
+      candidate_groups: toCrossRepoCandidateGroups(patterns),
+    },
+  });
+};
+
 const observerServerResponse = (
   observerRoot: string,
   invocationCwd: string,
@@ -1841,6 +1929,25 @@ const observerServerResponse = (
             "Connect at least two observable repos, then review portable-pattern evidence.",
           candidate_groups: groups,
         },
+      },
+    };
+  }
+
+  if (pathname === "/api/control-plane/interfaces/read") {
+    const requestedSlice = searchParams.get("slice");
+    const slice: MultiRepoReadInterfaceSlice =
+      requestedSlice === "readiness-proof" ||
+      requestedSlice === "run-state-inspection" ||
+      requestedSlice === "longitudinal-state-summary" ||
+      requestedSlice === "cross-repo-pattern-comparison"
+        ? requestedSlice
+        : "readiness-proof";
+    return {
+      statusCode: 200,
+      payload: {
+        ...base,
+        kind: "observer-multi-repo-control-plane-read-interface",
+        interface: buildMultiRepoReadSliceResponse(observerRoot, registry, slice),
       },
     };
   }

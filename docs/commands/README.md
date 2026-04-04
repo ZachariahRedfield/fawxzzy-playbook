@@ -745,6 +745,17 @@ Suggested remediation IDs:
 - `pnpm playbook patterns repo-delta --left <repoId> --right <repoId> --json` reports governed artifact deltas between two repositories.
 - Cross-repo intelligence in this phase is read-only: no cross-repo mutation and no automatic promotion.
 
+### Multi-repo control-plane read interface (`observer` API)
+
+The first governed multi-repo control-plane interface slice is exposed through existing Observer read surfaces:
+
+- `GET /api/control-plane/interfaces/read?slice=readiness-proof`
+- `GET /api/control-plane/interfaces/read?slice=run-state-inspection`
+- `GET /api/control-plane/interfaces/read?slice=longitudinal-state-summary`
+- `GET /api/control-plane/interfaces/read?slice=cross-repo-pattern-comparison`
+
+The response is a deterministic read-only envelope (`playbook-multi-repo-control-plane-read-interface`) that preserves explicit per-repo policy/provenance boundaries and introduces no mutation authority.
+
 ### Deterministic test hotspot discovery
 
 `pnpm playbook query test-hotspots` reports likely test inefficiency candidates from test files using deterministic heuristics only.

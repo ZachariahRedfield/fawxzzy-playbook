@@ -1000,3 +1000,5 @@ export { readControlPlaneState, writeControlPlaneState, CONTROL_PLANE_STATE_RELA
 export type { ControlPlaneStateArtifact } from './controlPlane/controlPlaneState.js';
 export { readLongitudinalState, writeLongitudinalState, LONGITUDINAL_STATE_RELATIVE_PATH } from './controlPlane/longitudinalState.js';
 export type { LongitudinalStateArtifact } from './controlPlane/longitudinalState.js';
+export { buildMultiRepoReadInterfaceEnvelope } from './controlPlane/multiRepoControlPlaneReadInterface.js';
+export type { MultiRepoReadInterfaceEnvelope, MultiRepoReadInterfaceSlice } from './controlPlane/multiRepoControlPlaneReadInterface.js';

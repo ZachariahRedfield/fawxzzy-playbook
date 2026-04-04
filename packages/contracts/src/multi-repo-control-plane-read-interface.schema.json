@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://playbook.dev/schemas/multi-repo-control-plane-read-interface.schema.json",
+  "title": "Playbook Multi-Repo Control Plane Read Interface",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "request", "response"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "kind": { "const": "playbook-multi-repo-control-plane-read-interface" },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slice", "mode", "target_repo_ids"],
+      "properties": {
+        "slice": {
+          "enum": [
+            "readiness-proof",
+            "run-state-inspection",
+            "longitudinal-state-summary",
+            "cross-repo-pattern-comparison"
+          ]
+        },
+        "mode": { "const": "read-only" },
+        "target_repo_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deterministic",
+        "generated_at",
+        "policy_boundary",
+        "repo_scope",
+        "provenance",
+        "slice_payload"
+      ],
+      "properties": {
+        "deterministic": { "const": true },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "policy_boundary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mutation_authority", "hidden_cross_repo_orchestration"],
+          "properties": {
+            "mutation_authority": { "const": "none" },
+            "hidden_cross_repo_orchestration": { "const": false }
+          }
+        },
+        "repo_scope": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["repo_id", "repo_root", "policy_boundary", "provenance_boundary"],
+            "properties": {
+              "repo_id": { "type": "string" },
+              "repo_root": { "type": "string" },
+              "policy_boundary": { "const": "per-repo" },
+              "provenance_boundary": { "const": "per-repo" }
+            }
+          }
+        },
+        "provenance": { "type": "array", "items": { "type": "string" } },
+        "slice_payload": { "type": "object", "additionalProperties": true }
+      }
+    }
+  }
+}
