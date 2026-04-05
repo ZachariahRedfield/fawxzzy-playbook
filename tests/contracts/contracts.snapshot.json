@@ -50,6 +50,10 @@
         "producer": "apply"
       },
       {
+        "path": ".playbook/policy-improvement.json",
+        "producer": "telemetry"
+      },
+      {
         "path": ".playbook/pr-review.json",
         "producer": "review-pr"
       },
@@ -250,6 +254,11 @@
         "id": "policy-apply-result",
         "version": "1.0",
         "path": "packages/contracts/src/policy-apply-result.schema.json"
+      },
+      {
+        "id": "policy-improvement",
+        "version": "1.0",
+        "path": "packages/contracts/src/policy-improvement.schema.json"
       },
       {
         "id": "lane-state",

@@ -32,6 +32,10 @@
 - Rule: Any intentional contract-surface change must land with regenerated committed snapshots in the same PR.
 - Pattern: Canonical artifact additions are governed as contract changes, not just implementation changes.
 - Failure Mode: Feature work that adds or reshapes emitted artifacts can pass build/test but still fail CI at the contract snapshot gate if snapshots are not refreshed.
+- WHAT: Added canonical candidate-only `.playbook/policy-improvement.json` contract wiring across engine/CLI/docs by generating deterministic policy-improvement suggestions from existing outcome/learning/policy/remediation/review artifacts, surfacing read-only inspection via `memory policy-improvement`, and registering `packages/contracts/src/policy-improvement.schema.json` in contract surfaces/runtime defaults. WHY: Outcome learning should improve ranking/prioritization recommendations without widening mutation authority or bypassing explicit review boundaries.
+- Rule: Reviewed outcomes may improve ranking/prioritization, but may not mutate governance directly.
+- Pattern: outcome feedback -> learning signals -> policy improvement candidates -> human-reviewed promotion.
+- Failure Mode: Treating outcome learning as direct policy mutation bypasses the same review boundaries the rest of the system already enforces.
 - WHAT: Added an approval-gated bounded maintenance execution bridge that consumes `.playbook/maintenance-plan.json` rows through `playbook apply --from-plan` only when explicit `.playbook/maintenance-approvals.json` approvals, safe policy-evaluation entries, and referenced evidence are present; persisted deterministic `.playbook/maintenance-execution-receipt.json` and `.playbook/maintenance-execution-state.json`; and added focused engine/CLI coverage for approved execution and fail-closed gating. WHY: Advances Autonomous Maintenance beyond proposal-only planning without expanding mutation authority outside existing governed apply boundaries.
 - Rule: Autonomous Maintenance may execute only through explicit approval-gated bounded actions.
 - Pattern: recurring evidence -> maintenance plan -> approval -> bounded execution -> receipt.
