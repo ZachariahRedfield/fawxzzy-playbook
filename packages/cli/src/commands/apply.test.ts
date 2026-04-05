@@ -1158,6 +1158,51 @@ describe('runApply warning-only remediation handling', () => {
 });
 
 describe('runApply maintenance execution bridge', () => {
+  beforeEach(() => {
+    routeTask.mockReset();
+    parseMaintenanceApprovals.mockReset();
+    buildApprovedMaintenanceTasks.mockReset();
+    writeMaintenanceExecutionArtifacts.mockReset();
+    loadVerifyRules.mockReset();
+    execSyncMock.mockReset();
+    getLatestMutableRun.mockReset();
+    appendExecutionStep.mockReset();
+    executionRunPath.mockReset();
+    assessReleaseSync.mockReset();
+    classifyReleaseSyncReconciliation.mockReset();
+    readApplyChangeScope.mockReset();
+
+    execSyncMock.mockReturnValue('');
+    getLatestMutableRun.mockReturnValue({ id: 'run-test' });
+    appendExecutionStep.mockReturnValue({ id: 'run-test' });
+    executionRunPath.mockReturnValue('.playbook/runs/run-test.json');
+    routeTask.mockReturnValue({
+      route: 'hybrid',
+      why: 'ok',
+      requiredInputs: [],
+      missingPrerequisites: [],
+      repoMutationAllowed: true
+    });
+    assessReleaseSync.mockReturnValue({
+      schemaVersion: '1.0',
+      kind: 'playbook-release-sync',
+      generatedAt: '2026-03-29T00:00:00.000Z',
+      mode: 'check',
+      plan: { summary: { recommendedBump: 'none', reasons: [] }, tasks: [] },
+      hasDrift: false,
+      drift: [],
+      governanceFailures: [],
+      actionableTasks: []
+    });
+    classifyReleaseSyncReconciliation.mockReturnValue({
+      status: 'no_drift',
+      taskCount: 0,
+      plannedVersions: [],
+      reason: 'release-governed state is already aligned'
+    });
+    readApplyChangeScope.mockReturnValue(null);
+  });
+
   it('executes approved bounded maintenance rows and writes receipt/state', async () => {
     const { runApply } = await import('./apply.js');
     const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'playbook-apply-maintenance-'));
