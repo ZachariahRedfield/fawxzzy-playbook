@@ -18,7 +18,8 @@
             "readiness-proof",
             "run-state-inspection",
             "longitudinal-state-summary",
-            "cross-repo-pattern-comparison"
+            "cross-repo-pattern-comparison",
+            "workspace-tenant-governance"
           ]
         },
         "mode": { "const": "read-only" },

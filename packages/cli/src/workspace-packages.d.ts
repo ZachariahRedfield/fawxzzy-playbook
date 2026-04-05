@@ -32,6 +32,7 @@ declare module "@zachariahredfield/playbook-engine" {
   export const readLongitudinalState: (...args: any[]) => any;
   export const writeLongitudinalState: (...args: any[]) => any;
   export const buildMultiRepoReadInterfaceEnvelope: (...args: any[]) => any;
+  export const buildWorkspaceGovernanceArtifact: (...args: any[]) => any;
   export type MultiRepoReadInterfaceSlice = any;
   export type ControlPlaneStateArtifact = any;
   export const buildMemoryPressureStatusArtifact: (...args: any[]) => any;

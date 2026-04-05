@@ -1067,13 +1067,16 @@ Failure Mode: When roadmap docs lag implemented governed surfaces, operator unde
 - **Already exists today**
   - control-plane, session/evidence, and governed interface contracts already establish deterministic runtime and per-repo trust boundaries that this layer must preserve.
 - **Partially defined**
-  - optional cloud/control-plane language exists, but canonical workspace/tenant policy inheritance, override visibility, and hosted-vs-self-hosted parity semantics were not centralized in one architecture slice.
+  - first deterministic read-first workspace/tenant governance slice is now centralized via `docs/architecture/PLAYBOOK_WORKSPACE_TENANT_GOVERNANCE.md`, `.playbook/workspace-governance.json`, and observer multi-repo read interface slice `workspace-tenant-governance`.
 - **Future work**
-  - formalize the canonical architecture in `docs/architecture/PLAYBOOK_WORKSPACE_TENANT_GOVERNANCE_AND_OPTIONAL_HOSTED_DEPLOYMENT.md`.
+  - retain `workspace-governance` v1 as read-only; do not introduce mutation endpoints until policy conflict/fail-closed semantics are fully hardened.
   - define user/session/repo/workspace/tenant/promotion scope boundaries with explicit policy inheritance and fail-closed conflict rules.
   - keep Playbook Cloud optional and subordinate to CLI-first, offline-capable, private-first local guarantees.
   - require hosted/self-hosted layers to remain coordination packaging over the same deterministic runtime semantics.
   - require workspace/tenant aggregation to preserve per-repo evidence lineage and drill-down accountability.
+  - Rule: Workspace governance may coordinate repos, but must not erase per-repo accountability.
+  - Pattern: repo-scoped truth -> governed interface -> workspace policy view.
+  - Failure Mode: Multi-repo governance that flattens repo boundaries becomes unsafe before it becomes useful.
 - **Execution window**
   - dependency-ordered after Governed Interface / API Surfaces for Multi-Repo Control Planes and before broader interface packaging; outside the current near-term execution window unless explicitly promoted in roadmap status.
 

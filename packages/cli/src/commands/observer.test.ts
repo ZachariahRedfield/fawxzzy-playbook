@@ -1617,6 +1617,49 @@ describe("observer server", () => {
     expect(payload.interface.response.repo_scope.every((entry) => entry.provenance_boundary === "per-repo")).toBe(true);
     expect(payload.interface.response.provenance).toContain(".playbook/control-plane.json");
 
+    const workspaceResponse = await fetch(
+      `http://127.0.0.1:${port}/api/control-plane/interfaces/read?slice=workspace-tenant-governance`,
+    );
+    expect(workspaceResponse.status).toBe(200);
+    const workspaceJson = (await workspaceResponse.json()) as {
+      interface: {
+        request: { slice: string };
+        response: {
+          policy_boundary: { mutation_authority: string; hidden_cross_repo_orchestration: boolean };
+          slice_payload: {
+            workspace_governance: {
+              workspace_id: string;
+              tenant_id: string;
+              member_repo_ids: string[];
+              policy_refs: { inherited: string[]; overridden: string[] };
+              accountability_boundary: { per_repo: Array<{ repo_id: string; policy_boundary: string }> };
+              provenance_boundary: { per_repo: Array<{ repo_id: string; boundary: string }> };
+              hosted_self_hosted_parity_boundary: { mutation_authority: string };
+            };
+          };
+          provenance: string[];
+        };
+      };
+    };
+    expect(workspaceJson.interface.request.slice).toBe("workspace-tenant-governance");
+    expect(workspaceJson.interface.response.policy_boundary.mutation_authority).toBe("none");
+    expect(workspaceJson.interface.response.policy_boundary.hidden_cross_repo_orchestration).toBe(false);
+    expect(workspaceJson.interface.response.provenance).toContain(".playbook/workspace-governance.json");
+    expect(workspaceJson.interface.response.slice_payload.workspace_governance.workspace_id).toBe("workspace:observer");
+    expect(workspaceJson.interface.response.slice_payload.workspace_governance.tenant_id).toBe("tenant:observer");
+    expect(workspaceJson.interface.response.slice_payload.workspace_governance.member_repo_ids).toEqual(["repo-a", "repo-b"]);
+    expect(workspaceJson.interface.response.slice_payload.workspace_governance.policy_refs.inherited).toEqual([
+      "policy:tenant/defaults",
+      "policy:workspace/baseline",
+    ]);
+    expect(workspaceJson.interface.response.slice_payload.workspace_governance.policy_refs.overridden).toEqual([
+      "policy:repo/repo-a/local-overrides",
+      "policy:repo/repo-b/local-overrides",
+    ]);
+    expect(workspaceJson.interface.response.slice_payload.workspace_governance.accountability_boundary.per_repo.every((entry) => entry.policy_boundary === "per-repo")).toBe(true);
+    expect(workspaceJson.interface.response.slice_payload.workspace_governance.provenance_boundary.per_repo.every((entry) => entry.boundary === "per-repo")).toBe(true);
+    expect(workspaceJson.interface.response.slice_payload.workspace_governance.hosted_self_hosted_parity_boundary.mutation_authority).toBe("none");
+
     await new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve())),
     );
