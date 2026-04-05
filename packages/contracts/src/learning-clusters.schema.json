@@ -52,7 +52,7 @@
           "nextActionText"
         ],
         "properties": {
-          "clusterId": { "type": "string", "minLength": 1 },
+          "clusterId": { "type": "string", "minLength": 1, "pattern": "^cluster:" },
           "dimension": {
             "enum": [
               "repeated_failure_shape",

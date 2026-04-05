@@ -81,7 +81,10 @@ const seedCanonicalArtifacts = (repo: string): void => {
         { failure_signature: 'sig.repeat.contract', blocked_count: 3 },
         { failure_signature: 'sig.noise.once', blocked_count: 1 }
       ],
-      repeat_policy_block_counts: []
+      repeat_policy_block_counts: [
+        { decision: 'block-repeat-without-new-evidence', count: 2 },
+        { decision: 'allow-noise-singleton', count: 1 }
+      ]
     }
   });
 
@@ -193,9 +196,11 @@ describe('learning clusters artifact', () => {
     expect(summaries).toContain('failure.retry-heavy.docs_only');
     expect(summaries).toContain('verify.PB101.rule-order');
     expect(summaries).toContain('repeated query usage pattern');
+    expect(summaries).toContain('block-repeat-without-new-evidence');
     expect(summaries).not.toContain('sig.noise.once');
     expect(summaries).not.toContain('failure.noise.single');
     expect(summaries).not.toContain('lint.non-canonical');
+    expect(summaries).not.toContain('allow-noise-singleton');
   });
 
   it('writes .playbook/learning-clusters.json as read-only candidate artifact', () => {

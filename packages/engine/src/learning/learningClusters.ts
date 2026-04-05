@@ -166,6 +166,23 @@ export const buildLearningClustersArtifact = (repoRoot: string): LearningCluster
     });
   }
 
+  for (const entry of remediationStatus?.telemetry?.repeat_policy_block_counts ?? []) {
+    const count = typeof entry.count === 'number' ? entry.count : 0;
+    const decision = typeof entry.decision === 'string' ? entry.decision : '';
+    if (!decision || count < MIN_EVIDENCE) continue;
+    const governanceEscalation = /\b(block|deny|stop|reject)\b/i.test(decision);
+    pushCluster(clusters, {
+      seed: `repeat-policy-${decision}`,
+      dimension: 'repeated_remediation_outcome',
+      sourceEvidenceRefs: [`${REMEDIATION_STATUS_PATH}#repeat_policy_block_counts/${decision}`],
+      repeatedSignalSummary: `Remediation repeat-policy decision ${decision} recurs ${count} times in canonical status telemetry.`,
+      suggestedImprovementCandidateType: governanceEscalation ? 'verify_rule_improvement' : 'threshold_tuning',
+      confidence: clamp01(0.57 + count * 0.09),
+      riskReviewRequirement: governanceEscalation ? 'governance-review' : 'maintainer-review',
+      nextActionText: `Draft a candidate-only remediation policy improvement for repeated decision "${decision}" and keep explicit review gates in place.`
+    });
+  }
+
   const verifyFindingCounts = new Map<string, number>();
   for (const run of remediationHistory?.runs ?? []) {
     for (const finding of run.admitted_findings ?? []) {

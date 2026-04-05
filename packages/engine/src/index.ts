@@ -829,7 +829,13 @@ export {
   writeLearningClustersArtifact,
   buildAndWriteLearningClustersArtifact
 } from './learning/learningClusters.js';
-export type { LearningClustersArtifact, LearningClusterRow, LearningClusterDimension, LearningClusterCandidateType } from './learning/learningClusters.js';
+export type {
+  LearningClustersArtifact,
+  LearningClusterRow,
+  LearningClusterDimension,
+  LearningClusterCandidateType,
+  LearningClusterRiskReviewRequirement
+} from './learning/learningClusters.js';
 export { GLOBAL_PATTERNS_RELATIVE_PATH, readCanonicalPatternsArtifact, materializeStoryFromSource, materializePatternFromCandidate, transitionPatternLifecycle } from './promotion.js';
 export { exportPatternTransferPackage, importPatternTransferPackage, PATTERN_TRANSFER_PACKAGES_RELATIVE_DIR } from './patternTransfer.js';
 export type { PromotionSourceRef, StoryRecordWithProvenance, StoryPromotionProvenance as PromotionStoryProvenance, PromotedPatternRecord, CanonicalPatternsArtifact, PreparedPromotion } from './promotion.js';
