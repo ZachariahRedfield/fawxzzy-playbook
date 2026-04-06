@@ -73,6 +73,7 @@ export type ReleasePlanDrift = {
 
 export type ReleasePlan = {
   schemaVersion: '1.0';
+  taskIdSchemaVersion: '1.0';
   kind: 'playbook-release-plan';
   generatedAt: string;
   policy: {
@@ -578,6 +579,7 @@ export const buildReleasePlanFromInputs = (
 
   return {
     schemaVersion: '1.0',
+    taskIdSchemaVersion: '1.0',
     kind: 'playbook-release-plan',
     generatedAt: inputs.generatedAt,
     policy: {

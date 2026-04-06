@@ -223,6 +223,12 @@ Release sync should run through `pnpm playbook commit` for atomic local commits,
 
 Rule: Release plan must be applied before code leaves local environment.
 Pattern: Detect drift locally -> apply -> commit -> push clean state.
+
+Rule: Reviewed execution artifacts must remain durable across time and transport.
+
+Pattern: semantic task identity -> serialized plan -> explicit apply.
+
+Failure Mode: If task ids drift between generations, long-lived reviewed artifacts become untrustworthy even when the underlying intent is unchanged.
 Failure Mode: Relying on CI to detect release drift creates redundant failure cycles and slows iteration.
 Rule: Release sync must be applied before pushing when drift exists.
 Pattern: Local pre-push enforcement prevents CI release drift failures.

@@ -25,6 +25,9 @@ Roadmap and planning docs may describe sequencing intent, but they are not comma
 - `pnpm playbook verify --json` now fails closed for protected singleton-doc governance when existing governed artifacts show unresolved consolidation, reviewed-plan gaps, consolidation conflicts, or guarded-apply drift on reviewed singleton-doc targets. `pnpm playbook verify --policy --json` inherits the same gate through the default `protected-doc.governance` policy rule.
 - `pnpm playbook apply` now fails closed against declared `.playbook/change-scope.json` bundles by enforcing `allowedFiles`, `patchSizeBudget`, and required boundary checks before mutation success is reported.
 - `pnpm playbook apply --from-plan .playbook/maintenance-plan.json --maintenance-approvals .playbook/maintenance-approvals.json` is the approval-gated bounded maintenance execution bridge: only approved rows with safe policy entries and present evidence refs execute, and deterministic maintenance receipt/state artifacts are persisted.
+- Rule: Reviewed execution artifacts must remain durable across time and transport.
+- Pattern: semantic task identity -> serialized plan -> explicit apply.
+- Failure Mode: If task ids drift between generations, long-lived reviewed artifacts become untrustworthy even when the underlying intent is unchanged.
 - Rule: Declared mutation scope must be enforced before apply succeeds.
 - Pattern: Declare scope -> enforce scope -> mutate -> receipt.
 - Failure Mode: Scope bundles that are not enforced become advisory paperwork instead of real safety boundaries.

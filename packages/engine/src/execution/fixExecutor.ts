@@ -166,7 +166,11 @@ export class FixExecutor {
           action: task.action,
           autoFix: task.autoFix,
           status: 'unsupported',
-          message: 'No deterministic handler is registered for this task.'
+          message: `No deterministic handler is registered for task rule ${task.ruleId}.`,
+          details: {
+            handler_resolution: 'missing',
+            expected_rule_id: task.ruleId
+          }
         });
         continue;
       }
@@ -182,7 +186,12 @@ export class FixExecutor {
           autoFix: task.autoFix,
           status: handlerResult.status,
           message: handlerResult.message,
-          details: handlerResult.details
+          details: {
+            ...(handlerResult.details ?? {}),
+            handler_resolution: 'resolved',
+            handler_source: resolved.source,
+            handler_id: resolved.handlerId
+          }
         });
       } catch (error) {
         results.push({
@@ -192,7 +201,12 @@ export class FixExecutor {
           action: task.action,
           autoFix: task.autoFix,
           status: 'failed',
-          message: toMessage(error)
+          message: toMessage(error),
+          details: {
+            handler_resolution: 'resolved',
+            handler_source: resolved.source,
+            handler_id: resolved.handlerId
+          }
         });
       }
     }

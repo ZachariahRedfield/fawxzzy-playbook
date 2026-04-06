@@ -14,6 +14,7 @@ import { verifyRepo } from '../verify/index.js';
 import { generateRepositoryHealth } from '../doctor/index.js';
 import { buildApplyMemoryEvent, buildPlanMemoryEvent, captureMemoryRuntimeEventSafe } from '../memory/runtimeEvents.js';
 import { enforceApplyChangeScope, readApplyChangeScope } from './changeScopeEnforcement.js';
+import { isSupportedTaskId, PLAN_TASK_ID_SCHEMA_VERSION } from './taskIdentity.js';
 export { renderLanePrompt, writeLanePrompts, buildLanePromptFilename } from './lanePrompts.js';
 export type { LanePromptSpec, RenderLanePromptInput, WriteLanePromptsInput } from './lanePrompts.js';
 
@@ -30,6 +31,7 @@ export type PlanContract = {
 type SerializedPlanEnvelope = {
   schemaVersion?: string;
   command?: string;
+  taskIdSchemaVersion?: string;
   tasks?: unknown;
 };
 
@@ -193,10 +195,18 @@ export const parsePlanArtifact = (payload: unknown): { tasks: PlanTask[] } => {
     throw new Error('Invalid plan payload: command must be "plan".');
   }
 
+  const declaredTaskIdSchemaVersion = envelope.taskIdSchemaVersion ?? PLAN_TASK_ID_SCHEMA_VERSION;
+  if (declaredTaskIdSchemaVersion !== PLAN_TASK_ID_SCHEMA_VERSION) {
+    throw new Error(
+      `Unsupported plan taskIdSchemaVersion: ${String(declaredTaskIdSchemaVersion)}. Expected "${PLAN_TASK_ID_SCHEMA_VERSION}".`
+    );
+  }
+
   if (!Array.isArray(envelope.tasks)) {
     throw new Error('Invalid plan payload: tasks must be an array.');
   }
 
+  const taskIds = new Set<string>();
   const tasks = envelope.tasks.map((task) => {
     if (!task || typeof task !== 'object') {
       throw new Error('Invalid plan payload: each task must be an object.');
@@ -215,6 +225,15 @@ export const parsePlanArtifact = (payload: unknown): { tasks: PlanTask[] } => {
     if (typedTask.file !== null && typeof typedTask.file !== 'string') {
       throw new Error('Invalid plan payload: task.file must be a string or null.');
     }
+    if (!isSupportedTaskId(typedTask.id)) {
+      throw new Error(
+        `Invalid plan payload: task.id "${typedTask.id}" does not match supported deterministic task-id contracts.`
+      );
+    }
+    if (taskIds.has(typedTask.id)) {
+      throw new Error(`Invalid plan payload: duplicate task id "${typedTask.id}".`);
+    }
+    taskIds.add(typedTask.id);
 
     return {
       id: typedTask.id,

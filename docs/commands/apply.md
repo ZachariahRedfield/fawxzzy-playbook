@@ -63,6 +63,7 @@ Controlled policy-gated execution:
   - `command: "test-fix-plan"`
   - `command: "docs-consolidate-plan"`
   - `kind: "playbook-release-plan"`
+- Task-bearing reviewed artifacts may include `taskIdSchemaVersion` (current: `1.0`). When present and unsupported, `apply --from-plan` fails with deterministic compatibility messaging before mutation.
 - `--task` selection is exact and deterministic by stable `task.id` (no fuzzy matching by text/path/rule).
 - Repeated `--task` ids are deduplicated deterministically, and selected tasks preserve original artifact order.
 - Unknown `--task` ids fail clearly; invalid selection does not fall back to applying all tasks.
@@ -70,6 +71,7 @@ Controlled policy-gated execution:
 - Every task must include `id`, `ruleId`, `file`, `action`, `autoFix`.
 - Handler contract is explicit: handlers must return `applied`, `skipped`, or `unsupported`; thrown errors are reported as `failed` and contract violations are treated as failures.
 - `applied` handler results must include changed files and a non-empty summary; `skipped`/`unsupported` handler results must include a non-empty message.
+- Unsupported and failed handler outcomes include explicit handler-resolution details in JSON output for deterministic auditability.
 
 
 ## Workflow role

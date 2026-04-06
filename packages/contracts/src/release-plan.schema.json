@@ -7,6 +7,7 @@
   "required": ["schemaVersion", "kind", "generatedAt", "policy", "diff", "summary", "packages", "versionGroups", "tasks"],
   "properties": {
     "schemaVersion": { "const": "1.0" },
+    "taskIdSchemaVersion": { "const": "1.0" },
     "kind": { "const": "playbook-release-plan" },
     "generatedAt": { "type": "string" },
     "policy": {
@@ -114,7 +115,7 @@
         "additionalProperties": false,
         "required": ["id", "ruleId", "file", "action", "autoFix", "task_kind", "provenance"],
         "properties": {
-          "id": { "type": "string" },
+          "id": { "type": "string", "pattern": "^(task-[a-f0-9]{10}-[1-9][0-9]*|task-artifact-[A-Za-z0-9._-]+|maintenance:[A-Za-z0-9._:-]+|release-[A-Za-z0-9:._-]+)$" },
           "ruleId": { "type": "string" },
           "file": { "type": ["string", "null"] },
           "action": { "type": "string" },

@@ -300,6 +300,7 @@ const normalizeReleasePlanArtifact = (normalizedPayload: Record<string, unknown>
 
   const parsedPlan = engine.parsePlanArtifact({
     schemaVersion: normalizedPayload.schemaVersion,
+    taskIdSchemaVersion: normalizedPayload.taskIdSchemaVersion,
     command: 'plan',
     tasks: tasksPayload
   });
@@ -372,6 +373,7 @@ const normalizeApplyPlanArtifact = (payload: unknown): NormalizedPlanArtifact =>
   if (normalizedPayload.command === 'test-fix-plan') {
     const parsedPlan = engine.parsePlanArtifact({
       schemaVersion: normalizedPayload.schemaVersion,
+      taskIdSchemaVersion: normalizedPayload.taskIdSchemaVersion,
       command: 'plan',
       tasks: normalizedPayload.tasks
     });
@@ -405,6 +407,7 @@ const normalizeApplyPlanArtifact = (payload: unknown): NormalizedPlanArtifact =>
   if (normalizedPayload.command === 'docs-consolidate-plan') {
     const parsedPlan = engine.parsePlanArtifact({
       schemaVersion: normalizedPayload.schemaVersion,
+      taskIdSchemaVersion: normalizedPayload.taskIdSchemaVersion,
       command: 'plan',
       tasks: normalizedPayload.tasks
     });
