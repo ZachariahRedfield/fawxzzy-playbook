@@ -175,11 +175,12 @@ describe('execution pipeline units', () => {
   it('parsePlanArtifact validates envelope and returns tasks in source order', () => {
     const parsed = parsePlanArtifact({
       schemaVersion: '1.0',
+      taskIdSchemaVersion: '1.0',
       command: 'plan',
       tasks: [
-        { id: 'task-2', ruleId: 'B', file: null, action: 'second', autoFix: false },
+        { id: 'task-bbbbbbbbbb-1', ruleId: 'B', file: null, action: 'second', autoFix: false },
         {
-          id: 'task-1',
+          id: 'task-aaaaaaaaaa-1',
           ruleId: 'A',
           file: 'docs/PLAYBOOK_NOTES.md',
           action: 'first',
@@ -198,9 +199,9 @@ describe('execution pipeline units', () => {
     });
 
     expect(parsed.tasks).toEqual([
-      { id: 'task-2', ruleId: 'B', file: null, action: 'second', autoFix: false },
+      { id: 'task-bbbbbbbbbb-1', ruleId: 'B', file: null, action: 'second', autoFix: false },
       {
-        id: 'task-1',
+        id: 'task-aaaaaaaaaa-1',
         ruleId: 'A',
         file: 'docs/PLAYBOOK_NOTES.md',
         action: 'first',
@@ -224,9 +225,10 @@ describe('execution pipeline units', () => {
   it('parsePlanArtifact preserves managed-write preconditions for reviewed artifacts', () => {
     const parsed = parsePlanArtifact({
       schemaVersion: '1.0',
+      taskIdSchemaVersion: '1.0',
       command: 'plan',
       tasks: [{
-        id: 'task-docs',
+        id: 'task-c0ffee1234-1',
         ruleId: 'docs-consolidation.managed-write',
         file: 'docs/CHANGELOG.md',
         action: 'update managed block',
@@ -411,19 +413,24 @@ describe('execution pipeline units', () => {
     );
 
     const result = await executor.apply(
-      [{ id: 'task-bad', ruleId: 'bad', file: null, action: 'bad action', autoFix: true }],
+      [{ id: 'task-deadbeef00-1', ruleId: 'bad', file: null, action: 'bad action', autoFix: true }],
       { repoRoot: '.', dryRun: false }
     );
 
     expect(result.results).toEqual([
       {
-        id: 'task-bad',
+        id: 'task-deadbeef00-1',
         ruleId: 'bad',
         file: null,
         action: 'bad action',
         autoFix: true,
         status: 'failed',
-        message: 'Fix handler contract violation: filesChanged must be an array.'
+        message: 'Fix handler contract violation: filesChanged must be an array.',
+        details: {
+          handler_resolution: 'resolved',
+          handler_source: 'builtin',
+          handler_id: 'bad'
+        }
       }
     ]);
   });
