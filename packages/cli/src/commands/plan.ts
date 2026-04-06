@@ -101,6 +101,7 @@ export const runPlan = async (
   if (options.format === 'json') {
     const payload = {
       schemaVersion: '1.0',
+      taskIdSchemaVersion: '1.0',
       command: 'plan',
       ok: true,
       exitCode: ExitCode.Success,

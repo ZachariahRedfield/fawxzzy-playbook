@@ -29,7 +29,7 @@
         "additionalProperties": false,
         "required": ["taskId", "maintenanceId", "maintenanceType", "command", "status", "boundedTargetSurface", "approvalRef", "policyRef", "sourceEvidenceRefs", "exitCode", "message"],
         "properties": {
-          "taskId": { "type": "string", "minLength": 1 },
+          "taskId": { "type": "string", "pattern": "^(task-[a-f0-9]{10}-[1-9][0-9]*|task-artifact-[A-Za-z0-9._-]+|maintenance:[A-Za-z0-9._:-]+|release-[A-Za-z0-9:._-]+)$" },
           "maintenanceId": { "type": "string", "minLength": 1 },
           "maintenanceType": { "type": "string", "minLength": 1 },
           "command": { "type": "string", "minLength": 1 },

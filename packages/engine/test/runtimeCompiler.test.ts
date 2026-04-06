@@ -14,11 +14,12 @@ const writePlanArtifact = (repoRoot: string, filePath = '.playbook/plan.json'): 
     `${JSON.stringify(
       {
         schemaVersion: '1.0',
+        taskIdSchemaVersion: '1.0',
         command: 'plan',
         tasks: [
-          { id: 'task-b', ruleId: 'PB200', file: 'src/a.ts', action: 'apply deterministic fix', autoFix: true },
-          { id: 'task-a', ruleId: 'PB201', file: 'src/a.ts', action: 'manual verify evidence', autoFix: false },
-          { id: 'task-c', ruleId: 'PB202', file: null, action: 'inspect reports', autoFix: false }
+          { id: 'task-bbbbbbbbbb-1', ruleId: 'PB200', file: 'src/a.ts', action: 'apply deterministic fix', autoFix: true },
+          { id: 'task-aaaaaaaaaa-1', ruleId: 'PB201', file: 'src/a.ts', action: 'manual verify evidence', autoFix: false },
+          { id: 'task-cccccccccc-1', ruleId: 'PB202', file: null, action: 'inspect reports', autoFix: false }
         ]
       },
       null,

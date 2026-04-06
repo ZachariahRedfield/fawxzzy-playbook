@@ -1,8 +1,8 @@
-import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { MemoryKnowledgeArtifact, MemoryKnowledgeEntry, MemoryKnowledgeKind } from '../memory/knowledge.js';
 import type { PlanTask, RuleFailure } from './types.js';
+import { buildStableTaskId, buildStableTaskSemanticKey } from './taskIdentity.js';
 
 export type Plan = {
   tasks: PlanTask[];
@@ -35,14 +35,6 @@ const compareFindings = (left: RuleFailure, right: RuleFailure): number => {
   }
 
   return left.message.localeCompare(right.message);
-};
-
-const stableTaskSeed = (finding: RuleFailure): string =>
-  `${finding.id}|${finding.evidence ?? ''}|${finding.fix ?? finding.message}|${Boolean(finding.fix)}`;
-
-const stableTaskId = (seed: string, occurrence: number): string => {
-  const digest = createHash('sha256').update(seed).digest('hex').slice(0, 10);
-  return `task-${digest}-${occurrence}`;
 };
 
 const toComparableTimestamp = (value: string): number => Date.parse(value) || 0;
@@ -166,17 +158,23 @@ export class PlanGenerator {
         return compareFindings(left.finding, right.finding);
       });
     const seen = new Map<string, number>();
+    const occurrenceByFinding = new Map<RuleFailure, number>();
+    for (const finding of baseline) {
+      const semanticKey = buildStableTaskSemanticKey(finding);
+      const occurrence = (seen.get(semanticKey) ?? 0) + 1;
+      seen.set(semanticKey, occurrence);
+      occurrenceByFinding.set(finding, occurrence);
+    }
 
     return {
       tasks: sortedFindings.map(({ finding, rationale }) => {
         const action = finding.fix ?? finding.message;
         const autoFix = Boolean(finding.fix);
-        const seed = stableTaskSeed(finding);
-        const occurrence = (seen.get(seed) ?? 0) + 1;
-        seen.set(seed, occurrence);
+        const semanticKey = buildStableTaskSemanticKey(finding);
+        const occurrence = occurrenceByFinding.get(finding) ?? 1;
 
         return {
-          id: stableTaskId(seed, occurrence),
+          id: buildStableTaskId(semanticKey, occurrence),
           ruleId: finding.id,
           file: finding.evidence ?? null,
           action,
