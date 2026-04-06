@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "updatedAt": "2026-03-21",
+  "updatedAt": "2026-04-06",
   "features": [
     {
       "feature_id": "PB-V03-INDEX-001",
@@ -794,14 +794,16 @@
     {
       "feature_id": "PB-V09-CONTROL-PLANE-001",
       "version": "v0.9",
-      "title": "Control Plane architecture",
-      "goal": "Define first-class policy, approval, mutation-scope, adapter-boundary, and export/locality contracts after Session + Evidence and before orchestration/autonomy expansion.",
+      "title": "Control Plane / Agent Runtime v1 contract alignment",
+      "goal": "Align roadmap contract metadata to implemented control-plane/session/agent/policy runtime surfaces without expanding mutation authority.",
       "commands": [
         "agent",
+        "session",
+        "policy",
+        "telemetry",
         "verify",
         "plan",
-        "apply",
-        "analyze-pr"
+        "apply"
       ],
       "contracts": [
         "docs/architecture/PLAYBOOK_CONTROL_PLANE_ARCHITECTURE.md",
@@ -829,8 +831,10 @@
       ],
       "verification_commands": [
         "node scripts/validate-roadmap-contract.mjs --ci",
-        "pnpm playbook verify --json",
-        "pnpm playbook plan --json"
+        "pnpm playbook session show --json",
+        "pnpm playbook agent run --from-plan .playbook/plan.json --dry-run --json",
+        "pnpm playbook policy evaluate --json",
+        "pnpm playbook docs audit --json"
       ],
       "status": "implemented-hardening",
       "package_ownership": [
@@ -1351,7 +1355,12 @@
       "version": "v0.9",
       "title": "Outcome feedback and automation runtime learning",
       "goal": "Implement outcome-linked learning loops that convert runtime results into governed evidence for pattern quality and safe promotion decisions.",
-      "commands": [],
+      "commands": [
+        "telemetry",
+        "memory",
+        "improve",
+        "policy"
+      ],
       "contracts": [
         "docs/architecture/PLAYBOOK_OUTCOME_FEEDBACK_AND_AUTOMATION_RUNTIME_LEARNING.md",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
@@ -1366,15 +1375,19 @@
         "docs/roadmap/README.md"
       ],
       "dependencies": [
-        "PB-V09-AUTOMATION-SYNTHESIS-001",
-        "PB-V09-PR-REVIEW-LOOP-001",
-        "PB-V09-SESSION-EVIDENCE-001"
+        "PB-V09-OUTCOME-LEARNING-001",
+        "PB-V09-CONTROL-PLANE-001",
+        "PB-V08-MEMORY-SYSTEM-001",
+        "PB-V08-REPLAY-PROMOTION-001"
       ],
       "verification_commands": [
-        "pnpm playbook docs audit --json",
-        "node scripts/validate-roadmap-contract.mjs --ci"
+        "node scripts/validate-roadmap-contract.mjs --ci",
+        "pnpm playbook telemetry learning --json",
+        "pnpm playbook memory outcome-feedback --json",
+        "pnpm playbook memory policy-improvement --json",
+        "pnpm playbook docs audit --json"
       ],
-      "status": "future-facing",
+      "status": "implemented-hardening",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine",
@@ -1574,18 +1587,14 @@
     {
       "feature_id": "PB-V08-MEMORY-SYSTEM-001",
       "version": "v0.8",
-      "title": "Memory-system architecture bootstrap",
-      "goal": "Bootstrap deterministic memory-system architecture and command touchpoints for repository intelligence plus remediation workflows.",
+      "title": "Repository Memory System v1 runtime contract alignment",
+      "goal": "Align roadmap contract metadata to the implemented repository memory runtime surfaces and canonical read-only memory-system contract.",
       "commands": [
+        "memory",
+        "knowledge",
         "index",
-        "graph",
         "query",
-        "explain",
-        "ask",
-        "analyze-pr",
-        "verify",
-        "plan",
-        "apply"
+        "explain"
       ],
       "contracts": [
         "docs/roadmap/ROADMAP.json",
@@ -1599,7 +1608,7 @@
       "docs": [
         "docs/roadmap/ROADMAP.json",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/roadmap/IMPROVEMENTS_BACKLOG.md",
+        "docs/commands/memory.md",
         "docs/architecture/REPOSITORY_MEMORY_SYSTEM_V1.md"
       ],
       "dependencies": [
@@ -1608,11 +1617,11 @@
       ],
       "verification_commands": [
         "node scripts/validate-roadmap-contract.mjs --ci",
-        "pnpm playbook index --json",
-        "pnpm playbook graph --json",
-        "pnpm playbook verify --json"
+        "pnpm playbook memory events --json",
+        "pnpm playbook memory knowledge --json",
+        "pnpm playbook docs audit --json"
       ],
-      "status": "planned",
+      "status": "implemented-hardening",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine"
@@ -1621,18 +1630,12 @@
     {
       "feature_id": "PB-V08-REPLAY-PROMOTION-001",
       "version": "v0.8",
-      "title": "Replay and promotion workflow bootstrap",
-      "goal": "Define replay and promotion architecture dependencies for deterministic memory consolidation and governed learning promotion.",
+      "title": "Replay / consolidation / promotion runtime contract alignment",
+      "goal": "Align roadmap contract metadata to the implemented replay/consolidation/compaction/promotion read-only lifecycle contract surfaces.",
       "commands": [
-        "index",
-        "graph",
-        "query",
-        "explain",
-        "ask",
-        "analyze-pr",
-        "verify",
-        "plan",
-        "apply"
+        "memory",
+        "telemetry",
+        "knowledge"
       ],
       "contracts": [
         "docs/roadmap/ROADMAP.json",
@@ -1646,7 +1649,7 @@
       "docs": [
         "docs/roadmap/ROADMAP.json",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/roadmap/IMPROVEMENTS_BACKLOG.md",
+        "docs/commands/memory.md",
         "docs/architecture/REPLAY_CONSOLIDATION_AND_PROMOTION_V1.md"
       ],
       "dependencies": [
@@ -1656,10 +1659,11 @@
       ],
       "verification_commands": [
         "node scripts/validate-roadmap-contract.mjs --ci",
-        "pnpm playbook query modules --json",
-        "pnpm playbook verify --json"
+        "pnpm playbook memory replay-promotion --json",
+        "pnpm playbook memory candidates --json",
+        "pnpm playbook docs audit --json"
       ],
-      "status": "planned",
+      "status": "implemented-hardening",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine"
@@ -1715,19 +1719,19 @@
     {
       "feature_id": "PB-V09-OUTCOME-LEARNING-001",
       "version": "v0.9",
-      "title": "Outcome-learning bootstrap",
-      "goal": "Define outcome-learning dependency closure so remediation outcomes can feed future memory and promotion governance safely.",
+      "title": "Outcome learning / policy-improvement v1 contract alignment",
+      "goal": "Align roadmap contract metadata to implemented outcome-feedback, learning-state, higher-order synthesis, and policy-improvement candidate runtime surfaces.",
       "commands": [
-        "verify",
-        "plan",
-        "apply",
-        "analyze-pr"
+        "telemetry",
+        "memory",
+        "improve",
+        "policy"
       ],
       "contracts": [
         "docs/roadmap/ROADMAP.json",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/contracts/FAILURE_INTELLIGENCE_CONTRACT.md",
-        "docs/architecture/OUTCOME_LEARNING_AND_POLICY_IMPROVEMENT_V1.md"
+        "docs/architecture/OUTCOME_LEARNING_AND_POLICY_IMPROVEMENT_V1.md",
+        "docs/contracts/COMMAND_CONTRACTS_V1.md"
       ],
       "tests": [
         "scripts/validate-roadmap-contract.mjs"
@@ -1735,21 +1739,23 @@
       "docs": [
         "docs/roadmap/ROADMAP.json",
         "docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-        "docs/roadmap/IMPROVEMENTS_BACKLOG.md",
+        "docs/commands/memory.md",
         "docs/architecture/OUTCOME_LEARNING_AND_POLICY_IMPROVEMENT_V1.md"
       ],
       "dependencies": [
         "PB-V08-MEMORY-SYSTEM-001",
         "PB-V08-REPLAY-PROMOTION-001",
-        "PB-V06-FAILURE-INTELLIGENCE-001"
+        "PB-V06-FAILURE-INTELLIGENCE-001",
+        "PB-V09-CONTROL-PLANE-001"
       ],
       "verification_commands": [
         "node scripts/validate-roadmap-contract.mjs --ci",
-        "pnpm playbook analyze-pr --json",
-        "pnpm playbook verify --json",
-        "pnpm playbook plan --json"
+        "pnpm playbook telemetry learning --json",
+        "pnpm playbook memory outcome-feedback --json",
+        "pnpm playbook memory policy-improvement --json",
+        "pnpm playbook docs audit --json"
       ],
-      "status": "planned",
+      "status": "implemented-hardening",
       "package_ownership": [
         "@fawxzzy/playbook",
         "@zachariahredfield/playbook-engine"

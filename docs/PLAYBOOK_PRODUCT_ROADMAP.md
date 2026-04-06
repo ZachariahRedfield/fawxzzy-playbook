@@ -1680,7 +1680,10 @@ Reasoning for reordering:
 
 Current-state command surfaces remain the canonical implemented interface and are unchanged by this section. Future sequencing below describes architecture maturity order only.
 
-TODO (roadmap contract alignment): add explicit feature IDs, dependencies, and verification commands in `docs/roadmap/ROADMAP.json` for Repository Memory System, Control Plane / Agent Runtime v1, and Outcome Learning / Policy Improvement only after those slices are commitment-ready for CI-enforced contract validation.
+Roadmap contract alignment note (implemented): `docs/roadmap/ROADMAP.json` now carries explicit feature IDs, dependency metadata, and deterministic verification-command bindings for the implemented Repository Memory System, Replay/Consolidation/Promotion continuity, Control Plane / Agent Runtime v1, and Outcome Learning / Policy Improvement slices.
+- Rule: Once a runtime slice is real, roadmap contract metadata must catch up so sequencing and CI-facing truth stay aligned.
+- Pattern: architecture/runtime truth -> roadmap contract alignment -> verification command binding.
+- Failure Mode: Implemented layers that remain “future-ish” in roadmap contracts cause planning drift and weaken proof of completion.
 
 1. **Repository Memory System (next major platform phase)**
    - Clarify that structural graph (`.playbook/repo-graph.json` and `.playbook/repo-index.json`) remains repository-shape intelligence, while temporal memory remains under `.playbook/memory/*`.
